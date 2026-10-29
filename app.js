@@ -2523,7 +2523,7 @@ function renderPrintableReport(proj, m) {
   document.getElementById('printableMemoContainer').innerHTML = `
     <div style="border-bottom:2.5px solid var(--askrindo-navy); padding-bottom:0.65rem; margin-bottom:0.75rem; display:flex; justify-content:space-between; align-items:center;">
       <div style="display:flex; align-items:center; gap:0.75rem;">
-        <img src="logo-askrindo.png" alt="Askrindo Insurance - A member of IFG" style="height:38px; width:auto; object-fit:contain;" />
+        <img src="logo-asca.png" alt="ASCA - Askrindo Smart Credit Analysis" style="height:38px; width:auto; object-fit:contain;" />
         <div>
           <h2 style="font-size:0.95rem; color:var(--askrindo-navy);">NOTA ANALISA UNDERWRITING PENJAMINAN KREDIT (ASCA)</h2>
           <p style="font-size:0.68rem; color:var(--text-muted);">Metode: Dynamic Cash Conversion &amp; Stress-Tested Working Capital Model (DCC-SWCM)</p>

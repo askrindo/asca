@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AFCA — Askrindo Future Credit Analysis (DCC-SWCM)</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- TOP NAVBAR -->
+  <header class="top-navbar">
+    <div class="brand-wrap">
+      <button class="sidebar-toggle-btn no-print" onclick="toggleSidebar()" id="topSidebarToggleBtn" title="Minimize / Tampilkan Daftar Proyek">
+        <span id="sidebarToggleIcon">◀</span> Proyek
+      </button>
+
+      <!-- Logo Askrindo Insurance (A Member of IFG) Sesuai Gambar Resmi -->
+      <div class="askrindo-logo-box" title="PT Asuransi Kredit Indonesia (Askrindo) - A member of IFG">
+        <img src="logo-askrindo.png" alt="Askrindo Insurance - A member of IFG" class="askrindo-logo-img" />
+      </div>
+
+      <div class="brand-titles">
+        <h1>
+          Askrindo Future Credit Analysis (AFCA)
+          <span class="badge-method">Metode DCC-SWCM</span>
+        </h1>
+        <p>Dynamic Cash Conversion &amp; Stress-Tested Working Capital Model — Sistem Analisa Underwriting Penjaminan</p>
+      </div>
+    </div>
+
+    <div class="top-actions no-print">
+      <button class="btn btn-primary" onclick="openNewProjectModal()">
+        <span>＋</span> Proyek Baru
+      </button>
+      <button class="btn btn-light" onclick="duplicateCurrentProject()" title="Duplikasi kasus aktif untuk simulasi alternatif">
+        <span>⧉</span> Duplikasi
+      </button>
+      <button class="btn btn-light" onclick="exportWorkspaceJSON()" title="Simpan seluruh database kasus ke file komputer (.afca.json)">
+        <span>💾</span> Simpan (.json)
+      </button>
+      <label class="btn btn-light" style="margin:0;" title="Buka file database .afca.json dari komputer">
+        <span>📂</span> Buka File
+        <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="importWorkspaceJSON(event)" />
+      </label>
+      <button class="btn btn-gold" onclick="printUnderwritingReport()">
+        <span>🖨️</span> Cetak / PDF
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN LAYOUT -->
+  <div class="app-layout" id="appLayoutContainer">
+    <!-- SIDEBAR: DAFTAR KASUS / PROYEK (COLLAPSIBLE) -->
+    <aside class="sidebar no-print" id="projectSidebar">
+      <!-- Tampilan saat Diminimize -->
+      <div class="sidebar-collapsed-strip" onclick="toggleSidebar()" title="Klik untuk membuka Daftar Proyek Analisa">
+        <span style="font-size:0.9rem; font-weight:800; color:var(--askrindo-blue);">▶</span>
+        <div class="vertical-text">Daftar Proyek (<span id="projectCountCollapsed">0</span>)</div>
+      </div>
+
+      <!-- Tampilan Penuh -->
+      <div class="sidebar-full-content" style="display:flex; flex-direction:column; height:100%;">
+        <div class="sidebar-header">
+          <div class="sidebar-header-top">
+            <h2>Daftar Proyek (<span id="projectCountBadge">0</span>)</h2>
+            <div style="display:flex; gap:0.2rem;">
+              <button class="btn btn-outline btn-sm" onclick="resetToDefaultCases()" title="Kembalikan contoh kasus bawaan">
+                Reset
+              </button>
+              <button class="btn btn-outline btn-sm" onclick="toggleSidebar()" title="Minimize Daftar Proyek">
+                ◀
+              </button>
+            </div>
+          </div>
+          <input type="text" id="searchProjectInput" class="search-box" placeholder="Cari debitur, sektor, bank..." oninput="renderProjectList()" />
+        </div>
+
+        <div id="projectListContainer" class="project-list">
+          <!-- Diisi otomatis oleh JavaScript -->
+        </div>
+
+        <div class="sidebar-footer">
+          <span id="autoSaveStatus">● Tersimpan otomatis</span>
+          <button class="btn btn-danger btn-sm" onclick="deleteCurrentProject()" title="Hapus proyek aktif">Hapus</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN WORKSPACE -->
+    <main class="main-workspace">
+
+      <!-- CASE BANNER -->
+      <div class="case-banner">
+        <div class="case-title-area">
+          <h2>
+            <span id="bannerCompanyName">-</span>
+            <span id="bannerGradeBadge" class="grade-badge grade-BB" style="cursor:pointer;" onclick="switchTab('tab-grade')" title="Klik untuk melihat Penentuan Grade Risk & Indikator Penyebab">-</span>
+            <span id="bannerFacilityType" style="font-size:0.68rem; background:#e0f2fe; color:#0369a1; padding:2px 7px; border-radius:99px; font-weight:600;">-</span>
+          </h2>
+          <div class="case-submeta">
+            <span>🏦 <strong>Bank:</strong> <span id="bannerBankName">-</span></span>
+            <span>🏭 <strong>Sektor:</strong> <span id="bannerSector">-</span></span>
+            <span>💵 <strong>Plafond:</strong> <span id="bannerPlafond">-</span></span>
+            <span>📅 <strong>Lap. Keu:</strong> <span id="bannerFinYears">2022 &amp; 2023</span></span>
+            <span>👤 <strong>Underwriter:</strong> <span id="bannerUnderwriter">-</span></span>
+          </div>
+        </div>
+
+        <div class="case-quick-score">
+          <div id="bannerScoreCircle" class="score-circle" onclick="switchTab('tab-score')" title="Klik untuk melihat Rincian Perhitungan Score DCC-SWCM">0</div>
+          <div>
+            <div style="font-size:0.64rem; text-transform:uppercase; color:var(--text-muted); font-weight:700; display:flex; gap:0.4rem; align-items:center;">
+              <span>Skor DCC-SWCM</span>
+              <a href="javascript:void(0)" onclick="switchTab('tab-score')" style="color:var(--askrindo-blue); text-decoration:underline; font-size:0.62rem;">[Rincian Skor]</a>
+              <a href="javascript:void(0)" onclick="switchTab('tab-grade')" style="color:var(--askrindo-blue); text-decoration:underline; font-size:0.62rem;">[Indikator Grade]</a>
+            </div>
+            <div id="bannerDecisionText" style="font-size:0.8rem; font-weight:800; color:var(--askrindo-navy);">-</div>
+            <div id="bannerOptimalLimit" style="font-size:0.66rem; color:var(--text-muted);">Rekomendasi: -</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NAVIGATION TABS (10 TABS DENGAN FITUR BARU KETAHANAN NWC & BURN-RATE) -->
+      <nav class="nav-tabs no-print">
+        <button class="tab-btn active" data-tab="tab-dashboard" onclick="switchTab('tab-dashboard')" title="Executive Dashboard Portfolio & Debitur">
+          📊 1. Dashboard
+        </button>
+        <button class="tab-btn" data-tab="tab-input" onclick="switchTab('tab-input')" title="Input Parameter & Neraca Keuangan">
+          📝 2. Input Data
+        </button>
+        <button class="tab-btn" data-tab="tab-dcc" onclick="switchTab('tab-dcc')" title="Dynamic Cash Conversion Cycle">
+          🔄 3. Dynamic CCC
+        </button>
+        <button class="tab-btn" data-tab="tab-burn" onclick="switchTab('tab-burn')" title="Analisis Ketahanan Modal Kerja (NWC) & Burn-Rate Test">
+          💧 4. NWC &amp; Burn
+        </button>
+        <button class="tab-btn" data-tab="tab-swcm" onclick="switchTab('tab-swcm')" title="Stress-Test Working Capital Model">
+          ⚡ 5. Stress-Test
+        </button>
+        <button class="tab-btn" data-tab="tab-grade" onclick="switchTab('tab-grade')" title="Grade Risk & Indikator Penilaian">
+          🏅 6. Grade Risk
+        </button>
+        <button class="tab-btn" data-tab="tab-score" onclick="switchTab('tab-score')" title="Rincian Perhitungan Skor 5 Pilar AFCA">
+          🧮 7. Rincian Skor
+        </button>
+        <button class="tab-btn" data-tab="tab-case-qa" onclick="switchTab('tab-case-qa')" title="Critical Point Temuan & Paket Mitigasi (120% Agunan dll)">
+          🎯 8. Mitigasi &amp; QA
+        </button>
+        <button class="tab-btn" data-tab="tab-portfolio" onclick="switchTab('tab-portfolio')" title="Komparasi Portofolio Debitur">
+          🗂️ 9. Komparasi
+        </button>
+        <button class="tab-btn" data-tab="tab-report" onclick="switchTab('tab-report')" title="Nota Analisa Underwriting & Cetak Laporan">
+          📄 10. Nota Cetak
+        </button>
+      </nav>
+
+      <!-- ========================================================= -->
+      <!-- TAB 1: EXECUTIVE DASHBOARD -->
+      <!-- ========================================================= -->
+      <section id="tab-dashboard" class="tab-pane active">
+        <div class="grid-4" style="margin-bottom:0.6rem;">
+          <div class="kpi-card" id="kpiCardCCC">
+            <div class="kpi-label">Cash Conversion Cycle (Aktual vs Data Bank)</div>
+            <div class="kpi-value" id="kpiCCCActual">0 Hari</div>
+            <div class="kpi-sub">
+              <span id="kpiCCCClaimed">Data Bank: 0 Hr</span>
+              <span id="kpiCCCDiffBadge" style="font-weight:700;">-</span>
+            </div>
+          </div>
+
+          <div class="kpi-card" id="kpiCardTenor">
+            <div class="kpi-label">Siklus Gross (DOI+DOR) vs Tenor</div>
+            <div class="kpi-value" id="kpiGrossCycle">0 Hari</div>
+            <div class="kpi-sub">
+              <span id="kpiFacilityTenor">Tenor: 180 Hr</span>
+              <span id="kpiTenorGapBadge" style="font-weight:700;">-</span>
+            </div>
+          </div>
+
+          <div class="kpi-card" id="kpiCardMargin">
+            <div class="kpi-label" id="kpiLabelMargin">Gross Margin &amp; Laba Bersih</div>
+            <div class="kpi-value" id="kpiGrossMargin">0.0%</div>
+            <div class="kpi-sub">
+              <span id="kpiEATValue">EAT: Rp 0</span>
+              <span id="kpiProfitStatus" style="font-weight:700;">-</span>
+            </div>
+          </div>
+
+          <div class="kpi-card" id="kpiCardPlafond">
+            <div class="kpi-label">Plafond Sustainable (SWCM)</div>
+            <div class="kpi-value" id="kpiSustainableLimit">Rp 0</div>
+            <div class="kpi-sub">
+              <span id="kpiRequestedLimit">Pengajuan: Rp 0</span>
+              <span id="kpiCoverageRatio" style="font-weight:700;">-</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">⏱️ Peta Konversi Kas Dinamis vs Jatuh Tempo Fasilitas</div>
+              </div>
+              <div id="dashboardTimelineVisual"></div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title" id="dashboardSummaryCardTitle">📈 Ringkasan Keuangan (Audited)</div>
+              </div>
+              <div class="table-responsive">
+                <table class="data-table" id="dashboardSummaryTable"></table>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">🚨 Deteksi Otomatis Temuan Kritis (DCC-SWCM Red Flags)</div>
+              <div style="display:flex; gap:0.25rem;">
+                <button class="btn btn-outline btn-sm" onclick="switchTab('tab-burn')">Ketahanan Kas &amp; Burn →</button>
+                <button class="btn btn-outline btn-sm" onclick="switchTab('tab-grade')">Grade →</button>
+              </div>
+            </div>
+            <div id="redFlagsContainer" style="display:flex; flex-direction:column; gap:0.4rem;"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- TAB 2: INPUT DATA DEBITUR, NERACA DINAMIS & FASILITAS -->
+      <!-- ========================================================= -->
+      <section id="tab-input" class="tab-pane">
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">🏢 A. Profil Debitur &amp; Struktur Fasilitas Kredit</div>
+            </div>
+            <div class="form-grid">
+              <div class="form-group full">
+                <label>Nama Perusahaan / Debitur</label>
+                <input type="text" id="inp_companyName" class="form-control" oninput="syncInputsToModel()" />
+              </div>
+              <div class="form-group">
+                <label>Sektor Industri</label>
+                <input type="text" id="inp_sector" class="form-control" oninput="syncInputsToModel()" />
+              </div>
+              <div class="form-group">
+                <label>Tahun Berdiri</label>
+                <input type="number" id="inp_estYear" class="form-control" oninput="syncInputsToModel()" />
+              </div>
+              <div class="form-group">
+                <label>Bank Penerima Jaminan (Mitra)</label>
+                <input type="text" id="inp_bankName" class="form-control" oninput="syncInputsToModel()" />
+              </div>
+              <div class="form-group">
+                <label>Skema Fasilitas Kredit</label>
+                <input type="text" id="inp_facilityType" class="form-control" oninput="syncInputsToModel()" />
+              </div>
+              <div class="form-group">
+                <label>Plafond Valas USD <span class="unit-hint">(0 jika IDR)</span></label>
+                <input type="text" inputmode="numeric" id="inp_usdAmount" class="form-control fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" />
+              </div>
+              <div class="form-group">
+                <label>Kurs Tengah Acuan <span class="unit-hint">(Rp/USD)</span></label>
+                <input type="text" inputmode="numeric" id="inp_fxRate" class="form-control fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" />
+              </div>
+              <div class="form-group">
+                <label>Total Plafond Diajukan <span class="unit-hint">(Rp)</span></label>
+                <input type="text" inputmode="numeric" id="inp_requestedPlafond" class="form-control fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" />
+              </div>
+              <div class="form-group">
+                <label>Jangka Waktu PK <span class="unit-hint">(Bulan)</span></label>
+                <input type="text" inputmode="numeric" id="inp_pkMonths" class="form-control fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" />
+              </div>
+              <div class="form-group">
+                <label>Tenor Pembayaran Kredit / SCF <span class="unit-hint">(Hari)</span></label>
+                <input type="text" inputmode="numeric" id="inp_scfTenorDays" class="form-control fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" />
+              </div>
+              <div class="form-group">
+                <label>Tenor KMK Khusus Backup <span class="unit-hint">(Hari)</span></label>
+                <input type="text" inputmode="numeric" id="inp_kmkTenorDays" class="form-control fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" />
+              </div>
+              <div class="form-group">
+                <label>Suku Bunga Efektif <span class="unit-hint">(% p.a.)</span></label>
+                <input type="number" step="0.1" id="inp_interestRate" class="form-control" oninput="syncInputsToModel()" />
+              </div>
+              <div class="form-group">
+                <label>Underwriter Pemeriksa</label>
+                <input type="text" id="inp_underwriter" class="form-control" oninput="syncInputsToModel()" />
+              </div>
+              <div class="form-group full">
+                <label>Deskripsi Tujuan Penggunaan Fasilitas &amp; Rantai Pasok Bisnis</label>
+                <textarea id="inp_businessDesc" class="form-control" oninput="syncInputsToModel()"></textarea>
+              </div>
+            </div>
+
+            <div style="margin-top:0.6rem; padding-top:0.5rem; border-top:1px solid var(--border-color);">
+              <div class="card-title" style="margin-bottom:0.35rem;">⏱️ B. Rasio Aktivitas Data Bank (DOR, DOI, DOP)</div>
+              <div class="grid-3">
+                <div class="form-group">
+                  <label>Data Bank DOR <span class="unit-hint">(Hari)</span></label>
+                  <input type="text" inputmode="numeric" id="inp_claimedDOR" class="form-control fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" />
+                </div>
+                <div class="form-group">
+                  <label>Data Bank DOI <span class="unit-hint">(Hari)</span></label>
+                  <input type="text" inputmode="numeric" id="inp_claimedDOI" class="form-control fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" />
+                </div>
+                <div class="form-group">
+                  <label>Data Bank DOP <span class="unit-hint">(Hari)</span></label>
+                  <input type="text" inputmode="numeric" id="inp_claimedDOP" class="form-control fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">📑 C. Data Laporan Keuangan Audited (Tahun Dinamis dalam Rp)</div>
+              <div style="display:flex; align-items:center; gap:0.35rem; font-size:0.7rem;">
+                <span style="color:var(--text-muted); font-weight:600;">Ubah Tahun:</span>
+                <input type="number" id="inp_year1" class="form-control" style="width:68px; padding:2px 5px; font-weight:700; text-align:center;" oninput="syncInputsToModel()" title="Tahun Periode 1" />
+                <span>&amp;</span>
+                <input type="number" id="inp_year2" class="form-control" style="width:68px; padding:2px 5px; font-weight:700; text-align:center;" oninput="syncInputsToModel()" title="Tahun Periode 2" />
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th style="width:44%;">Pos Laporan Keuangan (Rp)</th>
+                    <th class="num-col" style="width:28%;">Tahun <span id="thLabelYear1">2022</span></th>
+                    <th class="num-col" style="width:28%;">Tahun <span id="thLabelYear2">2023</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colspan="3" style="background:#e2e8f0; font-weight:700; font-size:0.68rem; padding:2px 6px;">LAPORAN LABA RUGI</td>
+                  </tr>
+                  <tr>
+                    <td>Penjualan (Revenue)</td>
+                    <td><input type="text" inputmode="numeric" id="inp_rev22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                    <td><input type="text" inputmode="numeric" id="inp_rev23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  </tr>
+                  <tr>
+                    <td>Harga Pokok Penjualan (HPP)</td>
+                    <td><input type="text" inputmode="numeric" id="inp_cogs22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                    <td><input type="text" inputmode="numeric" id="inp_cogs23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  </tr>
+                  <tr>
+                    <td>Beban Umum &amp; Administrasi</td>
+                    <td><input type="text" inputmode="numeric" id="inp_opex22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                    <td><input type="text" inputmode="numeric" id="inp_opex23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  </tr>
+                  <tr>
+                    <td>Pajak Penghasilan (Tax)</td>
+                    <td><input type="text" inputmode="numeric" id="inp_tax22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                    <td><input type="text" inputmode="numeric" id="inp_tax23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  </tr>
+                  <tr>
+                    <td colspan="3" style="background:#e2e8f0; font-weight:700; font-size:0.68rem; padding:2px 6px;">NERACA — ASET</td>
+                  </tr>
+                  <tr>
+                    <td>Kas dan Bank</td>
+                    <td><input type="text" inputmode="numeric" id="inp_cash22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                    <td><input type="text" inputmode="numeric" id="inp_cash23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  </tr>
+                  <tr>
+                    <td>Piutang Dagang (Trade AR)</td>
+                    <td><input type="text" inputmode="numeric" id="inp_ar22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                    <td><input type="text" inputmode="numeric" id="inp_ar23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  </tr>
+                  <tr>
+                    <td>Piutang Lain-lain</td>
+                    <td><input type="text" inputmode="numeric" id="inp_otherAr22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                    <td><input type="text" inputmode="numeric" id="inp_otherAr23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  </tr>
+                  <tr>
+                    <td>Persediaan (Inventory)</td>
+                    <td><input type="text" inputmode="numeric" id="inp_inv22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                    <td><input type="text" inputmode="numeric" id="inp_inv23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  </tr>
+                  <tr>
+                    <td>Aset Lancar Lainnya</td>
+                    <td><input type="text" inputmode="numeric" id="inp_otherCa22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                    <td><input type="text" inputmode="numeric" id="inp_otherCa23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  </tr>
+                  <tr>
+                    <td>Aset Tetap (Fixed Assets)</td>
+                    <td><input type="text" inputmode="numeric" id="inp_fa22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                    <td><input type="text" inputmode="numeric" id="inp_fa23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  </tr>
+                  <tr>
+                    <td>Tagihan &amp; Aset Pajak Tangguhan</td>
+                    <td><input type="text" inputmode="numeric" id="inp_taxAsset22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                    <td><input type="text" inputmode="numeric" id="inp_taxAsset23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  </tr>
+                  <tr>
+                    <td colspan="3" style="background:#e2e8f0; font-weight:700; font-size:0.68rem; padding:2px 6px;">NERACA — LIABILITAS &amp; EKUITAS</td>
+                  </tr>
+                  <tr>
+                    <td>Utang Bank Jangka Pendek</td>
+                    <td><input type="text" inputmode="numeric" id="inp_stDebt22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                    <td><input type="text" inputmode="numeric" id="inp_stDebt23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  </tr>
+                  <tr>
+                    <td>Utang Dagang (Trade AP)</td>
+                    <td><input type="text" inputmode="numeric" id="inp_ap22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                    <td><input type="text" inputmode="numeric" id="inp_ap23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  </tr>
+                  <tr>
+                    <td>Utang Lain-lain</td>
+                    <td><input type="text" inputmode="numeric" id="inp_otherAp22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                    <td><input type="text" inputmode="numeric" id="inp_otherAp23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  </tr>
+                  <tr>
+                    <td>Biaya YMH Dibayar (Accrued)</td>
+                    <td><input type="text" inputmode="numeric" id="inp_accrued22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                    <td><input type="text" inputmode="numeric" id="inp_accrued23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  </tr>
+                  <tr>
+                    <td>Liabilitas Jangka Panjang</td>
+                    <td><input type="text" inputmode="numeric" id="inp_ltDebt22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                    <td><input type="text" inputmode="numeric" id="inp_ltDebt23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  </tr>
+                  <tr>
+                    <td>Modal Dasar / Disetor</td>
+                    <td><input type="text" inputmode="numeric" id="inp_capital22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                    <td><input type="text" inputmode="numeric" id="inp_capital23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  </tr>
+                  <tr>
+                    <td>Saldo Laba / (Akumulasi Rugi)</td>
+                    <td><input type="text" inputmode="numeric" id="inp_re22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                    <td><input type="text" inputmode="numeric" id="inp_re23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- TAB 3: DYNAMIC CASH CONVERSION CYCLE (DCCC) & TENOR MISMATCH -->
+      <!-- ========================================================= -->
+      <section id="tab-dcc" class="tab-pane">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title" id="dccAuditCardTitle">🔄 Audit Dynamic Cash Conversion Cycle (Data Bank vs Audited)</div>
+            <span style="font-size:0.7rem; color:var(--askrindo-blue); font-weight:600;">Basis 365 Hari &amp; 360 Hari</span>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table" id="dccAuditTable"></table>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">📐 Analisa Ketidakcocokan Tenor (Tenor Mismatch &amp; Trigger Default)</div>
+            </div>
+            <div id="tenorMismatchAnalysisBox"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">💧 Kecepatan Konversi Kas &amp; Kebutuhan Modal Kerja (Velocity)</div>
+            </div>
+            <div id="wcVelocityBox"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- TAB 4: KETAHANAN MODAL KERJA BERSIH & CASH BURN-RATE TEST (MODUL BARU) -->
+      <!-- ========================================================= -->
+      <section id="tab-burn" class="tab-pane">
+        <div id="burnRateMenuContainer">
+          <!-- Diisi otomatis oleh JS -->
+        </div>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- TAB 5: STRESS-TESTED WORKING CAPITAL MODEL (SWCM) & TURNAROUND -->
+      <!-- ========================================================= -->
+      <section id="tab-swcm" class="tab-pane">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">⚡ Simulator Skenario Stress-Tested Working Capital &amp; Restrukturisasi Future Credit (SWCM)</div>
+          </div>
+
+          <div class="preset-bar">
+            <button class="preset-pill active" id="btnPresetBaseline" onclick="applyStressPreset('baseline', this)">1. Baseline Audited</button>
+            <button class="preset-pill" onclick="applyStressPreset('claimed', this)">2. Sesuai Data Bank</button>
+            <button class="preset-pill" onclick="applyStressPreset('fx_commodity_shock', this)">3. Stress Kurs (+10%) &amp; Piutang Melambat</button>
+            <button class="preset-pill" onclick="applyStressPreset('severe_stagflation', this)">4. Severe Stress (Stok Rusak + Stagflasi)</button>
+            <button class="preset-pill" onclick="applyStressPreset('turnaround_mitigated', this)">5. ⭐ Skenario Turnaround / Mitigasi Askrindo</button>
+          </div>
+
+          <div class="grid-2">
+            <div>
+              <div class="slider-row">
+                <div class="slider-top">
+                  <span>Simulasi Gross Profit Margin (%) <small style="color:var(--text-muted);">(<span class="lblYear2Ref">2023</span>: <span id="lblCurrGPM">0%</span>)</small></span>
+                  <span class="slider-val" id="val_simGPM">0%</span>
+                </div>
+                <input type="range" id="rng_simGPM" min="-15" max="25" step="0.5" value="0" oninput="runStressSimulation()" />
+                <div class="slider-scale"><span>-15%</span><span>0%</span><span>+10%</span><span>+25%</span></div>
+              </div>
+
+              <div class="slider-row">
+                <div class="slider-top">
+                  <span>Hari Persediaan — DOI (Hari) <small style="color:var(--text-muted);">(<span class="lblYear2Ref">2023</span>: <span id="lblCurrDOI">0</span> hr)</small></span>
+                  <span class="slider-val" id="val_simDOI">0 Hari</span>
+                </div>
+                <input type="range" id="rng_simDOI" min="30" max="360" step="5" value="120" oninput="runStressSimulation()" />
+                <div class="slider-scale"><span>30 hr</span><span>120 hr (Aman)</span><span>185 hr (Data Bank)</span><span>360 hr</span></div>
+              </div>
+
+              <div class="slider-row">
+                <div class="slider-top">
+                  <span>Hari Piutang — DOR (Hari) <small style="color:var(--text-muted);">(<span class="lblYear2Ref">2023</span>: <span id="lblCurrDOR">0</span> hr)</small></span>
+                  <span class="slider-val" id="val_simDOR">0 Hari</span>
+                </div>
+                <input type="range" id="rng_simDOR" min="15" max="150" step="5" value="60" oninput="runStressSimulation()" />
+                <div class="slider-scale"><span>15 hr</span><span>60 hr (Data Bank)</span><span>90 hr</span><span>150 hr</span></div>
+              </div>
+
+              <div class="slider-row">
+                <div class="slider-top">
+                  <span>Hari Utang Dagang — DOP (Hari) <small style="color:var(--text-muted);">(<span class="lblYear2Ref">2023</span>: <span id="lblCurrDOP">0</span> hr)</small></span>
+                  <span class="slider-val" id="val_simDOP">0 Hari</span>
+                </div>
+                <input type="range" id="rng_simDOP" min="10" max="180" step="5" value="30" oninput="runStressSimulation()" />
+                <div class="slider-scale"><span>10 hr</span><span>70 hr (Data Bank)</span><span>120 hr</span><span>180 hr</span></div>
+              </div>
+
+              <div class="slider-row">
+                <div class="slider-top">
+                  <span>Pertumbuhan Penjualan &amp; Efisiensi OPEX (%)</span>
+                  <span class="slider-val" id="val_simRevGrowth">+0% | -0%</span>
+                </div>
+                <div class="grid-2" style="gap:0.4rem;">
+                  <div>
+                    <small style="font-size:0.66rem;">Pertumbuhan Sales (%)</small>
+                    <input type="range" id="rng_simRevGrowth" min="-30" max="50" step="5" value="0" oninput="runStressSimulation()" />
+                  </div>
+                  <div>
+                    <small style="font-size:0.66rem;">Efisiensi OPEX (%)</small>
+                    <input type="range" id="rng_simOpexCut" min="-20" max="60" step="5" value="0" oninput="runStressSimulation()" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="slider-row" style="margin-bottom:0;">
+                <div class="slider-top">
+                  <span>Shock Kurs USD (%) &amp; Haircut Rusak Stok (%)</span>
+                  <span class="slider-val" id="val_simFxAndHaircut">Kurs +0% | Rusak 0%</span>
+                </div>
+                <div class="grid-2" style="gap:0.4rem;">
+                  <div>
+                    <small style="font-size:0.66rem;">Pelemahan Kurs (%)</small>
+                    <input type="range" id="rng_simFxShock" min="0" max="25" step="1" value="0" oninput="runStressSimulation()" />
+                  </div>
+                  <div>
+                    <small style="font-size:0.66rem;">Kerusakan Persediaan (%)</small>
+                    <input type="range" id="rng_simInvHaircut" min="0" max="30" step="2" value="0" oninput="runStressSimulation()" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="stressTestResultPanel"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📊 Matriks Komparasi 5 Skenario Stress-Tested Working Capital (SWCM)</div>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table" id="swcmMatrixTable"></table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- TAB 6: PENENTUAN GRADE RISK & INDIKATOR PENYEBAB -->
+      <!-- ========================================================= -->
+      <section id="tab-grade" class="tab-pane">
+        <div id="gradeRiskMenuContainer"></div>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- TAB 7: RINCIAN PERHITUNGAN SCORE DCC-SWCM -->
+      <!-- ========================================================= -->
+      <section id="tab-score" class="tab-pane">
+        <div id="scoreCalculationMenuContainer"></div>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- TAB 8: CRITICAL POINT, MITIGASI & REKOMENDASI (DINAMIS) -->
+      <!-- ========================================================= -->
+      <section id="tab-case-qa" class="tab-pane">
+        <div class="card" style="border-left: 4px solid var(--askrindo-blue);">
+          <div class="card-header">
+            <div class="card-title">🎯 Analisa Dinamis: Critical Point, Mitigasi Risiko &amp; Rekomendasi Underwriter</div>
+            <span class="badge-method" style="background:#dbeafe; color:#1e40af; border-color:#93c5fd;">Otomatis Menyesuaikan Data Kasus yang Diinput</span>
+          </div>
+          <div id="caseStudyQAHTML"></div>
+        </div>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- TAB 9: KOMPARASI MULTI-KASUS (PORTFOLIO VIEW) -->
+      <!-- ========================================================= -->
+      <section id="tab-portfolio" class="tab-pane">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🗂️ Komparasi Portofolio Beberapa Kasus Kredit (Multi-Case Workspace)</div>
+            <button class="btn btn-primary btn-sm" onclick="openNewProjectModal()">＋ Tambah Kasus Baru</button>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table" id="portfolioComparisonTable"></table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- TAB 10: NOTA ANALISA UNDERWRITING (PRINTABLE REPORT) -->
+      <!-- ========================================================= -->
+      <section id="tab-report" class="tab-pane">
+        <div class="card" id="printableMemoContainer"></div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- MODAL PROYEK BARU -->
+  <div class="modal-backdrop" id="newProjectModal">
+    <div class="modal-content">
+      <div class="card-header">
+        <div class="card-title">➕ Buat Proyek / Kasus Analisa Kredit Baru</div>
+        <button class="btn btn-outline btn-sm" onclick="closeNewProjectModal()">✕</button>
+      </div>
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Nama Debitur / Perusahaan</label>
+          <input type="text" id="new_companyName" class="form-control" placeholder="Contoh: PT Maju Bersama Logistik" />
+        </div>
+        <div class="form-group">
+          <label>Sektor Industri</label>
+          <input type="text" id="new_sector" class="form-control" placeholder="Contoh: Perdagangan / Manufaktur" />
+        </div>
+        <div class="form-group">
+          <label>Bank Mitra Pengaju</label>
+          <input type="text" id="new_bankName" class="form-control" placeholder="Contoh: Bank Dana / BRI / Mandiri" />
+        </div>
+        <div class="form-group">
+          <label>Jenis Fasilitas Kredit</label>
+          <input type="text" id="new_facilityType" class="form-control" placeholder="Contoh: SCF A/P & KMK" />
+        </div>
+        <div class="form-group">
+          <label>Plafond Kredit Diajukan (Rp)</label>
+          <input type="text" inputmode="numeric" id="new_plafond" class="form-control fmt-dots" value="15.000.000.000" oninput="handleDotInput(this)" onblur="handleDotBlur(this)" />
+        </div>
+        <div class="form-group">
+          <label>Tahun Lap. Keuangan (2 Periode)</label>
+          <div style="display:flex; gap:0.3rem; align-items:center;">
+            <input type="number" id="new_year1" class="form-control" value="2022" />
+            <span>&amp;</span>
+            <input type="number" id="new_year2" class="form-control" value="2023" />
+          </div>
+        </div>
+        <div class="form-group full">
+          <label>Template Data Awal</label>
+          <select id="new_templateType" class="form-control">
+            <option value="blank_healthy">Perusahaan Standar (Modal Kerja Normal - Siap Diisi)</option>
+            <option value="clone_rahmat">Salin Struktur dari Kasus PT Rahmat Santosa (Trade Financing Kedelai)</option>
+            <option value="clone_current">Salin dari Proyek yang Sedang Aktif</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
+        <button class="btn btn-outline" onclick="closeNewProjectModal()">Batal</button>
+        <button class="btn btn-primary" onclick="createNewProjectFromModal()">Buat Proyek &amp; Mulai Analisa</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

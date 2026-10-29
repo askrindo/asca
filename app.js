@@ -5,6 +5,32 @@
  */
 
 const STORAGE_KEY = 'ASKRINDO_ASCA_PROJECTS_V1';
+const USERS_STORAGE_KEY = 'ASCA_USERS_DATABASE_V1';
+const AUTH_SESSION_KEY = 'ASCA_AUTH_SESSION_V1';
+const USER_PROJECTS_KEY_PREFIX = 'ASCA_PROJECTS_USER_';
+
+const DEFAULT_USERS = [
+  {
+    username: '1922',
+    password: '123',
+    fullName: 'Analis Kredit 1922',
+    role: 'analyst',
+    unit: 'Divisi Underwriting Komersial',
+    status: 'active',
+    createdAt: '2026-10-25T08:00:00.000Z',
+    lastLogin: null
+  },
+  {
+    username: 'admin',
+    password: 'admin',
+    fullName: 'Super Administrator',
+    role: 'admin',
+    unit: 'IT & Sistem Risiko Penjaminan',
+    status: 'active',
+    createdAt: '2026-10-25T08:00:00.000Z',
+    lastLogin: null
+  }
+];
 
 // ============================================================================
 // 1. DEFAULT SAMPLE CASES
@@ -353,9 +379,17 @@ function toggleSidebar() {
   if (icon) icon.textContent = isSidebarCollapsed ? '▶' : '◀';
 }
 
+function getCurrentProjectStorageKey() {
+  const session = getActiveSession();
+  const uname = session ? session.username : '1922';
+  return USER_PROJECTS_KEY_PREFIX + uname;
+}
+
 function loadProjectsFromStorage() {
   try {
+    const userKey = getCurrentProjectStorageKey();
     const keysToCheck = [
+      userKey,
       STORAGE_KEY,
       'ASKRINDO_ASCA_PROJECTS_V1',
       'ASKRINDO_AFCA_PROJECTS_V28',
@@ -396,7 +430,15 @@ function loadProjectsFromStorage() {
 
 function saveProjectsToStorage() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+    const userKey = getCurrentProjectStorageKey();
+    localStorage.setItem(userKey, JSON.stringify(projects));
+
+    // Mirror to main STORAGE_KEY if user is 1922
+    const session = getActiveSession();
+    if (!session || session.username === '1922') {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+    }
+
     const el = document.getElementById('autoSaveStatus');
     if (el) {
       const now = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
@@ -2933,6 +2975,422 @@ function renderAll() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  loadProjectsFromStorage();
-  renderAll();
+  getUsersFromStorage();
+  checkAuthAndRoute();
 });
+
+// ============================================================================
+// 14. AUTHENTICATION & USER MANAGEMENT MODULE (STANDAR ASCA)
+// ============================================================================
+function getUsersFromStorage() {
+  try {
+    const raw = localStorage.getItem(USERS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {
+    console.error('Error loading users:', e);
+  }
+  localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(DEFAULT_USERS));
+  return DEFAULT_USERS;
+}
+
+function saveUsersToStorage(users) {
+  try {
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+  } catch (e) {
+    console.error('Error saving users:', e);
+  }
+}
+
+function getActiveSession() {
+  try {
+    const raw = localStorage.getItem(AUTH_SESSION_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {
+    console.error('Error reading session:', e);
+  }
+  return null;
+}
+
+function setActiveSession(session) {
+  if (!session) {
+    localStorage.removeItem(AUTH_SESSION_KEY);
+  } else {
+    localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session));
+  }
+}
+
+function checkAuthAndRoute() {
+  const session = getActiveSession();
+  const loginScreen = document.getElementById('loginScreen');
+  const appTopNavbar = document.getElementById('appTopNavbar');
+  const appLayoutContainer = document.getElementById('appLayoutContainer');
+  const adminLayoutContainer = document.getElementById('adminLayoutContainer');
+
+  if (!session) {
+    // Belum login: Hanya tampilkan layar login
+    if (loginScreen) loginScreen.style.display = 'flex';
+    if (appTopNavbar) appTopNavbar.style.display = 'none';
+    if (appLayoutContainer) appLayoutContainer.style.display = 'none';
+    if (adminLayoutContainer) adminLayoutContainer.style.display = 'none';
+    return;
+  }
+
+  // Sudah login: Sembunyikan layar login
+  if (loginScreen) loginScreen.style.display = 'none';
+
+  if (session.role === 'admin') {
+    // SUPER ADMIN: HANYA modul User Management
+    if (appTopNavbar) appTopNavbar.style.display = 'none';
+    if (appLayoutContainer) appLayoutContainer.style.display = 'none';
+    if (adminLayoutContainer) adminLayoutContainer.style.display = 'flex';
+    const adminUnameEl = document.getElementById('adminSessionUserName');
+    if (adminUnameEl) adminUnameEl.textContent = session.username;
+    renderAdminUserManagement();
+  } else {
+    // ANALIS KREDIT: Seluruh modul analisa kredit & underwriting ASCA
+    if (adminLayoutContainer) adminLayoutContainer.style.display = 'none';
+    if (appTopNavbar) appTopNavbar.style.display = 'flex';
+    if (appLayoutContainer) appLayoutContainer.style.display = 'grid';
+
+    const navUserEl = document.getElementById('navUserName');
+    if (navUserEl) navUserEl.textContent = session.username;
+    const navRoleEl = document.getElementById('navUserRoleTag');
+    if (navRoleEl) navRoleEl.textContent = session.role === 'analyst' ? 'Analis' : session.role;
+
+    loadProjectsFromStorage();
+    renderAll();
+  }
+}
+
+function handleLoginSubmit(event) {
+  if (event) event.preventDefault();
+  const usernameInput = document.getElementById('loginUsername');
+  const passwordInput = document.getElementById('loginPassword');
+  const alertBox = document.getElementById('loginAlertBox');
+  const alertMsg = document.getElementById('loginAlertMsg');
+
+  const uname = (usernameInput ? usernameInput.value : '').trim();
+  const pwd = (passwordInput ? passwordInput.value : '').trim();
+
+  if (!uname || !pwd) {
+    if (alertBox) alertBox.style.display = 'flex';
+    if (alertMsg) alertMsg.textContent = 'Harap isi Username dan Kata Sandi!';
+    return;
+  }
+
+  const users = getUsersFromStorage();
+  const user = users.find((u) => u.username.toLowerCase() === uname.toLowerCase());
+
+  if (!user || user.password !== pwd) {
+    if (alertBox) alertBox.style.display = 'flex';
+    if (alertMsg) alertMsg.textContent = 'Username atau kata sandi tidak valid!';
+    return;
+  }
+
+  if (user.status !== 'active') {
+    if (alertBox) alertBox.style.display = 'flex';
+    if (alertMsg) alertMsg.textContent = 'Akun Anda dinonaktifkan oleh Administrator. Hubungi IT/Super Admin.';
+    return;
+  }
+
+  // Update last login
+  user.lastLogin = new Date().toISOString();
+  saveUsersToStorage(users);
+
+  // Set session
+  const session = {
+    username: user.username,
+    fullName: user.fullName,
+    role: user.role,
+    unit: user.unit,
+    loginAt: new Date().toISOString()
+  };
+  setActiveSession(session);
+
+  if (alertBox) alertBox.style.display = 'none';
+  if (usernameInput) usernameInput.value = '';
+  if (passwordInput) passwordInput.value = '';
+
+  showToast(`Selamat datang, ${user.fullName}!`);
+  checkAuthAndRoute();
+}
+
+function fillQuickLogin(username, password) {
+  const usernameInput = document.getElementById('loginUsername');
+  const passwordInput = document.getElementById('loginPassword');
+  if (usernameInput) usernameInput.value = username;
+  if (passwordInput) passwordInput.value = password;
+  const alertBox = document.getElementById('loginAlertBox');
+  if (alertBox) alertBox.style.display = 'none';
+}
+
+function togglePasswordVisibility(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = '🙈';
+  } else {
+    input.type = 'password';
+    btn.textContent = '👁️';
+  }
+}
+
+function logoutSession() {
+  const session = getActiveSession();
+  const name = session ? session.fullName : 'Pengguna';
+  setActiveSession(null);
+  showToast(`Sampai jumpa, ${name}. Sesi telah diakhiri.`);
+  checkAuthAndRoute();
+}
+
+let currentResetTargetUsername = null;
+
+function renderAdminUserManagement() {
+  const users = getUsersFromStorage();
+  const filterRole = document.getElementById('adminUserRoleFilter')?.value || 'ALL';
+  const searchKeyword = (document.getElementById('adminUserSearchInput')?.value || '').toLowerCase().trim();
+
+  // Update stats
+  const total = users.length;
+  const active = users.filter((u) => u.status === 'active').length;
+  const analysts = users.filter((u) => u.role === 'analyst').length;
+  const admins = users.filter((u) => u.role === 'admin').length;
+
+  const stTotal = document.getElementById('statTotalUsers');
+  const stActive = document.getElementById('statActiveUsers');
+  const stAnalyst = document.getElementById('statAnalystUsers');
+  const stAdmin = document.getElementById('statAdminUsers');
+  if (stTotal) stTotal.textContent = total;
+  if (stActive) stActive.textContent = active;
+  if (stAnalyst) stAnalyst.textContent = analysts;
+  if (stAdmin) stAdmin.textContent = admins;
+
+  // Filter list
+  const filtered = users.filter((u) => {
+    if (filterRole !== 'ALL' && u.role !== filterRole) return false;
+    if (searchKeyword) {
+      const match =
+        u.username.toLowerCase().includes(searchKeyword) ||
+        u.fullName.toLowerCase().includes(searchKeyword) ||
+        (u.unit && u.unit.toLowerCase().includes(searchKeyword));
+      if (!match) return false;
+    }
+    return true;
+  });
+
+  const tbody = document.getElementById('adminUserTableBody');
+  if (!tbody) return;
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" style="text-align:center; padding:2rem; color:var(--text-muted);">
+          Tidak ditemukan pengguna yang sesuai dengan pencarian atau filter.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map((u, idx) => {
+    const isMainAdmin = u.username.toLowerCase() === 'admin';
+    const roleBadge = u.role === 'admin'
+      ? '<span class="badge-role-admin">🛡️ Super Admin</span>'
+      : '<span class="badge-role-analyst">📝 Analis Kredit</span>';
+    const statusBadge = u.status === 'active'
+      ? '<span class="badge-status-active">● Aktif</span>'
+      : '<span class="badge-status-inactive">○ Non-Aktif</span>';
+
+    let lastLoginStr = 'Belum pernah login';
+    if (u.lastLogin) {
+      const d = new Date(u.lastLogin);
+      lastLoginStr = d.toLocaleDateString('id-ID', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    return `
+      <tr>
+        <td>${idx + 1}</td>
+        <td>
+          <strong style="color:var(--askrindo-navy); font-size:0.85rem;">${u.username}</strong>
+        </td>
+        <td><strong>${u.fullName}</strong></td>
+        <td><span style="color:var(--text-muted); font-size:0.75rem;">${u.unit || '-'}</span></td>
+        <td>${roleBadge}</td>
+        <td>${statusBadge}</td>
+        <td style="font-size:0.74rem; color:var(--text-muted);">${lastLoginStr}</td>
+        <td>
+          <div class="admin-actions" style="justify-content:center;">
+            <button class="btn btn-sm btn-outline" onclick="openModalResetPassword('${u.username}')" title="Reset Kata Sandi">
+              🔑 Reset
+            </button>
+            ${!isMainAdmin ? `
+              <button class="btn btn-sm ${u.status === 'active' ? 'btn-outline' : 'btn-primary'}" onclick="toggleUserStatus('${u.username}')" title="${u.status === 'active' ? 'Nonaktifkan Akun' : 'Aktifkan Akun'}">
+                ${u.status === 'active' ? '🔒 Nonaktifkan' : '🔓 Aktifkan'}
+              </button>
+              <button class="btn btn-sm btn-danger" onclick="confirmDeleteUser('${u.username}')" title="Hapus Pengguna">
+                🗑️
+              </button>
+            ` : `
+              <span style="font-size:0.68rem; color:var(--text-muted); font-style:italic; padding:0 0.3rem;">(Akun Utama)</span>
+            `}
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function filterAdminUserTable() {
+  renderAdminUserManagement();
+}
+
+function openModalAddUser() {
+  const un = document.getElementById('adminNewUsername');
+  const fn = document.getElementById('adminNewFullName');
+  const ut = document.getElementById('adminNewUnit');
+  const rl = document.getElementById('adminNewRole');
+  const pw = document.getElementById('adminNewPassword');
+  const st = document.getElementById('adminNewStatus');
+
+  if (un) un.value = '';
+  if (fn) fn.value = '';
+  if (ut) ut.value = 'Divisi Underwriting Komersial';
+  if (rl) rl.value = 'analyst';
+  if (pw) pw.value = '';
+  if (st) st.value = 'active';
+
+  const modal = document.getElementById('modalAddUser');
+  if (modal) modal.classList.add('open');
+}
+
+function closeModalAddUser() {
+  const modal = document.getElementById('modalAddUser');
+  if (modal) modal.classList.remove('open');
+}
+
+function saveNewUserFromModal() {
+  const uname = (document.getElementById('adminNewUsername')?.value || '').trim();
+  const fullName = (document.getElementById('adminNewFullName')?.value || '').trim();
+  const unit = (document.getElementById('adminNewUnit')?.value || '').trim();
+  const role = document.getElementById('adminNewRole')?.value || 'analyst';
+  const pwd = (document.getElementById('adminNewPassword')?.value || '').trim();
+  const status = document.getElementById('adminNewStatus')?.value || 'active';
+
+  if (!uname || !fullName || !pwd) {
+    alert('Harap lengkapi Username, Nama Lengkap, dan Password!');
+    return;
+  }
+
+  const users = getUsersFromStorage();
+  if (users.some((u) => u.username.toLowerCase() === uname.toLowerCase())) {
+    alert(`Username "${uname}" sudah terdaftar! Gunakan username lain.`);
+    return;
+  }
+
+  users.push({
+    username: uname,
+    password: pwd,
+    fullName,
+    unit,
+    role,
+    status,
+    createdAt: new Date().toISOString(),
+    lastLogin: null
+  });
+
+  saveUsersToStorage(users);
+  closeModalAddUser();
+  renderAdminUserManagement();
+  showToast(`Pengguna baru "${uname}" berhasil ditambahkan!`);
+}
+
+function openModalResetPassword(username) {
+  currentResetTargetUsername = username;
+  const targetEl = document.getElementById('resetTargetUsername');
+  if (targetEl) targetEl.textContent = username;
+  const pw1 = document.getElementById('adminResetNewPassword');
+  const pw2 = document.getElementById('adminResetConfirmPassword');
+  if (pw1) pw1.value = '';
+  if (pw2) pw2.value = '';
+
+  const modal = document.getElementById('modalResetPassword');
+  if (modal) modal.classList.add('open');
+}
+
+function closeModalResetPassword() {
+  currentResetTargetUsername = null;
+  const modal = document.getElementById('modalResetPassword');
+  if (modal) modal.classList.remove('open');
+}
+
+function saveResetPasswordFromModal() {
+  if (!currentResetTargetUsername) return;
+  const newPwd = (document.getElementById('adminResetNewPassword')?.value || '').trim();
+  const confirmPwd = (document.getElementById('adminResetConfirmPassword')?.value || '').trim();
+
+  if (!newPwd) {
+    alert('Password baru tidak boleh kosong!');
+    return;
+  }
+  if (newPwd !== confirmPwd) {
+    alert('Konfirmasi password tidak cocok dengan password baru!');
+    return;
+  }
+
+  const users = getUsersFromStorage();
+  const user = users.find((u) => u.username.toLowerCase() === currentResetTargetUsername.toLowerCase());
+  if (!user) {
+    alert('Pengguna tidak ditemukan!');
+    return;
+  }
+
+  user.password = newPwd;
+  saveUsersToStorage(users);
+  closeModalResetPassword();
+  showToast(`Password untuk akun "${currentResetTargetUsername}" berhasil direset!`);
+}
+
+function toggleUserStatus(username) {
+  const users = getUsersFromStorage();
+  const user = users.find((u) => u.username.toLowerCase() === username.toLowerCase());
+  if (!user) return;
+  if (user.username.toLowerCase() === 'admin') {
+    alert('Akun Super Admin utama tidak boleh dinonaktifkan!');
+    return;
+  }
+
+  user.status = user.status === 'active' ? 'inactive' : 'active';
+  saveUsersToStorage(users);
+  renderAdminUserManagement();
+  showToast(`Status akun "${username}" diubah menjadi: ${user.status.toUpperCase()}`);
+}
+
+function confirmDeleteUser(username) {
+  if (username.toLowerCase() === 'admin') {
+    alert('Akun Super Admin utama tidak boleh dihapus!');
+    return;
+  }
+  if (!confirm(`Apakah Anda yakin ingin menghapus akun pengguna "${username}" secara permanen?`)) {
+    return;
+  }
+
+  let users = getUsersFromStorage();
+  users = users.filter((u) => u.username.toLowerCase() !== username.toLowerCase());
+  saveUsersToStorage(users);
+
+  // Clear data associated with this user
+  localStorage.removeItem(USER_PROJECTS_KEY_PREFIX + username);
+
+  renderAdminUserManagement();
+  showToast(`Pengguna "${username}" telah dihapus.`);
+}

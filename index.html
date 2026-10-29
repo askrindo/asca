@@ -8,8 +8,66 @@
 </head>
 <body>
 
+  <!-- ========================================================= -->
+  <!-- LOGIN SCREEN INTERFACE (STANDAR ENTERPRISE ASCA) -->
+  <!-- ========================================================= -->
+  <div class="login-screen" id="loginScreen">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="login-logo-box">
+          <img src="logo-asca.png" alt="ASCA - Askrindo Smart Credit Analysis" />
+        </div>
+        <h2>Askrindo Smart Credit Analysis</h2>
+        <p>Sistem Analisa Underwriting &amp; Stress-Test Modal Kerja (DCC-SWCM)</p>
+      </div>
+
+      <div class="login-body">
+        <div class="login-alert danger" id="loginAlertBox">
+          <span style="font-size:1.05rem;">⚠️</span>
+          <span id="loginAlertMsg">Username atau password salah!</span>
+        </div>
+
+        <form id="loginForm" onsubmit="handleLoginSubmit(event)">
+          <div class="login-field">
+            <label for="loginUsername">Username / NIK</label>
+            <div class="login-input-wrap">
+              <span class="login-input-icon">👤</span>
+              <input type="text" id="loginUsername" class="login-input" placeholder="Masukkan username Anda" required autocomplete="username" />
+            </div>
+          </div>
+
+          <div class="login-field">
+            <label for="loginPassword">Kata Sandi (Password)</label>
+            <div class="login-input-wrap">
+              <span class="login-input-icon">🔒</span>
+              <input type="password" id="loginPassword" class="login-input" placeholder="Masukkan kata sandi" required autocomplete="current-password" />
+              <button type="button" class="login-toggle-pwd" onclick="togglePasswordVisibility('loginPassword', this)" title="Tampilkan / Sembunyikan Password">
+                👁️
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-login" id="btnLoginSubmit">
+            <span>🔐 Masuk ke Sistem</span>
+          </button>
+        </form>
+
+        <div class="login-quick-hint">
+          <strong>Akses Cepat Pengujian:</strong><br />
+          • <span class="quick-chip" onclick="fillQuickLogin('1922', '123')">Analis: 1922 / 123</span>
+          • <span class="quick-chip" onclick="fillQuickLogin('admin', 'admin')">Super Admin: admin / admin</span>
+        </div>
+      </div>
+
+      <div class="login-footer">
+        PT Asuransi Kredit Indonesia (Askrindo) — A member of IFG<br />
+        &copy; 2026 Underwriting Risk Management System
+      </div>
+    </div>
+  </div>
+
   <!-- TOP NAVBAR -->
-  <header class="top-navbar">
+  <header class="top-navbar" id="appTopNavbar" style="display:none;">
     <div class="brand-wrap">
       <button class="sidebar-toggle-btn no-print" onclick="toggleSidebar()" id="topSidebarToggleBtn" title="Minimize / Tampilkan Daftar Proyek">
         <span id="sidebarToggleIcon">◀</span> Proyek
@@ -30,6 +88,11 @@
     </div>
 
     <div class="top-actions no-print">
+      <div class="user-session-pill" id="navUserSessionPill" title="Sesi Analis Aktif">
+        <span>👤</span>
+        <strong id="navUserName">1922</strong>
+        <span class="user-role-tag" id="navUserRoleTag">Analis</span>
+      </div>
       <button class="btn btn-primary" onclick="openNewProjectModal()">
         <span>＋</span> Proyek Baru
       </button>
@@ -46,11 +109,14 @@
       <button class="btn btn-gold" onclick="printUnderwritingReport()">
         <span>🖨️</span> Cetak / PDF
       </button>
+      <button class="btn-logout" onclick="logoutSession()" title="Keluar dari akun ASCA">
+        <span>🚪</span> Keluar
+      </button>
     </div>
   </header>
 
   <!-- MAIN LAYOUT -->
-  <div class="app-layout" id="appLayoutContainer">
+  <div class="app-layout" id="appLayoutContainer" style="display:none;">
     <!-- SIDEBAR: DAFTAR KASUS / PROYEK (COLLAPSIBLE) -->
     <aside class="sidebar no-print" id="projectSidebar">
       <!-- Tampilan saat Diminimize -->
@@ -636,6 +702,191 @@
       </section>
 
     </main>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- SUPER ADMIN CONSOLE: USER MANAGEMENT MODULE -->
+  <!-- ========================================================= -->
+  <div class="admin-layout" id="adminLayoutContainer" style="display:none;">
+    <header class="admin-header-nav no-print">
+      <div style="display:flex; align-items:center; gap:0.75rem;">
+        <div class="askrindo-logo-box" style="padding:2px 7px;">
+          <img src="logo-asca.png" alt="ASCA" style="height:28px; width:auto;" />
+        </div>
+        <div>
+          <h1 style="font-size:0.98rem; font-weight:800; display:flex; align-items:center; gap:0.4rem;">
+            ASCA — Super Admin Console
+            <span class="badge-role-admin">User Management Module</span>
+          </h1>
+          <p style="font-size:0.72rem; color:#cbd5e1;">Pusat Administrasi Pengguna, Hak Akses &amp; Otorisasi Sistem Underwriting</p>
+        </div>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:0.6rem;">
+        <div class="user-session-pill">
+          <span>🛡️</span>
+          <strong id="adminSessionUserName">admin</strong>
+          <span class="badge-role-admin" style="font-size:0.65rem;">SUPER ADMIN</span>
+        </div>
+        <button class="btn-logout" onclick="logoutSession()" title="Keluar dari sesi Super Admin">
+          <span>🚪</span> Keluar (Logout)
+        </button>
+      </div>
+    </header>
+
+    <main class="admin-main">
+      <!-- 4 STATS CARDS -->
+      <div class="admin-stats-grid">
+        <div class="admin-stat-card">
+          <div>
+            <div class="val" id="statTotalUsers">0</div>
+            <div class="lbl">Total Pengguna Terdaftar</div>
+          </div>
+          <div class="icon-badge" style="background:#e0f2fe; color:#0284c7;">👥</div>
+        </div>
+        <div class="admin-stat-card">
+          <div>
+            <div class="val" id="statActiveUsers">0</div>
+            <div class="lbl">Pengguna Aktif</div>
+          </div>
+          <div class="icon-badge" style="background:#dcfce7; color:#16a34a;">✅</div>
+        </div>
+        <div class="admin-stat-card">
+          <div>
+            <div class="val" id="statAnalystUsers">0</div>
+            <div class="lbl">Analis Kredit (Underwriter)</div>
+          </div>
+          <div class="icon-badge" style="background:#fef3c7; color:#d97706;">📝</div>
+        </div>
+        <div class="admin-stat-card">
+          <div>
+            <div class="val" id="statAdminUsers">0</div>
+            <div class="lbl">Super Administrator</div>
+          </div>
+          <div class="icon-badge" style="background:#ede9fe; color:#7c3aed;">🛡️</div>
+        </div>
+      </div>
+
+      <!-- PANEL USER MANAGEMENT -->
+      <div class="admin-panel">
+        <div class="admin-panel-header">
+          <div class="admin-panel-title">
+            <h3>👤 Modul Kelola Pengguna (User Management)</h3>
+            <p>Tambah pengguna baru, reset password, aktifkan/nonaktifkan status, dan kelola otoritas akun analis.</p>
+          </div>
+          <button class="btn btn-primary" onclick="openModalAddUser()">
+            <span>➕</span> Tambah User Baru
+          </button>
+        </div>
+
+        <div class="admin-toolbar">
+          <div style="display:flex; gap:0.5rem; align-items:center; flex:1; max-width:400px;">
+            <input type="text" id="adminUserSearchInput" class="form-control" placeholder="Cari username, nama, atau unit kerja..." oninput="filterAdminUserTable()" />
+          </div>
+          <div style="display:flex; gap:0.5rem; align-items:center;">
+            <label style="font-size:0.75rem; font-weight:700; color:var(--text-muted);">Filter Role:</label>
+            <select id="adminUserRoleFilter" class="form-control" style="width:160px;" onchange="filterAdminUserTable()">
+              <option value="ALL">Semua Role</option>
+              <option value="analyst">Analis Kredit</option>
+              <option value="admin">Super Admin</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="admin-table-container">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th style="width:45px;">No</th>
+                <th>Username</th>
+                <th>Nama Lengkap</th>
+                <th>Unit Kerja / Divisi</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Login Terakhir</th>
+                <th style="text-align:center; width:220px;">Aksi Kelola</th>
+              </tr>
+            </thead>
+            <tbody id="adminUserTableBody">
+              <!-- Rendered via JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL TAMBAH USER BARU (ADMIN) -->
+  <div class="modal-backdrop" id="modalAddUser">
+    <div class="modal-content" style="max-width:500px;">
+      <div class="card-header">
+        <div class="card-title">➕ Tambah Pengguna Baru (ASCA User)</div>
+        <button class="btn btn-outline btn-sm" onclick="closeModalAddUser()">✕</button>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Username / NIK <span style="color:var(--askrindo-red);">*</span></label>
+          <input type="text" id="adminNewUsername" class="form-control" placeholder="Contoh: 1923 atau analis_jkt" />
+        </div>
+        <div class="form-group">
+          <label>Role / Hak Akses <span style="color:var(--askrindo-red);">*</span></label>
+          <select id="adminNewRole" class="form-control">
+            <option value="analyst">Analis Kredit (Underwriter)</option>
+            <option value="admin">Super Administrator</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label>Nama Lengkap <span style="color:var(--askrindo-red);">*</span></label>
+          <input type="text" id="adminNewFullName" class="form-control" placeholder="Contoh: Budi Prasetyo, S.E." />
+        </div>
+        <div class="form-group full">
+          <label>Unit Kerja / Divisi</label>
+          <input type="text" id="adminNewUnit" class="form-control" value="Divisi Underwriting Komersial" />
+        </div>
+        <div class="form-group">
+          <label>Password Awal <span style="color:var(--askrindo-red);">*</span></label>
+          <input type="password" id="adminNewPassword" class="form-control" placeholder="Minimal 3 karakter" />
+        </div>
+        <div class="form-group">
+          <label>Status Akun</label>
+          <select id="adminNewStatus" class="form-control">
+            <option value="active">Aktif (Dapat Login)</option>
+            <option value="inactive">Non-Aktif (Terkunci)</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
+        <button class="btn btn-outline" onclick="closeModalAddUser()">Batal</button>
+        <button class="btn btn-primary" onclick="saveNewUserFromModal()">Simpan Pengguna</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL RESET PASSWORD (ADMIN) -->
+  <div class="modal-backdrop" id="modalResetPassword">
+    <div class="modal-content" style="max-width:420px;">
+      <div class="card-header">
+        <div class="card-title">🔑 Reset Password Pengguna</div>
+        <button class="btn btn-outline btn-sm" onclick="closeModalResetPassword()">✕</button>
+      </div>
+      <div style="margin-bottom:0.9rem; font-size:0.8rem; color:var(--text-muted);">
+        Mengatur ulang kata sandi untuk akun: <strong id="resetTargetUsername" style="color:var(--askrindo-navy);"></strong>
+      </div>
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Password Baru <span style="color:var(--askrindo-red);">*</span></label>
+          <input type="password" id="adminResetNewPassword" class="form-control" placeholder="Masukkan password baru" />
+        </div>
+        <div class="form-group full">
+          <label>Konfirmasi Password Baru <span style="color:var(--askrindo-red);">*</span></label>
+          <input type="password" id="adminResetConfirmPassword" class="form-control" placeholder="Ketik ulang password baru" />
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
+        <button class="btn btn-outline" onclick="closeModalResetPassword()">Batal</button>
+        <button class="btn btn-primary" onclick="saveResetPasswordFromModal()">Simpan Password Baru</button>
+      </div>
+    </div>
   </div>
 
   <!-- MODAL PROYEK BARU -->

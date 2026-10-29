@@ -1,10 +1,10 @@
 /**
- * ASKRINDO FUTURE CREDIT ANALYSIS (AFCA)
+ * ASKRINDO SMART CREDIT ANALYSIS (ASCA)
  * Metode: Dynamic Cash Conversion & Stress-Tested Working Capital Model (DCC-SWCM)
  * Termasuk: Analisis Ketahanan Modal Kerja Bersih (Net Working Capital & Burn-Rate Test)
  */
 
-const STORAGE_KEY = 'ASKRINDO_AFCA_PROJECTS_V28';
+const STORAGE_KEY = 'ASKRINDO_ASCA_PROJECTS_V1';
 
 // ============================================================================
 // 1. DEFAULT SAMPLE CASES
@@ -357,6 +357,7 @@ function loadProjectsFromStorage() {
   try {
     const keysToCheck = [
       STORAGE_KEY,
+      'ASKRINDO_ASCA_PROJECTS_V1',
       'ASKRINDO_AFCA_PROJECTS_V28',
       'ASKRINDO_AFCA_PROJECTS_V27',
       'ASKRINDO_AFCA_PROJECTS_V26',
@@ -2524,7 +2525,7 @@ function renderPrintableReport(proj, m) {
       <div style="display:flex; align-items:center; gap:0.75rem;">
         <img src="logo-askrindo.png" alt="Askrindo Insurance - A member of IFG" style="height:38px; width:auto; object-fit:contain;" />
         <div>
-          <h2 style="font-size:0.95rem; color:var(--askrindo-navy);">NOTA ANALISA UNDERWRITING PENJAMINAN KREDIT (AFCA)</h2>
+          <h2 style="font-size:0.95rem; color:var(--askrindo-navy);">NOTA ANALISA UNDERWRITING PENJAMINAN KREDIT (ASCA)</h2>
           <p style="font-size:0.68rem; color:var(--text-muted);">Metode: Dynamic Cash Conversion &amp; Stress-Tested Working Capital Model (DCC-SWCM)</p>
         </div>
       </div>
@@ -2853,7 +2854,7 @@ function resetToDefaultCases() {
 
 function exportWorkspaceJSON() {
   const dataStr = JSON.stringify({
-    app: 'Askrindo Future Credit Analysis (AFCA)',
+    app: 'Askrindo Smart Credit Analysis (ASCA)',
     method: 'DCC-SWCM',
     exportedAt: new Date().toISOString(),
     projects
@@ -2863,10 +2864,10 @@ function exportWorkspaceJSON() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `AFCA_Workspace_${new Date().toISOString().slice(0, 10)}.afca.json`;
+  a.download = `ASCA_Workspace_${new Date().toISOString().slice(0, 10)}.asca.json`;
   a.click();
   URL.revokeObjectURL(url);
-  showToast('File database proyek (.afca.json) berhasil diunduh!');
+  showToast('File database proyek (.asca.json) berhasil diunduh!');
 }
 
 function importWorkspaceJSON(event) {

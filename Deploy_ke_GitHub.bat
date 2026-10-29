@@ -4,7 +4,7 @@ cd /d "%~dp0"
 set "PATH=%LOCALAPPDATA%\Programs\MinGit\cmd;%PATH%"
 
 echo =======================================================
-echo   DEPLOY ASKRINDO AFCA KE GITHUB PAGES
+echo   DEPLOY ASKRINDO SMART CREDIT ANALYSIS (ASCA)
 echo   Repositori: https://github.com/askrindo/asca
 echo =======================================================
 echo.
@@ -12,7 +12,7 @@ echo.
 git status
 echo.
 set /p commit_msg="Masukkan pesan pembaruan (kosongkan jika default): "
-if "%commit_msg%"=="" set commit_msg=Pembaruan sistem AFCA (%date% %time%)
+if "%commit_msg%"=="" set commit_msg=Pembaruan sistem ASCA (%date% %time%)
 
 git add .
 git commit -m "%commit_msg%"

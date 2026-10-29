@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AFCA — Askrindo Future Credit Analysis (DCC-SWCM)</title>
+  <title>ASCA — Askrindo Smart Credit Analysis (DCC-SWCM)</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -22,7 +22,7 @@
 
       <div class="brand-titles">
         <h1>
-          Askrindo Future Credit Analysis (AFCA)
+          Askrindo Smart Credit Analysis (ASCA)
           <span class="badge-method">Metode DCC-SWCM</span>
         </h1>
         <p>Dynamic Cash Conversion &amp; Stress-Tested Working Capital Model — Sistem Analisa Underwriting Penjaminan</p>
@@ -36,10 +36,10 @@
       <button class="btn btn-light" onclick="duplicateCurrentProject()" title="Duplikasi kasus aktif untuk simulasi alternatif">
         <span>⧉</span> Duplikasi
       </button>
-      <button class="btn btn-light" onclick="exportWorkspaceJSON()" title="Simpan seluruh database kasus ke file komputer (.afca.json)">
+      <button class="btn btn-light" onclick="exportWorkspaceJSON()" title="Simpan seluruh database kasus ke file komputer (.asca.json)">
         <span>💾</span> Simpan (.json)
       </button>
-      <label class="btn btn-light" style="margin:0;" title="Buka file database .afca.json dari komputer">
+      <label class="btn btn-light" style="margin:0;" title="Buka file database .asca.json dari komputer">
         <span>📂</span> Buka File
         <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="importWorkspaceJSON(event)" />
       </label>
@@ -141,7 +141,7 @@
         <button class="tab-btn" data-tab="tab-grade" onclick="switchTab('tab-grade')" title="Grade Risk & Indikator Penilaian">
           🏅 6. Grade Risk
         </button>
-        <button class="tab-btn" data-tab="tab-score" onclick="switchTab('tab-score')" title="Rincian Perhitungan Skor 5 Pilar AFCA">
+        <button class="tab-btn" data-tab="tab-score" onclick="switchTab('tab-score')" title="Rincian Perhitungan Skor 5 Pilar ASCA">
           🧮 7. Rincian Skor
         </button>
         <button class="tab-btn" data-tab="tab-case-qa" onclick="switchTab('tab-case-qa')" title="Critical Point Temuan & Paket Mitigasi (120% Agunan dll)">
@@ -488,7 +488,7 @@
       <section id="tab-swcm" class="tab-pane">
         <div class="card">
           <div class="card-header">
-            <div class="card-title">⚡ Simulator Skenario Stress-Tested Working Capital &amp; Restrukturisasi Future Credit (SWCM)</div>
+            <div class="card-title">⚡ Simulator Skenario Stress-Tested Working Capital &amp; Restrukturisasi Smart Credit (SWCM)</div>
           </div>
 
           <div class="preset-bar">

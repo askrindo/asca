@@ -1,4 +1,4 @@
-# Askrindo Future Credit Analysis (AFCA)
+# Askrindo Smart Credit Analysis (ASCA)
 ### Dynamic Cash Conversion Cycle (DCC) & Stress-Tested Working Capital Model (SWCM)
 
 Sistem analisa kelayakan kredit & penjaminan komersial berbasis forward-looking model untuk mendeteksi risiko cash burn, defisit modal kerja riil, dan penentuan limit penjaminan yang aman.

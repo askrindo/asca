@@ -14,7 +14,7 @@ const USER_PROJECTS_KEY_PREFIX = 'ASCA_PROJECTS_USER_';
 // ============================================================================
 const SUPABASE_CONFIG = {
   url: 'https://twgxldzzzvwahnizrjeg.supabase.co',
-  key: 'sb_publishable_KhdXaF38JpARKVA4XgpdYA_0q8WEqYC'
+  key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3Z3hsZHp6enZ3YWhuaXpyamVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMzNjk5MTYsImV4cCI6MjEwODk0NTkxNn0.G_nYXnebka78zdDJpCkUH7qwhSVk5BS5K5fOZzVQ5wc'
 };
 
 async function supabaseFetch(endpoint, options = {}) {

@@ -19,6 +19,9 @@ const SUPABASE_CONFIG = {
 
 async function supabaseFetch(endpoint, options = {}) {
   const url = ${SUPABASE_CONFIG.url}/rest/v1/;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 4000); // 4 detik batas timeout
+
   const headers = {
     'apikey': SUPABASE_CONFIG.key,
     'Authorization': Bearer ,
@@ -28,7 +31,8 @@ async function supabaseFetch(endpoint, options = {}) {
   };
 
   try {
-    const res = await fetch(url, { ...options, headers });
+    const res = await fetch(url, { ...options, headers, signal: controller.signal });
+    clearTimeout(timeoutId);
     if (!res.ok) {
       const errText = await res.text();
       throw new Error(Supabase error (): );
@@ -36,6 +40,7 @@ async function supabaseFetch(endpoint, options = {}) {
     const text = await res.text();
     return text ? JSON.parse(text) : null;
   } catch (err) {
+    clearTimeout(timeoutId);
     console.warn('Supabase fetch failed:', err);
     throw err;
   }
@@ -3103,11 +3108,19 @@ async function fetchUsersFromCloud() {
         createdAt: u.created_at,
         lastLogin: u.last_login
       }));
+      
+      // Pastikan akun default admin & 1922 selalu ada sebagai jaminan fallback
+      for (const def of DEFAULT_USERS) {
+        if (!mapped.some(m => m.username.toLowerCase() === def.username.toLowerCase())) {
+          mapped.push(def);
+        }
+      }
+
       localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(mapped));
       return mapped;
     }
   } catch (err) {
-    console.warn('Gagal memuat pengguna dari Supabase, beralih ke cache lokal:', err);
+    console.warn('Gagal memuat pengguna dari Supabase (timeout/offline), beralih ke cache lokal:', err);
   }
   return getUsersFromStorage();
 }
@@ -3214,18 +3227,33 @@ async function handleLoginSubmit(event) {
   }
 
   try {
-    // Ambil data users langsung dari Supabase Cloud
-    let users = await fetchUsersFromCloud();
-    let user = users.find((u) => u.username.toLowerCase() === uname.toLowerCase());
+    // 1. Coba periksa langsung ke akun lokal/default terlebih dahulu (instant login)
+    let localUsers = getUsersFromStorage();
+    let user = localUsers.find((u) => u.username.toLowerCase() === uname.toLowerCase());
+
+    // 2. Jika tidak ditemukan atau butuh data cloud terbaru, ambil dari Supabase Cloud
+    if (!user) {
+      const cloudUsers = await fetchUsersFromCloud();
+      user = cloudUsers.find((u) => u.username.toLowerCase() === uname.toLowerCase());
+    } else {
+      // Ambil update cloud di latar belakang tanpa memblokir login
+      fetchUsersFromCloud().catch(() => {});
+    }
 
     if (!user || user.password !== pwd) {
-      if (alertBox) alertBox.style.display = 'flex';
-      if (alertMsg) alertMsg.textContent = 'Username atau kata sandi tidak valid!';
-      if (btnSubmit) {
-        btnSubmit.disabled = false;
-        btnSubmit.innerHTML = '<span>🔐 Masuk ke Sistem</span>';
+      // Coba sekali lagi fetch dari cloud jika password salah di cache
+      const cloudUsers = await fetchUsersFromCloud();
+      user = cloudUsers.find((u) => u.username.toLowerCase() === uname.toLowerCase());
+      
+      if (!user || user.password !== pwd) {
+        if (alertBox) alertBox.style.display = 'flex';
+        if (alertMsg) alertMsg.textContent = 'Username atau kata sandi tidak valid!';
+        if (btnSubmit) {
+          btnSubmit.disabled = false;
+          btnSubmit.innerHTML = '<span>🔐 Masuk ke Sistem</span>';
+        }
+        return;
       }
-      return;
     }
 
     if (user.status !== 'active') {

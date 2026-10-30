@@ -18,13 +18,13 @@ const SUPABASE_CONFIG = {
 };
 
 async function supabaseFetch(endpoint, options = {}) {
-  const url = ${SUPABASE_CONFIG.url}/rest/v1/;
+  const url = `${SUPABASE_CONFIG.url}/rest/v1/${endpoint}`;
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 4000); // 4 detik batas timeout
+  const timeoutId = setTimeout(() => controller.abort(), 4000);
 
   const headers = {
     'apikey': SUPABASE_CONFIG.key,
-    'Authorization': Bearer ,
+    'Authorization': `Bearer ${SUPABASE_CONFIG.key}`,
     'Content-Type': 'application/json',
     'Prefer': options.prefer || 'return=representation',
     ...(options.headers || {})
@@ -35,7 +35,7 @@ async function supabaseFetch(endpoint, options = {}) {
     clearTimeout(timeoutId);
     if (!res.ok) {
       const errText = await res.text();
-      throw new Error(Supabase error (): );
+      throw new Error(`Supabase error (${res.status}): ${errText}`);
     }
     const text = await res.text();
     return text ? JSON.parse(text) : null;

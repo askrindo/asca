@@ -3038,26 +3038,30 @@ function renderAll() {
     const bannerDecision = document.getElementById('bannerDecision');
     if (bannerDecision) bannerDecision.textContent = 'SIAP ANALISA KASUS BARU';
 
-    const dashPane = document.getElementById('tab-dashboard');
+        const dashPane = document.getElementById('tab-dashboard');
     if (dashPane) {
-      dashPane.innerHTML = `
-        <div class="card" style="text-align:center; padding:3.5rem 1.5rem;">
-          <div style="font-size:3.5rem; margin-bottom:1rem;">ðŸ“‚</div>
-          <h2 style="color:var(--askrindo-navy); font-size:1.3rem; margin-bottom:0.5rem;">Ruang Kerja Analisa Kredit Masih Kosong</h2>
-          <p style="color:var(--text-muted); max-width:540px; margin:0 auto 1.5rem; font-size:0.85rem;">
-            Akun ini baru dibuat dan belum memiliki kasus analisa debitur. Anda dapat membuat proyek analisa baru secara mandiri atau membuka file backup (.asca.json).
+      dashPane.innerHTML = 
+        <div class="card" style="text-align:center; padding:3.5rem 1.5rem; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+          <div style="margin-bottom:1.2rem; background:rgba(0,86,145,0.08); width:88px; height:88px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+            <svg width=\"56\" height=\"56\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#005691\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"display:block; margin:0 auto;\"><path d=\"M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z\"></path></svg>
+          </div>
+          <h2 style="color:var(--askrindo-navy); font-size:1.35rem; font-weight:800; margin-bottom:0.5rem; text-align:center;">
+            Ruang Kerja Analisa Kredit Masih Kosong
+          </h2>
+          <p style="color:var(--text-muted); max-width:540px; margin:0 auto 1.8rem; font-size:0.86rem; line-height:1.5; text-align:center;">
+            Akun ini belum memiliki berkas analisa debitur. Mulai dengan membuat proyek analisa kredit baru atau buka file database (.asca.json) yang telah disimpan sebelumnya.
           </p>
-          <div style="display:flex; justify-content:center; gap:0.75rem;">
-            <button class="btn btn-primary" onclick="openNewProjectModal()" style="padding:0.6rem 1.2rem; font-size:0.9rem;">
-              <span>âž•</span> Buat Proyek Pertama
+          <div style="display:flex; justify-content:center; align-items:center; gap:0.85rem; flex-wrap:wrap; margin:0 auto;">
+            <button class="btn btn-primary" onclick="openNewProjectModal()" style="display:inline-flex; align-items:center; justify-content:center; gap:0.45rem; padding:0.6rem 1.3rem; font-size:0.88rem; font-weight:700;">
+              <svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><line x1=\"12\" y1=\"5\" x2=\"12\" y2=\"19\"></line><line x1=\"5\" y1=\"12\" x2=\"19\" y2=\"12\"></line></svg> <span>Buat Proyek Pertama</span>
             </button>
-            <label class="btn btn-light" style="padding:0.6rem 1.2rem; font-size:0.9rem; cursor:pointer;">
-              <span>ðŸ“‚</span> Buka File (.asca.json)
+            <label class="btn btn-light" style="display:inline-flex; align-items:center; justify-content:center; gap:0.45rem; padding:0.6rem 1.3rem; font-size:0.88rem; font-weight:700; margin:0; cursor:pointer;">
+              <svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"></path><polyline points=\"17 8 12 3 7 8\"></polyline><line x1=\"12\" y1=\"3\" x2=\"12\" y2=\"15\"></line></svg> <span>Buka File (.asca.json)</span>
               <input type="file" accept=".json" style="display:none" onchange="importWorkspaceJSON(event)" />
             </label>
           </div>
         </div>
-      `;
+      ;
     }
     return;
   }

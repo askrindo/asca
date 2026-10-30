@@ -386,46 +386,77 @@ function getCurrentProjectStorageKey() {
 }
 
 function loadProjectsFromStorage() {
+  const session = getActiveSession();
+  const userKey = getCurrentProjectStorageKey();
+
   try {
-    const userKey = getCurrentProjectStorageKey();
-    const keysToCheck = [
-      userKey,
-      STORAGE_KEY,
-      'ASKRINDO_ASCA_PROJECTS_V1',
-      'ASKRINDO_AFCA_PROJECTS_V28',
-      'ASKRINDO_AFCA_PROJECTS_V27',
-      'ASKRINDO_AFCA_PROJECTS_V26',
-      'ASKRINDO_AFCA_PROJECTS_V25',
-      'ASKRINDO_AFCA_PROJECTS_V24',
-      'ASKRINDO_AFCA_PROJECTS'
-    ];
-    for (const k of keysToCheck) {
-      const raw = localStorage.getItem(k);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          projects = parsed.map((p) => ({
-            year1: p.year1 || 2022,
-            year2: p.year2 || 2023,
-            qualitative5CScore: typeof p.qualitative5CScore === 'number' ? p.qualitative5CScore : 6,
-            manualGradeOverride: p.manualGradeOverride || 'AUTO',
-            overrideReason: p.overrideReason || '',
-            burnStressOpexGrowth: p.burnStressOpexGrowth || 0,
-            burnStressCollectionFreeze: !!p.burnStressCollectionFreeze,
-            ...p
-          }));
-          activeProjectId = projects[0].id;
-          saveProjectsToStorage();
-          return;
-        }
+    // Cek data milik user yang login saat ini
+    const rawUser = localStorage.getItem(userKey);
+    if (rawUser) {
+      const parsed = JSON.parse(rawUser);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        projects = parsed.map((p) => ({
+          year1: p.year1 || 2022,
+          year2: p.year2 || 2023,
+          qualitative5CScore: typeof p.qualitative5CScore === 'number' ? p.qualitative5CScore : 6,
+          manualGradeOverride: p.manualGradeOverride || 'AUTO',
+          overrideReason: p.overrideReason || '',
+          burnStressOpexGrowth: p.burnStressOpexGrowth || 0,
+          burnStressCollectionFreeze: !!p.burnStressCollectionFreeze,
+          ...p
+        }));
+        activeProjectId = projects[0].id;
+        return;
       }
     }
+
+    // User 1922 (akun lama/bawaan): coba muat dari legacy keys untuk migrasi
+    const is1922 = !session || session.username === '1922';
+    if (is1922) {
+      const legacyKeys = [
+        STORAGE_KEY,
+        'ASKRINDO_ASCA_PROJECTS_V1',
+        'ASKRINDO_AFCA_PROJECTS_V28',
+        'ASKRINDO_AFCA_PROJECTS_V27',
+        'ASKRINDO_AFCA_PROJECTS_V26',
+        'ASKRINDO_AFCA_PROJECTS_V25',
+        'ASKRINDO_AFCA_PROJECTS_V24',
+        'ASKRINDO_AFCA_PROJECTS'
+      ];
+      for (const k of legacyKeys) {
+        const raw = localStorage.getItem(k);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            projects = parsed.map((p) => ({
+              year1: p.year1 || 2022,
+              year2: p.year2 || 2023,
+              qualitative5CScore: typeof p.qualitative5CScore === 'number' ? p.qualitative5CScore : 6,
+              manualGradeOverride: p.manualGradeOverride || 'AUTO',
+              overrideReason: p.overrideReason || '',
+              burnStressOpexGrowth: p.burnStressOpexGrowth || 0,
+              burnStressCollectionFreeze: !!p.burnStressCollectionFreeze,
+              ...p
+            }));
+            activeProjectId = projects[0].id;
+            saveProjectsToStorage();
+            return;
+          }
+        }
+      }
+      // User 1922 tanpa data: muat demo bawaan
+      projects = getDefaultProjects();
+      activeProjectId = projects[0].id;
+      saveProjectsToStorage();
+      return;
+    }
   } catch (e) {
-    console.warn('Gagal memuat localStorage, menggunakan data bawaan:', e);
+    console.warn('Gagal memuat localStorage:', e);
   }
-  projects = getDefaultProjects();
-  activeProjectId = projects[0].id;
-  saveProjectsToStorage();
+
+  // User baru selain 1922: mulai dengan proyek KOSONG
+  projects = [];
+  activeProjectId = null;
 }
 
 function saveProjectsToStorage() {
@@ -450,6 +481,7 @@ function saveProjectsToStorage() {
 }
 
 function getActiveProject() {
+  if (!projects || projects.length === 0) return null;
   return projects.find((p) => p.id === activeProjectId) || projects[0];
 }
 
@@ -485,8 +517,10 @@ function renderProjectList() {
 
   if (filtered.length === 0) {
     container.innerHTML = `
-      <div style="padding:1rem; text-align:center; color:var(--text-muted); font-size:0.75rem;">
-        Tidak ada proyek yang cocok dengan kata kunci "${query}".
+      <div style="padding:1.5rem 0.8rem; text-align:center; color:var(--text-muted); font-size:0.75rem;">
+        ${projects.length === 0 
+          ? 'Belum ada proyek analisa.<br/><button class="btn btn-primary btn-sm" style="margin-top:0.6rem;" onclick="openNewProjectModal()">+ Buat Proyek</button>' 
+          : `Tidak ada proyek yang cocok dengan kata kunci "${query}".`}
       </div>
     `;
     return;
@@ -2949,7 +2983,48 @@ function printUnderwritingReport() {
 // ============================================================================
 function renderAll() {
   const proj = getActiveProject();
-  if (!proj) return;
+  renderProjectList();
+
+  if (!proj) {
+    // Tampilan ketika belum ada proyek yang dibuat (User Baru / Akun Kosong)
+    const bYEl = document.getElementById('bannerFinYears');
+    if (bYEl) bYEl.textContent = '-';
+    
+    const bannerTitle = document.getElementById('bannerCompanyName');
+    if (bannerTitle) bannerTitle.textContent = 'Belum Ada Proyek Analisa';
+    const bannerSector = document.getElementById('bannerSector');
+    if (bannerSector) bannerSector.textContent = 'Klik tombol "+ Proyek Baru" di atas untuk memulai analisa kasus kredit pertama Anda.';
+    const bannerGrade = document.getElementById('bannerGrade');
+    if (bannerGrade) bannerGrade.textContent = '-';
+    const bannerScore = document.getElementById('bannerScore');
+    if (bannerScore) bannerScore.textContent = '-';
+    const bannerDecision = document.getElementById('bannerDecision');
+    if (bannerDecision) bannerDecision.textContent = 'SIAP ANALISA KASUS BARU';
+
+    const dashPane = document.getElementById('tab-dashboard');
+    if (dashPane) {
+      dashPane.innerHTML = `
+        <div class="card" style="text-align:center; padding:3.5rem 1.5rem;">
+          <div style="font-size:3.5rem; margin-bottom:1rem;">📂</div>
+          <h2 style="color:var(--askrindo-navy); font-size:1.3rem; margin-bottom:0.5rem;">Ruang Kerja Analisa Kredit Masih Kosong</h2>
+          <p style="color:var(--text-muted); max-width:540px; margin:0 auto 1.5rem; font-size:0.85rem;">
+            Akun ini baru dibuat dan belum memiliki kasus analisa debitur. Anda dapat membuat proyek analisa baru secara mandiri atau membuka file backup (.asca.json).
+          </p>
+          <div style="display:flex; justify-content:center; gap:0.75rem;">
+            <button class="btn btn-primary" onclick="openNewProjectModal()" style="padding:0.6rem 1.2rem; font-size:0.9rem;">
+              <span>➕</span> Buat Proyek Pertama
+            </button>
+            <label class="btn btn-light" style="padding:0.6rem 1.2rem; font-size:0.9rem; cursor:pointer;">
+              <span>📂</span> Buka File (.asca.json)
+              <input type="file" accept=".json" style="display:none" onchange="importWorkspaceJSON(event)" />
+            </label>
+          </div>
+        </div>
+      `;
+    }
+    return;
+  }
+
   const m = computeDCCSWCM(proj);
 
   const y1El = document.getElementById('thLabelYear1');
@@ -2959,7 +3034,6 @@ function renderAll() {
   if (y2El) y2El.textContent = m.yr2;
   if (bYEl) bYEl.textContent = `${m.yr1} & ${m.yr2}`;
 
-  renderProjectList();
   renderBanner(proj, m);
   populateFormInputs(proj);
   renderDashboardTab(proj, m);
@@ -3399,4 +3473,45 @@ function confirmDeleteUser(username) {
 
   renderAdminUserManagement();
   showToast(`Pengguna "${username}" telah dihapus.`);
+}
+
+function exportUsersDatabaseJSON() {
+  const users = getUsersFromStorage();
+  const dataStr = JSON.stringify({
+    app: 'ASCA User Database',
+    exportedAt: new Date().toISOString(),
+    users
+  }, null, 2);
+
+  const blob = new Blob([dataStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ASCA_Users_Database_${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Database pengguna berhasil diunduh! File ini dapat diimpor di perangkat lain.');
+}
+
+function importUsersDatabaseJSON(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      const list = Array.isArray(parsed) ? parsed : parsed.users;
+      if (Array.isArray(list) && list.length > 0) {
+        saveUsersToStorage(list);
+        renderAdminUserManagement();
+        showToast(`Berhasil menyinkronkan ${list.length} pengguna dari file database!`);
+      } else {
+        alert('Format file database pengguna tidak valid.');
+      }
+    } catch (err) {
+      alert('Gagal membaca file JSON: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
 }

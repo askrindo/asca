@@ -848,9 +848,18 @@
             <h3>👤 Modul Kelola Pengguna (User Management)</h3>
             <p>Tambah pengguna baru, reset password, aktifkan/nonaktifkan status, dan kelola otoritas akun analis.</p>
           </div>
-          <button class="btn btn-primary" onclick="openModalAddUser()">
-            <span>➕</span> Tambah User Baru
-          </button>
+          <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+            <button class="btn btn-light" onclick="exportUsersDatabaseJSON()" title="Unduh file database pengguna untuk dipindahkan ke device lain">
+              <span>💾</span> Backup Database User
+            </button>
+            <label class="btn btn-light" style="margin:0; cursor:pointer;" title="Pulihkan / Sinkronkan database pengguna dari file JSON di device ini">
+              <span>📂</span> Restore User
+              <input type="file" accept=".json" style="display:none" onchange="importUsersDatabaseJSON(event)" />
+            </label>
+            <button class="btn btn-primary" onclick="openModalAddUser()">
+              <span>➕</span> Tambah User Baru
+            </button>
+          </div>
         </div>
 
         <div class="admin-toolbar">

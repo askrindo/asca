@@ -1,7 +1,7 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-set "PATH=%LOCALAPPDATA%\Programs\MinGit\cmd;%PATH%"
+set "PATH=%LOCALAPPDATA%\Programs\Git\cmd;%LOCALAPPDATA%\Programs\MinGit\cmd;%PATH%"
 
 echo =======================================================
 echo   DEPLOY ASKRINDO SMART CREDIT ANALYSIS (ASCA)

@@ -1133,7 +1133,14 @@ input[type="range"] {
   cursor: pointer;
   color: #64748b;
   padding: 0.2rem;
-  font-size: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease;
+}
+
+.login-toggle-pwd:hover {
+  color: #005691;
 }
 
 .btn-login {

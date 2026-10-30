@@ -1033,22 +1033,22 @@ input[type="range"] {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  margin-top: 1rem;
+  margin: 1rem auto 0;
+  max-width: 290px;
   width: 100%;
 }
 
 .tagline-divider-line {
   flex: 1;
-  max-width: 52px;
   height: 2px;
-  background-color: #f37021;
+  background-color: #ed822a;
   border-radius: 2px;
 }
 
 .tagline-text {
   text-align: center;
-  color: #0b3b6f;
-  font-size: 0.84rem;
+  color: #003366;
+  font-size: 0.82rem;
   font-weight: 600;
   line-height: 1.35;
   letter-spacing: -0.15px;

@@ -4,7 +4,76 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ASCA — Askrindo Smart Credit Analysis (DCC-SWCM)</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=20261030-2" />
+  <style id="login-critical-styles">
+    /* Anti-Cache Guarantee for Enterprise Login Interface */
+    .login-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      background: radial-gradient(circle at 20% 20%, #0c345c 0%, #07192e 60%, #030b14 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    .login-card {
+      background: #ffffff !important;
+      width: 100%;
+      max-width: 440px;
+      border-radius: 16px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45);
+      overflow: hidden;
+      animation: fadeInDown 0.25s ease-out;
+    }
+    .login-header {
+      background: #ffffff !important;
+      padding: 2.2rem 2rem 1.4rem !important;
+      text-align: center;
+      border-bottom: 1.5px solid #edf2f7 !important;
+    }
+    .login-logo-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .login-logo-hd {
+      width: 270px !important;
+      max-width: 85% !important;
+      height: auto !important;
+      object-fit: contain;
+      display: block;
+      margin: 0 auto;
+    }
+    .login-tagline-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin: 1rem auto 0;
+      max-width: 290px;
+      width: 100%;
+    }
+    .tagline-divider-line {
+      flex: 1;
+      height: 2px;
+      background-color: #ed822a;
+      border-radius: 2px;
+    }
+    .tagline-text {
+      text-align: center;
+      color: #003366;
+      font-size: 0.82rem;
+      font-weight: 600;
+      line-height: 1.35;
+      letter-spacing: -0.15px;
+    }
+    .tagline-row-1, .tagline-row-2 {
+      display: block;
+    }
+  </style>
 </head>
 <body>
 

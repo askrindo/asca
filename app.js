@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ASKRINDO SMART CREDIT ANALYSIS (ASCA)
  * Metode: Dynamic Cash Conversion & Stress-Tested Working Capital Model (DCC-SWCM)
  * Termasuk: Analisis Ketahanan Modal Kerja Bersih (Net Working Capital & Burn-Rate Test)
@@ -8,6 +8,38 @@ const STORAGE_KEY = 'ASKRINDO_ASCA_PROJECTS_V1';
 const USERS_STORAGE_KEY = 'ASCA_USERS_DATABASE_V1';
 const AUTH_SESSION_KEY = 'ASCA_AUTH_SESSION_V1';
 const USER_PROJECTS_KEY_PREFIX = 'ASCA_PROJECTS_USER_';
+
+// ============================================================================
+// SUPABASE CLOUD DATABASE CONFIGURATION
+// ============================================================================
+const SUPABASE_CONFIG = {
+  url: 'https://twgxldzzzvwahnizrjeg.supabase.co',
+  key: 'sb_publishable_KhdXaF38JpARKVA4XgpdYA_0q8WEqYC'
+};
+
+async function supabaseFetch(endpoint, options = {}) {
+  const url = ${SUPABASE_CONFIG.url}/rest/v1/;
+  const headers = {
+    'apikey': SUPABASE_CONFIG.key,
+    'Authorization': Bearer ,
+    'Content-Type': 'application/json',
+    'Prefer': options.prefer || 'return=representation',
+    ...(options.headers || {})
+  };
+
+  try {
+    const res = await fetch(url, { ...options, headers });
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(Supabase error (): );
+    }
+    const text = await res.text();
+    return text ? JSON.parse(text) : null;
+  } catch (err) {
+    console.warn('Supabase fetch failed:', err);
+    throw err;
+  }
+}
 
 const DEFAULT_USERS = [
   {
@@ -130,7 +162,7 @@ function getDefaultProjects() {
       burnStressCollectionFreeze: false,
       customNotes: 'Simulasi Turnaround: Penurunan DOI membebaskan kas Rp 131 Miliar, meningkatkan Cash Runway menjadi 4,5 bulan dan meniadakan defisit NWC.',
       businessDesc:
-        'Skema hasil inovasi analisa DCC-SWCM: Fasilitas dipangkas ke USD 600.000 (tranche maksimal USD 200.000–300.000 per pengapalan), KMK Khusus Backup Default dihapus untuk mencegah moral hazard, pencairan wajib berbasis Purchase Order (PO) mengikat dari pabrik tahu/tempe/kecap & pakan ternak sehingga DOI kedelai dikunci maksimal 115 hari dan Gross Margin terkunci minimal +10,5%.',
+        'Skema hasil inovasi analisa DCC-SWCM: Fasilitas dipangkas ke USD 600.000 (tranche maksimal USD 200.000â€“300.000 per pengapalan), KMK Khusus Backup Default dihapus untuk mencegah moral hazard, pencairan wajib berbasis Purchase Order (PO) mengikat dari pabrik tahu/tempe/kecap & pakan ternak sehingga DOI kedelai dikunci maksimal 115 hari dan Gross Margin terkunci minimal +10,5%.',
       claimedDOR: 55,
       claimedDOI: 115,
       claimedDOP: 65,
@@ -260,10 +292,10 @@ const ASKRINDO_GRADE_CATALOG = [
     bg: '#dcfce7',
     badgeCls: 'grade-AAA',
     maxCoverage: 85,
-    ijpRate: '0,65% – 0,90% p.a.',
+    ijpRate: '0,65% â€“ 0,90% p.a.',
     decision: 'DIREKOMENDASIKAN LAYAK PENUH (FAST-TRACK APPROVE)',
     decisionClass: 'layak',
-    criteriaSummary: 'GPM ≥ 12%, Siklus Gross < Tenor Kredit (Buffer > 30 hr), Cash Runway ≥ 4 bln, NWC Surplus, Quick Ratio ≥ 1,2x, DER < 1,5x, DSCR ≥ 1,50x.'
+    criteriaSummary: 'GPM â‰¥ 12%, Siklus Gross < Tenor Kredit (Buffer > 30 hr), Cash Runway â‰¥ 4 bln, NWC Surplus, Quick Ratio â‰¥ 1,2x, DER < 1,5x, DSCR â‰¥ 1,50x.'
   },
   {
     grade: 'AA',
@@ -274,10 +306,10 @@ const ASKRINDO_GRADE_CATALOG = [
     bg: '#dcfce7',
     badgeCls: 'grade-AA',
     maxCoverage: 80,
-    ijpRate: '0,90% – 1,25% p.a.',
+    ijpRate: '0,90% â€“ 1,25% p.a.',
     decision: 'DIREKOMENDASIKAN LAYAK (APPROVE)',
     decisionClass: 'layak',
-    criteriaSummary: 'GPM ≥ 9%, Siklus Gross ≤ Tenor Kredit, Cash Runway ≥ 3 bln, Quick Ratio ≥ 0,9x, DER ≤ 2,2x, DSCR ≥ 1,30x, Rasio data bank akurat.'
+    criteriaSummary: 'GPM â‰¥ 9%, Siklus Gross â‰¤ Tenor Kredit, Cash Runway â‰¥ 3 bln, Quick Ratio â‰¥ 0,9x, DER â‰¤ 2,2x, DSCR â‰¥ 1,30x, Rasio data bank akurat.'
   },
   {
     grade: 'A',
@@ -288,10 +320,10 @@ const ASKRINDO_GRADE_CATALOG = [
     bg: '#dbeafe',
     badgeCls: 'grade-A',
     maxCoverage: 75,
-    ijpRate: '1,25% – 1,60% p.a.',
+    ijpRate: '1,25% â€“ 1,60% p.a.',
     decision: 'LAYAK DENGAN COVENANT STANDAR',
     decisionClass: 'layak',
-    criteriaSummary: 'GPM ≥ 6%, Siklus Gross ≤ Tenor Kredit, Cash Runway 2–3 bln, Quick Ratio ≥ 0,75x, DER ≤ 2,8x, DSCR ≥ 1,15x.'
+    criteriaSummary: 'GPM â‰¥ 6%, Siklus Gross â‰¤ Tenor Kredit, Cash Runway 2â€“3 bln, Quick Ratio â‰¥ 0,75x, DER â‰¤ 2,8x, DSCR â‰¥ 1,15x.'
   },
   {
     grade: 'BBB',
@@ -302,10 +334,10 @@ const ASKRINDO_GRADE_CATALOG = [
     bg: '#e0f2fe',
     badgeCls: 'grade-BBB',
     maxCoverage: 70,
-    ijpRate: '1,60% – 2,10% p.a.',
+    ijpRate: '1,60% â€“ 2,10% p.a.',
     decision: 'LAYAK BERSYARAT (MODERATE COVENANT)',
     decisionClass: 'bersyarat',
-    criteriaSummary: 'GPM 3%–6%, Siklus mendekati batas tenor, Cash Runway 1,5–2 bln, butuh escrow account & pembatasan pencairan bertahap.'
+    criteriaSummary: 'GPM 3%â€“6%, Siklus mendekati batas tenor, Cash Runway 1,5â€“2 bln, butuh escrow account & pembatasan pencairan bertahap.'
   },
   {
     grade: 'BB',
@@ -316,7 +348,7 @@ const ASKRINDO_GRADE_CATALOG = [
     bg: '#fef3c7',
     badgeCls: 'grade-BB',
     maxCoverage: 60,
-    ijpRate: '2,10% – 2,85% p.a.',
+    ijpRate: '2,10% â€“ 2,85% p.a.',
     decision: 'LAYAK BERSYARAT KETAT (WAJIB RESTRUKTURISASI SKEMA)',
     decisionClass: 'bersyarat',
     criteriaSummary: 'Marjin tipis/tertekan, Cash Runway < 1,5 bln, DOI melambat (>120 hr) atau ada defisit NWC, wajib tranching & agunan likuid.'
@@ -330,7 +362,7 @@ const ASKRINDO_GRADE_CATALOG = [
     bg: '#fee2e2',
     badgeCls: 'grade-B',
     maxCoverage: 50,
-    ijpRate: '2,85% – 3,75% p.a. (+Cash Collateral)',
+    ijpRate: '2,85% â€“ 3,75% p.a. (+Cash Collateral)',
     decision: 'TOLAK SKEMA AWAL / WAJIB RING-FENCED TURNAROUND',
     decisionClass: 'tolak',
     criteriaSummary: 'Gross Loss atau Siklus Gross > Tenor Kredit, Cash Burn tinggi (Runway < 1 bln), Defisit NWC per siklus, Quick Ratio < 0,5x.'
@@ -376,7 +408,7 @@ function toggleSidebar() {
   const layout = document.getElementById('appLayoutContainer');
   const icon = document.getElementById('sidebarToggleIcon');
   if (layout) layout.classList.toggle('sidebar-collapsed', isSidebarCollapsed);
-  if (icon) icon.textContent = isSidebarCollapsed ? '▶' : '◀';
+  if (icon) icon.textContent = isSidebarCollapsed ? 'â–¶' : 'â—€';
 }
 
 function getCurrentProjectStorageKey() {
@@ -473,7 +505,7 @@ function saveProjectsToStorage() {
     const el = document.getElementById('autoSaveStatus');
     if (el) {
       const now = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-      el.textContent = `● Tersimpan (${now})`;
+      el.textContent = `â— Tersimpan (${now})`;
     }
   } catch (e) {
     console.error('Gagal menyimpan ke localStorage:', e);
@@ -537,8 +569,8 @@ function renderProjectList() {
             <span class="grade-badge ${m.gradeMeta.badgeCls}">${m.shortGrade}</span>
           </div>
           <div class="project-meta">
-            <span>${p.bankName}</span> •
-            <span>${fmtRp(p.requestedPlafond, true)}</span> •
+            <span>${p.bankName}</span> â€¢
+            <span>${fmtRp(p.requestedPlafond, true)}</span> â€¢
             <span style="font-weight:600;">Score: ${m.score}</span>
           </div>
         </div>
@@ -685,7 +717,7 @@ function showToast(msg) {
   if (!container) return;
   const t = document.createElement('div');
   t.className = 'toast';
-  t.innerHTML = `<span>✅</span> <span>${msg}</span>`;
+  t.innerHTML = `<span>âœ…</span> <span>${msg}</span>`;
   container.appendChild(t);
   setTimeout(() => {
     t.remove();
@@ -856,7 +888,7 @@ function computeDCCSWCM(proj) {
   let r1A = '';
   if (cashGapAtSCFMaturity_Actual <= -20) {
     s1A = 15;
-    r1A = `Siklus Gross (${fmtNum(grossCycle23, 1)} hr) jauh di bawah Tenor (${scfTenor} hr) — Buffer ${fmtNum(Math.abs(cashGapAtSCFMaturity_Actual), 1)} hr.`;
+    r1A = `Siklus Gross (${fmtNum(grossCycle23, 1)} hr) jauh di bawah Tenor (${scfTenor} hr) â€” Buffer ${fmtNum(Math.abs(cashGapAtSCFMaturity_Actual), 1)} hr.`;
   } else if (cashGapAtSCFMaturity_Actual <= 0) {
     s1A = 12;
     r1A = `Siklus Gross (${fmtNum(grossCycle23, 1)} hr) pas di bawah Tenor (${scfTenor} hr).`;
@@ -872,8 +904,8 @@ function computeDCCSWCM(proj) {
     pillarName: 'Pilar 1: Dynamic CCC & Kesesuaian Tenor (Maks 25)',
     code: '1A',
     name: 'Kesesuaian Siklus Gross vs Tenor Fasilitas',
-    formula: '(DOI + DOR) ≤ Tenor Kredit',
-    benchmark: `≤ ${scfTenor} Hari`,
+    formula: '(DOI + DOR) â‰¤ Tenor Kredit',
+    benchmark: `â‰¤ ${scfTenor} Hari`,
     actualStr: `${fmtNum(grossCycle23, 1)} Hari (Gap: ${cashGapAtSCFMaturity_Actual >= 0 ? '+' : ''}${fmtNum(cashGapAtSCFMaturity_Actual, 1)} hr)`,
     maxPts: 15,
     earnedPts: s1A,
@@ -885,10 +917,10 @@ function computeDCCSWCM(proj) {
   let r1B = '';
   if (doi23_365 <= 60) {
     s1B = 10;
-    r1B = `Perputaran persediaan sangat cepat (${fmtNum(doi23_365, 1)} hr ≤ 60 hr).`;
+    r1B = `Perputaran persediaan sangat cepat (${fmtNum(doi23_365, 1)} hr â‰¤ 60 hr).`;
   } else if (doi23_365 <= 120) {
     s1B = 8;
-    r1B = `Perputaran persediaan sehat (${fmtNum(doi23_365, 1)} hr ≤ 120 hr).`;
+    r1B = `Perputaran persediaan sehat (${fmtNum(doi23_365, 1)} hr â‰¤ 120 hr).`;
   } else if (doi23_365 <= 180) {
     s1B = 4;
     r1B = `Persediaan mulai lambat (${fmtNum(doi23_365, 1)} hr).`;
@@ -901,8 +933,8 @@ function computeDCCSWCM(proj) {
     pillarName: 'Pilar 1: Dynamic CCC & Kesesuaian Tenor (Maks 25)',
     code: '1B',
     name: 'Kecepatan Perputaran Persediaan (DOI)',
-    formula: '(Persediaan / HPP) × 365',
-    benchmark: '≤ 120 Hari',
+    formula: '(Persediaan / HPP) Ã— 365',
+    benchmark: 'â‰¤ 120 Hari',
     actualStr: `${fmtNum(doi23_365, 1)} Hari`,
     maxPts: 10,
     earnedPts: s1B,
@@ -928,9 +960,9 @@ function computeDCCSWCM(proj) {
     pillarId: 'P2',
     pillarName: 'Pilar 2: Verifikasi Data Bank vs Audited (Maks 15)',
     code: '2A',
-    name: 'Akurasi Data Bank Hari Persediaan (ΔDOI)',
-    formula: '|DOI Aktual − DOI Data Bank|',
-    benchmark: 'Deviasi ≤ 10 Hari',
+    name: 'Akurasi Data Bank Hari Persediaan (Î”DOI)',
+    formula: '|DOI Aktual âˆ’ DOI Data Bank|',
+    benchmark: 'Deviasi â‰¤ 10 Hari',
     actualStr: `Selisih ${diffDOI >= 0 ? '+' : ''}${fmtNum(diffDOI, 1)} Hari`,
     maxPts: 8,
     earnedPts: s2A,
@@ -953,9 +985,9 @@ function computeDCCSWCM(proj) {
     pillarName: 'Pilar 2: Verifikasi Data Bank vs Audited (Maks 15)',
     code: '2B',
     name: 'Akurasi Data Bank Piutang (DOR) & Utang (DOP)',
-    formula: '|DOP Aktual − Data Bank|',
-    benchmark: 'Deviasi ≤ 12 Hari',
-    actualStr: `ΔDOR: ${fmtNum(diffDOR, 1)}h | ΔDOP: ${fmtNum(diffDOP, 1)}h`,
+    formula: '|DOP Aktual âˆ’ Data Bank|',
+    benchmark: 'Deviasi â‰¤ 12 Hari',
+    actualStr: `Î”DOR: ${fmtNum(diffDOR, 1)}h | Î”DOP: ${fmtNum(diffDOP, 1)}h`,
     maxPts: 7,
     earnedPts: s2B,
     lostPts: 7 - s2B,
@@ -986,8 +1018,8 @@ function computeDCCSWCM(proj) {
     pillarName: 'Pilar 3: Profitabilitas & Kapasitas Bayar (Maks 25)',
     code: '3A',
     name: 'Marjin Laba Kotor (Gross Margin)',
-    formula: '(Penjualan − HPP) / Penjualan',
-    benchmark: '≥ +8,0%',
+    formula: '(Penjualan âˆ’ HPP) / Penjualan',
+    benchmark: 'â‰¥ +8,0%',
     actualStr: `${fmtPct(gpm23, 2)} (${fmtRp(gp23, true)})`,
     maxPts: 12,
     earnedPts: s3A,
@@ -1017,7 +1049,7 @@ function computeDCCSWCM(proj) {
     code: '3C',
     name: 'Debt Service Coverage Ratio (DSCR)',
     formula: 'EBITDA Proxy / Kewajiban Utang',
-    benchmark: '≥ 1,20x',
+    benchmark: 'â‰¥ 1,20x',
     actualStr: `${fmtNum(dscr23, 2)}x`,
     maxPts: 7,
     earnedPts: s3C,
@@ -1030,7 +1062,7 @@ function computeDCCSWCM(proj) {
   let r4A = '';
   if (pureCashRunwayMonths >= 3.0) {
     s4A = 8;
-    r4A = `Ketahanan Kas Murni sangat kuat (${fmtNum(pureCashRunwayMonths, 1)} bulan ≥ 3 bulan).`;
+    r4A = `Ketahanan Kas Murni sangat kuat (${fmtNum(pureCashRunwayMonths, 1)} bulan â‰¥ 3 bulan).`;
   } else if (pureCashRunwayMonths >= 1.5) {
     s4A = 6;
     r4A = `Ketahanan Kas Murni memadai (${fmtNum(pureCashRunwayMonths, 1)} bulan).`;
@@ -1047,7 +1079,7 @@ function computeDCCSWCM(proj) {
     code: '4A',
     name: 'Pure Cash Runway (Ketahanan Kas Murni Tanpa Omzet)',
     formula: 'Kas & Bank / Daily Gross Cash Burn',
-    benchmark: '≥ 1,5 Bulan (≥ 45 Hari)',
+    benchmark: 'â‰¥ 1,5 Bulan (â‰¥ 45 Hari)',
     actualStr: `${fmtNum(pureCashRunwayMonths, 1)} Bulan (${fmtNum(pureCashRunwayDays, 0)} Hari)`,
     maxPts: 8,
     earnedPts: s4A,
@@ -1072,8 +1104,8 @@ function computeDCCSWCM(proj) {
     pillarName: 'Pilar 4: Ketahanan NWC & Cash Burn (Maks 15)',
     code: '4B',
     name: 'NWC Adequacy & Working Capital Gap per Siklus',
-    formula: 'NWC Riil − Kebutuhan Dana 1 Siklus Gross',
-    benchmark: 'Surplus (Gap ≥ 0)',
+    formula: 'NWC Riil âˆ’ Kebutuhan Dana 1 Siklus Gross',
+    benchmark: 'Surplus (Gap â‰¥ 0)',
     actualStr: `${isNWCDeficit ? 'Defisit ' : 'Surplus '}${fmtRp(nwcFinancingGap, true)}`,
     maxPts: 7,
     earnedPts: s4B,
@@ -1089,7 +1121,7 @@ function computeDCCSWCM(proj) {
     code: '5A',
     name: 'Debt to Equity Ratio & Erosi Modal',
     formula: 'Total Liabilitas / Ekuitas',
-    benchmark: 'DER ≤ 2,5x & Erosi < 25%',
+    benchmark: 'DER â‰¤ 2,5x & Erosi < 25%',
     actualStr: `DER: ${fmtNum(der23, 2)}x | Erosi: ${fmtNum(reErosionPct23, 1)}%`,
     maxPts: 5,
     earnedPts: s5A,
@@ -1104,7 +1136,7 @@ function computeDCCSWCM(proj) {
     code: '5B',
     name: 'Stabilitas Utang Bank Jangka Pendek',
     formula: 'Pertumbuhan Utang Bank Pendek YoY',
-    benchmark: '≤ +25% YoY',
+    benchmark: 'â‰¤ +25% YoY',
     actualStr: `${fmtPct(stDebtGrowth, 1)} (${fmtRp(f23.stDebt, true)})`,
     maxPts: 5,
     earnedPts: s5B,
@@ -1135,8 +1167,8 @@ function computeDCCSWCM(proj) {
     pillarName: 'Pilar 6: Struktur Skema & Kualitatif 5C (Maks 10)',
     code: '6B',
     name: 'Penilaian Kualitatif 5C Underwriter',
-    formula: '(Nilai 5C / 10) × 6 Poin',
-    benchmark: '≥ 7,5 / 10',
+    formula: '(Nilai 5C / 10) Ã— 6 Poin',
+    benchmark: 'â‰¥ 7,5 / 10',
     actualStr: `${fmtNum(rawQual, 1)} / 10 (${fmtNum(s6B, 1)} Poin)`,
     maxPts: 6,
     earnedPts: s6B,
@@ -1241,7 +1273,7 @@ function buildDynamicCaseInsights(proj, m) {
     });
     requiredInfos.push({
       title: `Rincian Struktur HPP (${fmtRp(proj.fin23.cogs)}) & Penyebab Gross Loss`,
-      detail: `Meminta bedah komponen HPP ${m.yr1}–${m.yr2} (harga beli bahan baku, kurs impor, biaya pabrik/pengolahan, susut bahan baku).`
+      detail: `Meminta bedah komponen HPP ${m.yr1}â€“${m.yr2} (harga beli bahan baku, kurs impor, biaya pabrik/pengolahan, susut bahan baku).`
     });
     mitigations.push({
       title: `Syarat Back-to-Back PO dengan Batas Minimum Gross Margin +${fmtNum(m.minRequiredGPM, 1)}%`,
@@ -1261,7 +1293,7 @@ function buildDynamicCaseInsights(proj, m) {
       detail: `Meminta rincian fisik stok dan uji mutu/kerusakan barang di gudang karena DOI aktual mencapai ${fmtNum(m.doi23_365, 1)} hari.`
     });
     mitigations.push({
-      title: `Covenant Penurunan DOI ke ≤ ${m.targetSafeDOI} Hari & Pengikatan Agunan CMA`,
+      title: `Covenant Penurunan DOI ke â‰¤ ${m.targetSafeDOI} Hari & Pengikatan Agunan CMA`,
       detail: `Program pelepasan stok lama hingga DOI turun ke maksimal <strong>${m.targetSafeDOI} hari</strong> (membebaskan kas internal <strong>+${fmtRp(m.cashReleasedAtSafeDOI, true)}</strong>) serta pengawasan gudang CMA.`
     });
   }
@@ -1274,7 +1306,7 @@ function buildDynamicCaseInsights(proj, m) {
       detail: `Siklus konversi barang ke kas membutuhkan <strong>${m.claimedGrossCycle} hari (versi Data Bank)</strong> atau <strong>${fmtNum(m.grossCycle23, 1)} hari (versi audit ${m.yr2})</strong>. Dengan tenor fasilitas hanya <strong>${m.scfTenor} hari</strong>, terdapat defisit waktu <strong>${fmtNum(m.cashGapAtSCFMaturity_Actual, 1)} hari</strong> saat jatuh tempo.`
     });
     mitigations.push({
-      title: `Sinkronisasi Siklus Transaksi (Ring-Fenced Batch ≤ ${m.scfTenor} Hari) & Escrow Account`,
+      title: `Sinkronisasi Siklus Transaksi (Ring-Fenced Batch â‰¤ ${m.scfTenor} Hari) & Escrow Account`,
       detail: `Fasilitas hanya boleh membiayai batch pesanan dengan siklus total maksimal <strong>${m.scfTenor - 10} hari</strong>, dan seluruh pembayaran pembeli wajib masuk ke Escrow Account di ${proj.bankName}.`
     });
   }
@@ -1295,7 +1327,7 @@ function buildDynamicCaseInsights(proj, m) {
   // Rekomendasi Agunan Tambahan Fixed Asset 120% & Pembatasan Coverage Askrindo
   const minCollateralVal = proj.requestedPlafond * 1.2;
   mitigations.push({
-    title: `Pembatasan Coverage Penjaminan Maksimal ${m.recCoveragePct}% & Agunan Tambahan Fixed Asset ≥ 120% (${fmtRp(minCollateralVal, true)})`,
+    title: `Pembatasan Coverage Penjaminan Maksimal ${m.recCoveragePct}% & Agunan Tambahan Fixed Asset â‰¥ 120% (${fmtRp(minCollateralVal, true)})`,
     detail: `Menerapkan <em>risk sharing</em> penjaminan Askrindo maksimal <strong>${m.recCoveragePct}%</strong> (${100 - m.recCoveragePct}% porsi risiko ditanggung ${proj.bankName}), kewajiban pengikatan <strong>Agunan Tambahan Fixed Asset (tanah, bangunan, mesin pabrik) minimal 120% dari nilai plafon kredit (${fmtRp(minCollateralVal, true)})</strong> dari aset tetap debitur (${fmtRp(proj.fin23.fa)}) yang berstatus <em>free & clear</em>, serta klausul <em>Negative Covenant</em> (larangan menambah pinjaman bank baru atau membagikan dividen tanpa persetujuan tertulis Askrindo).`
   });
 
@@ -1317,7 +1349,7 @@ function renderBurnRateTab(proj, m) {
   document.getElementById('burnRateMenuContainer').innerHTML = `
     <div class="card" style="border-left: 4px solid var(--askrindo-cyan);">
       <div class="card-header">
-        <div class="card-title">💧 Modul Analisis Ketahanan Modal Kerja Bersih &amp; Cash Burn-Rate Test (${proj.companyName})</div>
+        <div class="card-title">ðŸ’§ Modul Analisis Ketahanan Modal Kerja Bersih &amp; Cash Burn-Rate Test (${proj.companyName})</div>
         <span class="badge-method" style="background:#e0f2fe; color:#0369a1;">Stress-Tested Liquidity Runway &amp; NWC Financing Gap</span>
       </div>
 
@@ -1366,7 +1398,7 @@ function renderBurnRateTab(proj, m) {
       <div class="burn-meter-box">
         <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.73rem; font-weight:700;">
           <span>Visualisasi Ketahanan Kas Bersih (Runway Meter) terhadap Batas Aman Askrindo (Minimal 2 Bulan / 60 Hari)</span>
-          <span style="color:${runwayStatusColor};">${m.pureCashRunwayMonths >= 2.0 ? '✅ Buffer Kas Aman' : (m.pureCashRunwayMonths >= 1.0 ? '⚠️ Buffer Kas Menipis' : '🚨 Runway Kritis (<30 Hari)')}</span>
+          <span style="color:${runwayStatusColor};">${m.pureCashRunwayMonths >= 2.0 ? 'âœ… Buffer Kas Aman' : (m.pureCashRunwayMonths >= 1.0 ? 'âš ï¸ Buffer Kas Menipis' : 'ðŸš¨ Runway Kritis (<30 Hari)')}</span>
         </div>
         <div class="burn-track">
           <div style="width:${Math.min(100, Math.max(5, (m.pureCashRunwayMonths / 4.0) * 100))}%; background:${runwayStatusColor}; display:flex; align-items:center; justify-content:center; color:#fff; font-size:0.65rem; font-weight:700;">
@@ -1385,7 +1417,7 @@ function renderBurnRateTab(proj, m) {
       <div class="grid-2">
         <div style="background:#fff; border:1px solid var(--border-color); border-radius:6px; padding:0.6rem;">
           <div style="font-weight:700; font-size:0.75rem; color:var(--askrindo-navy); margin-bottom:0.4rem;">
-            ⚡ Simulator Uji Stress Ketahanan Kas &amp; Pembekuan Piutang
+            âš¡ Simulator Uji Stress Ketahanan Kas &amp; Pembekuan Piutang
           </div>
 
           <div class="slider-row">
@@ -1400,7 +1432,7 @@ function renderBurnRateTab(proj, m) {
           <div style="display:flex; align-items:center; gap:0.5rem; background:#f8fafc; padding:0.45rem 0.6rem; border-radius:5px; border:1px solid var(--border-color); margin-top:0.4rem;">
             <input type="checkbox" id="chkFreezeCollection" ${m.isFreezeCollection ? 'checked' : ''} onchange="toggleFreezeCollection(this.checked)" style="width:16px; height:16px; accent-color:#dc2626; cursor:pointer;" />
             <label for="chkFreezeCollection" style="font-size:0.71rem; font-weight:600; cursor:pointer; color:#991b1b;">
-              Simulasi Gagal Tagih / Pembeli Menunda Bayar (Collection Freeze) — Hanya Mengandalkan Kas Riil di Rekening
+              Simulasi Gagal Tagih / Pembeli Menunda Bayar (Collection Freeze) â€” Hanya Mengandalkan Kas Riil di Rekening
             </label>
           </div>
         </div>
@@ -1417,7 +1449,7 @@ function renderBurnRateTab(proj, m) {
             </div>
           </div>
           <div style="font-size:0.68rem; color:${runwayStatusColor}; font-weight:700; border-top:1px dashed ${runwayStatusColor}; padding-top:0.35rem; margin-top:0.35rem;">
-            ${m.stressedRunwayMonths < 1.0 ? '🚨 Kesimpulan: Debitur tidak memiliki ketahanan likuiditas yang cukup. Wajib ada fasilitas standby line atau jaminan kas.' : '✅ Kesimpulan: Debitur memiliki ketahanan likuiditas yang cukup menyerap keterlambatan arus kas.'}
+            ${m.stressedRunwayMonths < 1.0 ? 'ðŸš¨ Kesimpulan: Debitur tidak memiliki ketahanan likuiditas yang cukup. Wajib ada fasilitas standby line atau jaminan kas.' : 'âœ… Kesimpulan: Debitur memiliki ketahanan likuiditas yang cukup menyerap keterlambatan arus kas.'}
           </div>
         </div>
       </div>
@@ -1464,20 +1496,20 @@ function renderBurnRateTab(proj, m) {
               <td>Total kebutuhan kas keluar riil debitur</td>
             </tr>
             <tr>
-              <td><strong>Net Working Capital Riil (Aset Lancar − Liabilitas Lancar)</strong></td>
-              <td>${fmtRp(m.ca23, true)} − ${fmtRp(m.cl23, true)}</td>
+              <td><strong>Net Working Capital Riil (Aset Lancar âˆ’ Liabilitas Lancar)</strong></td>
+              <td>${fmtRp(m.ca23, true)} âˆ’ ${fmtRp(m.cl23, true)}</td>
               <td colspan="2" class="num-col"><strong>${fmtRp(m.nwc23)}</strong></td>
               <td>${m.nwc23 > 0 ? 'Positif (Aset lancar melampaui utang lancar)' : 'Negatif (Tekanan utang lancar)'}</td>
             </tr>
             <tr>
               <td><strong>Kebutuhan Modal Kerja 1 Siklus Penuh (${fmtNum(m.grossCycle23, 0)} Hari)</strong></td>
-              <td>Daily Burn (${fmtRp(m.dailyGrossCashBurn)}) × (${fmtNum(m.grossCycle23, 0)} hari siklus gross)</td>
+              <td>Daily Burn (${fmtRp(m.dailyGrossCashBurn)}) Ã— (${fmtNum(m.grossCycle23, 0)} hari siklus gross)</td>
               <td colspan="2" class="num-col" style="font-weight:700;">${fmtRp(m.wcRequiredPerCycle)}</td>
               <td>Total biaya operasional yang harus ditalangi per siklus batch</td>
             </tr>
             <tr style="background:${!m.isNWCDeficit ? '#f0fdf4' : '#fef2f2'}; font-weight:800;">
               <td><strong>FINANCING GAP MODAL KERJA (KMK DEFICIT / SURPLUS)</strong></td>
-              <td>NWC Riil − Kebutuhan 1 Siklus</td>
+              <td>NWC Riil âˆ’ Kebutuhan 1 Siklus</td>
               <td colspan="2" class="num-col" style="color:${!m.isNWCDeficit ? '#166534' : '#dc2626'}; font-size:0.8rem;">
                 ${m.isNWCDeficit ? 'DEFISIT ' : 'SURPLUS '} ${fmtRp(m.nwcFinancingGap)}
               </td>
@@ -1522,7 +1554,7 @@ function renderGradeRiskTab(proj, m) {
     return `
       <div class="grade-step-box ${isActive ? 'active-grade' : ''}" style="background:${isActive ? g.bg : '#f8fafc'}; border-color:${isActive ? g.color : '#e2e8f0'};">
         <div style="font-size:0.92rem; font-weight:900; color:${g.color};">${g.grade}</div>
-        <div style="font-size:0.62rem; font-weight:700; color:#334155;">Skor ${g.minScore}–${g.maxScore}</div>
+        <div style="font-size:0.62rem; font-weight:700; color:#334155;">Skor ${g.minScore}â€“${g.maxScore}</div>
         <div style="font-size:0.6rem; color:#64748b; margin-top:2px;">${g.name}</div>
         ${isActive ? `<div style="margin-top:2px; font-size:0.58rem; font-weight:800; background:${g.color}; color:#fff; border-radius:3px; padding:1px 3px;">POSISI SAAT INI</div>` : ''}
       </div>
@@ -1532,8 +1564,8 @@ function renderGradeRiskTab(proj, m) {
   document.getElementById('gradeRiskMenuContainer').innerHTML = `
     <div class="card" style="border-left: 4px solid ${m.gradeMeta.color};">
       <div class="card-header">
-        <div class="card-title">🏅 Menu Penentuan Grade Risk Askrindo &amp; Indikator Penyebabnya (${proj.companyName})</div>
-        <button class="btn btn-primary btn-sm" onclick="switchTab('tab-score')">Lihat Rincian Perhitungan Score (${m.score}/100) →</button>
+        <div class="card-title">ðŸ… Menu Penentuan Grade Risk Askrindo &amp; Indikator Penyebabnya (${proj.companyName})</div>
+        <button class="btn btn-primary btn-sm" onclick="switchTab('tab-score')">Lihat Rincian Perhitungan Score (${m.score}/100) â†’</button>
       </div>
 
       <div class="grade-scale-bar">
@@ -1564,17 +1596,17 @@ function renderGradeRiskTab(proj, m) {
 
       ${m.hasKnockOutCap ? `
       <div style="background:#fef2f2; border:1px solid #fca5a5; border-left:4px solid #dc2626; padding:0.45rem 0.65rem; border-radius:6px; margin-bottom:0.6rem; font-size:0.71rem; color:#991b1b;">
-        ⚠️ <strong>Aturan Veto / Hard-Cap Grade Underwriting Aktif:</strong> Karena debitur mengalami <strong>Gross Loss (${fmtPct(m.gpm23)})</strong> sekaligus <strong>Mismatch Tenor Berat (Siklus Gross ${fmtNum(m.grossCycle23, 1)} hr > Tenor ${m.scfTenor} hr)</strong>, maka Risk Grade otomatis terkunci maksimal pada zona <strong>High Risk / Reject (B / C)</strong> hingga struktur transaksi dimodifikasi menjadi <em>Ring-Fenced Self-Liquidating</em>.
+        âš ï¸ <strong>Aturan Veto / Hard-Cap Grade Underwriting Aktif:</strong> Karena debitur mengalami <strong>Gross Loss (${fmtPct(m.gpm23)})</strong> sekaligus <strong>Mismatch Tenor Berat (Siklus Gross ${fmtNum(m.grossCycle23, 1)} hr > Tenor ${m.scfTenor} hr)</strong>, maka Risk Grade otomatis terkunci maksimal pada zona <strong>High Risk / Reject (B / C)</strong> hingga struktur transaksi dimodifikasi menjadi <em>Ring-Fenced Self-Liquidating</em>.
       </div>` : ''}
 
       <div class="grid-2" style="margin-bottom:0.6rem;">
         <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:0.6rem;">
           <div style="font-weight:800; color:#991b1b; font-size:0.76rem; margin-bottom:0.35rem; display:flex; justify-content:space-between;">
-            <span>🔴 Indikator Penyebab Turunnya Grade (${negativeDrivers.length} Faktor)</span>
+            <span>ðŸ”´ Indikator Penyebab Turunnya Grade (${negativeDrivers.length} Faktor)</span>
             <span>Penalti: -${fmtNum(m.totalLostPoints, 1)} Poin</span>
           </div>
           ${negativeDrivers.length === 0
-            ? `<div style="font-size:0.71rem; color:#166534; padding:0.35rem;">✅ Tidak ada indikator penekan material. Seluruh rasio berada dalam batas sehat.</div>`
+            ? `<div style="font-size:0.71rem; color:#166534; padding:0.35rem;">âœ… Tidak ada indikator penekan material. Seluruh rasio berada dalam batas sehat.</div>`
             : `<div style="display:flex; flex-direction:column; gap:0.3rem;">
                 ${negativeDrivers.map((d) => `
                   <div style="background:#fff; padding:0.38rem 0.5rem; border-radius:5px; border-left:3px solid #dc2626; font-size:0.69rem;">
@@ -1583,7 +1615,7 @@ function renderGradeRiskTab(proj, m) {
                       <span>-${fmtNum(d.lostPts, 1)} Poin</span>
                     </div>
                     <div style="color:#334155; margin-top:2px;">
-                      <strong>Aktual:</strong> ${d.actualStr} <em>(Standar: ${d.benchmark})</em> — ${d.reason}
+                      <strong>Aktual:</strong> ${d.actualStr} <em>(Standar: ${d.benchmark})</em> â€” ${d.reason}
                     </div>
                   </div>
                 `).join('')}
@@ -1593,11 +1625,11 @@ function renderGradeRiskTab(proj, m) {
 
         <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:0.6rem;">
           <div style="font-weight:800; color:#166534; font-size:0.76rem; margin-bottom:0.35rem; display:flex; justify-content:space-between;">
-            <span>🟢 Indikator Penopang / Penguat Grade (${positiveDrivers.length} Faktor)</span>
+            <span>ðŸŸ¢ Indikator Penopang / Penguat Grade (${positiveDrivers.length} Faktor)</span>
             <span>Diperoleh: +${fmtNum(m.totalRawScore, 1)} Poin</span>
           </div>
           ${positiveDrivers.length === 0
-            ? `<div style="font-size:0.71rem; color:#991b1b; padding:0.35rem;">⚠️ Sangat sedikit indikator positif yang menopang grade saat ini.</div>`
+            ? `<div style="font-size:0.71rem; color:#991b1b; padding:0.35rem;">âš ï¸ Sangat sedikit indikator positif yang menopang grade saat ini.</div>`
             : `<div style="display:flex; flex-direction:column; gap:0.3rem;">
                 ${positiveDrivers.map((d) => `
                   <div style="background:#fff; padding:0.38rem 0.5rem; border-radius:5px; border-left:3px solid #166534; font-size:0.69rem;">
@@ -1606,7 +1638,7 @@ function renderGradeRiskTab(proj, m) {
                       <span>+${fmtNum(d.earnedPts, 1)} Poin</span>
                     </div>
                     <div style="color:#334155; margin-top:2px;">
-                      <strong>Aktual:</strong> ${d.actualStr} <em>(Standar: ${d.benchmark})</em> — ${d.reason}
+                      <strong>Aktual:</strong> ${d.actualStr} <em>(Standar: ${d.benchmark})</em> â€” ${d.reason}
                     </div>
                   </div>
                 `).join('')}
@@ -1615,7 +1647,7 @@ function renderGradeRiskTab(proj, m) {
 
           <div style="margin-top:0.5rem; background:#fff; padding:0.45rem 0.55rem; border-radius:6px; border:1px solid #cbd5e1;">
             <div style="font-weight:700; font-size:0.71rem; color:var(--askrindo-navy); margin-bottom:0.25rem;">
-              ⚙️ Penetapan / Override Grade Risk oleh Underwriter (Opsional):
+              âš™ï¸ Penetapan / Override Grade Risk oleh Underwriter (Opsional):
             </div>
             <div class="grid-2" style="gap:0.35rem;">
               <div>
@@ -1639,7 +1671,7 @@ function renderGradeRiskTab(proj, m) {
 
     <div class="card">
       <div class="card-header">
-        <div class="card-title">📋 Tabel Parameter &amp; Matriks Standar Penentuan Grade Risk Askrindo (AAA s/d C)</div>
+        <div class="card-title">ðŸ“‹ Tabel Parameter &amp; Matriks Standar Penentuan Grade Risk Askrindo (AAA s/d C)</div>
         <span style="font-size:0.66rem; color:var(--text-muted);">Baris berwarna menunjukkan posisi Grade kasus aktif</span>
       </div>
       <div class="table-responsive">
@@ -1660,8 +1692,8 @@ function renderGradeRiskTab(proj, m) {
               const active = g.grade === m.shortGrade;
               return `
                 <tr style="${active ? `background:${g.bg}; font-weight:700;` : ''}">
-                  <td><span class="grade-badge ${g.badgeCls}">${g.grade}</span> ${active ? '◀' : ''}</td>
-                  <td><strong>${g.minScore} – ${g.maxScore}</strong></td>
+                  <td><span class="grade-badge ${g.badgeCls}">${g.grade}</span> ${active ? 'â—€' : ''}</td>
+                  <td><strong>${g.minScore} â€“ ${g.maxScore}</strong></td>
                   <td>${g.name}</td>
                   <td>${g.criteriaSummary}</td>
                   <td class="num-col"><strong>${g.maxCoverage}%</strong></td>
@@ -1702,12 +1734,12 @@ function renderScoreCalculationTab(proj, m) {
   document.getElementById('scoreCalculationMenuContainer').innerHTML = `
     <div class="card" style="border-left: 4px solid var(--askrindo-blue);">
       <div class="card-header">
-        <div class="card-title">🧮 Menu Rincian Perhitungan Score DCC-SWCM (${proj.companyName})</div>
+        <div class="card-title">ðŸ§® Menu Rincian Perhitungan Score DCC-SWCM (${proj.companyName})</div>
         <div style="display:flex; gap:0.35rem; align-items:center;">
           <span class="grade-badge ${m.gradeMeta.badgeCls}" style="font-size:0.72rem; padding:2px 8px;">
             Total Score: ${m.score} / 100 (Grade ${m.shortGrade})
           </span>
-          <button class="btn btn-outline btn-sm" onclick="switchTab('tab-grade')">← Indikator Grade</button>
+          <button class="btn btn-outline btn-sm" onclick="switchTab('tab-grade')">â† Indikator Grade</button>
         </div>
       </div>
 
@@ -1737,7 +1769,7 @@ function renderScoreCalculationTab(proj, m) {
         <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:6px; padding:0.5rem 0.65rem;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.2rem;">
             <span style="font-weight:700; font-size:0.73rem; color:var(--askrindo-navy);">
-              🎚️ Kalibrasi Penilaian Kualitatif 5C Underwriter (Sub-Indikator 6B)
+              ðŸŽšï¸ Kalibrasi Penilaian Kualitatif 5C Underwriter (Sub-Indikator 6B)
             </span>
             <span class="slider-val" id="lblQual5CScore">${fmtNum(qualVal, 1)} / 10 (+${fmtNum((qualVal / 10) * 6, 1)} Poin)</span>
           </div>
@@ -1745,17 +1777,17 @@ function renderScoreCalculationTab(proj, m) {
           <div class="slider-scale">
             <span>0 (Macet / Tanpa Agunan)</span>
             <span>5 (Cukup)</span>
-            <span>10 (SLIK Kol 1 + Agunan Kuat ≥150%)</span>
+            <span>10 (SLIK Kol 1 + Agunan Kuat â‰¥150%)</span>
           </div>
         </div>
 
         <div style="background:#fff; border:1px solid var(--border-color); border-radius:6px; padding:0.5rem 0.65rem; display:flex; flex-direction:column; justify-content:center;">
           <div style="font-weight:700; font-size:0.73rem; color:var(--askrindo-navy); margin-bottom:0.2rem;">
-            📐 Rumus Rekonsiliasi Score Akhir DCC-SWCM:
+            ðŸ“ Rumus Rekonsiliasi Score Akhir DCC-SWCM:
           </div>
           <div style="font-size:0.71rem; color:#334155; display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:0.3rem 0.5rem; border-radius:4px;">
             <span><strong>Skor Awal:</strong> 100,0</span>
-            <span>−</span>
+            <span>âˆ’</span>
             <span style="color:#dc2626; font-weight:700;">Penalti: ${fmtNum(m.totalLostPoints, 1)}</span>
             <span>=</span>
             <span style="color:${m.gradeMeta.color}; font-weight:900; font-size:0.84rem;">Skor Akhir: ${m.score} / 100 (Grade ${m.shortGrade})</span>
@@ -1936,13 +1968,13 @@ function renderDashboardTab(proj, m) {
       </div>
       <div style="font-size:0.78rem; color:${m.cashGapAtSCFMaturity_Actual > 0 ? '#991b1b' : '#166534'}; font-weight:600; margin-top:0.2rem;">
         ${m.cashGapAtSCFMaturity_Actual > 0
-          ? `⚠️ Defisit siklus ${fmtNum(m.cashGapAtSCFMaturity_Actual, 0)} hari saat jatuh tempo hari ke-${m.scfTenor} (Memicu klaim / KMK Backup)!`
-          : `✅ Siklus operasi masuk di dalam tenor ${m.scfTenor} hari (Surplus waktu ${fmtNum(Math.abs(m.cashGapAtSCFMaturity_Actual), 0)} hari).`}
+          ? `âš ï¸ Defisit siklus ${fmtNum(m.cashGapAtSCFMaturity_Actual, 0)} hari saat jatuh tempo hari ke-${m.scfTenor} (Memicu klaim / KMK Backup)!`
+          : `âœ… Siklus operasi masuk di dalam tenor ${m.scfTenor} hari (Surplus waktu ${fmtNum(Math.abs(m.cashGapAtSCFMaturity_Actual), 0)} hari).`}
       </div>
     </div>
   `;
 
-  document.getElementById('dashboardSummaryCardTitle').textContent = `📈 Ringkasan Keuangan (Audited ${m.yr1} vs ${m.yr2})`;
+  document.getElementById('dashboardSummaryCardTitle').textContent = `ðŸ“ˆ Ringkasan Keuangan (Audited ${m.yr1} vs ${m.yr2})`;
   document.getElementById('dashboardSummaryTable').innerHTML = `
     <thead>
       <tr>
@@ -2000,7 +2032,7 @@ function renderDashboardTab(proj, m) {
 }
 
 function renderDCCTab(proj, m) {
-  document.getElementById('dccAuditCardTitle').textContent = `🔄 Audit Dynamic Cash Conversion Cycle (Data Bank vs Audited ${m.yr1} & ${m.yr2})`;
+  document.getElementById('dccAuditCardTitle').textContent = `ðŸ”„ Audit Dynamic Cash Conversion Cycle (Data Bank vs Audited ${m.yr1} & ${m.yr2})`;
   document.getElementById('dccAuditTable').innerHTML = `
     <thead>
       <tr>
@@ -2017,7 +2049,7 @@ function renderDCCTab(proj, m) {
     <tbody>
       <tr>
         <td><strong>DOR / DSO</strong> (Piutang)</td>
-        <td>(AR / Sales) × 365</td>
+        <td>(AR / Sales) Ã— 365</td>
         <td class="num-col"><strong>${proj.claimedDOR} hr</strong></td>
         <td class="num-col">${fmtNum(m.dor22_365, 1)} hr</td>
         <td class="num-col"><strong>${fmtNum(m.dor23_365, 1)} hr</strong></td>
@@ -2027,7 +2059,7 @@ function renderDCCTab(proj, m) {
       </tr>
       <tr>
         <td><strong>DOI / DIO</strong> (Persediaan)</td>
-        <td>(Inv / HPP) × 365</td>
+        <td>(Inv / HPP) Ã— 365</td>
         <td class="num-col"><strong>${proj.claimedDOI} hr</strong></td>
         <td class="num-col">${fmtNum(m.doi22_365, 1)} hr</td>
         <td class="num-col" style="color:${m.diffDOI > 30 ? '#dc2626' : '#0f172a'}; font-weight:800;">${fmtNum(m.doi23_365, 1)} hr</td>
@@ -2047,7 +2079,7 @@ function renderDCCTab(proj, m) {
       </tr>
       <tr>
         <td><strong>DOP Murni</strong> (Utang Dagang)</td>
-        <td>(AP / HPP) × 365</td>
+        <td>(AP / HPP) Ã— 365</td>
         <td class="num-col"><strong>${proj.claimedDOP} hr</strong></td>
         <td class="num-col">${fmtNum(m.dop22_365, 1)} hr</td>
         <td class="num-col" style="font-weight:800;">${fmtNum(m.dop23_365, 1)} hr</td>
@@ -2057,7 +2089,7 @@ function renderDCCTab(proj, m) {
       </tr>
       <tr>
         <td><em>DOP Luas (+Utang Lain &amp; YMH)</em></td>
-        <td>((AP+Lain+YMH)/HPP)×365</td>
+        <td>((AP+Lain+YMH)/HPP)Ã—365</td>
         <td class="num-col"><em>(${proj.claimedDOP} hr)</em></td>
         <td class="num-col">${fmtNum(m.dopBroad22_365, 1)} hr</td>
         <td class="num-col">${fmtNum(m.dopBroad23_365, 1)} hr</td>
@@ -2067,7 +2099,7 @@ function renderDCCTab(proj, m) {
       </tr>
       <tr style="background:#f0f9ff; font-weight:700;">
         <td><strong>Cash Conversion Cycle (CCC)</strong></td>
-        <td>DOI + DOR − DOP Murni</td>
+        <td>DOI + DOR âˆ’ DOP Murni</td>
         <td class="num-col">${m.claimedCCC} hr</td>
         <td class="num-col">${fmtNum(m.ccc22, 1)} hr</td>
         <td class="num-col" style="color:${m.ccc23 > 180 ? '#dc2626' : '#166534'};">${fmtNum(m.ccc23, 1)} hr</td>
@@ -2084,12 +2116,12 @@ function renderDCCTab(proj, m) {
         <div style="font-weight:700; color:${m.cashGapAtSCFMaturity_Actual > 0 ? '#991b1b' : '#166534'}; margin-bottom:0.12rem;">
           1. Evaluasi Jatuh Tempo Fasilitas Utama (Hari ke-${m.scfTenor})
         </div>
-        <p>Siklus Operasi Gross membutuhkan <strong>${m.claimedGrossCycle} hari (Data Bank)</strong> atau <strong>${fmtNum(m.grossCycle23, 1)} hari (aktual ${m.yr2})</strong>, sedangkan Tenor Pembayaran Kredit adalah <strong>${m.scfTenor} hari</strong> (${m.cashGapAtSCFMaturity_Actual > 0 ? `Defisit waktu <strong>${fmtNum(m.cashGapAtSCFMaturity_Actual, 1)} hari</strong> — kas belum terkumpul saat jatuh tempo!` : `Surplus waktu <strong>${fmtNum(Math.abs(m.cashGapAtSCFMaturity_Actual), 1)} hari</strong> — aman & self-liquidating.`}).</p>
+        <p>Siklus Operasi Gross membutuhkan <strong>${m.claimedGrossCycle} hari (Data Bank)</strong> atau <strong>${fmtNum(m.grossCycle23, 1)} hari (aktual ${m.yr2})</strong>, sedangkan Tenor Pembayaran Kredit adalah <strong>${m.scfTenor} hari</strong> (${m.cashGapAtSCFMaturity_Actual > 0 ? `Defisit waktu <strong>${fmtNum(m.cashGapAtSCFMaturity_Actual, 1)} hari</strong> â€” kas belum terkumpul saat jatuh tempo!` : `Surplus waktu <strong>${fmtNum(Math.abs(m.cashGapAtSCFMaturity_Actual), 1)} hari</strong> â€” aman & self-liquidating.`}).</p>
       </div>
 
       <div style="padding:0.45rem; background:#fffbeb; border:1px solid #fde68a; border-radius:6px;">
         <div style="font-weight:700; color:#92400e; margin-bottom:0.12rem;">
-          2. Evaluasi Fasilitas Tambahan / KMK Backup (+${m.kmkTenor} Hari → Total ${m.totalMaxTenor} Hari)
+          2. Evaluasi Fasilitas Tambahan / KMK Backup (+${m.kmkTenor} Hari â†’ Total ${m.totalMaxTenor} Hari)
         </div>
         <p>${m.kmkTenor > 0
           ? `Fasilitas KMK Khusus (${m.kmkTenor} hari setelah fasilitas utama jatuh tempo) menjadikan total tenor ${m.totalMaxTenor} hari. Terhadap siklus aktual ${fmtNum(m.grossCycle23, 1)} hari, ${m.cashGapAfterKMK_Actual > 0 ? `masih terdapat <strong>defisit ${fmtNum(m.cashGapAfterKMK_Actual, 1)} hari</strong>!` : `total waktu 270 hari menutup siklus, namun mengonversi trade finance menjadi modal kerja saat default.`}`
@@ -2119,11 +2151,11 @@ function renderDCCTab(proj, m) {
           <td class="num-col" style="color:#0a2540; font-weight:700;"><strong>${fmtRp(m.dailyGrossCashBurn)} / hari</strong></td>
         </tr>
         <tr>
-          <td><strong>Operating Working Capital (AR + Inv − AP)</strong></td>
+          <td><strong>Operating Working Capital (AR + Inv âˆ’ AP)</strong></td>
           <td class="num-col"><strong>${fmtRp(m.owc23)}</strong></td>
         </tr>
         <tr>
-          <td><strong>Net Working Capital (CA − CL)</strong></td>
+          <td><strong>Net Working Capital (CA âˆ’ CL)</strong></td>
           <td class="num-col">${fmtRp(m.nwc23)}</td>
         </tr>
         <tr>
@@ -2269,10 +2301,10 @@ function runStressSimulation() {
   const statusColor = res.isViable ? '#166534' : (res.simGP > 0 ? '#92400e' : '#991b1b');
   const statusBg = res.isViable ? '#f0fdf4' : (res.simGP > 0 ? '#fffbeb' : '#fef2f2');
   const statusLabel = res.isViable
-    ? `✅ LAYAK & SELF-LIQUIDATING (SIKLUS ≤ ${proj.scfTenorDays} HARI)`
+    ? `âœ… LAYAK & SELF-LIQUIDATING (SIKLUS â‰¤ ${proj.scfTenorDays} HARI)`
     : (res.simGP > 0
-      ? '⚠️ MARGIN POSITIF TETAPI SIKLUS/DSCR PERLU PENYESUAIAN'
-      : '❌ TIDAK LAYAK (DEFISIT KAS & DEFAULT SAAT JATUH TEMPO)');
+      ? 'âš ï¸ MARGIN POSITIF TETAPI SIKLUS/DSCR PERLU PENYESUAIAN'
+      : 'âŒ TIDAK LAYAK (DEFISIT KAS & DEFAULT SAAT JATUH TEMPO)');
 
   document.getElementById('stressTestResultPanel').innerHTML = `
     <div style="background:${statusBg}; border:1.5px solid ${statusColor}; border-radius:8px; padding:0.65rem;">
@@ -2283,13 +2315,13 @@ function runStressSimulation() {
         <div style="background:#fff; padding:0.35rem 0.5rem; border-radius:5px; border:1px solid var(--border-color);">
           <div style="font-size:0.64rem; color:var(--text-muted);">Siklus Gross (DOI + DOR)</div>
           <div style="font-size:0.9rem; font-weight:800; color:${res.tenorFit ? '#166534' : '#dc2626'};">
-            ${res.simGrossCycle} Hr ${res.tenorFit ? `≤ ${proj.scfTenorDays}h` : `> ${proj.scfTenorDays}h!`}
+            ${res.simGrossCycle} Hr ${res.tenorFit ? `â‰¤ ${proj.scfTenorDays}h` : `> ${proj.scfTenorDays}h!`}
           </div>
           <div style="font-size:0.64rem; color:var(--text-muted);">CCC Bersih: <strong>${res.simCCC} Hr</strong></div>
         </div>
 
         <div style="background:#fff; padding:0.35rem 0.5rem; border-radius:5px; border:1px solid var(--border-color);">
-          <div style="font-size:0.64rem; color:var(--text-muted);">Pelepasan Kas Modal Kerja (ΔOWC)</div>
+          <div style="font-size:0.64rem; color:var(--text-muted);">Pelepasan Kas Modal Kerja (Î”OWC)</div>
           <div style="font-size:0.9rem; font-weight:800; color:${res.deltaOWC >= 0 ? '#166534' : '#dc2626'};">
             ${res.deltaOWC >= 0 ? '+' : ''}${fmtRp(res.deltaOWC, true)}
           </div>
@@ -2358,7 +2390,7 @@ function renderSWCMMatrixTable(proj, m) {
       params: { gpm: m.gpm23 - 7.0, doi: Math.min(360, Math.round(m.doi23_365 + 45)), dor: Math.min(150, Math.round(m.dor23_365 + 40)), dop: Math.max(10, Math.round(m.dop23_365 - 10)), revGrowth: -20, opexCut: -5, fxShock: 15, invHaircut: 20 }
     },
     {
-      name: '5. ⭐ Skenario Turnaround / Mitigasi DCC-SWCM',
+      name: '5. â­ Skenario Turnaround / Mitigasi DCC-SWCM',
       params: { gpm: Math.max(10.5, m.minRequiredGPM), doi: m.targetSafeDOI, dor: Math.min(55, Math.round(m.dor23_365)), dop: Math.max(65, proj.claimedDOP), revGrowth: 15, opexCut: m.gp23 < 0 ? 45 : 10, fxShock: 0, invHaircut: 0 }
     }
   ];
@@ -2371,7 +2403,7 @@ function renderSWCMMatrixTable(proj, m) {
         <th class="num-col">DOI+DOR</th>
         <th class="num-col">CCC</th>
         <th class="num-col">Gross Profit</th>
-        <th class="num-col">Pelepasan Kas (ΔOWC)</th>
+        <th class="num-col">Pelepasan Kas (Î”OWC)</th>
         <th class="num-col">DSCR</th>
         <th>Status Kelayakan</th>
       </tr>
@@ -2383,7 +2415,7 @@ function renderSWCMMatrixTable(proj, m) {
           <tr>
             <td><strong>${s.name}</strong></td>
             <td class="num-col" style="color:${s.params.gpm >= 0 ? '#166534' : '#dc2626'}; font-weight:700;">${fmtPct(s.params.gpm, 1)}</td>
-            <td class="num-col">${r.simGrossCycle}h ${r.tenorFit ? '✅' : '❌'}</td>
+            <td class="num-col">${r.simGrossCycle}h ${r.tenorFit ? 'âœ…' : 'âŒ'}</td>
             <td class="num-col">${r.simCCC}h</td>
             <td class="num-col">${fmtRp(r.simGP, true)}</td>
             <td class="num-col" style="color:${r.deltaOWC >= 0 ? '#166534' : '#dc2626'}; font-weight:700;">
@@ -2424,14 +2456,14 @@ function renderCaseStudyQATab(proj, m) {
         </div>
         <div>
           <span class="grade-badge ${m.gradeMeta.badgeCls}">
-            Skor: ${m.score}/100 (Grade ${m.shortGrade}) — ${m.decision}
+            Skor: ${m.score}/100 (Grade ${m.shortGrade}) â€” ${m.decision}
           </span>
         </div>
       </div>
 
       <div style="border:1px solid #cbd5e1; border-radius:7px; padding:0.65rem; background:#fff;">
         <h3 style="color:var(--askrindo-navy); font-size:0.88rem; margin-bottom:0.4rem; border-bottom:2px solid var(--askrindo-blue); padding-bottom:0.25rem;">
-          📌 I. CRITICAL POINTS (Kondisi Keuangan, Siklus Kas &amp; Ketahanan NWC)
+          ðŸ“Œ I. CRITICAL POINTS (Kondisi Keuangan, Siklus Kas &amp; Ketahanan NWC)
         </h3>
         <div class="grid-2" style="gap:0.55rem;">
           <div style="background:#fef2f2; padding:0.55rem; border-radius:6px; border-left:3.5px solid #dc2626;">
@@ -2452,7 +2484,7 @@ function renderCaseStudyQATab(proj, m) {
 
       <div style="border:1px solid #cbd5e1; border-radius:7px; padding:0.65rem; background:#fff;">
         <h3 style="color:var(--askrindo-navy); font-size:0.88rem; margin-bottom:0.4rem; border-bottom:2px solid var(--askrindo-green); padding-bottom:0.25rem;">
-          🛡️ II. INFORMASI WAJIB UNDERWRITER &amp; KETENTUAN MITIGASI RISIKO (COVENANTS)
+          ðŸ›¡ï¸ II. INFORMASI WAJIB UNDERWRITER &amp; KETENTUAN MITIGASI RISIKO (COVENANTS)
         </h3>
         <div class="grid-2" style="gap:0.55rem;">
           <div style="background:#f8fafc; padding:0.55rem; border-radius:6px; border:1px solid var(--border-color);">
@@ -2473,7 +2505,7 @@ function renderCaseStudyQATab(proj, m) {
 
       <div style="border:1.5px solid var(--askrindo-blue); border-radius:7px; padding:0.65rem; background:#f0f9ff;">
         <h3 style="color:var(--askrindo-navy); font-size:0.8rem; margin-bottom:0.35rem;">
-          💡 III. REKOMENDASI UNDERWRITING &amp; RESTRUKTURISASI PARAMETER (METODE DCC-SWCM)
+          ðŸ’¡ III. REKOMENDASI UNDERWRITING &amp; RESTRUKTURISASI PARAMETER (METODE DCC-SWCM)
         </h3>
 
         <div class="table-responsive" style="margin-bottom:0.45rem;">
@@ -2496,19 +2528,19 @@ function renderCaseStudyQATab(proj, m) {
               <tr>
                 <td><strong>Hari Persediaan (DOI)</strong></td>
                 <td class="num-col" style="color:${m.doi23_365 > 150 ? '#dc2626' : '#0f172a'}; font-weight:700;">${fmtNum(m.doi23_365, 1)} Hari (Data Bank: ${proj.claimedDOI} hr)</td>
-                <td class="num-col" style="color:#166534; font-weight:700;">≤ ${m.targetSafeDOI} Hari</td>
+                <td class="num-col" style="color:#166534; font-weight:700;">â‰¤ ${m.targetSafeDOI} Hari</td>
                 <td>Membebaskan kas internal <strong>+${fmtRp(m.cashReleasedAtSafeDOI, true)}</strong></td>
               </tr>
               <tr>
                 <td><strong>Siklus Gross (DOI+DOR)</strong></td>
                 <td class="num-col" style="color:${m.grossCycle23 > m.scfTenor ? '#dc2626' : '#166534'}; font-weight:700;">${fmtNum(m.grossCycle23, 1)} Hari vs Tenor ${m.scfTenor} Hr</td>
-                <td class="num-col" style="color:#166534; font-weight:700;">${turnaroundSim.simGrossCycle} Hari (≤ Tenor ${m.scfTenor} Hr)</td>
+                <td class="num-col" style="color:#166534; font-weight:700;">${turnaroundSim.simGrossCycle} Hari (â‰¤ Tenor ${m.scfTenor} Hr)</td>
                 <td>Fasilitas menjadi 100% Self-Liquidating</td>
               </tr>
               <tr>
                 <td><strong>Gross Margin (GPM)</strong></td>
                 <td class="num-col" style="color:${m.gpm23 < 0 ? '#dc2626' : '#166534'}; font-weight:700;">${fmtPct(m.gpm23, 2)} (${fmtRp(m.gp23, true)})</td>
-                <td class="num-col" style="color:#166534; font-weight:700;">≥ +${fmtNum(Math.max(10.5, m.minRequiredGPM), 1)}% (${fmtRp(turnaroundSim.simGP, true)})</td>
+                <td class="num-col" style="color:#166534; font-weight:700;">â‰¥ +${fmtNum(Math.max(10.5, m.minRequiredGPM), 1)}% (${fmtRp(turnaroundSim.simGP, true)})</td>
                 <td>DSCR naik menjadi <strong>${fmtNum(turnaroundSim.simDSCR, 2)}x</strong></td>
               </tr>
               <tr>
@@ -2520,7 +2552,7 @@ function renderCaseStudyQATab(proj, m) {
               <tr>
                 <td><strong>Agunan Tambahan &amp; Risk Sharing</strong></td>
                 <td class="num-col">Coverage 100% (Tanpa Tambahan Agunan Riil)</td>
-                <td class="num-col" style="color:#166534; font-weight:700;">Agunan Fixed Asset ≥ 120% (${fmtRp(proj.requestedPlafond * 1.2, true)}) | Risk Sharing Askrindo Maks ${m.recCoveragePct || 55}%</td>
+                <td class="num-col" style="color:#166534; font-weight:700;">Agunan Fixed Asset â‰¥ 120% (${fmtRp(proj.requestedPlafond * 1.2, true)}) | Risk Sharing Askrindo Maks ${m.recCoveragePct || 55}%</td>
                 <td>Loss-absorbing buffer &amp; kepastian pemulihan recovery klaim Askrindo</td>
               </tr>
             </tbody>
@@ -2528,7 +2560,7 @@ function renderCaseStudyQATab(proj, m) {
         </div>
 
         <div class="form-group">
-          <label style="font-weight:700; color:var(--askrindo-navy);">✍️ Catatan &amp; Keputusan Tambahan Underwriter (Tersimpan Otomatis per Kasus):</label>
+          <label style="font-weight:700; color:var(--askrindo-navy);">âœï¸ Catatan &amp; Keputusan Tambahan Underwriter (Tersimpan Otomatis per Kasus):</label>
           <textarea id="inp_customNotes" class="form-control" placeholder="Tulis kesimpulan atau syarat khusus komite untuk debitur ini..." oninput="saveCustomNotes(this.value)">${proj.customNotes || ''}</textarea>
         </div>
       </div>
@@ -2625,7 +2657,7 @@ function renderPrintableReport(proj, m) {
         <tbody>
           <tr><td><strong>Plafond Diajukan</strong></td><td><strong>${fmtRp(proj.requestedPlafond)}</strong> ${proj.usdAmount > 0 ? `(USD ${proj.usdAmount.toLocaleString('id-ID')} @ Rp${proj.fxRate.toLocaleString('id-ID')})` : ''}</td></tr>
           <tr><td><strong>Tenor Fasilitas</strong></td><td>PK ${proj.pkMonths} Bln | Tenor Utama: ${proj.scfTenorDays} Hr | KMK Backup: ${proj.kmkTenorDays} Hr</td></tr>
-          <tr><td><strong>Skor &amp; Risk Grade</strong></td><td><strong>${m.score} / 100 — Grade ${m.riskGrade}</strong> (IJP: ${m.ijpRate})</td></tr>
+          <tr><td><strong>Skor &amp; Risk Grade</strong></td><td><strong>${m.score} / 100 â€” Grade ${m.riskGrade}</strong> (IJP: ${m.ijpRate})</td></tr>
           <tr><td><strong>Keputusan</strong></td><td><strong style="color:${m.gradeMeta.color};">${m.decision}</strong></td></tr>
         </tbody>
       </table>
@@ -2693,7 +2725,7 @@ function renderPrintableReport(proj, m) {
       <div style="font-weight:800; font-size:0.78rem; margin-bottom:0.12rem;">REKOMENDASI KOMITE UNDERWRITING ASKRINDO: ${m.decision} (Coverage Maks ${m.recCoveragePct || 55}%)</div>
       <p style="font-size:0.71rem; line-height:1.4;">
         ${proj.customNotes ? `<strong>Catatan Underwriter:</strong> ${proj.customNotes}<br/>` : ''}
-        Plafond Rekomendasi: <strong>${fmtRp(m.recommendedMitigatedLimit > 0 ? m.recommendedMitigatedLimit : proj.requestedPlafond)}</strong> dengan pencairan bertahap maksimal <strong>${fmtRp(m.recommendedTrancheSize)} per tranche</strong>, target DOI ≤ <strong>${m.targetSafeDOI} hari</strong>, dan Gross Margin minimal <strong>+${fmtNum(Math.max(8, m.minRequiredGPM), 1)}%</strong>.
+        Plafond Rekomendasi: <strong>${fmtRp(m.recommendedMitigatedLimit > 0 ? m.recommendedMitigatedLimit : proj.requestedPlafond)}</strong> dengan pencairan bertahap maksimal <strong>${fmtRp(m.recommendedTrancheSize)} per tranche</strong>, target DOI â‰¤ <strong>${m.targetSafeDOI} hari</strong>, dan Gross Margin minimal <strong>+${fmtNum(Math.max(8, m.minRequiredGPM), 1)}%</strong>.
       </p>
     </div>
 
@@ -3005,17 +3037,17 @@ function renderAll() {
     if (dashPane) {
       dashPane.innerHTML = `
         <div class="card" style="text-align:center; padding:3.5rem 1.5rem;">
-          <div style="font-size:3.5rem; margin-bottom:1rem;">📂</div>
+          <div style="font-size:3.5rem; margin-bottom:1rem;">ðŸ“‚</div>
           <h2 style="color:var(--askrindo-navy); font-size:1.3rem; margin-bottom:0.5rem;">Ruang Kerja Analisa Kredit Masih Kosong</h2>
           <p style="color:var(--text-muted); max-width:540px; margin:0 auto 1.5rem; font-size:0.85rem;">
             Akun ini baru dibuat dan belum memiliki kasus analisa debitur. Anda dapat membuat proyek analisa baru secara mandiri atau membuka file backup (.asca.json).
           </p>
           <div style="display:flex; justify-content:center; gap:0.75rem;">
             <button class="btn btn-primary" onclick="openNewProjectModal()" style="padding:0.6rem 1.2rem; font-size:0.9rem;">
-              <span>➕</span> Buat Proyek Pertama
+              <span>âž•</span> Buat Proyek Pertama
             </button>
             <label class="btn btn-light" style="padding:0.6rem 1.2rem; font-size:0.9rem; cursor:pointer;">
-              <span>📂</span> Buka File (.asca.json)
+              <span>ðŸ“‚</span> Buka File (.asca.json)
               <input type="file" accept=".json" style="display:none" onchange="importWorkspaceJSON(event)" />
             </label>
           </div>
@@ -3054,8 +3086,32 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 // ============================================================================
-// 14. AUTHENTICATION & USER MANAGEMENT MODULE (STANDAR ASCA)
+// 14. AUTHENTICATION & USER MANAGEMENT MODULE (SUPABASE CLOUD SYNC)
 // ============================================================================
+async function fetchUsersFromCloud() {
+  try {
+    const data = await supabaseFetch('users?select=*');
+    if (Array.isArray(data) && data.length > 0) {
+      const mapped = data.map((u) => ({
+        id: u.id,
+        username: u.username,
+        password: u.password,
+        fullName: u.full_name,
+        role: u.role,
+        unit: u.unit,
+        status: u.status,
+        createdAt: u.created_at,
+        lastLogin: u.last_login
+      }));
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(mapped));
+      return mapped;
+    }
+  } catch (err) {
+    console.warn('Gagal memuat pengguna dari Supabase, beralih ke cache lokal:', err);
+  }
+  return getUsersFromStorage();
+}
+
 function getUsersFromStorage() {
   try {
     const raw = localStorage.getItem(USERS_STORAGE_KEY);
@@ -3096,7 +3152,7 @@ function setActiveSession(session) {
   }
 }
 
-function checkAuthAndRoute() {
+async function checkAuthAndRoute() {
   const session = getActiveSession();
   const loginScreen = document.getElementById('loginScreen');
   const appTopNavbar = document.getElementById('appTopNavbar');
@@ -3104,7 +3160,6 @@ function checkAuthAndRoute() {
   const adminLayoutContainer = document.getElementById('adminLayoutContainer');
 
   if (!session) {
-    // Belum login: Hanya tampilkan layar login
     if (loginScreen) loginScreen.style.display = 'flex';
     if (appTopNavbar) appTopNavbar.style.display = 'none';
     if (appLayoutContainer) appLayoutContainer.style.display = 'none';
@@ -3112,19 +3167,16 @@ function checkAuthAndRoute() {
     return;
   }
 
-  // Sudah login: Sembunyikan layar login
   if (loginScreen) loginScreen.style.display = 'none';
 
   if (session.role === 'admin') {
-    // SUPER ADMIN: HANYA modul User Management
     if (appTopNavbar) appTopNavbar.style.display = 'none';
     if (appLayoutContainer) appLayoutContainer.style.display = 'none';
     if (adminLayoutContainer) adminLayoutContainer.style.display = 'flex';
     const adminUnameEl = document.getElementById('adminSessionUserName');
     if (adminUnameEl) adminUnameEl.textContent = session.username;
-    renderAdminUserManagement();
+    await renderAdminUserManagement();
   } else {
-    // ANALIS KREDIT: Seluruh modul analisa kredit & underwriting ASCA
     if (adminLayoutContainer) adminLayoutContainer.style.display = 'none';
     if (appTopNavbar) appTopNavbar.style.display = 'flex';
     if (appLayoutContainer) appLayoutContainer.style.display = 'grid';
@@ -3139,12 +3191,13 @@ function checkAuthAndRoute() {
   }
 }
 
-function handleLoginSubmit(event) {
+async function handleLoginSubmit(event) {
   if (event) event.preventDefault();
   const usernameInput = document.getElementById('loginUsername');
   const passwordInput = document.getElementById('loginPassword');
   const alertBox = document.getElementById('loginAlertBox');
   const alertMsg = document.getElementById('loginAlertMsg');
+  const btnSubmit = document.getElementById('btnLoginSubmit');
 
   const uname = (usernameInput ? usernameInput.value : '').trim();
   const pwd = (passwordInput ? passwordInput.value : '').trim();
@@ -3155,67 +3208,83 @@ function handleLoginSubmit(event) {
     return;
   }
 
-  const users = getUsersFromStorage();
-  const user = users.find((u) => u.username.toLowerCase() === uname.toLowerCase());
-
-  if (!user || user.password !== pwd) {
-    if (alertBox) alertBox.style.display = 'flex';
-    if (alertMsg) alertMsg.textContent = 'Username atau kata sandi tidak valid!';
-    return;
+  if (btnSubmit) {
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<span>⏳ Memeriksa Akun...</span>';
   }
 
-  if (user.status !== 'active') {
+  try {
+    // Ambil data users langsung dari Supabase Cloud
+    let users = await fetchUsersFromCloud();
+    let user = users.find((u) => u.username.toLowerCase() === uname.toLowerCase());
+
+    if (!user || user.password !== pwd) {
+      if (alertBox) alertBox.style.display = 'flex';
+      if (alertMsg) alertMsg.textContent = 'Username atau kata sandi tidak valid!';
+      if (btnSubmit) {
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = '<span>🔐 Masuk ke Sistem</span>';
+      }
+      return;
+    }
+
+    if (user.status !== 'active') {
+      if (alertBox) alertBox.style.display = 'flex';
+      if (alertMsg) alertMsg.textContent = 'Akun Anda dinonaktifkan oleh Administrator. Hubungi IT/Super Admin.';
+      if (btnSubmit) {
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = '<span>🔐 Masuk ke Sistem</span>';
+      }
+      return;
+    }
+
+    // Update last login di Supabase Cloud
+    const nowIso = new Date().toISOString();
+    user.lastLogin = nowIso;
+    saveUsersToStorage(users);
+
+    supabaseFetch(`users?username=eq.${encodeURIComponent(user.username)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ last_login: nowIso })
+    }).catch((e) => console.warn('Gagal update last_login ke cloud:', e));
+
+    // Simpan sesi lokal
+    const session = {
+      username: user.username,
+      fullName: user.fullName,
+      role: user.role,
+      unit: user.unit,
+      loginAt: nowIso
+    };
+    setActiveSession(session);
+
+    if (alertBox) alertBox.style.display = 'none';
+    if (usernameInput) usernameInput.value = '';
+    if (passwordInput) passwordInput.value = '';
+
+    showToast(`Selamat datang, ${user.fullName}!`);
+    await checkAuthAndRoute();
+  } catch (err) {
+    console.error('Login error:', err);
     if (alertBox) alertBox.style.display = 'flex';
-    if (alertMsg) alertMsg.textContent = 'Akun Anda dinonaktifkan oleh Administrator. Hubungi IT/Super Admin.';
-    return;
+    if (alertMsg) alertMsg.textContent = 'Terjadi kesalahan koneksi server: ' + err.message;
+  } finally {
+    if (btnSubmit) {
+      btnSubmit.disabled = false;
+      btnSubmit.innerHTML = '<span>🔐 Masuk ke Sistem</span>';
+    }
   }
-
-  // Update last login
-  user.lastLogin = new Date().toISOString();
-  saveUsersToStorage(users);
-
-  // Set session
-  const session = {
-    username: user.username,
-    fullName: user.fullName,
-    role: user.role,
-    unit: user.unit,
-    loginAt: new Date().toISOString()
-  };
-  setActiveSession(session);
-
-  if (alertBox) alertBox.style.display = 'none';
-  if (usernameInput) usernameInput.value = '';
-  if (passwordInput) passwordInput.value = '';
-
-  showToast(`Selamat datang, ${user.fullName}!`);
-  checkAuthAndRoute();
-}
-
-function fillQuickLogin(username, password) {
-  const usernameInput = document.getElementById('loginUsername');
-  const passwordInput = document.getElementById('loginPassword');
-  if (usernameInput) usernameInput.value = username;
-  if (passwordInput) passwordInput.value = password;
-  const alertBox = document.getElementById('loginAlertBox');
-  if (alertBox) alertBox.style.display = 'none';
 }
 
 function togglePasswordVisibility(inputId, btn) {
   const input = document.getElementById(inputId);
   if (!input) return;
-
-  const eyeIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
-  const eyeSlashIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>';
-
   if (input.type === 'password') {
     input.type = 'text';
-    btn.innerHTML = eyeSlashIcon;
-    btn.setAttribute('title', 'Sembunyikan Password');
+    btn.textContent = '🙈';
   } else {
     input.type = 'password';
-    btn.innerHTML = eyeIcon;
-    btn.setAttribute('title', 'Tampilkan Password');
+    btn.textContent = '👁️';
   }
 }
 
@@ -3229,12 +3298,11 @@ function logoutSession() {
 
 let currentResetTargetUsername = null;
 
-function renderAdminUserManagement() {
-  const users = getUsersFromStorage();
+async function renderAdminUserManagement() {
+  const users = await fetchUsersFromCloud();
   const filterRole = document.getElementById('adminUserRoleFilter')?.value || 'ALL';
   const searchKeyword = (document.getElementById('adminUserSearchInput')?.value || '').toLowerCase().trim();
 
-  // Update stats
   const total = users.length;
   const active = users.filter((u) => u.status === 'active').length;
   const analysts = users.filter((u) => u.role === 'analyst').length;
@@ -3249,7 +3317,6 @@ function renderAdminUserManagement() {
   if (stAnalyst) stAnalyst.textContent = analysts;
   if (stAdmin) stAdmin.textContent = admins;
 
-  // Filter list
   const filtered = users.filter((u) => {
     if (filterRole !== 'ALL' && u.role !== filterRole) return false;
     if (searchKeyword) {
@@ -3358,7 +3425,7 @@ function closeModalAddUser() {
   if (modal) modal.classList.remove('open');
 }
 
-function saveNewUserFromModal() {
+async function saveNewUserFromModal() {
   const uname = (document.getElementById('adminNewUsername')?.value || '').trim();
   const fullName = (document.getElementById('adminNewFullName')?.value || '').trim();
   const unit = (document.getElementById('adminNewUnit')?.value || '').trim();
@@ -3371,27 +3438,34 @@ function saveNewUserFromModal() {
     return;
   }
 
-  const users = getUsersFromStorage();
+  let users = getUsersFromStorage();
   if (users.some((u) => u.username.toLowerCase() === uname.toLowerCase())) {
     alert(`Username "${uname}" sudah terdaftar! Gunakan username lain.`);
     return;
   }
 
-  users.push({
+  const newUserObj = {
     username: uname,
     password: pwd,
-    fullName,
-    unit,
-    role,
-    status,
-    createdAt: new Date().toISOString(),
-    lastLogin: null
-  });
+    full_name: fullName,
+    unit: unit,
+    role: role,
+    status: status
+  };
 
-  saveUsersToStorage(users);
-  closeModalAddUser();
-  renderAdminUserManagement();
-  showToast(`Pengguna baru "${uname}" berhasil ditambahkan!`);
+  try {
+    // Simpan langsung ke Supabase Cloud
+    await supabaseFetch('users', {
+      method: 'POST',
+      body: JSON.stringify(newUserObj)
+    });
+
+    closeModalAddUser();
+    await renderAdminUserManagement();
+    showToast(`Pengguna baru "${uname}" berhasil disimpan ke server Supabase! Siap login di device mana pun.`);
+  } catch (err) {
+    alert('Gagal menyimpan ke server Supabase: ' + err.message);
+  }
 }
 
 function openModalResetPassword(username) {
@@ -3413,7 +3487,7 @@ function closeModalResetPassword() {
   if (modal) modal.classList.remove('open');
 }
 
-function saveResetPasswordFromModal() {
+async function saveResetPasswordFromModal() {
   if (!currentResetTargetUsername) return;
   const newPwd = (document.getElementById('adminResetNewPassword')?.value || '').trim();
   const confirmPwd = (document.getElementById('adminResetConfirmPassword')?.value || '').trim();
@@ -3427,20 +3501,21 @@ function saveResetPasswordFromModal() {
     return;
   }
 
-  const users = getUsersFromStorage();
-  const user = users.find((u) => u.username.toLowerCase() === currentResetTargetUsername.toLowerCase());
-  if (!user) {
-    alert('Pengguna tidak ditemukan!');
-    return;
-  }
+  try {
+    await supabaseFetch(`users?username=eq.${encodeURIComponent(currentResetTargetUsername)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ password: newPwd })
+    });
 
-  user.password = newPwd;
-  saveUsersToStorage(users);
-  closeModalResetPassword();
-  showToast(`Password untuk akun "${currentResetTargetUsername}" berhasil direset!`);
+    closeModalResetPassword();
+    await renderAdminUserManagement();
+    showToast(`Password akun "${currentResetTargetUsername}" berhasil direset di server!`);
+  } catch (err) {
+    alert('Gagal mereset password di server: ' + err.message);
+  }
 }
 
-function toggleUserStatus(username) {
+async function toggleUserStatus(username) {
   const users = getUsersFromStorage();
   const user = users.find((u) => u.username.toLowerCase() === username.toLowerCase());
   if (!user) return;
@@ -3449,69 +3524,36 @@ function toggleUserStatus(username) {
     return;
   }
 
-  user.status = user.status === 'active' ? 'inactive' : 'active';
-  saveUsersToStorage(users);
-  renderAdminUserManagement();
-  showToast(`Status akun "${username}" diubah menjadi: ${user.status.toUpperCase()}`);
+  const nextStatus = user.status === 'active' ? 'inactive' : 'active';
+  try {
+    await supabaseFetch(`users?username=eq.${encodeURIComponent(username)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: nextStatus })
+    });
+    await renderAdminUserManagement();
+    showToast(`Status akun "${username}" diubah menjadi: ${nextStatus.toUpperCase()}`);
+  } catch (err) {
+    alert('Gagal memperbarui status akun: ' + err.message);
+  }
 }
 
-function confirmDeleteUser(username) {
+async function confirmDeleteUser(username) {
   if (username.toLowerCase() === 'admin') {
     alert('Akun Super Admin utama tidak boleh dihapus!');
     return;
   }
-  if (!confirm(`Apakah Anda yakin ingin menghapus akun pengguna "${username}" secara permanen?`)) {
+  if (!confirm(`Apakah Anda yakin ingin menghapus akun pengguna "${username}" secara permanen dari server cloud?`)) {
     return;
   }
 
-  let users = getUsersFromStorage();
-  users = users.filter((u) => u.username.toLowerCase() !== username.toLowerCase());
-  saveUsersToStorage(users);
-
-  // Clear data associated with this user
-  localStorage.removeItem(USER_PROJECTS_KEY_PREFIX + username);
-
-  renderAdminUserManagement();
-  showToast(`Pengguna "${username}" telah dihapus.`);
-}
-
-function exportUsersDatabaseJSON() {
-  const users = getUsersFromStorage();
-  const dataStr = JSON.stringify({
-    app: 'ASCA User Database',
-    exportedAt: new Date().toISOString(),
-    users
-  }, null, 2);
-
-  const blob = new Blob([dataStr], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `ASCA_Users_Database_${new Date().toISOString().slice(0, 10)}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast('Database pengguna berhasil diunduh! File ini dapat diimpor di perangkat lain.');
-}
-
-function importUsersDatabaseJSON(event) {
-  const file = event.target.files?.[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      const parsed = JSON.parse(e.target.result);
-      const list = Array.isArray(parsed) ? parsed : parsed.users;
-      if (Array.isArray(list) && list.length > 0) {
-        saveUsersToStorage(list);
-        renderAdminUserManagement();
-        showToast(`Berhasil menyinkronkan ${list.length} pengguna dari file database!`);
-      } else {
-        alert('Format file database pengguna tidak valid.');
-      }
-    } catch (err) {
-      alert('Gagal membaca file JSON: ' + err.message);
-    }
-  };
-  reader.readAsText(file);
-  event.target.value = '';
+  try {
+    await supabaseFetch(`users?username=eq.${encodeURIComponent(username)}`, {
+      method: 'DELETE'
+    });
+    localStorage.removeItem(USER_PROJECTS_KEY_PREFIX + username);
+    await renderAdminUserManagement();
+    showToast(`Pengguna "${username}" telah dihapus dari server cloud.`);
+  } catch (err) {
+    alert('Gagal menghapus pengguna dari server: ' + err.message);
+  }
 }

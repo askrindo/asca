@@ -3269,7 +3269,7 @@ async function handleLoginSubmit(event) {
     // Update last login di Supabase Cloud
     const nowIso = new Date().toISOString();
     user.lastLogin = nowIso;
-    saveUsersToStorage(users);
+    saveUsersToStorage(localUsers);
 
     supabaseFetch(`users?username=eq.${encodeURIComponent(user.username)}`, {
       method: 'PATCH',

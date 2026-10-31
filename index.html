@@ -210,7 +210,7 @@
               <button class="btn btn-outline btn-sm" onclick="toggleSidebar()" title="Minimize Daftar Proyek">&laquo;</button>
             </div>
           </div>
-          <input type="text" id="searchProjectInput" class="search-box" placeholder="Cari debitur, sektor, bank..." oninput="renderProjectList()" />
+          <input type="text" id="searchProjectInput" class="search-box" placeholder="Cari debitur, sektor, bank..." autocomplete="off" value="" oninput="renderProjectList()" />
         </div>
 
         <div id="projectListContainer" class="project-list">
@@ -286,7 +286,7 @@
         <button class="tab-btn" data-tab="tab-grade" onclick="switchTab('tab-grade')" title="Grade Risk & Indikator Penilaian">
           Grade Risk
         </button>
-        <button class="tab-btn" data-tab="tab-score" onclick="switchTab('tab-score')" title="Rincian Perhitungan Skor 6 Pilar ASCA">
+        <button class="tab-btn" data-tab="tab-score" onclick="switchTab('tab-score')" title="Rincian Perhitungan Skor 7 Pilar DCC-SWCM ASCA">
           Rincian Skor
         </button>
         <button class="tab-btn" data-tab="tab-case-qa" onclick="switchTab('tab-case-qa')" title="Critical Point Temuan & Paket Mitigasi Asuransi Kredit">
@@ -1121,6 +1121,6 @@
 
     <div class="toast-container" id="toastContainer"></div>
 
-  <script src="app.js?v=1793470350"></script>
+  <script src="app.js?v=1793470450"></script>
 </body>
 </html>

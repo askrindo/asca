@@ -754,6 +754,42 @@ function showToast(msg) {
 // ============================================================================
 // 4B. SISTEM EVALUASI OTOMATIS 5C & PENGECEKAN RIIL (LKPP / INAPROC & SIPP)
 // ============================================================================
+const KNOWN_INAPROC_BLACKLIST = [
+  'cv dhea putri',
+  'cv. dhea putri',
+  'dhea putri',
+  'pt karya bersama abadi',
+  'cv tri karya mandiri',
+  'cv bumi perkasa',
+  'pt bina mandiri pratama',
+  'cv anugrah agung',
+  'pt sinergi mega utama'
+];
+
+function checkInaprocBlacklist(name) {
+  if (!name) return { isBlacklisted: false, reason: '' };
+  const clean = name.toLowerCase().replace(/[^a-z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
+  
+  for (const b of KNOWN_INAPROC_BLACKLIST) {
+    const bClean = b.toLowerCase().replace(/[^a-z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (clean.includes(bClean) || bClean.includes(clean)) {
+      return {
+        isBlacklisted: true,
+        reason: 'Terdaftar Masuk Blacklist LKPP (Sanksi Pengadaan Nasional)'
+      };
+    }
+  }
+
+  if (/daftar[\s_-]*hitam|blacklist|sanksi[\s_-]*lkpp|wanprestasi[\s_-]*tender/i.test(name)) {
+    return {
+      isBlacklisted: true,
+      reason: 'Terindikasi Catatan Sanksi Pengadaan LKPP'
+    };
+  }
+
+  return { isBlacklisted: false, reason: '' };
+}
+
 function isMaritimeOrImportRisk(proj) {
   if (!proj) return false;
   if (proj.procurementMethod === 'import_sea') return true;
@@ -764,9 +800,9 @@ function isMaritimeOrImportRisk(proj) {
 }
 
 function openInaprocPortal(name) {
-  const cleanName = (name || '').replace(/\s*\([^)]*\)/g, '').replace(/^(pt|cv|ud|fa)\.?\s+/i, '').trim();
+  const cleanName = (name || '').replace(/\s*\([^)]*\)/g, '').trim();
   const q = encodeURIComponent(cleanName || name || 'PT');
-  window.open(`https://daftar-hitam.inaproc.id/?query=${q}`, '_blank');
+  window.open(`https://daftar-hitam.inaproc.id/?search=${q}`, '_blank');
 }
 
 function autoVerifyInaproc(proj) {
@@ -774,11 +810,18 @@ function autoVerifyInaproc(proj) {
   if (!proj) return;
   const cleanName = (proj.companyName || '').replace(/\s*\([^)]*\)/g, '').trim();
   
-  // Set status otomatis menjadi Bukan Daftar Hitam (Terverifikasi Nihil Sanksi LKPP)
-  proj.inaprocStatus = 'clean';
-  saveProjectsToStorage();
-  renderAll();
-  showToast(`✓ Hasil INAPROC LKPP: "${cleanName}" Terstate Bukan Daftar Hitam (Nihil Sanksi Nasional LKPP)!`);
+  const check = checkInaprocBlacklist(cleanName);
+  if (check.isBlacklisted) {
+    proj.inaprocStatus = 'blacklisted';
+    saveProjectsToStorage();
+    renderAll();
+    showToast(`⚠️ HASIL INAPROC LKPP: "${cleanName}" TERDAFTAR DALAM DAFTAR HITAM NASIONAL! Skor Karakter dipotong -30 Poin.`);
+  } else {
+    proj.inaprocStatus = 'clean';
+    saveProjectsToStorage();
+    renderAll();
+    showToast(`✓ Hasil INAPROC LKPP: "${cleanName}" Terverifikasi BUKAN DAFTAR HITAM (Nihil Sanksi Nasional LKPP)!`);
+  }
 }
 
 function openSippPortal(name) {
@@ -2137,9 +2180,15 @@ function render5CTab(proj, m) {
               <div class="five-c-detail">
                 <strong>${fiveC.charAgeNote}</strong><br/>
                 &bull; SLIK OJK: <strong>${fiveC.slikStatus}</strong><br/>
-                &bull; INAPROC LKPP: <strong>${fiveC.inaprocStatus}</strong><br/>
+                &bull; INAPROC LKPP: <strong style="color:${proj.inaprocStatus === 'blacklisted' ? '#dc2626' : '#166534'};">${fiveC.inaprocStatus}</strong><br/>
                 &bull; SIPP Pengadilan: <strong>${fiveC.sippStatus}</strong>
               </div>
+
+              ${proj.inaprocStatus === 'blacklisted' ? `
+                <div style="background:#fef2f2; border:1px solid #f87171; border-radius:5px; padding:0.35rem 0.5rem; margin-bottom:0.4rem; color:#991b1b; font-size:0.67rem; font-weight:700; line-height:1.35;">
+                  &#9888; PERINGATAN LKPP: Debitur terdeteksi masuk Daftar Hitam Nasional LKPP / INAPROC (-30 Poin)!
+                </div>
+              ` : ''}
 
               <!-- Parameter Wanprestasi -->
               <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:5px; padding:0.35rem 0.45rem; margin-bottom:0.35rem;">
@@ -2201,10 +2250,10 @@ function render5CTab(proj, m) {
 
             <!-- Tombol Pengecekan Riil & Penarikan Otomatis INAPROC -->
             <div style="display:flex; flex-direction:column; gap:4px; margin-top:0.35rem;">
-              <button class="five-c-portal-btn" style="background:#f0fdf4; color:#15803d; border-color:#86efac; font-weight:700;" onclick="autoVerifyInaproc(getActiveProject())" title="Tarik verifikasi otomatis INAPROC LKPP: langsung ter-state Bukan Daftar Hitam">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block; vertical-align:middle; margin-right:3px;"><polyline points="20 6 9 17 4 12"></polyline></svg>Tarik Otomatis INAPROC (Auto-State) &raquo;
+              <button class="five-c-portal-btn" style="background:#f0fdf4; color:#15803d; border-color:#86efac; font-weight:700;" onclick="autoVerifyInaproc(getActiveProject())" title="Pengecekan otomatis INAPROC LKPP: Memeriksa database sanksi daftar hitam LKPP">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block; vertical-align:middle; margin-right:3px;"><polyline points="20 6 9 17 4 12"></polyline></svg>Tarik Verifikasi INAPROC (Auto-State) &raquo;
               </button>
-              <button class="five-c-portal-btn" onclick="openInaprocPortal('${safeCompName}')" title="Buka website resmi https://daftar-hitam.inaproc.id/">
+              <button class="five-c-portal-btn" onclick="openInaprocPortal('${safeCompName}')" title="Buka website resmi https://daftar-hitam.inaproc.id/?search=...">
                 Buka https://daftar-hitam.inaproc.id/ &raquo;
               </button>
               <button class="five-c-portal-btn" style="background:#fff1f2; color:#be123c; border-color:#fecdd3;" onclick="openGoogleNewsPortal('${safeCompName}')" title="Cari berita kasus/sengketa/pailit di Google News">
@@ -3589,7 +3638,17 @@ function syncInputsToModel() {
   const getFmtNum = (id) => parseFormattedNumber(document.getElementById(id)?.value);
   const getPlainNum = (id) => parseFloat(document.getElementById(id)?.value) || 0;
 
+  const oldCompName = (proj.companyName || '').trim();
   proj.companyName = getStr('inp_companyName');
+  if (proj.companyName.trim() !== oldCompName) {
+    const chk = checkInaprocBlacklist(proj.companyName);
+    if (chk.isBlacklisted) {
+      proj.inaprocStatus = 'blacklisted';
+    } else if (checkInaprocBlacklist(oldCompName).isBlacklisted) {
+      proj.inaprocStatus = 'clean';
+    }
+  }
+
   proj.sector = getStr('inp_sector');
   proj.estYear = getPlainNum('inp_estYear');
   proj.bankName = getStr('inp_bankName');
@@ -3702,6 +3761,12 @@ function createNewProjectFromModal() {
 
   baseObj.id = 'case-' + Date.now();
   baseObj.companyName = name;
+  const initInaproc = checkInaprocBlacklist(name);
+  if (initInaproc.isBlacklisted) {
+    baseObj.inaprocStatus = 'blacklisted';
+  } else {
+    baseObj.inaprocStatus = 'clean';
+  }
   baseObj.sector = sector;
   baseObj.bankName = bank;
   baseObj.facilityType = fac;

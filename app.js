@@ -1067,26 +1067,41 @@ function compute5CAnalysis(proj, f23, m) {
   capitScore = Math.max(20, Math.min(100, capitScore));
   const capitNote = capitNotes.length ? capitNotes.join('; ') : 'Struktur permodalan & ekuitas sehat.';
 
-  // 4. Collateral (Bobot 20%)
+  // 4. Collateral (Bobot 20%): Agunan Pokok Persediaan & Jaminan Tambahan Fixed Assets
+  const inv = f23.inv || 0;
   const fa = f23.fa || 0;
   const reqPlafond = proj.requestedPlafond || 1;
-  const collRatio = (fa / reqPlafond) * 100;
+  const invRatio = (inv / reqPlafond) * 100;
+  const faRatio = (fa / reqPlafond) * 100;
 
-  let collScore = 50;
-  let collNote = '';
-  if (collRatio >= 120) {
-    collScore = 95;
-    collNote = `Fixed Asset ${fmtRp(fa, true)} mengcover ${collRatio.toFixed(0)}% plafond (&ge;120% Standar Askrindo).`;
-  } else if (collRatio >= 100) {
-    collScore = 80;
-    collNote = `Fixed Asset ${fmtRp(fa, true)} mengcover ${collRatio.toFixed(0)}% plafond.`;
-  } else if (collRatio >= 70) {
-    collScore = 65;
-    collNote = `Fixed Asset ${fmtRp(fa, true)} mengcover ${collRatio.toFixed(0)}% plafond (Perlu Agunan Tambahan).`;
+  // Evaluasi Agunan Pokok (Persediaan Barang)
+  let invScore = 50;
+  if (invRatio >= 100) {
+    invScore = 95;
+  } else if (invRatio >= 80) {
+    invScore = 80;
+  } else if (invRatio >= 50) {
+    invScore = 65;
   } else {
-    collScore = 40;
-    collNote = `Fixed Asset ${fmtRp(fa, true)} hanya mengcover ${collRatio.toFixed(0)}% plafond.`;
+    invScore = 40;
   }
+
+  // Evaluasi Jaminan Tambahan (Fixed Assets - Standar HT >= 120%)
+  let faScore = 50;
+  if (faRatio >= 120) {
+    faScore = 95;
+  } else if (faRatio >= 100) {
+    faScore = 80;
+  } else if (faRatio >= 70) {
+    faScore = 65;
+  } else {
+    faScore = 40;
+  }
+
+  // Skor Gabungan Collateral (Bobot: Agunan Pokok Persediaan 50% + Jaminan Tambahan FA 50%)
+  const collScore = Math.round(invScore * 0.5 + faScore * 0.5);
+  const collRatio = faRatio; // Backward compatibility
+  const collNote = `Agunan Pokok Persediaan ${fmtRp(inv, true)} (${invRatio.toFixed(0)}%) & Jaminan Tambahan Fixed Asset ${fmtRp(fa, true)} (${faRatio.toFixed(0)}% plafond).`;
 
   // 5. Condition (Bobot 15%)
   const isImport = isMaritimeOrImportRisk(proj);
@@ -1131,6 +1146,10 @@ function compute5CAnalysis(proj, f23, m) {
     collScore,
     collRatio,
     collNote,
+    invVal: inv,
+    invRatio,
+    faVal: fa,
+    faRatio,
     condScore,
     condNote,
     isImport,
@@ -1383,7 +1402,7 @@ function computeDCCSWCM(proj) {
     maxPts: 10,
     earnedPts: s2A,
     lostPts: Number((10 - s2A).toFixed(1)),
-    reason: `Analisa 5C: Character (${fiveC.defaultStatusText}; ${fiveC.newsStatusText}), Capacity (${fiveC.capNote}), Collateral (FA Cover ${fiveC.collRatio.toFixed(0)}%), Condition (${fiveC.condNote}).`
+    reason: `Analisa 5C: Character (${fiveC.defaultStatusText}; ${fiveC.newsStatusText}), Capacity (${fiveC.capNote}), Collateral (Agunan Pokok Persediaan ${(fiveC.invRatio || 0).toFixed(0)}% & Jaminan Tambahan FA ${(fiveC.faRatio || fiveC.collRatio || 0).toFixed(0)}%), Condition (${fiveC.condNote}).`
   });
 
   // PILAR 3: DYNAMIC CCC & KESESUAIAN TENOR KREDIT (BOBOT MAKS: 20 POIN)
@@ -1832,16 +1851,16 @@ function buildDynamicCaseInsights(proj, m) {
     detail: `Porsi penutupan risiko asuransi kredit oleh Askrindo dibatasi maksimal <strong>${effectiveCovPct}% (${fmtRp(maxCoverNominal, true)})</strong>. Sisa <strong>${100 - effectiveCovPct}% (${fmtRp(bankRiskSharingNominal, true)})</strong> wajib menjadi porsi <em>risk sharing</em> yang ditanggung oleh ${proj.bankName} guna memastikan bank mitra memiliki kepentingan bersama (<em>skin in the game</em>) dalam memantau kelancaran usaha debitur.`
   });
 
-  // Pemisahan Baris 2: Agunan Tambahan Fixed Asset >= 120%
+  // Jaminan Tambahan: Fixed Asset >= 120% (Melengkapi Agunan Pokok Persediaan)
   const minCollateralVal = proj.requestedPlafond * 1.2;
   mitigations.push({
-    title: `Agunan Tambahan Fixed Asset (Tanah / Bangunan / Mesin) Minimal 120% Plafond (${fmtRp(minCollateralVal, true)})`,
-    detail: `Kewajiban pengikatan <strong>Agunan Tambahan Fixed Asset bersertifikat minimal 120% dari total plafond kredit (${fmtRp(minCollateralVal, true)})</strong> yang diikat Hak Tanggungan (HT) Peringkat I dari total aset tetap debitur (${fmtRp(proj.fin23.fa)}) yang berstatus <em>free & clear</em> serta dinilai oleh KJPP independen rekanan Askrindo.`
+    title: `Jaminan Tambahan Fixed Asset (Tanah / Bangunan / Mesin) Minimal 120% Plafond (${fmtRp(minCollateralVal, true)})`,
+    detail: `Kewajiban pengikatan <strong>Jaminan Tambahan Fixed Asset bersertifikat minimal 120% dari total plafond kredit (${fmtRp(minCollateralVal, true)})</strong> yang diikat Hak Tanggungan (HT) Peringkat I dari total aset tetap debitur (${fmtRp(proj.fin23.fa)}) yang berstatus <em>free & clear</em>, guna melengkapi Agunan Pokok berupa Persediaan Barang (${fmtRp(proj.fin23.inv, true)}) yang diikat Fidusia / CMA.`
   });
 
   requiredInfos.push({
     title: `Daftar & Penilaian Appraisal Aset Tetap Free & Clear (${fmtRp(proj.fin23.fa)})`,
-    detail: `Underwriter wajib meminta laporan appraisal independen terbaru atas Aset Tetap debitur (${fmtRp(proj.fin23.fa)}) guna memastikan kecukupan nilai pasar agunan tambahan minimal 120% (${fmtRp(minCollateralVal, true)}) yang bebas sengketa.`
+    detail: `Underwriter wajib meminta laporan appraisal independen terbaru atas Aset Tetap debitur (${fmtRp(proj.fin23.fa)}) guna memastikan kecukupan nilai pasar jaminan tambahan minimal 120% (${fmtRp(minCollateralVal, true)}) yang bebas sengketa.`
   });
 
   return { criticalPointsFin, criticalPointsCredit, requiredInfos, mitigations };
@@ -2467,15 +2486,23 @@ function render5CTab(proj, m) {
                 <span class="five-c-score" style="color:#10b981;">${fiveC.collScore} / 100</span>
               </div>
               <div class="five-c-detail">
-                <strong>${fiveC.collNote}</strong><br/>
-                &bull; Aset Tetap Free &amp; Clear: <strong>${fmtRp(proj.fin23.fa, true)}</strong><br/>
-                &bull; Coverage vs Plafond: <strong>${fiveC.collRatio.toFixed(0)}%</strong><br/>
-                &bull; Target Underwriting: <strong>&ge; 120% (${fmtRp(proj.requestedPlafond * 1.2, true)})</strong><br/>
-                &bull; Pengikatan: <strong>Wajib Hak Tanggungan Peringkat I</strong>
+                <div style="font-weight:700; color:#0f172a; margin-bottom:0.35rem;">${fiveC.collNote}</div>
+                <div style="margin-bottom:0.35rem; background:#f0f9ff; padding:0.35rem 0.5rem; border-radius:5px; border-left:3px solid #0284c7;">
+                  <strong style="color:#0369a1;">Agunan Pokok (Persediaan / Inventory):</strong><br/>
+                  &bull; Nilai Persediaan Riil: <strong>${fmtRp(fiveC.invVal || proj.fin23.inv, true)}</strong><br/>
+                  &bull; Coverage vs Plafond: <strong>${(fiveC.invRatio || 0).toFixed(0)}%</strong> (Plafond: ${fmtRp(proj.requestedPlafond, true)})<br/>
+                  &bull; Pengikatan: <strong>Fidusia Persediaan / Resi Gudang (CMA)</strong>
+                </div>
+                <div style="background:#f0fdf4; padding:0.35rem 0.5rem; border-radius:5px; border-left:3px solid #10b981;">
+                  <strong style="color:#15803d;">Jaminan Tambahan (Fixed Assets):</strong><br/>
+                  &bull; Aset Tetap Free &amp; Clear: <strong>${fmtRp(fiveC.faVal || proj.fin23.fa, true)}</strong><br/>
+                  &bull; Coverage vs Plafond: <strong>${(fiveC.faRatio || fiveC.collRatio || 0).toFixed(0)}%</strong> (Standar Askrindo &ge; 120%)<br/>
+                  &bull; Pengikatan: <strong>Wajib Hak Tanggungan (HT) Peringkat I</strong>
+                </div>
               </div>
             </div>
-            <div style="font-size:0.62rem; color:#166534; background:#f0fdf4; padding:4px; border-radius:4px; text-align:center; font-weight:700;">
-              Agunan Memadai (&ge; 120%)
+            <div style="font-size:0.62rem; color:${(fiveC.faRatio || 0) >= 120 && (fiveC.invRatio || 0) >= 80 ? '#166534' : '#92400e'}; background:${(fiveC.faRatio || 0) >= 120 && (fiveC.invRatio || 0) >= 80 ? '#f0fdf4' : '#fffbeb'}; padding:4px; border-radius:4px; text-align:center; font-weight:700; margin-top:0.3rem;">
+              ${(fiveC.faRatio || 0) >= 120 ? `Agunan Pokok Persediaan &amp; Jaminan Tambahan HT Memadai (${(fiveC.faRatio || 0).toFixed(0)}% &ge; 120%)` : `Jaminan Tambahan HT Mengcover ${(fiveC.faRatio || 0).toFixed(0)}% (Target &ge; 120%)`}
             </div>
           </div>
 
@@ -3279,8 +3306,8 @@ function renderCaseStudyQATab(proj, m) {
                 <div class="term-desc">${isMaritimeOrImportRisk(proj) ? `Penutupan asuransi kargo laut Askrindo untuk komoditas impor dengan Banker's Clause / Loss Payee ke ${proj.bankName}.` : (proj.procurementMethod === 'domestic' ? `Penutupan asuransi pengangkutan darat Askrindo (Inland Transit All Risks) untuk proteksi distribusi logistik dengan Banker's Clause ke ${proj.bankName}.` : `Tidak ada risiko pengiriman laut/kargo fisik. Pengalihan mitigasi difokuskan pada perlindungan tempat usaha/aset dan pengawasan perputaran kas di ${proj.bankName}.`)}</div>
               </div>
               <div class="term-card">
-                <div class="term-title"><span>3. Agunan Tambahan Fixed Asset</span><span style="color:#0284c7;">HT &ge; 120%</span></div>
-                <div class="term-desc">Hak Tanggungan Peringkat I minimal 120% (${fmtRp(proj.requestedPlafond * 1.2, true)}) dari aset tetap terdaftar (${fmtRp(proj.fin23.fa, true)}).</div>
+                <div class="term-title"><span>3. Jaminan Tambahan Fixed Asset</span><span style="color:#0284c7;">HT &ge; 120%</span></div>
+                <div class="term-desc">Jaminan tambahan berupa Aset Tetap diikat Hak Tanggungan Peringkat I minimal 120% (${fmtRp(proj.requestedPlafond * 1.2, true)}) dari aset tetap terdaftar (${fmtRp(proj.fin23.fa, true)}) untuk melengkapi Agunan Pokok Persediaan Barang (${fmtRp(proj.fin23.inv, true)}).</div>
               </div>
               <div class="term-card">
                 <div class="term-title"><span>4. KMK Backup sebagai Buffer Likuiditas</span><span style="color:#0284c7;">Tranche Bertahap</span></div>
@@ -3747,7 +3774,7 @@ function renderPrintableReport(proj, m) {
                       ` : `
                         <li><strong>Tidak Diwajibkan Asuransi Marine Cargo</strong> (aktivitas debitur non-pengiriman laut; mitigasi difokuskan pada asuransi tempat usaha/PAR &amp; escrow rekening giro di ${proj.bankName}).</li>
                       `)}
-                      <li><strong>Agunan Tambahan Fixed Asset Hak Tanggungan Peringkat I &ge; 120%</strong> (${fmtRp(proj.requestedPlafond * 1.2, true)}).</li>
+                      <li><strong>Jaminan Tambahan Fixed Asset Hak Tanggungan Peringkat I &ge; 120%</strong> (${fmtRp(proj.requestedPlafond * 1.2, true)}) guna melengkapi Agunan Pokok Persediaan Barang (${fmtRp(proj.fin23.inv, true)}) yang diikat Fidusia/CMA.</li>
                       <li><strong>Optimalisasi KMK Backup sebagai Buffer Relaksasi Likuiditas Positif</strong> (penarikan bertahap per tranche maks ${fmtRp(m.recommendedTrancheSize, true)} berbasis bukti invoice riil).</li>
                       <li><strong>Escrow Account Khusus di ${proj.bankName}</strong> untuk penampungan 100% penerimaan kas hasil penagihan piutang.</li>
                       <li><strong>Covenant Kontrak PO Minimum Gross Margin +12,1%</strong> untuk menjamin arus kas operasional positif.</li>

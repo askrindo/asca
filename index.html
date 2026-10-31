@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="favicon.png" />
   <link rel="shortcut icon" href="favicon.ico" />
   <link rel="apple-touch-icon" href="favicon.png" />
-  <link rel="stylesheet" href="styles.css?v=1793474381" />
+  <link rel="stylesheet" href="styles.css?v=1793478717" />
   <style id="login-critical-styles">
     /* Anti-Cache Guarantee for Enterprise Login Interface */
     .login-screen {
@@ -170,17 +170,17 @@
       <button class="btn btn-primary" onclick="openNewProjectModal()">
         <span>+</span> Proyek Baru
       </button>
-      <button class="btn btn-light" onclick="duplicateCurrentProject()" title="Duplikasi kasus aktif untuk simulasi alternatif">
+      <button class="btn btn-light" id="btnDuplicateProject" onclick="duplicateCurrentProject()" title="Duplikasi kasus aktif untuk simulasi alternatif">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Duplikasi
       </button>
-      <button class="btn btn-light" onclick="exportWorkspaceJSON()" title="Simpan seluruh database kasus ke file komputer (.asca.json)">
+      <button class="btn btn-light" id="btnExportJson" onclick="exportWorkspaceJSON()" title="Simpan seluruh database kasus ke file komputer (.asca.json)">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Simpan (.json)
       </button>
       <label class="btn btn-light" style="margin:0;" title="Buka file database .asca.json dari komputer">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> Buka File
         <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="importWorkspaceJSON(event)" />
       </label>
-      <button class="btn btn-gold" onclick="printUnderwritingReport()">
+      <button class="btn btn-gold" id="btnPrintReport" onclick="printUnderwritingReport()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Cetak / PDF
       </button>
       <button class="btn-logout" onclick="logoutSession()" title="Keluar dari akun ASCA"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> Keluar
@@ -1022,6 +1022,6 @@
 
   <div class="toast-container" id="toastContainer"></div>
 
-  <script src="app.js?v=1793474381"></script>
+  <script src="app.js?v=1793478717"></script>
 </body>
 </html>

@@ -3137,6 +3137,10 @@ function importWorkspaceJSON(event) {
 }
 
 function printUnderwritingReport() {
+  if (!getActiveProject() || !projects || projects.length === 0) {
+    showToast('Belum ada berkas proyek analisa untuk dicetak.');
+    return;
+  }
   switchTab('tab-report');
   setTimeout(() => {
     window.print();
@@ -3170,6 +3174,24 @@ function renderAll() {
     });
 
     switchTab('tab-dashboard');
+    const btnPrint = document.getElementById('btnPrintReport');
+    if (btnPrint) {
+      btnPrint.disabled = true;
+      btnPrint.classList.add('disabled');
+      btnPrint.title = 'Belum ada berkas proyek analisa untuk dicetak';
+    }
+    const btnDup = document.getElementById('btnDuplicateProject');
+    if (btnDup) {
+      btnDup.disabled = true;
+      btnDup.classList.add('disabled');
+      btnDup.title = 'Belum ada proyek analisa untuk diduplikasi';
+    }
+    const btnExp = document.getElementById('btnExportJson');
+    if (btnExp) {
+      btnExp.disabled = true;
+      btnExp.classList.add('disabled');
+      btnExp.title = 'Belum ada database proyek analisa untuk disimpan';
+    }
     const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
     setTxt('bannerCompanyName', 'Belum Ada Proyek Analisa');
     setTxt('bannerSector', 'Klik tombol "+ Proyek Baru" untuk memulai analisa kasus kredit pertama Anda.');
@@ -3226,6 +3248,24 @@ function renderAll() {
       btn.setAttribute('title', btn.dataset.originalTitle);
     }
   });
+  const btnPrint = document.getElementById('btnPrintReport');
+  if (btnPrint) {
+    btnPrint.disabled = false;
+    btnPrint.classList.remove('disabled');
+    btnPrint.title = 'Cetak Nota Analisa Underwriting / Simpan ke PDF';
+  }
+  const btnDup = document.getElementById('btnDuplicateProject');
+  if (btnDup) {
+    btnDup.disabled = false;
+    btnDup.classList.remove('disabled');
+    btnDup.title = 'Duplikasi kasus aktif untuk simulasi alternatif';
+  }
+  const btnExp = document.getElementById('btnExportJson');
+  if (btnExp) {
+    btnExp.disabled = false;
+    btnExp.classList.remove('disabled');
+    btnExp.title = 'Simpan seluruh database kasus ke file komputer (.asca.json)';
+  }
   // Jika proyek ada, sembunyikan empty state dan tampilkan dashboard aktif
   if (emptyStateEl) emptyStateEl.style.display = 'none';
   if (activeStateEl) activeStateEl.style.display = 'block';

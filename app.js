@@ -2116,72 +2116,12 @@ function render5CTab(proj, m) {
             Skor 5C Terpadu: ${fiveC.totalScore} / 100
           </span>
           <span style="font-size:0.7rem; font-weight:800; background:#e0f2fe; color:#0369a1; padding:3px 8px; border-radius:6px; border:1px solid #bae6fd;">
-            Sub-Indikator 6B: ${fiveC.totalScore10} / 10 (+${fmtNum(s6B, 1)} Poin)
+            Pilar 2 (5C Underwriting): ${fiveC.totalScore10} / 10 Poin
           </span>
           <button class="btn btn-outline btn-sm" onclick="switchTab('tab-score')">
             Lihat Rincian Skor DCC &raquo;
           </button>
         </div>
-      </div>
-
-      <!-- DUAL-STAGE UNDERWRITING DECISION BOX -->
-      <div class="dual-stage-box">
-        <div class="dual-stage-header">
-          <div>
-            <span style="font-size:0.68rem; font-weight:800; text-transform:uppercase; color:#64748b; letter-spacing:0.3px;">
-              Keputusan Dual-Stage Underwriting Asuransi Kredit ASCA:
-            </span>
-            <div style="margin-top:0.2rem; display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
-              <span class="${m.isInitialReject ? 'dual-stage-badge-stage1' : 'dual-stage-badge-stage2'}">
-                ${m.stage1Decision}
-              </span>
-              <span class="cover-badge cover-conditional">
-                Rekomendasi Coverage: Maks 55% (Risk Sharing ${proj.bankName} 45%)
-              </span>
-            </div>
-          </div>
-          <button class="btn btn-outline btn-sm" onclick="switchTab('tab-case-qa')" style="font-size:0.68rem;">
-            Lihat Tab Mitigasi &amp; QA &raquo;
-          </button>
-        </div>
-
-        <div style="font-size:0.7rem; color:#334155; line-height:1.4; margin-bottom:0.55rem; background:#f8fafc; padding:0.45rem 0.65rem; border-radius:6px; border:1px solid #e2e8f0;">
-          <strong>Ringkasan Analisa Sistem:</strong> ${m.stage1Summary}
-        </div>
-
-        ${m.isInitialReject ? `
-          <div style="border-top:1px dashed #cbd5e1; padding-top:0.45rem;">
-            <div style="font-size:0.72rem; font-weight:800; color:#0f766e; margin-bottom:0.3rem;">
-              Opsi Persetujuan Bersyarat Jika Analis / Komite Hendak Menyetujui (7 Syarat Wajib Covenants):
-            </div>
-            <div class="grid-2" style="gap:0.4rem;">
-              <div class="term-card">
-                <div class="term-title"><span>1. Pembatasan Coverage Askrindo</span><span style="color:#0284c7;">Maks 55%</span></div>
-                <div class="term-desc">Plafon dijamin Askrindo maksimal 55% (${fmtRp(proj.requestedPlafond * 0.55, true)}), 45% risk sharing oleh ${proj.bankName}.</div>
-              </div>
-              <div class="term-card">
-                <div class="term-title"><span>2. Wajib Asuransi Marine Cargo</span><span style="color:#0284c7;">ICC (A) All Risks</span></div>
-                <div class="term-desc">Penutupan asuransi kargo laut Askrindo untuk komoditas impor dengan Banker's Clause / Loss Payee.</div>
-              </div>
-              <div class="term-card">
-                <div class="term-title"><span>3. Agunan Tambahan Fixed Asset</span><span style="color:#0284c7;">HT &ge; 120%</span></div>
-                <div class="term-desc">Hak Tanggungan Peringkat I minimal 120% (${fmtRp(proj.requestedPlafond * 1.2, true)}) dari aset tetap (${fmtRp(proj.fin23.fa, true)}).</div>
-              </div>
-              <div class="term-card">
-                <div class="term-title"><span>4. KMK Backup sebagai Buffer Likuiditas</span><span style="color:#0284c7;">Tranche Bertahap</span></div>
-                <div class="term-desc">Maksimal ${fmtRp(m.recommendedTrancheSize, true)} per tranche berbasis bukti invoice tagihan riil (tanpa drawing di muka).</div>
-              </div>
-              <div class="term-card">
-                <div class="term-title"><span>5. Escrow Account &amp; Collection Control</span><span style="color:#0284c7;">100% Cash In</span></div>
-                <div class="term-desc">Seluruh pembayaran pembeli wajib disetor ke rekening penampungan khusus di ${proj.bankName}.</div>
-              </div>
-              <div class="term-card">
-                <div class="term-title"><span>6. Covenant Kontrak PO &amp; PG/CG</span><span style="color:#0284c7;">GPM &ge; +12,1%</span></div>
-                <div class="term-desc">Margin kotor terikat &ge; +12,1% serta Personal Guarantee notariil dari pemilik saham utama (UBO).</div>
-              </div>
-            </div>
-          </div>
-        ` : ''}
       </div>
 
       <!-- 5C DIMENSIONS INTERACTIVE CARDS -->
@@ -3083,6 +3023,71 @@ function renderCaseStudyQATab(proj, m) {
             Skor: ${m.score}/100 (Grade ${m.shortGrade})  -  ${m.decision}
           </span>
         </div>
+      </div>
+
+      <!-- DUAL-STAGE UNDERWRITING DECISION & COVENANTS BOX -->
+      <div class="dual-stage-box" style="margin:0;">
+        <div class="dual-stage-header">
+          <div>
+            <span style="font-size:0.68rem; font-weight:800; text-transform:uppercase; color:#64748b; letter-spacing:0.3px;">
+              Keputusan Dual-Stage Underwriting Asuransi Kredit ASCA:
+            </span>
+            <div style="margin-top:0.2rem; display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+              <span class="${m.isInitialReject ? 'dual-stage-badge-stage1' : 'dual-stage-badge-stage2'}">
+                ${m.stage1Decision}
+              </span>
+              <span class="cover-badge cover-conditional">
+                Rekomendasi Coverage Bersyarat: Maks 55% (Risk Sharing ${proj.bankName} 45%)
+              </span>
+            </div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="switchTab('tab-score')" style="font-size:0.68rem;">
+            Lihat Rincian Skor &raquo;
+          </button>
+        </div>
+
+        <div style="font-size:0.71rem; color:#334155; line-height:1.45; margin-bottom:0.55rem; background:#f8fafc; padding:0.5rem 0.7rem; border-radius:6px; border:1px solid #e2e8f0;">
+          <strong>Ringkasan Analisa Underwriting Sistem:</strong> ${m.stage1Summary}
+        </div>
+
+        ${m.isInitialReject ? `
+          <div style="border-top:1px dashed #cbd5e1; padding-top:0.5rem;">
+            <div style="font-size:0.74rem; font-weight:800; color:#0f766e; margin-bottom:0.4rem; display:flex; justify-content:space-between; align-items:center;">
+              <span>Opsi Persetujuan Bersyarat Jika Analis / Komite Hendak Menyetujui (7 Syarat Wajib Covenants):</span>
+              <span style="font-size:0.68rem; background:#ccfbf1; color:#0f766e; padding:2px 8px; border-radius:4px; font-weight:700;">Wajib Dipenuhi Sebelum Penerbitan Polis</span>
+            </div>
+            <div class="grid-2" style="gap:0.45rem;">
+              <div class="term-card">
+                <div class="term-title"><span>1. Pembatasan Coverage Askrindo</span><span style="color:#0284c7;">Maks 55%</span></div>
+                <div class="term-desc">Plafon dijamin Askrindo maksimal 55% (${fmtRp(proj.requestedPlafond * 0.55, true)}), 45% risk sharing oleh ${proj.bankName}.</div>
+              </div>
+              <div class="term-card">
+                <div class="term-title"><span>2. Wajib Asuransi Marine Cargo</span><span style="color:#0284c7;">ICC (A) All Risks</span></div>
+                <div class="term-desc">Penutupan asuransi kargo laut Askrindo untuk komoditas impor dengan Banker's Clause / Loss Payee ke Bank Mitra.</div>
+              </div>
+              <div class="term-card">
+                <div class="term-title"><span>3. Agunan Tambahan Fixed Asset</span><span style="color:#0284c7;">HT &ge; 120%</span></div>
+                <div class="term-desc">Hak Tanggungan Peringkat I minimal 120% (${fmtRp(proj.requestedPlafond * 1.2, true)}) dari aset tetap terdaftar (${fmtRp(proj.fin23.fa, true)}).</div>
+              </div>
+              <div class="term-card">
+                <div class="term-title"><span>4. KMK Backup sebagai Buffer Likuiditas</span><span style="color:#0284c7;">Tranche Bertahap</span></div>
+                <div class="term-desc">Maksimal ${fmtRp(m.recommendedTrancheSize, true)} per tranche berbasis bukti invoice tagihan riil (tanpa drawing di muka).</div>
+              </div>
+              <div class="term-card">
+                <div class="term-title"><span>5. Escrow Account &amp; Collection Control</span><span style="color:#0284c7;">100% Cash In</span></div>
+                <div class="term-desc">Seluruh pembayaran pembeli wajib disetor ke rekening penampungan khusus (Escrow Account) di ${proj.bankName}.</div>
+              </div>
+              <div class="term-card">
+                <div class="term-title"><span>6. Covenant Margin Kotor Kontrak PO</span><span style="color:#0284c7;">GPM &ge; +12,1%</span></div>
+                <div class="term-desc">Margin kotor terikat &ge; +12,1% untuk memastikan kecukupan margin kas operasional menutupi beban bunga dan angsuran.</div>
+              </div>
+              <div class="term-card" style="grid-column: 1 / -1;">
+                <div class="term-title"><span>7. Personal Guarantee (PG) / Corporate Guarantee (CG)</span><span style="color:#0284c7;">Notariil Mengikat</span></div>
+                <div class="term-desc">Jaminan pribadi notariil dari pemilik saham pengendali (Ultimate Beneficiary Owner) demi mencegah moral hazard dan memastikan komitmen penuh pemegang saham.</div>
+              </div>
+            </div>
+          </div>
+        ` : ''}
       </div>
 
       <div style="border:1px solid #cbd5e1; border-radius:7px; padding:0.65rem; background:#fff;">

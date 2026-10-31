@@ -1029,13 +1029,15 @@ input[type="range"] {
 
 /* FINANCIAL RATIOS TABLE (TAB RASIO KEUANGAN) */
 .ratios-table {
-  min-width: 1000px;
+  width: 100%;
+  table-layout: fixed;
   background: #ffffff;
+  border-collapse: collapse;
 }
 
 .ratios-table thead th {
-  padding: 0.65rem 0.85rem;
-  font-size: 0.8rem;
+  padding: 0.55rem 0.6rem;
+  font-size: 0.78rem;
   font-weight: 700;
   color: #1e293b;
   background: #f1f5f9;
@@ -1046,10 +1048,13 @@ input[type="range"] {
 }
 
 .ratios-table tbody td {
-  padding: 0.6rem 0.85rem;
-  font-size: 0.82rem;
+  padding: 0.48rem 0.6rem;
+  font-size: 0.8rem;
   vertical-align: middle;
   border-bottom: 1px solid #f1f5f9;
+  word-break: normal;
+  overflow-wrap: normal;
+  hyphens: none;
 }
 
 .ratios-table tbody tr:hover td {
@@ -1057,60 +1062,71 @@ input[type="range"] {
 }
 
 .ratios-table .col-no {
-  width: 40px;
+  width: 32px;
   text-align: center;
   color: var(--text-muted);
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   white-space: nowrap;
 }
 
 .ratios-table .col-indicator {
-  min-width: 190px;
+  width: 15%;
   font-weight: 700;
   color: var(--askrindo-navy);
   white-space: nowrap;
 }
 
 .ratios-table .col-formula {
-  min-width: 210px;
-  font-size: 0.78rem;
+  width: 15%;
+  font-size: 0.76rem;
   color: #475569;
+  white-space: nowrap;
 }
 
 .ratios-table .col-rac {
-  min-width: 140px;
+  width: 9%;
   font-weight: 700;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   color: var(--askrindo-blue);
   white-space: nowrap;
+  text-align: center;
 }
 
 .ratios-table .col-val {
-  min-width: 110px;
+  width: 10%;
   text-align: right !important;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  font-size: 0.8rem;
 }
 
 .ratios-table .col-eval {
-  min-width: 150px;
+  width: 11%;
   text-align: right !important;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   font-weight: 700;
-  font-size: 0.86rem;
+  font-size: 0.84rem;
 }
 
 .ratios-table .col-status {
-  width: 115px;
+  width: 9%;
   text-align: center;
   white-space: nowrap;
 }
 
+.ratios-table .col-status .badge-rac {
+  font-size: 0.72rem;
+  padding: 0.18rem 0.45rem;
+}
+
 .ratios-table .col-notes {
-  min-width: 320px;
-  font-size: 0.78rem;
-  line-height: 1.5;
+  width: 31%;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  word-break: normal;
+  overflow-wrap: normal;
+  hyphens: none;
 }
 
 .fmt-dots {

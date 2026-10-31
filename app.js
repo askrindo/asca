@@ -3449,74 +3449,74 @@ function renderRatiosTab(proj, m) {
     {
       no: 1,
       name: 'Current Ratio (CR)',
-      formula: 'Aset Lancar / Liabilitas Lancar &times; 100%',
-      rac: 'Minimal 100,00%',
+      formula: 'Aset Lancar / Liab. Lancar',
+      rac: '&ge; 100,00%',
       v22: fmtNum(cr22, 2) + '%',
       v23: fmtNum(cr23, 2) + '%',
       pass: passCR,
       ket: passCR
-        ? `Current Ratio sebesar ${fmtNum(cr23, 2)}% memenuhi standar RAC (minimal 100,00%). Debitur memiliki likuiditas lancar yang cukup untuk melunasi kewajiban jangka pendek.`
-        : `Current Ratio sebesar ${fmtNum(cr23, 2)}% di bawah standar RAC (minimal 100,00%). Likuiditas jangka pendek debitur ketat dan berisiko gagal bayar jika terjadi keterlambatan pencairan piutang/persediaan.`
+        ? `Current Ratio ${fmtNum(cr23, 2)}% memenuhi standar RAC (&ge; 100,00%). Debitur memiliki likuiditas lancar yang cukup untuk melunasi kewajiban jangka pendek.`
+        : `Current Ratio ${fmtNum(cr23, 2)}% di bawah standar RAC (&ge; 100,00%). Likuiditas jangka pendek ketat dan berisiko gagal bayar saat penagihan piutang tertunda.`
     },
     {
       no: 2,
       name: 'Debt to Equity Ratio (DER)',
-      formula: 'Total Liabilitas / Total Ekuitas &times; 100%',
-      rac: 'Maksimal 400,00%',
+      formula: 'Total Liab. / Total Ekuitas',
+      rac: '&le; 400,00%',
       v22: fmtNum(der22, 2) + '%',
       v23: fmtNum(der23, 2) + '%',
       pass: passDER,
       ket: passDER
-        ? `DER sebesar ${fmtNum(der23, 2)}% memenuhi standar RAC (maksimal 400,00%). Tingkat leverage permodalan debitur masih dalam ambang batas toleransi risiko wajar.`
-        : `DER sebesar ${fmtNum(der23, 2)}% melampaui standar RAC (maksimal 400,00%). Beban hutang terlalu dominan terhadap modal sendiri, meningkatkan risiko solvabilitas.`
+        ? `DER ${fmtNum(der23, 2)}% memenuhi standar RAC (&le; 400,00%). Tingkat leverage permodalan debitur masih dalam ambang batas toleransi risiko wajar.`
+        : `DER ${fmtNum(der23, 2)}% melampaui standar RAC (&le; 400,00%). Beban utang terlalu dominan terhadap modal sendiri, meningkatkan risiko solvabilitas.`
     },
     {
       no: 3,
       name: 'Return on Assets (ROA)',
-      formula: 'Laba Bersih (EAT) / Total Aset &times; 100%',
-      rac: 'Minimal 1,00%',
+      formula: 'EAT / Total Aset',
+      rac: '&ge; 1,00%',
       v22: fmtNum(roa22, 2) + '%',
       v23: fmtNum(roa23, 2) + '%',
       pass: passROA,
       ket: passROA
-        ? `ROA sebesar ${fmtNum(roa23, 2)}% memenuhi standar RAC (minimal 1,00%). Aset perusahaan bekerja secara produktif dalam menghasilkan laba bersih.`
-        : `ROA sebesar ${fmtNum(roa23, 2)}% di bawah standar RAC (minimal 1,00%). Efisiensi pemanfaatan aset untuk menghasilkan profitabilitas masih perlu ditingkatkan.`
+        ? `ROA ${fmtNum(roa23, 2)}% memenuhi standar RAC (&ge; 1,00%). Aset perusahaan bekerja secara produktif dalam menghasilkan laba bersih.`
+        : `ROA ${fmtNum(roa23, 2)}% di bawah standar RAC (&ge; 1,00%). Efisiensi pemanfaatan aset untuk menghasilkan profitabilitas masih perlu ditingkatkan.`
     },
     {
       no: 4,
       name: 'Return on Equity (ROE)',
-      formula: 'Laba Bersih (EAT) / Total Ekuitas &times; 100%',
-      rac: 'Minimal 5,00%',
+      formula: 'EAT / Total Ekuitas',
+      rac: '&ge; 5,00%',
       v22: fmtNum(roe22, 2) + '%',
       v23: fmtNum(roe23, 2) + '%',
       pass: passROE,
       ket: passROE
-        ? `ROE sebesar ${fmtNum(roe23, 2)}% memenuhi standar RAC (minimal 5,00%). Imbal hasil atas modal debitur mencukupi untuk mendukung pertumbuhan internal.`
-        : `ROE sebesar ${fmtNum(roe23, 2)}% di bawah standar RAC (minimal 5,00%). Kemampuan mencetak keuntungan bagi pemegang saham belum optimal.`
+        ? `ROE ${fmtNum(roe23, 2)}% memenuhi standar RAC (&ge; 5,00%). Imbal hasil atas modal debitur mencukupi untuk mendukung pertumbuhan internal.`
+        : `ROE ${fmtNum(roe23, 2)}% di bawah standar RAC (&ge; 5,00%). Kemampuan mencetak keuntungan bagi pemegang saham belum optimal.`
     },
     {
       no: 5,
       name: 'Net Working Capital (NWC)',
-      formula: 'Aset Lancar &minus; Liabilitas Lancar (Rp)',
-      rac: 'Hasil Positif (> Rp 0)',
+      formula: 'Aset Lancar &minus; Liab. Lancar',
+      rac: '> Rp 0',
       v22: fmtRp(nwc22, true),
       v23: fmtRp(nwc23, true),
       pass: passNWC,
       ket: passNWC
-        ? `NWC bernilai positif (${fmtRp(nwc23, true)}) memenuhi standar RAC. Aset lancar surplus terhadap kewajiban jangka pendek.`
-        : `NWC bernilai negatif (${fmtRp(nwc23, true)}) tidak memenuhi standar RAC. Terjadi defisit modal kerja riil yang memerlukan tambahan fasilitas atau restrukturisasi utang lancar.`
+        ? `NWC bernilai positif (${fmtRp(nwc23, true)}) memenuhi standar RAC (> Rp 0). Aset lancar surplus terhadap kewajiban jangka pendek.`
+        : `NWC bernilai negatif (${fmtRp(nwc23, true)}) tidak memenuhi standar RAC (> Rp 0). Terjadi defisit modal kerja riil yang memerlukan restrukturisasi utang.`
     },
     {
       no: 6,
-      name: 'NWC terhadap Nilai Kredit',
-      formula: 'NWC Riil / Plafond Kredit &times; 100%',
-      rac: 'Minimal 10,00%',
+      name: 'NWC / Plafond Kredit',
+      formula: 'NWC Riil / Plafond Kredit',
+      rac: '&ge; 10,00%',
       v22: plafond > 0 ? fmtNum(nwcToCredit22, 2) + '%' : 'N/A',
       v23: plafond > 0 ? fmtNum(nwcToCredit23, 2) + '%' : 'N/A',
       pass: passNWCCredit,
       ket: passNWCCredit
-        ? `Rasio NWC terhadap Nilai Kredit sebesar ${fmtNum(nwcToCredit23, 2)}% memenuhi standar RAC (minimal 10,00%). Debitur memiliki penyangga modal kerja bersih yang memadai dibandingkan permohonan kredit.`
-        : `Rasio NWC terhadap Nilai Kredit sebesar ${fmtNum(nwcToCredit23, 2)}% di bawah standar RAC (minimal 10,00%). Penyangga modal kerja terlalu tipis relatif terhadap nilai fasilitas asuransi kredit yang diajukan.`
+        ? `Rasio NWC/Plafond ${fmtNum(nwcToCredit23, 2)}% memenuhi standar RAC (&ge; 10,00%). Debitur memiliki penyangga modal kerja bersih memadai terhadap nilai kredit.`
+        : `Rasio NWC/Plafond ${fmtNum(nwcToCredit23, 2)}% di bawah standar RAC (&ge; 10,00%). Penyangga modal kerja terlalu tipis relatif terhadap nilai fasilitas kredit.`
     }
   ];
 
@@ -3544,13 +3544,13 @@ function renderRatiosTab(proj, m) {
         <thead>
           <tr>
             <th class="col-no">No</th>
-            <th class="col-indicator">Indikator Rasio Keuangan</th>
+            <th class="col-indicator">Indikator Rasio</th>
             <th class="col-formula">Rumus Perhitungan</th>
-            <th class="col-rac">Standar RAC Askrindo</th>
+            <th class="col-rac">Standar RAC</th>
             <th class="col-val">Tahun ${m.yr1}</th>
-            <th class="col-eval">Tahun ${m.yr2} (Evaluasi)</th>
+            <th class="col-eval">Tahun ${m.yr2} (Eval)</th>
             <th class="col-status">Status RAC</th>
-            <th class="col-notes">Keterangan &amp; Analisis Komparasi</th>
+            <th class="col-notes">Analisis &amp; Keterangan Komparasi</th>
           </tr>
         </thead>
         <tbody>

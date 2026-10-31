@@ -69,6 +69,40 @@ const DEFAULT_USERS = [
   }
 ];
 
+function generateNumericCaseNumber() {
+  const d = new Date();
+  const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+  const rand = String(Math.floor(1000 + Math.random() * 9000));
+  return `${ymd}-${rand}`;
+}
+
+function getProjectCaseNumber(proj) {
+  if (!proj) return generateNumericCaseNumber();
+  if (proj.caseNumber && /^[0-9\-]+$/.test(String(proj.caseNumber).trim())) {
+    return String(proj.caseNumber).trim();
+  }
+  const sampleMap = {
+    'case-rahmat-santosa': '20261101-0101',
+    'case-rahmat-restructured': '20261101-0102',
+    'case-nusantara-pangan': '20261101-0103',
+    'case-dhea-putri': '20261101-0104'
+  };
+  if (proj.id && sampleMap[proj.id]) {
+    proj.caseNumber = sampleMap[proj.id];
+    return proj.caseNumber;
+  }
+  const numMatches = (proj.id || '').match(/\d+/g);
+  if (numMatches && numMatches.length > 0) {
+    const digits = numMatches.join('');
+    if (digits.length >= 8) {
+      proj.caseNumber = `${digits.slice(0, 8)}-${digits.slice(-4)}`;
+      return proj.caseNumber;
+    }
+  }
+  proj.caseNumber = generateNumericCaseNumber();
+  return proj.caseNumber;
+}
+
 // ============================================================================
 // 1. DEFAULT SAMPLE CASES
 // ============================================================================
@@ -76,6 +110,7 @@ function getDefaultProjects() {
   return [
     {
       id: 'case-rahmat-santosa',
+      caseNumber: '20261101-0101',
       companyName: 'PT Rahmat Santosa (Kasus Trade Financing)',
       sector: 'Industri Pengolahan & Perdagangan Kedelai Impor (Tempe, Tahu, Kecap, Pakan Ternak)',
       estYear: 2018,
@@ -145,6 +180,7 @@ function getDefaultProjects() {
     },
     {
       id: 'case-rahmat-restructured',
+      caseNumber: '20261101-0102',
       companyName: 'PT Rahmat Santosa (Simulasi Turnaround DCC-SWCM)',
       sector: 'Industri Pengolahan & Perdagangan Kedelai Impor (Skema Mitigasi Ring-Fenced)',
       estYear: 2018,
@@ -214,6 +250,7 @@ function getDefaultProjects() {
     },
     {
       id: 'case-nusantara-pangan',
+      caseNumber: '20261101-0103',
       companyName: 'PT Nusantara Distribusi Pangan',
       sector: 'Distribusi FMCG & Bahan Pokok Nasional',
       estYear: 2015,
@@ -3581,157 +3618,171 @@ function renderRatiosTab(proj, m) {
 function renderPrintableReport(proj, m) {
   const today = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
   const ins = buildDynamicCaseInsights(proj, m);
+  const caseNumber = getProjectCaseNumber(proj);
 
   document.getElementById('printableMemoContainer').innerHTML = `
-    <div style="border-bottom:2.5px solid var(--askrindo-navy); padding-bottom:0.65rem; margin-bottom:0.75rem; display:flex; justify-content:space-between; align-items:center;">
-      <div style="display:flex; align-items:center; gap:0.75rem;">
-        <img src="logo-asca.png" alt="ASCA - Askrindo Smart Credit Analysis" style="height:38px; width:auto; object-fit:contain;" />
-        <div>
-          <h2 style="font-size:0.95rem; color:var(--askrindo-navy);">NOTA ANALISA UNDERWRITING ASURANSI KREDIT (ASCA)</h2>
-          <p style="font-size:0.68rem; color:var(--text-muted);">Metode: Dynamic Cash Conversion &amp; Stress-Tested Working Capital Model (DCC-SWCM)</p>
-        </div>
-      </div>
-      <div style="text-align:right; font-size:0.68rem;">
-        <div><strong>Tanggal:</strong> ${today}</div>
-        <div><strong>ID Kasus:</strong> ${proj.id.toUpperCase()}</div>
-        <div><strong>Underwriter:</strong> ${proj.underwriter}</div>
-      </div>
-    </div>
-
-    <div class="grid-2" style="margin-bottom:0.65rem;">
-      <table class="data-table">
-        <tbody>
-          <tr><td><strong>Nama Debitur</strong></td><td><strong>${proj.companyName}</strong></td></tr>
-          <tr><td><strong>Sektor Usaha</strong></td><td>${proj.sector} (Berdiri ${proj.estYear})</td></tr>
-          <tr><td><strong>Bank Mitra</strong></td><td>${proj.bankName}</td></tr>
-          <tr><td><strong>Skema Fasilitas</strong></td><td>${proj.facilityType}</td></tr>
-        </tbody>
-      </table>
-      <table class="data-table">
-        <tbody>
-          <tr><td><strong>Plafond Diajukan</strong></td><td><strong>${fmtRp(proj.requestedPlafond)}</strong> ${proj.usdAmount > 0 ? `(USD ${proj.usdAmount.toLocaleString('id-ID')} @ Rp${proj.fxRate.toLocaleString('id-ID')})` : ''}</td></tr>
-          <tr><td><strong>Tenor Fasilitas</strong></td><td>PK ${proj.pkMonths} Bln | Tenor Utama: ${proj.scfTenorDays} Hr | KMK Backup: ${proj.kmkTenorDays} Hr</td></tr>
-          <tr><td><strong>Skor &amp; Risk Grade</strong></td><td><strong>${m.score} / 100  -  Grade ${m.riskGrade}</strong> (IJP: ${m.ijpRate})</td></tr>
-          <tr><td><strong>Keputusan</strong></td><td><strong style="color:${m.gradeMeta.color};">${m.decision}</strong></td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <h4 style="color:var(--askrindo-navy); margin:0.4rem 0 0.2rem; font-size:0.76rem;">I. Audit Siklus Kas &amp; Ketahanan NWC Burn Rate</h4>
-    <table class="data-table" style="margin-bottom:0.6rem;">
+    <table class="memo-print-table">
       <thead>
         <tr>
-          <th>Indikator</th>
-          <th class="num-col">Data Bank</th>
-          <th class="num-col">Audited ${m.yr1}</th>
-          <th class="num-col">Audited ${m.yr2}</th>
-          <th class="num-col">Deviasi / Evaluasi</th>
+          <td>
+            <div class="memo-header-wrap" style="border-bottom:2.5px solid var(--askrindo-navy); padding-bottom:0.65rem; margin-bottom:0.75rem; display:flex; justify-content:space-between; align-items:center;">
+              <div style="display:flex; align-items:center; gap:0.75rem;">
+                <img src="logo-asca.png" alt="ASCA - Askrindo Smart Credit Analysis" style="height:38px; width:auto; object-fit:contain;" />
+                <div>
+                  <h2 style="font-size:0.95rem; color:var(--askrindo-navy);">NOTA ANALISA UNDERWRITING ASURANSI KREDIT (ASCA)</h2>
+                  <p style="font-size:0.68rem; color:var(--text-muted);">Metode: Dynamic Cash Conversion &amp; Stress-Tested Working Capital Model (DCC-SWCM)</p>
+                </div>
+              </div>
+              <div style="text-align:right; font-size:0.68rem;">
+                <div><strong>Tanggal:</strong> ${today}</div>
+                <div><strong>ID Kasus:</strong> ${caseNumber}</div>
+                <div><strong>Underwriter:</strong> ${proj.underwriter}</div>
+              </div>
+            </div>
+          </td>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td>DOR (Days of Receivables)</td>
-          <td class="num-col">${proj.claimedDOR} Hari</td>
-          <td class="num-col">${fmtNum(m.dor22_365, 1)} Hari</td>
-          <td class="num-col">${fmtNum(m.dor23_365, 1)} Hari</td>
-          <td class="num-col">${m.diffDOR >= 0 ? '+' : ''}${fmtNum(m.diffDOR, 1)} Hari</td>
-        </tr>
-        <tr>
-          <td>DOI (Days of Inventory)</td>
-          <td class="num-col">${proj.claimedDOI} Hari</td>
-          <td class="num-col">${fmtNum(m.doi22_365, 1)} Hari</td>
-          <td class="num-col"><strong>${fmtNum(m.doi23_365, 1)} Hari</strong></td>
-          <td class="num-col" style="color:#dc2626; font-weight:700;">${m.diffDOI >= 0 ? '+' : ''}${fmtNum(m.diffDOI, 1)} Hari</td>
-        </tr>
-        <tr>
-          <td>Siklus Operasi Gross (DOI+DOR)</td>
-          <td class="num-col"><strong>${m.claimedGrossCycle} Hari</strong></td>
-          <td class="num-col">${fmtNum(m.grossCycle22, 1)} Hari</td>
-          <td class="num-col"><strong>${fmtNum(m.grossCycle23, 1)} Hari</strong></td>
-          <td class="num-col">Tenor: ${m.scfTenor} Hr (${m.cashGapAtSCFMaturity_Actual > 0 ? `Defisit ${fmtNum(m.cashGapAtSCFMaturity_Actual, 1)} Hr` : 'Aman'})</td>
-        </tr>
-        <tr>
-          <td>Daily Gross Cash Burn &amp; Runway</td>
-          <td colspan="2">Burn: <strong>${fmtRp(m.dailyGrossCashBurn)} / hari</strong></td>
-          <td colspan="2" class="num-col" style="color:${m.pureCashRunwayMonths < 1.5 ? '#dc2626' : '#166534'}; font-weight:700;">
-            Pure Cash Runway: ${fmtNum(m.pureCashRunwayMonths, 1)} Bulan (${fmtNum(m.pureCashRunwayDays, 0)} Hari)
+          <td>
+            <div class="grid-2" style="margin-bottom:0.65rem;">
+              <table class="data-table">
+                <tbody>
+                  <tr><td><strong>Nama Debitur</strong></td><td><strong>${proj.companyName}</strong></td></tr>
+                  <tr><td><strong>Sektor Usaha</strong></td><td>${proj.sector} (Berdiri ${proj.estYear})</td></tr>
+                  <tr><td><strong>Bank Mitra</strong></td><td>${proj.bankName}</td></tr>
+                  <tr><td><strong>Skema Fasilitas</strong></td><td>${proj.facilityType}</td></tr>
+                </tbody>
+              </table>
+              <table class="data-table">
+                <tbody>
+                  <tr><td><strong>Plafond Diajukan</strong></td><td><strong>${fmtRp(proj.requestedPlafond)}</strong> ${proj.usdAmount > 0 ? `(USD ${proj.usdAmount.toLocaleString('id-ID')} @ Rp${proj.fxRate.toLocaleString('id-ID')})` : ''}</td></tr>
+                  <tr><td><strong>Tenor Fasilitas</strong></td><td>PK ${proj.pkMonths} Bln | Tenor Utama: ${proj.scfTenorDays} Hr | KMK Backup: ${proj.kmkTenorDays} Hr</td></tr>
+                  <tr><td><strong>Skor &amp; Risk Grade</strong></td><td><strong>${m.score} / 100  -  Grade ${m.riskGrade}</strong> (IJP: ${m.ijpRate})</td></tr>
+                  <tr><td><strong>Keputusan</strong></td><td><strong style="color:${m.gradeMeta.color};">${m.decision}</strong></td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h4 style="color:var(--askrindo-navy); margin:0.4rem 0 0.2rem; font-size:0.76rem;">I. Audit Siklus Kas &amp; Ketahanan NWC Burn Rate</h4>
+            <table class="data-table" style="margin-bottom:0.6rem;">
+              <thead>
+                <tr>
+                  <th>Indikator</th>
+                  <th class="num-col">Data Bank</th>
+                  <th class="num-col">Audited ${m.yr1}</th>
+                  <th class="num-col">Audited ${m.yr2}</th>
+                  <th class="num-col">Deviasi / Evaluasi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>DOR (Days of Receivables)</td>
+                  <td class="num-col">${proj.claimedDOR} Hari</td>
+                  <td class="num-col">${fmtNum(m.dor22_365, 1)} Hari</td>
+                  <td class="num-col">${fmtNum(m.dor23_365, 1)} Hari</td>
+                  <td class="num-col">${m.diffDOR >= 0 ? '+' : ''}${fmtNum(m.diffDOR, 1)} Hari</td>
+                </tr>
+                <tr>
+                  <td>DOI (Days of Inventory)</td>
+                  <td class="num-col">${proj.claimedDOI} Hari</td>
+                  <td class="num-col">${fmtNum(m.doi22_365, 1)} Hari</td>
+                  <td class="num-col"><strong>${fmtNum(m.doi23_365, 1)} Hari</strong></td>
+                  <td class="num-col" style="color:#dc2626; font-weight:700;">${m.diffDOI >= 0 ? '+' : ''}${fmtNum(m.diffDOI, 1)} Hari</td>
+                </tr>
+                <tr>
+                  <td>Siklus Operasi Gross (DOI+DOR)</td>
+                  <td class="num-col"><strong>${m.claimedGrossCycle} Hari</strong></td>
+                  <td class="num-col">${fmtNum(m.grossCycle22, 1)} Hari</td>
+                  <td class="num-col"><strong>${fmtNum(m.grossCycle23, 1)} Hari</strong></td>
+                  <td class="num-col">Tenor: ${m.scfTenor} Hr (${m.cashGapAtSCFMaturity_Actual > 0 ? `Defisit ${fmtNum(m.cashGapAtSCFMaturity_Actual, 1)} Hr` : 'Aman'})</td>
+                </tr>
+                <tr>
+                  <td>Daily Gross Cash Burn &amp; Runway</td>
+                  <td colspan="2">Burn: <strong>${fmtRp(m.dailyGrossCashBurn)} / hari</strong></td>
+                  <td colspan="2" class="num-col" style="color:${m.pureCashRunwayMonths < 1.5 ? '#dc2626' : '#166534'}; font-weight:700;">
+                    Pure Cash Runway: ${fmtNum(m.pureCashRunwayMonths, 1)} Bulan (${fmtNum(m.pureCashRunwayDays, 0)} Hari)
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="grid-2" style="margin-bottom:0.6rem; font-size:0.7rem;">
+              <div style="border:1px solid var(--border-color); border-radius:6px; padding:0.45rem;">
+                <div style="font-weight:700; color:#991b1b; margin-bottom:0.18rem;">II. Ringkasan Critical Points:</div>
+                <ul style="padding-left:1.1rem;">
+                  ${[...ins.criticalPointsFin, ...ins.criticalPointsCredit].map((c) => `<li><strong>${c.title}</strong></li>`).join('')}
+                </ul>
+              </div>
+              <div style="border:1px solid var(--border-color); border-radius:6px; padding:0.45rem;">
+                <div style="font-weight:700; color:#166534; margin-bottom:0.18rem;">III. Syarat &amp; Mitigasi Asuransi Kredit (Covenants):</div>
+                <ul style="padding-left:1.1rem;">
+                  ${ins.mitigations.map((mit) => `<li><strong>${mit.title}</strong></li>`).join('')}
+                </ul>
+              </div>
+            </div>
+
+            <div style="border:1.5px solid ${m.isInitialReject ? '#dc2626' : '#059669'}; border-radius:6px; padding:0.6rem 0.8rem; margin-bottom:0.7rem; background:${m.isInitialReject ? '#fff5f5' : '#f0fdf4'};">
+              <div style="font-weight:900; font-size:0.82rem; color:${m.isInitialReject ? '#991b1b' : '#166534'}; margin-bottom:0.25rem;">
+                KEPUTUSAN EVALUASI AWAL SISTEM DCC-SWCM: ${m.stage1Decision}
+              </div>
+              <p style="font-size:0.71rem; line-height:1.4; color:#334155; margin-bottom:0.4rem;">
+                ${m.stage1Summary}
+              </p>
+
+              ${m.isInitialReject ? `
+                <div style="border-top:1px dashed #fca5a5; padding-top:0.35rem; margin-top:0.35rem;">
+                  <div style="font-weight:800; font-size:0.75rem; color:#0f766e; margin-bottom:0.2rem;">
+                    OPSI PERSETUJUAN BERSYARAT KOMITE ASURANSI KREDIT ASKRINDO (REKOMENDASI COVERAGE MAKS 55%):
+                  </div>
+                  <div style="font-size:0.7rem; color:#1e293b; line-height:1.35;">
+                    Apabila fasilitas disetujui demi kepentingan strategis kemitraan dengan <strong>${proj.bankName}</strong>, transaksi wajib direstrukturisasi dengan <strong>7 Syarat Wajib (Condition Precedent)</strong>:
+                    <ol style="margin:0.2rem 0 0.3rem 1.1rem; padding:0;">
+                      <li><strong>Rekomendasi Coverage Askrindo Dibatasi Maksimal 55%</strong> (${fmtRp(proj.requestedPlafond * 0.55, true)}) &amp; Risk Sharing ${proj.bankName} Minimal 45% (${fmtRp(proj.requestedPlafond * 0.45, true)}).</li>
+                      ${isMaritimeOrImportRisk(proj) ? `
+                        <li><strong>Wajib Asuransi Marine Cargo Askrindo (All Risks Warehouse to Warehouse)</strong> dengan Banker\'s Clause / Loss Payee Askrindo &amp; ${proj.bankName}.</li>
+                      ` : (proj.procurementMethod === 'domestic' ? `
+                        <li><strong>Wajib Asuransi Pengangkutan Darat (Inland Transit Askrindo)</strong> untuk proteksi distribusi logistik barang dengan Banker\'s Clause ${proj.bankName}.</li>
+                      ` : `
+                        <li><strong>Tidak Diwajibkan Asuransi Marine Cargo</strong> (aktivitas debitur non-pengiriman laut; mitigasi difokuskan pada asuransi tempat usaha/PAR &amp; escrow rekening giro di ${proj.bankName}).</li>
+                      `)}
+                      <li><strong>Agunan Tambahan Fixed Asset Hak Tanggungan Peringkat I &ge; 120%</strong> (${fmtRp(proj.requestedPlafond * 1.2, true)}).</li>
+                      <li><strong>Optimalisasi KMK Backup sebagai Buffer Relaksasi Likuiditas Positif</strong> (penarikan bertahap per tranche maks ${fmtRp(m.recommendedTrancheSize, true)} berbasis bukti invoice riil).</li>
+                      <li><strong>Escrow Account Khusus di ${proj.bankName}</strong> untuk penampungan 100% penerimaan kas hasil penagihan piutang.</li>
+                      <li><strong>Covenant Kontrak PO Minimum Gross Margin +12,1%</strong> untuk menjamin arus kas operasional positif.</li>
+                      <li><strong>Personal Guarantee (PG) &amp; Corporate Guarantee (CG)</strong> notariil dari pemegang saham pengendali / UBO.</li>
+                    </ol>
+                  </div>
+                </div>
+              ` : ''}
+
+              ${proj.customNotes ? `<div style="font-size:0.71rem; margin-top:0.3rem; border-top:1px solid #cbd5e1; padding-top:0.25rem;"><strong>Catatan Tambahan Underwriter:</strong> ${proj.customNotes}</div>` : ''}
+            </div>
+
+            <div class="memo-signature-grid">
+              <div>
+                <div>Disusun Oleh,</div>
+                <div style="height:36px;"></div>
+                <div style="font-weight:700; border-top:1px solid #94a3b8; padding-top:3px;">${proj.underwriter}</div>
+                <div style="color:var(--text-muted);">Analis Underwriting Askrindo</div>
+              </div>
+              <div>
+                <div>Diperiksa Oleh,</div>
+                <div style="height:36px;"></div>
+                <div style="font-weight:700; border-top:1px solid #94a3b8; padding-top:3px;">Kepala Bagian Underwriting</div>
+                <div style="color:var(--text-muted);">Reviewer Risiko Asuransi Kredit</div>
+              </div>
+              <div>
+                <div>Disetujui Oleh,</div>
+                <div style="height:36px;"></div>
+                <div style="font-weight:700; border-top:1px solid #94a3b8; padding-top:3px;">Komite Pemutus Asuransi Kredit</div>
+                <div style="color:var(--text-muted);">PT Asuransi Kredit Indonesia</div>
+              </div>
+            </div>
           </td>
         </tr>
       </tbody>
     </table>
-
-    <div class="grid-2" style="margin-bottom:0.6rem; font-size:0.7rem;">
-      <div style="border:1px solid var(--border-color); border-radius:6px; padding:0.45rem;">
-        <div style="font-weight:700; color:#991b1b; margin-bottom:0.18rem;">II. Ringkasan Critical Points:</div>
-        <ul style="padding-left:1.1rem;">
-          ${[...ins.criticalPointsFin, ...ins.criticalPointsCredit].map((c) => `<li><strong>${c.title}</strong></li>`).join('')}
-        </ul>
-      </div>
-      <div style="border:1px solid var(--border-color); border-radius:6px; padding:0.45rem;">
-        <div style="font-weight:700; color:#166534; margin-bottom:0.18rem;">III. Syarat &amp; Mitigasi Asuransi Kredit (Covenants):</div>
-        <ul style="padding-left:1.1rem;">
-          ${ins.mitigations.map((mit) => `<li><strong>${mit.title}</strong></li>`).join('')}
-        </ul>
-      </div>
-    </div>
-
-    <div style="border:1.5px solid ${m.isInitialReject ? '#dc2626' : '#059669'}; border-radius:6px; padding:0.6rem 0.8rem; margin-bottom:0.7rem; background:${m.isInitialReject ? '#fff5f5' : '#f0fdf4'};">
-      <div style="font-weight:900; font-size:0.82rem; color:${m.isInitialReject ? '#991b1b' : '#166534'}; margin-bottom:0.25rem;">
-        KEPUTUSAN EVALUASI AWAL SISTEM DCC-SWCM: ${m.stage1Decision}
-      </div>
-      <p style="font-size:0.71rem; line-height:1.4; color:#334155; margin-bottom:0.4rem;">
-        ${m.stage1Summary}
-      </p>
-
-      ${m.isInitialReject ? `
-        <div style="border-top:1px dashed #fca5a5; padding-top:0.35rem; margin-top:0.35rem;">
-          <div style="font-weight:800; font-size:0.75rem; color:#0f766e; margin-bottom:0.2rem;">
-            OPSI PERSETUJUAN BERSYARAT KOMITE ASURANSI KREDIT ASKRINDO (REKOMENDASI COVERAGE MAKS 55%):
-          </div>
-          <div style="font-size:0.7rem; color:#1e293b; line-height:1.35;">
-            Apabila fasilitas disetujui demi kepentingan strategis kemitraan dengan <strong>${proj.bankName}</strong>, transaksi wajib direstrukturisasi dengan <strong>7 Syarat Wajib (Condition Precedent)</strong>:
-            <ol style="margin:0.2rem 0 0.3rem 1.1rem; padding:0;">
-              <li><strong>Rekomendasi Coverage Askrindo Dibatasi Maksimal 55%</strong> (${fmtRp(proj.requestedPlafond * 0.55, true)}) &amp; Risk Sharing ${proj.bankName} Minimal 45% (${fmtRp(proj.requestedPlafond * 0.45, true)}).</li>
-              ${isMaritimeOrImportRisk(proj) ? `
-                <li><strong>Wajib Asuransi Marine Cargo Askrindo (All Risks Warehouse to Warehouse)</strong> dengan Banker\'s Clause / Loss Payee Askrindo &amp; ${proj.bankName}.</li>
-              ` : (proj.procurementMethod === 'domestic' ? `
-                <li><strong>Wajib Asuransi Pengangkutan Darat (Inland Transit Askrindo)</strong> untuk proteksi distribusi logistik barang dengan Banker\'s Clause ${proj.bankName}.</li>
-              ` : `
-                <li><strong>Tidak Diwajibkan Asuransi Marine Cargo</strong> (aktivitas debitur non-pengiriman laut; mitigasi difokuskan pada asuransi tempat usaha/PAR &amp; escrow rekening giro di ${proj.bankName}).</li>
-              `)}
-              <li><strong>Agunan Tambahan Fixed Asset Hak Tanggungan Peringkat I &ge; 120%</strong> (${fmtRp(proj.requestedPlafond * 1.2, true)}).</li>
-              <li><strong>Optimalisasi KMK Backup sebagai Buffer Relaksasi Likuiditas Positif</strong> (penarikan bertahap per tranche maks ${fmtRp(m.recommendedTrancheSize, true)} berbasis bukti invoice riil).</li>
-              <li><strong>Escrow Account Khusus di ${proj.bankName}</strong> untuk penampungan 100% penerimaan kas hasil penagihan piutang.</li>
-              <li><strong>Covenant Kontrak PO Minimum Gross Margin +12,1%</strong> untuk menjamin arus kas operasional positif.</li>
-              <li><strong>Personal Guarantee (PG) &amp; Corporate Guarantee (CG)</strong> notariil dari pemegang saham pengendali / UBO.</li>
-            </ol>
-          </div>
-        </div>
-      ` : ''}
-
-      ${proj.customNotes ? `<div style="font-size:0.71rem; margin-top:0.3rem; border-top:1px solid #cbd5e1; padding-top:0.25rem;"><strong>Catatan Tambahan Underwriter:</strong> ${proj.customNotes}</div>` : ''}
-    </div>
-
-    <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:1.5rem; margin-top:1.3rem; text-align:center; font-size:0.71rem;">
-      <div>
-        <div>Disusun Oleh,</div>
-        <div style="height:36px;"></div>
-        <div style="font-weight:700; border-top:1px solid #94a3b8; padding-top:3px;">${proj.underwriter}</div>
-        <div style="color:var(--text-muted);">Analis Underwriting Askrindo</div>
-      </div>
-      <div>
-        <div>Diperiksa Oleh,</div>
-        <div style="height:36px;"></div>
-        <div style="font-weight:700; border-top:1px solid #94a3b8; padding-top:3px;">Kepala Bagian Underwriting</div>
-        <div style="color:var(--text-muted);">Reviewer Risiko Asuransi Kredit</div>
-      </div>
-      <div>
-        <div>Disetujui Oleh,</div>
-        <div style="height:36px;"></div>
-        <div style="font-weight:700; border-top:1px solid #94a3b8; padding-top:3px;">Komite Pemutus Asuransi Kredit</div>
-        <div style="color:var(--text-muted);">PT Asuransi Kredit Indonesia</div>
-      </div>
-    </div>
   `;
 }
 
@@ -3937,6 +3988,7 @@ function createNewProjectFromModal() {
   }
 
   baseObj.id = 'case-' + Date.now();
+  baseObj.caseNumber = generateNumericCaseNumber();
   baseObj.companyName = name;
   const initInaproc = checkInaprocBlacklist(name);
   if (initInaproc.isBlacklisted) {
@@ -3973,6 +4025,7 @@ function duplicateCurrentProject() {
   if (!curr) return;
   const copy = JSON.parse(JSON.stringify(curr));
   copy.id = 'case-' + Date.now();
+  copy.caseNumber = generateNumericCaseNumber();
   copy.companyName = `${curr.companyName} (Salinan)`;
   projects.unshift(copy);
   activeProjectId = copy.id;

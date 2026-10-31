@@ -210,7 +210,7 @@
               <button class="btn btn-outline btn-sm" onclick="toggleSidebar()" title="Minimize Daftar Proyek">&laquo;</button>
             </div>
           </div>
-          <input type="text" id="searchProjectInput" class="search-box" placeholder="Cari debitur, sektor, bank..." autocomplete="off" value="" oninput="renderProjectList()" />
+          <input type="search" id="searchProjectInput" name="project_search_query_prevent_autofill" class="search-box" placeholder="Cari debitur, sektor, bank..." autocomplete="chrome-off" autocorrect="off" autocapitalize="off" spellcheck="false" value="" oninput="renderProjectList()" onfocus="if(this.value==='1922'||this.value==='admin')this.value=''" />
         </div>
 
         <div id="projectListContainer" class="project-list">
@@ -1121,6 +1121,6 @@
 
     <div class="toast-container" id="toastContainer"></div>
 
-  <script src="app.js?v=1793478651"></script>
+  <script src="app.js?v=1793478965"></script>
 </body>
 </html>

@@ -546,6 +546,13 @@ function renderProjectList() {
   if (countCollapsed) countCollapsed.textContent = projects.length;
 
   const searchInput = document.getElementById('searchProjectInput');
+  const session = getActiveSession();
+  if (searchInput) {
+    const rawVal = (searchInput.value || '').trim();
+    if (rawVal === '1922' || rawVal.toLowerCase() === 'admin' || (session && rawVal.toLowerCase() === session.username.toLowerCase())) {
+      searchInput.value = '';
+    }
+  }
   const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
   const filtered = projects.filter((p) => {
@@ -4239,10 +4246,39 @@ async function checkAuthAndRoute() {
 
     const searchInput = document.getElementById('searchProjectInput');
     if (searchInput) searchInput.value = '';
+    setupSearchProjectInputProtection();
+    [50, 150, 300, 600, 1200, 2000].forEach((delay) => {
+      setTimeout(() => {
+        const si = document.getElementById('searchProjectInput');
+        const sess = getActiveSession();
+        if (si && (si.value === '1922' || si.value === 'admin' || (sess && si.value.trim().toLowerCase() === sess.username.toLowerCase()))) {
+          si.value = '';
+          renderProjectList();
+        }
+      }, delay);
+    });
 
     loadProjectsFromStorage();
     renderAll();
   }
+}
+
+function setupSearchProjectInputProtection() {
+  const si = document.getElementById('searchProjectInput');
+  if (!si || si.__protectionAttached) return;
+  si.__protectionAttached = true;
+  const cleanIfUsername = () => {
+    const sess = getActiveSession();
+    const val = (si.value || '').trim().toLowerCase();
+    if (val === '1922' || val === 'admin' || (sess && val === sess.username.toLowerCase())) {
+      si.value = '';
+      renderProjectList();
+    }
+  };
+  si.addEventListener('focus', cleanIfUsername);
+  si.addEventListener('click', cleanIfUsername);
+  si.addEventListener('input', cleanIfUsername);
+  si.addEventListener('change', cleanIfUsername);
 }
 
 // --- SESSION CONCURRENCY & LOCK HELPERS ---
@@ -4425,6 +4461,8 @@ async function handleLoginSubmit(event, isForce = false) {
 
     showToast('Selamat datang, ' + user.fullName + '!');
     await checkAuthAndRoute();
+    const finalSearchInput = document.getElementById('searchProjectInput');
+    if (finalSearchInput) finalSearchInput.value = '';
   } catch (err) {
     console.error('Login error:', err);
     if (alertBox) alertBox.style.display = 'flex';

@@ -277,11 +277,11 @@
         <button class="tab-btn" data-tab="tab-dcc" onclick="switchTab('tab-dcc')" title="Dynamic Cash Conversion Cycle">
           Dynamic CCC
         </button>
-        <button class="tab-btn" data-tab="tab-burn" onclick="switchTab('tab-burn')" title="Analisis Ketahanan Modal Kerja (NWC) & Burn-Rate Test">
-          NWC &amp; Burn
-        </button>
         <button class="tab-btn" data-tab="tab-swcm" onclick="switchTab('tab-swcm')" title="Stress-Test Working Capital Model">
           Stress-Test
+        </button>
+        <button class="tab-btn" data-tab="tab-burn" onclick="switchTab('tab-burn')" title="Analisis Ketahanan Modal Kerja (NWC) & Burn-Rate Test">
+          NWC &amp; Burn
         </button>
         <button class="tab-btn" data-tab="tab-grade" onclick="switchTab('tab-grade')" title="Grade Risk & Indikator Penilaian">
           Grade Risk
@@ -672,15 +672,6 @@
       </section>
 
       <!-- ========================================================= -->
-      <!-- TAB 4: KETAHANAN MODAL KERJA BERSIH & CASH BURN-RATE TEST (MODUL BARU) -->
-      <!-- ========================================================= -->
-      <section id="tab-burn" class="tab-pane">
-        <div id="burnRateMenuContainer">
-          <!-- Diisi otomatis oleh JS -->
-        </div>
-      </section>
-
-      <!-- ========================================================= -->
       <!-- TAB 5: STRESS-TESTED WORKING CAPITAL MODEL (SWCM) & TURNAROUND -->
       <!-- ========================================================= -->
       <section id="tab-swcm" class="tab-pane">
@@ -781,6 +772,15 @@
           <div class="table-responsive">
             <table class="data-table" id="swcmMatrixTable"></table>
           </div>
+        </div>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- TAB 6: KETAHANAN MODAL KERJA BERSIH & CASH BURN-RATE TEST -->
+      <!-- ========================================================= -->
+      <section id="tab-burn" class="tab-pane">
+        <div id="burnRateMenuContainer">
+          <!-- Diisi otomatis oleh JS -->
         </div>
       </section>
 
@@ -1121,6 +1121,6 @@
 
     <div class="toast-container" id="toastContainer"></div>
 
-  <script src="app.js?v=1793470276"></script>
+  <script src="app.js?v=1793470350"></script>
 </body>
 </html>

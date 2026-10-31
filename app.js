@@ -424,31 +424,38 @@ function getCurrentProjectStorageKey() {
 
 function loadProjectsFromStorage() {
   const session = getActiveSession();
+  const is1922 = session && session.username === '1922';
   const userKey = getCurrentProjectStorageKey();
 
+  projects = [];
+  activeProjectId = null;
+
   try {
-    // Cek data milik user yang login saat ini
     const rawUser = localStorage.getItem(userKey);
     if (rawUser) {
-      const parsed = JSON.parse(rawUser);
+      let parsed = JSON.parse(rawUser);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        projects = parsed.map((p) => ({
-          year1: p.year1 || 2022,
-          year2: p.year2 || 2023,
-          qualitative5CScore: typeof p.qualitative5CScore === 'number' ? p.qualitative5CScore : 6,
-          manualGradeOverride: p.manualGradeOverride || 'AUTO',
-          overrideReason: p.overrideReason || '',
-          burnStressOpexGrowth: p.burnStressOpexGrowth || 0,
-          burnStressCollectionFreeze: !!p.burnStressCollectionFreeze,
-          ...p
-        }));
-        activeProjectId = projects[0].id;
-        return;
+        if (!is1922) {
+          const defaultIds = ['case-rahmat-santosa', 'case-mitra-prima-sejahtera', 'case-tri-mandiri'];
+          parsed = parsed.filter(p => !defaultIds.includes(p.id) && !p.id.startsWith('case-rahmat'));
+        }
+        if (parsed.length > 0) {
+          projects = parsed.map((p) => ({
+            year1: p.year1 || 2022,
+            year2: p.year2 || 2023,
+            qualitative5CScore: typeof p.qualitative5CScore === 'number' ? p.qualitative5CScore : 6,
+            manualGradeOverride: p.manualGradeOverride || 'AUTO',
+            overrideReason: p.overrideReason || '',
+            burnStressOpexGrowth: p.burnStressOpexGrowth || 0,
+            burnStressCollectionFreeze: !!p.burnStressCollectionFreeze,
+            ...p
+          }));
+          activeProjectId = projects[0].id;
+          return;
+        }
       }
     }
 
-    // User 1922 (akun lama/bawaan): coba muat dari legacy keys untuk migrasi
-    const is1922 = !session || session.username === '1922';
     if (is1922) {
       const legacyKeys = [
         STORAGE_KEY,
@@ -481,7 +488,6 @@ function loadProjectsFromStorage() {
           }
         }
       }
-      // User 1922 tanpa data: muat demo bawaan
       projects = getDefaultProjects();
       activeProjectId = projects[0].id;
       saveProjectsToStorage();
@@ -491,7 +497,6 @@ function loadProjectsFromStorage() {
     console.warn('Gagal memuat localStorage:', e);
   }
 
-  // User baru selain 1922: mulai dengan proyek KOSONG
   projects = [];
   activeProjectId = null;
 }
@@ -3146,39 +3151,49 @@ function renderAll() {
   const activeStateEl = document.getElementById('dashboardActiveState');
 
   if (!proj) {
-    // Tampilan ketika belum ada proyek yang dibuat (User Baru / Akun Kosong)
-    const bYEl = document.getElementById('bannerFinYears');
-    if (bYEl) bYEl.textContent = '-';
-    
-    const bannerTitle = document.getElementById('bannerCompanyName');
-    if (bannerTitle) bannerTitle.textContent = 'Belum Ada Proyek Analisa';
-    const bannerSector = document.getElementById('bannerSector');
-    if (bannerSector) bannerSector.textContent = 'Klik tombol "+ Proyek Baru" di atas untuk memulai analisa kasus kredit pertama Anda.';
-    const bannerGrade = document.getElementById('bannerGradeBadge');
-    if (bannerGrade) bannerGrade.textContent = '-';
-    const bannerScore = document.getElementById('bannerScoreCircle');
-    if (bannerScore) bannerScore.textContent = '0';
-    const bannerDecision = document.getElementById('bannerDecisionText');
-    if (bannerDecision) bannerDecision.textContent = 'SIAP ANALISA KASUS BARU';
+    const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    setTxt('bannerCompanyName', 'Belum Ada Proyek Analisa');
+    setTxt('bannerSector', 'Klik tombol "+ Proyek Baru" untuk memulai analisa kasus kredit pertama Anda.');
+    setTxt('bannerGradeBadge', '-');
+    setTxt('bannerFacilityType', '-');
+    setTxt('bannerBankName', '-');
+    setTxt('bannerPlafond', '-');
+    setTxt('bannerFinYears', '-');
+    const curSession = getActiveSession();
+    setTxt('bannerUnderwriter', curSession ? (curSession.fullName || curSession.username) : '-');
+    setTxt('bannerScoreCircle', '0');
+    setTxt('bannerDecisionText', 'SIAP ANALISA KASUS BARU');
+    setTxt('bannerOptimalLimit', 'Rekomendasi: -');
+
+    const gradeBadge = document.getElementById('bannerGradeBadge');
+    if (gradeBadge) {
+      gradeBadge.className = 'grade-badge';
+      gradeBadge.style.background = '#94a3b8';
+    }
+    const scoreCircle = document.getElementById('bannerScoreCircle');
+    if (scoreCircle) {
+      scoreCircle.style.background = '#94a3b8';
+    }
 
     if (emptyStateEl) {
       emptyStateEl.style.display = 'block';
       emptyStateEl.innerHTML =
-        '<div class="card" style="text-align:center; padding:3.5rem 1.5rem; display:flex; flex-direction:column; align-items:center; justify-content:center;">' +
-        '<div style="margin-bottom:1.2rem; background:rgba(0,86,145,0.08); width:88px; height:88px; border-radius:50%; display:flex; align-items:center; justify-content:center;">' +
-        '<svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#005691" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block; margin:0 auto;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>' +
+        '<div class="card" style="text-align:center; padding:4rem 1.5rem; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:420px; margin:0 auto; width:100%; box-sizing:border-box;">' +
+        '<div style="margin:0 auto 1.2rem auto; background:rgba(0,86,145,0.08); width:88px; height:88px; border-radius:50%; display:flex; align-items:center; justify-content:center;">' +
+        '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#005691" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>' +
         '</div>' +
-        '<h2 style="color:var(--askrindo-navy); font-size:1.35rem; font-weight:800; margin-bottom:0.5rem; text-align:center;">Ruang Kerja Analisa Kredit Masih Kosong</h2>' +
-        '<p style="color:var(--text-muted); max-width:540px; margin:0 auto 1.8rem; font-size:0.86rem; line-height:1.5; text-align:center;">Akun ini belum memiliki berkas analisa debitur. Mulai dengan membuat proyek analisa kredit baru atau buka file database (.asca.json) yang telah disimpan sebelumnya.</p>' +
-        '<div style="display:flex; justify-content:center; align-items:center; gap:0.85rem; flex-wrap:wrap; margin:0 auto;">' +
-        '<button class="btn btn-primary" onclick="openNewProjectModal()" style="display:inline-flex; align-items:center; justify-content:center; gap:0.45rem; padding:0.6rem 1.3rem; font-size:0.88rem; font-weight:700;">' +
-        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>' +
+        '<h2 style="color:var(--askrindo-navy); font-size:1.35rem; font-weight:800; margin:0 auto 0.5rem auto; text-align:center;">Ruang Kerja Analisa Kredit Masih Kosong</h2>' +
+        '<p style="color:var(--text-muted); max-width:540px; margin:0 auto 2rem auto; font-size:0.86rem; line-height:1.5; text-align:center;">Akun ini belum memiliki berkas analisa debitur. Mulai dengan membuat proyek analisa kredit baru atau buka file database (.asca.json) yang telah disimpan sebelumnya.</p>' +
+        '<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; margin:0 auto;">' +
+        '<button class="btn btn-primary" onclick="openNewProjectModal()" style="display:inline-flex; align-items:center; justify-content:center; gap:0.5rem; padding:0.75rem 2rem; font-size:0.95rem; font-weight:700; margin:0 auto; box-shadow:0 4px 14px rgba(0,86,145,0.3); border-radius:6px;">' +
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>' +
         ' <span>Buat Proyek Pertama</span></button>' +
-        '<label class="btn btn-light" style="display:inline-flex; align-items:center; justify-content:center; gap:0.45rem; padding:0.6rem 1.3rem; font-size:0.88rem; font-weight:700; margin:0; cursor:pointer;">' +
-        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>' +
-        ' <span>Buka File (.asca.json)</span>' +
+        '<div style="margin-top:1rem; text-align:center; width:100%;">' +
+        '<label class="btn btn-light btn-sm" style="display:inline-flex; align-items:center; justify-content:center; gap:0.4rem; padding:0.45rem 1.1rem; font-size:0.78rem; font-weight:600; cursor:pointer; color:var(--text-muted); margin:0 auto;">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>' +
+        ' <span>Atau buka file database (.asca.json)</span>' +
         '<input type="file" accept=".json" style="display:none" onchange="importWorkspaceJSON(event)" /></label>' +
-        '</div></div>';
+        '</div></div></div>';
     }
     if (activeStateEl) activeStateEl.style.display = 'none';
     return;
@@ -3330,7 +3345,79 @@ async function checkAuthAndRoute() {
   }
 }
 
-async function handleLoginSubmit(event) {
+// --- SESSION CONCURRENCY & LOCK HELPERS ---
+const SESSION_LOCK_TIMEOUT_MS = 90 * 1000;
+let sessionHeartbeatTimer = null;
+
+function getLocalSessionId() {
+  let sId = sessionStorage.getItem('ASCA_LOCAL_SESSION_ID');
+  if (!sId) {
+    sId = 'sess_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
+    sessionStorage.setItem('ASCA_LOCAL_SESSION_ID', sId);
+  }
+  return sId;
+}
+
+function getCleanUnit(rawUnit) {
+  if (!rawUnit) return '';
+  const idx = rawUnit.indexOf('||SESS:');
+  return idx !== -1 ? rawUnit.substring(0, idx).trim() : rawUnit.trim();
+}
+
+function parseSessionLock(rawUnit) {
+  if (!rawUnit || !rawUnit.includes('||SESS:')) return null;
+  const parts = rawUnit.split('||SESS:');
+  if (parts.length < 2) return null;
+  const lockData = parts[1].split(':');
+  const sessionId = lockData[0];
+  const timestamp = parseInt(lockData[1], 10);
+  if (!sessionId || isNaN(timestamp)) return null;
+  const isExpired = (Date.now() - timestamp) > SESSION_LOCK_TIMEOUT_MS;
+  return { sessionId, timestamp, isExpired };
+}
+
+function buildLockedUnit(baseUnit, sessionId) {
+  const clean = getCleanUnit(baseUnit);
+  return clean + '||SESS:' + sessionId + ':' + Date.now();
+}
+
+function startSessionHeartbeat(username, cleanUnit) {
+  if (sessionHeartbeatTimer) clearInterval(sessionHeartbeatTimer);
+  const sId = getLocalSessionId();
+  sessionHeartbeatTimer = setInterval(async () => {
+    try {
+      const lockedUnit = buildLockedUnit(cleanUnit, sId);
+      await supabaseFetch('users?username=eq.' + encodeURIComponent(username), {
+        method: 'PATCH',
+        body: JSON.stringify({ unit: lockedUnit })
+      });
+    } catch (e) {
+      console.warn('Session heartbeat error:', e);
+    }
+  }, 35000);
+}
+
+function stopSessionHeartbeat() {
+  if (sessionHeartbeatTimer) {
+    clearInterval(sessionHeartbeatTimer);
+    sessionHeartbeatTimer = null;
+  }
+}
+
+async function releaseSessionLock(username, rawUnit) {
+  stopSessionHeartbeat();
+  try {
+    const clean = getCleanUnit(rawUnit);
+    await supabaseFetch('users?username=eq.' + encodeURIComponent(username), {
+      method: 'PATCH',
+      body: JSON.stringify({ unit: clean })
+    });
+  } catch (e) {
+    console.warn('Release session lock error:', e);
+  }
+}
+
+async function handleLoginSubmit(event, isForce = false) {
   if (event) event.preventDefault();
   const usernameInput = document.getElementById('loginUsername');
   const passwordInput = document.getElementById('loginPassword');
@@ -3353,33 +3440,27 @@ async function handleLoginSubmit(event) {
   }
 
   try {
-    // 1. Coba periksa langsung ke akun lokal/default terlebih dahulu (instant login)
-    let localUsers = getUsersFromStorage();
-    let user = localUsers.find((u) => u.username.toLowerCase() === uname.toLowerCase());
+    let cloudUsers = [];
+    try {
+      cloudUsers = await fetchUsersFromCloud();
+    } catch (e) {
+      console.warn('Gagal fetch cloud, fallback ke storage:', e);
+    }
 
-    // 2. Jika tidak ditemukan atau butuh data cloud terbaru, ambil dari Supabase Cloud
+    let user = cloudUsers.find((u) => u.username.toLowerCase() === uname.toLowerCase());
     if (!user) {
-      const cloudUsers = await fetchUsersFromCloud();
-      user = cloudUsers.find((u) => u.username.toLowerCase() === uname.toLowerCase());
-    } else {
-      // Ambil update cloud di latar belakang tanpa memblokir login
-      fetchUsersFromCloud().catch(() => {});
+      const localUsers = getUsersFromStorage();
+      user = localUsers.find((u) => u.username.toLowerCase() === uname.toLowerCase());
     }
 
     if (!user || user.password !== pwd) {
-      // Coba sekali lagi fetch dari cloud jika password salah di cache
-      const cloudUsers = await fetchUsersFromCloud();
-      user = cloudUsers.find((u) => u.username.toLowerCase() === uname.toLowerCase());
-      
-      if (!user || user.password !== pwd) {
-        if (alertBox) alertBox.style.display = 'flex';
-        if (alertMsg) alertMsg.textContent = 'Username atau kata sandi tidak valid!';
-        if (btnSubmit) {
-          btnSubmit.disabled = false;
-          btnSubmit.innerHTML = '<span>Masuk ke Sistem</span>';
-        }
-        return;
+      if (alertBox) alertBox.style.display = 'flex';
+      if (alertMsg) alertMsg.textContent = 'Username atau kata sandi tidak valid!';
+      if (btnSubmit) {
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = '<span>Masuk ke Sistem</span>';
       }
+      return;
     }
 
     if (user.status !== 'active') {
@@ -3392,22 +3473,48 @@ async function handleLoginSubmit(event) {
       return;
     }
 
-    // Update last login di Supabase Cloud
+    // Periksa apakah sedang login di sesi/perangkat lain
+    const mySessionId = getLocalSessionId();
+    const lock = parseSessionLock(user.unit);
+    if (lock && !lock.isExpired && lock.sessionId !== mySessionId && !isForce) {
+      const lastActiveSec = Math.round((Date.now() - lock.timestamp) / 1000);
+      if (alertBox) alertBox.style.display = 'flex';
+      if (alertMsg) {
+        alertMsg.innerHTML = '<div><strong>Peringatan Akun Sedang Digunakan!</strong></div>' +
+          '<div style="font-size:0.75rem; margin-top:0.2rem; opacity:0.9;">' +
+          'Akun ini sedang aktif digunakan di tempat/perangkat lain (aktif ' + lastActiveSec + ' detik lalu).' +
+          '</div>' +
+          '<div style="margin-top:0.5rem;">' +
+          '<button type="button" class="btn btn-sm btn-danger" style="font-size:0.72rem; padding:3px 8px;" onclick="handleLoginSubmit(null, true)">' +
+          'Paksa Masuk & Akhiri Sesi Lain' +
+          '</button>' +
+          '</div>';
+      }
+      if (btnSubmit) {
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = '<span>Masuk ke Sistem</span>';
+      }
+      return;
+    }
+
     const nowIso = new Date().toISOString();
+    const cleanUnit = getCleanUnit(user.unit);
+    const newLockedUnit = buildLockedUnit(cleanUnit, mySessionId);
     user.lastLogin = nowIso;
-    saveUsersToStorage(localUsers);
+    user.unit = newLockedUnit;
 
-    supabaseFetch(`users?username=eq.${encodeURIComponent(user.username)}`, {
+    supabaseFetch('users?username=eq.' + encodeURIComponent(user.username), {
       method: 'PATCH',
-      body: JSON.stringify({ last_login: nowIso })
-    }).catch((e) => console.warn('Gagal update last_login ke cloud:', e));
+      body: JSON.stringify({ last_login: nowIso, unit: newLockedUnit })
+    }).catch((e) => console.warn('Gagal update session lock ke cloud:', e));
 
-    // Simpan sesi lokal
+    startSessionHeartbeat(user.username, cleanUnit);
+
     const session = {
       username: user.username,
       fullName: user.fullName,
       role: user.role,
-      unit: user.unit,
+      unit: cleanUnit,
       loginAt: nowIso
     };
     setActiveSession(session);
@@ -3416,7 +3523,7 @@ async function handleLoginSubmit(event) {
     if (usernameInput) usernameInput.value = '';
     if (passwordInput) passwordInput.value = '';
 
-    showToast(`Selamat datang, ${user.fullName}!`);
+    showToast('Selamat datang, ' + user.fullName + '!');
     await checkAuthAndRoute();
   } catch (err) {
     console.error('Login error:', err);
@@ -3447,8 +3554,49 @@ function togglePasswordVisibility(inputId, btn) {
 function logoutSession() {
   const session = getActiveSession();
   const name = session ? session.fullName : 'Pengguna';
+
+  try {
+    if (session && session.username) {
+      releaseSessionLock(session.username, session.unit);
+    }
+  } catch (e) {
+    console.warn('Error releasing session lock:', e);
+  }
+
+  // 1. Reset state in-memory
+  projects = [];
+  activeProjectId = null;
+
+  // 2. Clear session auth & temp storage
   setActiveSession(null);
-  showToast(`Sampai jumpa, ${name}. Sesi telah diakhiri.`);
+  try {
+    sessionStorage.clear();
+    localStorage.removeItem('ASCA_ACTIVE_PROJECT_ID');
+    localStorage.removeItem('ASCA_DRAFT_PROJECT');
+  } catch (e) {}
+
+  // 3. Reset form inputs di DOM agar tidak ada data input yang tersisa
+  const allInputs = document.querySelectorAll('#appLayoutContainer input, #appLayoutContainer select, #appLayoutContainer textarea');
+  allInputs.forEach(inp => {
+    if (inp.type !== 'file' && inp.type !== 'button' && inp.type !== 'submit') {
+      inp.value = '';
+    }
+  });
+
+  // 4. Reset Banner DOM
+  const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  setTxt('bannerCompanyName', '-');
+  setTxt('bannerFacilityType', '-');
+  setTxt('bannerBankName', '-');
+  setTxt('bannerSector', '-');
+  setTxt('bannerPlafond', '-');
+  setTxt('bannerFinYears', '-');
+  setTxt('bannerUnderwriter', '-');
+  setTxt('bannerScoreCircle', '0');
+  setTxt('bannerDecisionText', '-');
+  setTxt('bannerOptimalLimit', 'Rekomendasi: -');
+
+  showToast('Sampai jumpa, ' + name + '. Sesi telah diakhiri.');
   checkAuthAndRoute();
 }
 

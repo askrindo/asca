@@ -2989,6 +2989,9 @@ function syncInputsToModel() {
 // 12. TAB NAVIGATION & MODAL ACTIONS
 // ============================================================================
 function switchTab(tabId) {
+  if (tabId !== 'tab-dashboard' && (!projects || projects.length === 0 || !getActiveProject())) {
+    return;
+  }
   document.querySelectorAll('.tab-btn').forEach((btn) => {
     btn.classList.toggle('active', btn.getAttribute('data-tab') === tabId);
   });
@@ -3151,6 +3154,22 @@ function renderAll() {
   const activeStateEl = document.getElementById('dashboardActiveState');
 
   if (!proj) {
+    // Nonaktifkan semua tab fitur selain Dashboard jika belum ada proyek
+    document.querySelectorAll('.tab-btn').forEach((btn) => {
+      const isDashboard = btn.getAttribute('data-tab') === 'tab-dashboard';
+      if (!btn.dataset.originalTitle) {
+        btn.dataset.originalTitle = btn.getAttribute('title') || '';
+      }
+      btn.disabled = !isDashboard;
+      btn.classList.toggle('disabled', !isDashboard);
+      if (!isDashboard) {
+        btn.setAttribute('title', 'Buat atau pilih proyek analisa terlebih dahulu untuk mengakses fitur ini');
+      } else {
+        btn.setAttribute('title', btn.dataset.originalTitle);
+      }
+    });
+
+    switchTab('tab-dashboard');
     const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
     setTxt('bannerCompanyName', 'Belum Ada Proyek Analisa');
     setTxt('bannerSector', 'Klik tombol "+ Proyek Baru" untuk memulai analisa kasus kredit pertama Anda.');
@@ -3199,6 +3218,14 @@ function renderAll() {
     return;
   }
 
+  // Jika proyek ada, aktifkan kembali semua tab
+  document.querySelectorAll('.tab-btn').forEach((btn) => {
+    btn.disabled = false;
+    btn.classList.remove('disabled');
+    if (btn.dataset.originalTitle) {
+      btn.setAttribute('title', btn.dataset.originalTitle);
+    }
+  });
   // Jika proyek ada, sembunyikan empty state dan tampilkan dashboard aktif
   if (emptyStateEl) emptyStateEl.style.display = 'none';
   if (activeStateEl) activeStateEl.style.display = 'block';
@@ -3566,6 +3593,7 @@ function logoutSession() {
   // 1. Reset state in-memory
   projects = [];
   activeProjectId = null;
+  switchTab('tab-dashboard');
 
   // 2. Clear session auth & temp storage
   setActiveSession(null);

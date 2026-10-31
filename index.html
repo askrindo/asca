@@ -377,6 +377,16 @@
       <!-- TAB 2: INPUT DATA DEBITUR, NERACA DINAMIS & FASILITAS -->
       <!-- ========================================================= -->
       <section id="tab-input" class="tab-pane">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:0.85rem; padding:0.65rem 1rem; background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; box-shadow:0 1px 2px rgba(0,0,0,0.03);">
+          <div>
+            <div style="font-size:0.88rem; font-weight:800; color:var(--askrindo-navy);">Formulir Penginputan Data Kasus Analisa Kredit</div>
+            <div style="font-size:0.74rem; color:var(--text-muted);">Setiap perubahan tersimpan otomatis secara real-time. Klik tombol simpan untuk memastikan rekalkulasi seluruh model analisa diperbarui.</div>
+          </div>
+          <button type="button" class="btn btn-primary" onclick="saveAllInputsAndRecalculate()" style="display:flex; align-items:center; gap:0.4rem; padding:0.45rem 1.1rem; font-size:0.82rem; font-weight:700;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Simpan Perubahan &amp; Hitung Ulang Analisa
+          </button>
+        </div>
         <div class="grid-2">
           <div class="card">
             <div class="card-header">
@@ -614,6 +624,16 @@
               </table>
             </div>
           </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-top:1rem; padding:0.85rem 1.1rem; background:#ffffff; border:1px solid #e2e8f0; border-radius:8px;">
+          <div style="font-size:0.78rem; color:var(--text-muted);">
+            Perubahan metode pengadaan logistik, struktur kredit, dan pos keuangan akan langsung mengkalibrasi Pilar Rasio, 5C, Stress-Test, Rekomendasi, hingga Review Analisa.
+          </div>
+          <button type="button" class="btn btn-primary" onclick="saveAllInputsAndRecalculate()" style="display:flex; align-items:center; gap:0.4rem; padding:0.55rem 1.25rem; font-size:0.85rem; font-weight:700;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Simpan Perubahan &amp; Hitung Ulang Analisa
+          </button>
         </div>
       </section>
 
@@ -1120,6 +1140,6 @@
 
     <div class="toast-container" id="toastContainer"></div>
 
-  <script src="app.js?v=1793479400"></script>
+  <script src="app.js?v=1793479500"></script>
 </body>
 </html>

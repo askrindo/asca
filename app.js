@@ -826,8 +826,10 @@ function checkInaprocBlacklist(name) {
 
 function isMaritimeOrImportRisk(proj) {
   if (!proj) return false;
-  if (proj.procurementMethod === 'import_sea') return true;
-  if (proj.procurementMethod === 'domestic' || proj.procurementMethod === 'none') return false;
+  const method = (proj.procurementMethod || '').toLowerCase().trim();
+  if (method === 'none' || method === 'domestic') return false;
+  if (method === 'import_sea') return true;
+  // Fallback hanya jika metode pengadaan belum pernah dipilih secara eksplisit:
   if (proj.usdAmount > 0) return true;
   const text = ((proj.sector || '') + ' ' + (proj.businessDesc || '') + ' ' + (proj.facilityType || '') + ' ' + (proj.companyName || '')).toLowerCase();
   return /impor|import|kedelai|gandum|shipping|kargo|cargo|laut|maritim|vessel|l\/c|lc|skbdn|trust receipt|forex/i.test(text);
@@ -1055,6 +1057,12 @@ function compute5CAnalysis(proj, f23, m) {
   if (isImport) {
     condScore = 55;
     condNote = 'Sensitivitas tinggi terhadap fluktuasi kurs USD/IDR & risiko jalur laut pengangkutan komoditas impor.';
+  } else if (proj.procurementMethod === 'none') {
+    condScore = 80;
+    condNote = 'Model bisnis bebas risiko logistik maritim/kargo fisik; risiko operasional terkonsentrasi pada eksekusi kontrak jasa/lokal.';
+  } else if (proj.procurementMethod === 'domestic') {
+    condScore = 75;
+    condNote = 'Rantai pasok distribusi domestik jalur darat (inland transit) tanpa eksposur risiko pelayaran laut internasional.';
   } else {
     condScore = 75;
     condNote = 'Kondisi sektor industri stabil dengan perputaran pasar domestik normal.';
@@ -1765,6 +1773,16 @@ function buildDynamicCaseInsights(proj, m) {
       title: `Wajib Penutupan Asuransi Marine Cargo Askrindo (Institute Cargo Clauses A - All Risks Warehouse to Warehouse)`,
       detail: `Debitur dan ${proj.bankName} <strong>WAJIB menutup polis Asuransi Pengangkutan Kapal Laut (Marine Cargo) PT Askrindo</strong> dengan klausula <em>Institute Cargo Clauses (A) / All Risks</em> dari pelabuhan asal negara pengekspor hingga gudang akhir debitur (Warehouse to Warehouse), dengan klausula <em>Banker's Clause / Loss Payee</em> atas nama Askrindo & ${proj.bankName}.`
     });
+  } else if (proj.procurementMethod === 'domestic') {
+    criticalPointsCredit.push({
+      severity: 'MODERATE',
+      title: `Risiko Pengangkutan & Distribusi Darat Antar-Kota (Inland Transit Risk)`,
+      detail: `Distribusi komoditas/barang mengandalkan armada logistik jalur darat. Terdapat risiko kecelakaan armada, kerusakan barang selama transit, atau pembongkaran muatan yang memerlukan perlindungan polis asuransi pengangkutan darat.`
+    });
+    mitigations.push({
+      title: `Asuransi Pengangkutan Darat Askrindo (Inland Transit All Risks)`,
+      detail: `Disyaratkan penutupan polis Asuransi Pengangkutan Darat (Inland Transit) PT Askrindo untuk melindungi nilai barang selama transit antar-gudang distributor dengan Banker's Clause kepada ${proj.bankName}.`
+    });
   }
 
   // Pemisahan Baris 1: Rekomendasi Porsi Coverage Asuransi Kredit Askrindo (Hilangkan ambiguitas 0% vs 55%)
@@ -2432,14 +2450,24 @@ function render5CTab(proj, m) {
               </div>
               <div class="five-c-detail">
                 <strong>${fiveC.condNote}</strong><br/>
-                &bull; Komoditas: <strong>${proj.sector}</strong><br/>
+                &bull; Komoditas / Sektor: <strong>${proj.sector}</strong><br/>
                 &bull; Eksposur Valas: <strong>${proj.usdAmount > 0 ? `USD ${proj.usdAmount.toLocaleString('id-ID')}` : 'Domestik IDR'}</strong><br/>
-                &bull; Mitigasi Maritim: <strong>Wajib Marine Cargo All Risks</strong>
+                &bull; Mitigasi Logistik: <strong>${isMaritimeOrImportRisk(proj) ? 'Wajib Marine Cargo All Risks' : (proj.procurementMethod === 'domestic' ? 'Asuransi Inland Transit (Darat)' : 'Tanpa Pengiriman Fisik (Nihil)')}</strong>
               </div>
             </div>
-            <div style="font-size:0.62rem; color:#92400e; background:#fffbeb; padding:4px; border-radius:4px; text-align:center; font-weight:700;">
-              Wajib Asuransi Marine Cargo Askrindo
-            </div>
+            ${isMaritimeOrImportRisk(proj) ? `
+              <div style="font-size:0.62rem; color:#92400e; background:#fffbeb; padding:4px; border-radius:4px; text-align:center; font-weight:700;">
+                Wajib Asuransi Marine Cargo Askrindo
+              </div>
+            ` : (proj.procurementMethod === 'domestic' ? `
+              <div style="font-size:0.62rem; color:#1e40af; background:#eff6ff; padding:4px; border-radius:4px; text-align:center; font-weight:700;">
+                Wajib Asuransi Inland Transit Askrindo
+              </div>
+            ` : `
+              <div style="font-size:0.62rem; color:#166534; background:#f0fdf4; padding:4px; border-radius:4px; text-align:center; font-weight:700;">
+                Tidak Ada Pengiriman Fisik (Bebas Marine Cargo)
+              </div>
+            `)}
           </div>
         </div>
       </div>
@@ -3209,8 +3237,8 @@ function renderCaseStudyQATab(proj, m) {
                 <div class="term-desc">Plafon dijamin Askrindo maksimal 55% (${fmtRp(proj.requestedPlafond * 0.55, true)}), 45% risk sharing oleh ${proj.bankName}.</div>
               </div>
               <div class="term-card">
-                <div class="term-title"><span>2. Wajib Asuransi Marine Cargo</span><span style="color:#0284c7;">ICC (A) All Risks</span></div>
-                <div class="term-desc">Penutupan asuransi kargo laut Askrindo untuk komoditas impor dengan Banker's Clause / Loss Payee ke Bank Mitra.</div>
+                <div class="term-title"><span>${isMaritimeOrImportRisk(proj) ? '2. Wajib Asuransi Marine Cargo' : (proj.procurementMethod === 'domestic' ? '2. Wajib Asuransi Inland Transit' : '2. Proteksi Aset & Kebakaran (Property/PAR)')}</span><span style="color:#0284c7;">${isMaritimeOrImportRisk(proj) ? 'ICC (A) All Risks' : (proj.procurementMethod === 'domestic' ? 'All Risks Darat' : 'Property All Risks')}</span></div>
+                <div class="term-desc">${isMaritimeOrImportRisk(proj) ? `Penutupan asuransi kargo laut Askrindo untuk komoditas impor dengan Banker's Clause / Loss Payee ke ${proj.bankName}.` : (proj.procurementMethod === 'domestic' ? `Penutupan asuransi pengangkutan darat Askrindo (Inland Transit All Risks) untuk proteksi distribusi logistik dengan Banker's Clause ke ${proj.bankName}.` : `Tidak ada risiko pengiriman laut/kargo fisik. Pengalihan mitigasi difokuskan pada perlindungan tempat usaha/aset dan pengawasan perputaran kas di ${proj.bankName}.`)}</div>
               </div>
               <div class="term-card">
                 <div class="term-title"><span>3. Agunan Tambahan Fixed Asset</span><span style="color:#0284c7;">HT &ge; 120%</span></div>
@@ -3337,12 +3365,28 @@ function renderCaseStudyQATab(proj, m) {
                 <td class="num-col" style="color:#166534; font-weight:700;">Hak Tanggungan Peringkat I &ge; 120% (${fmtRp(proj.requestedPlafond * 1.2, true)})</td>
                 <td>Loss-absorbing buffer &amp; mitigasi kepastian recovery klaim Askrindo</td>
               </tr>
-              <tr>
-                <td><strong>Mitigasi Risiko Pengiriman Laut (Marine Cargo)</strong></td>
-                <td class="num-col">Tanpa Penutupan Asuransi Kargo Khusus</td>
-                <td class="num-col" style="color:#166534; font-weight:700;">Wajib Asuransi Marine Cargo Askrindo (All Risks Warehouse to Warehouse)</td>
-                <td>Proteksi mutlak kerusakan komoditas kedelai impor di laut &amp; Banker\'s Clause</td>
-              </tr>
+              ${isMaritimeOrImportRisk(proj) ? `
+                <tr>
+                  <td><strong>Mitigasi Risiko Pengiriman Laut (Marine Cargo)</strong></td>
+                  <td class="num-col">Tanpa Penutupan Asuransi Kargo Khusus</td>
+                  <td class="num-col" style="color:#166534; font-weight:700;">Wajib Asuransi Marine Cargo Askrindo (All Risks Warehouse to Warehouse)</td>
+                  <td>Proteksi mutlak kerusakan komoditas impor di laut &amp; Banker\'s Clause ${proj.bankName}</td>
+                </tr>
+              ` : (proj.procurementMethod === 'domestic' ? `
+                <tr>
+                  <td><strong>Mitigasi Logistik Distribusi Barang (Inland Transit)</strong></td>
+                  <td class="num-col">Pengiriman Mandiri Jalur Darat Tanpa Polis</td>
+                  <td class="num-col" style="color:#166534; font-weight:700;">Asuransi Inland Transit Askrindo (Warehouse to Warehouse)</td>
+                  <td>Proteksi kecelakaan/kerusakan barang jalur darat &amp; Banker\'s Clause ${proj.bankName}</td>
+                </tr>
+              ` : `
+                <tr>
+                  <td><strong>Mitigasi Logistik &amp; Pengiriman Fisik</strong></td>
+                  <td class="num-col">Tidak Ada Pengiriman Fisik (Jasa / Konstruksi)</td>
+                  <td class="num-col" style="color:#475569; font-weight:600;">Tidak Diwajibkan Marine Cargo (Nihil Pengapalan)</td>
+                  <td>Bebas risiko transit maritim; fokus pengikatan pada agunan tetap &amp; cash escrow account</td>
+                </tr>
+              `)}
             </tbody>
           </table>
         </div>
@@ -3648,7 +3692,13 @@ function renderPrintableReport(proj, m) {
             Apabila fasilitas disetujui demi kepentingan strategis kemitraan dengan <strong>${proj.bankName}</strong>, transaksi wajib direstrukturisasi dengan <strong>7 Syarat Wajib (Condition Precedent)</strong>:
             <ol style="margin:0.2rem 0 0.3rem 1.1rem; padding:0;">
               <li><strong>Rekomendasi Coverage Askrindo Dibatasi Maksimal 55%</strong> (${fmtRp(proj.requestedPlafond * 0.55, true)}) &amp; Risk Sharing ${proj.bankName} Minimal 45% (${fmtRp(proj.requestedPlafond * 0.45, true)}).</li>
-              <li><strong>Wajib Asuransi Marine Cargo Askrindo (All Risks Warehouse to Warehouse)</strong> dengan Banker\'s Clause / Loss Payee Askrindo &amp; Bank Mitra.</li>
+              ${isMaritimeOrImportRisk(proj) ? `
+                <li><strong>Wajib Asuransi Marine Cargo Askrindo (All Risks Warehouse to Warehouse)</strong> dengan Banker\'s Clause / Loss Payee Askrindo &amp; ${proj.bankName}.</li>
+              ` : (proj.procurementMethod === 'domestic' ? `
+                <li><strong>Wajib Asuransi Pengangkutan Darat (Inland Transit Askrindo)</strong> untuk proteksi distribusi logistik barang dengan Banker\'s Clause ${proj.bankName}.</li>
+              ` : `
+                <li><strong>Tidak Diwajibkan Asuransi Marine Cargo</strong> (aktivitas debitur non-pengiriman laut; mitigasi difokuskan pada asuransi tempat usaha/PAR &amp; escrow rekening giro di ${proj.bankName}).</li>
+              `)}
               <li><strong>Agunan Tambahan Fixed Asset Hak Tanggungan Peringkat I &ge; 120%</strong> (${fmtRp(proj.requestedPlafond * 1.2, true)}).</li>
               <li><strong>Optimalisasi KMK Backup sebagai Buffer Relaksasi Likuiditas Positif</strong> (penarikan bertahap per tranche maks ${fmtRp(m.recommendedTrancheSize, true)} berbasis bukti invoice riil).</li>
               <li><strong>Escrow Account Khusus di ${proj.bankName}</strong> untuk penampungan 100% penerimaan kas hasil penagihan piutang.</li>
@@ -3714,6 +3764,14 @@ function populateFormInputs(proj) {
   setVal('inp_underwriter', proj.underwriter);
   setVal('inp_businessDesc', proj.businessDesc);
 
+  const procMethod = proj.procurementMethod || (isMaritimeOrImportRisk(proj) ? 'import_sea' : 'none');
+  const rImport = document.getElementById('inp_proc_import');
+  const rDomestic = document.getElementById('inp_proc_domestic');
+  const rNone = document.getElementById('inp_proc_none');
+  if (rImport) rImport.checked = (procMethod === 'import_sea');
+  if (rDomestic) rDomestic.checked = (procMethod === 'domestic');
+  if (rNone) rNone.checked = (procMethod === 'none');
+
   setVal('inp_claimedDOR', proj.claimedDOR, true);
   setVal('inp_claimedDOI', proj.claimedDOI, true);
   setVal('inp_claimedDOP', proj.claimedDOP, true);
@@ -3765,6 +3823,11 @@ function syncInputsToModel() {
   proj.underwriter = getStr('inp_underwriter');
   proj.businessDesc = getStr('inp_businessDesc');
 
+  const selectedProc = document.querySelector('input[name="inp_procurementMethod"]:checked');
+  if (selectedProc) {
+    proj.procurementMethod = selectedProc.value;
+  }
+
   proj.claimedDOR = getFmtNum('inp_claimedDOR');
   proj.claimedDOI = getFmtNum('inp_claimedDOI');
   proj.claimedDOP = getFmtNum('inp_claimedDOP');
@@ -3801,6 +3864,18 @@ function syncInputsToModel() {
   renderCaseStudyQATab(proj, m);
   renderRatiosTab(proj, m);
   renderPrintableReport(proj, m);
+}
+
+function saveAllInputsAndRecalculate() {
+  const proj = getActiveProject();
+  if (!proj) {
+    showToast('Pilih atau buat berkas proyek analisa terlebih dahulu.');
+    return;
+  }
+  syncInputsToModel();
+  saveProjectsToStorage();
+  renderAll();
+  showToast('Perubahan data input berhasil disimpan & seluruh tab analisa telah diperbarui.');
 }
 
 // ============================================================================

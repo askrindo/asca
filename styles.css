@@ -56,7 +56,7 @@ body {
   top: 0;
   z-index: 100;
   gap: 0.5rem;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .brand-wrap {
@@ -64,6 +64,42 @@ body {
   align-items: center;
   gap: 0.55rem;
   min-width: 0;
+  flex-shrink: 1;
+}
+
+.brand-titles {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.brand-titles h1 {
+  font-size: 0.96rem;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  display: flex;
+  align-items: center;
+  gap: 0.38rem;
+  white-space: nowrap;
+  margin: 0;
+}
+
+.brand-titles p {
+  font-size: 0.72rem;
+  color: #cbd5e1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.32rem;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
 }
 
 .sidebar-toggle-btn {
@@ -101,45 +137,6 @@ body {
   width: auto;
   display: block;
   object-fit: contain;
-}
-
-.brand-titles {
-  min-width: 0;
-}
-
-.brand-titles h1 {
-  font-size: 1.05rem;
-  font-weight: 800;
-  letter-spacing: 0.2px;
-  display: flex;
-  align-items: center;
-  gap: 0.38rem;
-  flex-wrap: wrap;
-}
-
-.badge-method {
-  background: rgba(0, 168, 232, 0.25);
-  border: 1px solid rgba(0, 168, 232, 0.6);
-  color: #7dd3fc;
-  font-size: 0.74rem;
-  padding: 1px 7px;
-  border-radius: 99px;
-  font-weight: 600;
-}
-
-.brand-titles p {
-  font-size: 0.78rem;
-  color: #cbd5e1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.top-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.28rem;
-  flex-wrap: wrap;
 }
 
 /* BUTTONS */
@@ -355,7 +352,8 @@ body {
 }
 
 .sidebar-footer {
-  padding: 0.38rem 0.55rem;
+  margin-top: auto;
+  padding: 0.5rem 0.65rem;
   border-top: 1px solid var(--border-color);
   background: var(--bg-subtle);
   font-size: 0.74rem;
@@ -941,28 +939,87 @@ input[type="range"] {
 }
 
 /* PRINT MEMORANDUM STYLING */
+@page {
+  size: A4 portrait;
+  margin: 10mm 12mm 12mm 12mm;
+}
+
 @media print {
-  .top-navbar, .sidebar, .nav-tabs, .no-print, .login-screen, .admin-layout {
+  html, body {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+  }
+  .top-navbar, .sidebar, .nav-tabs, .no-print, .login-screen, .admin-layout, .case-banner {
     display: none !important;
   }
   .app-layout, .app-layout.sidebar-collapsed {
     display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: visible !important;
   }
   .main-workspace {
     padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
     max-width: 100% !important;
+    overflow: visible !important;
   }
   .tab-pane {
     display: none !important;
   }
   #tab-report {
     display: block !important;
+    width: 100% !important;
+    overflow: visible !important;
+  }
+  #printableMemoContainer {
+    width: 100% !important;
+    overflow: visible !important;
   }
   .card {
     box-shadow: none !important;
-    border: 1px solid #cbd5e1 !important;
-    break-inside: avoid;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    break-inside: auto;
   }
+  .table-responsive {
+    overflow: visible !important;
+  }
+  table.data-table {
+    width: 100% !important;
+    break-inside: auto;
+  }
+  tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
+
+/* RAC STATUS BADGES */
+.badge-rac {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+}
+.badge-rac-pass {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+.badge-rac-fail {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
 }
 
 @media (max-width: 1200px) {

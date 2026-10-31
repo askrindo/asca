@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="favicon.png" />
   <link rel="shortcut icon" href="favicon.ico" />
   <link rel="apple-touch-icon" href="favicon.png" />
-  <link rel="stylesheet" href="styles.css?v=1793427513-3" />
+  <link rel="stylesheet" href="styles.css?v=1793442955" />
   <style id="login-critical-styles">
     /* Anti-Cache Guarantee for Enterprise Login Interface */
     .login-screen {
@@ -101,7 +101,7 @@
 
       <div class="login-body">
         <div class="login-alert danger" id="loginAlertBox">
-          <span style="font-size:1.05rem;">⚠️</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           <span id="loginAlertMsg">Username atau password salah!</span>
         </div>
 
@@ -109,7 +109,7 @@
           <div class="login-field">
             <label for="loginUsername">Username / NIP</label>
             <div class="login-input-wrap">
-              <span class="login-input-icon">👤</span>
+              <span class="login-input-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
               <input type="text" id="loginUsername" class="login-input" placeholder="Masukkan username Anda" required autocomplete="username" />
             </div>
           </div>
@@ -117,7 +117,7 @@
           <div class="login-field">
             <label for="loginPassword">Kata Sandi (Password)</label>
             <div class="login-input-wrap">
-              <span class="login-input-icon">🔒</span>
+              <span class="login-input-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
               <input type="password" id="loginPassword" class="login-input" placeholder="Masukkan kata sandi" required autocomplete="current-password" />
               <button type="button" class="login-toggle-pwd" onclick="togglePasswordVisibility('loginPassword', this)" title="Tampilkan Password">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -126,7 +126,7 @@
           </div>
 
           <button type="submit" class="btn-login" id="btnLoginSubmit">
-            <span>🔐 Masuk ke Sistem</span>
+            <span>Masuk ke Sistem</span>
           </button>
         </form>
 
@@ -144,7 +144,7 @@
   <header class="top-navbar" id="appTopNavbar" style="display:none;">
     <div class="brand-wrap">
       <button class="sidebar-toggle-btn no-print" onclick="toggleSidebar()" id="topSidebarToggleBtn" title="Minimize / Tampilkan Daftar Proyek">
-        <span id="sidebarToggleIcon">◀</span> Proyek
+        <span id="sidebarToggleIcon">&#9776;</span> Proyek
       </button>
 
       <!-- Logo ASCA -->
@@ -163,7 +163,7 @@
 
     <div class="top-actions no-print">
       <div class="user-session-pill" id="navUserSessionPill" title="Sesi Analis Aktif">
-        <span>👤</span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         <strong id="navUserName">1922</strong>
         <span class="user-role-tag" id="navUserRoleTag">Analis</span>
       </div>
@@ -171,20 +171,19 @@
         <span>＋</span> Proyek Baru
       </button>
       <button class="btn btn-light" onclick="duplicateCurrentProject()" title="Duplikasi kasus aktif untuk simulasi alternatif">
-        <span>⧉</span> Duplikasi
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Duplikasi
       </button>
       <button class="btn btn-light" onclick="exportWorkspaceJSON()" title="Simpan seluruh database kasus ke file komputer (.asca.json)">
-        <span>💾</span> Simpan (.json)
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Simpan (.json)
       </button>
       <label class="btn btn-light" style="margin:0;" title="Buka file database .asca.json dari komputer">
-        <span>📂</span> Buka File
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> Buka File
         <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="importWorkspaceJSON(event)" />
       </label>
       <button class="btn btn-gold" onclick="printUnderwritingReport()">
-        <span>🖨️</span> Cetak / PDF
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Cetak / PDF
       </button>
-      <button class="btn-logout" onclick="logoutSession()" title="Keluar dari akun ASCA">
-        <span>🚪</span> Keluar
+      <button class="btn-logout" onclick="logoutSession()" title="Keluar dari akun ASCA"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> Keluar
       </button>
     </div>
   </header>
@@ -195,7 +194,7 @@
     <aside class="sidebar no-print" id="projectSidebar">
       <!-- Tampilan saat Diminimize -->
       <div class="sidebar-collapsed-strip" onclick="toggleSidebar()" title="Klik untuk membuka Daftar Proyek Analisa">
-        <span style="font-size:0.9rem; font-weight:800; color:var(--askrindo-blue);">▶</span>
+        <span style="font-size:0.9rem; font-weight:800; color:var(--askrindo-blue);">&#9776;</span>
         <div class="vertical-text">Daftar Proyek (<span id="projectCountCollapsed">0</span>)</div>
       </div>
 
@@ -208,9 +207,7 @@
               <button class="btn btn-outline btn-sm" onclick="resetToDefaultCases()" title="Kembalikan contoh kasus bawaan">
                 Reset
               </button>
-              <button class="btn btn-outline btn-sm" onclick="toggleSidebar()" title="Minimize Daftar Proyek">
-                ◀
-              </button>
+              <button class="btn btn-outline btn-sm" onclick="toggleSidebar()" title="Minimize Daftar Proyek">&laquo;</button>
             </div>
           </div>
           <input type="text" id="searchProjectInput" class="search-box" placeholder="Cari debitur, sektor, bank..." oninput="renderProjectList()" />
@@ -221,7 +218,7 @@
         </div>
 
         <div class="sidebar-footer">
-          <span id="autoSaveStatus">● Tersimpan otomatis</span>
+          <span id="autoSaveStatus">&#10003; Tersimpan otomatis</span>
           <button class="btn btn-danger btn-sm" onclick="deleteCurrentProject()" title="Hapus proyek aktif">Hapus</button>
         </div>
       </div>
@@ -239,11 +236,11 @@
             <span id="bannerFacilityType" style="font-size:0.68rem; background:#e0f2fe; color:#0369a1; padding:2px 7px; border-radius:99px; font-weight:600;">-</span>
           </h2>
           <div class="case-submeta">
-            <span>🏦 <strong>Bank:</strong> <span id="bannerBankName">-</span></span>
-            <span>🏭 <strong>Sektor:</strong> <span id="bannerSector">-</span></span>
-            <span>💵 <strong>Plafond:</strong> <span id="bannerPlafond">-</span></span>
-            <span>📅 <strong>Lap. Keu:</strong> <span id="bannerFinYears">2022 &amp; 2023</span></span>
-            <span>👤 <strong>Underwriter:</strong> <span id="bannerUnderwriter">-</span></span>
+            <span><strong>Bank:</strong> <span id="bannerBankName">-</span></span>
+            <span><strong>Sektor:</strong> <span id="bannerSector">-</span></span>
+            <span><strong>Plafond:</strong> <span id="bannerPlafond">-</span></span>
+            <span><strong>Lap. Keu:</strong> <span id="bannerFinYears">2022 &amp; 2023</span></span>
+            <span><strong>Underwriter:</strong> <span id="bannerUnderwriter">-</span></span>
           </div>
         </div>
 
@@ -261,37 +258,37 @@
         </div>
       </div>
 
-      <!-- NAVIGATION TABS (10 TABS DENGAN FITUR BARU KETAHANAN NWC & BURN-RATE) -->
+      <!-- NAVIGATION TABS -->
       <nav class="nav-tabs no-print">
         <button class="tab-btn active" data-tab="tab-dashboard" onclick="switchTab('tab-dashboard')" title="Executive Dashboard Portfolio & Debitur">
-          📊 1. Dashboard
+          1. Dashboard
         </button>
         <button class="tab-btn" data-tab="tab-input" onclick="switchTab('tab-input')" title="Input Parameter & Neraca Keuangan">
-          📝 2. Input Data
+          2. Input Data
+        </button>
+        <button class="tab-btn" data-tab="tab-ratios" onclick="switchTab('tab-ratios')" title="Analisis Rasio Keuangan & Standar RAC Askrindo">
+          3. Rasio Keuangan &amp; RAC
         </button>
         <button class="tab-btn" data-tab="tab-dcc" onclick="switchTab('tab-dcc')" title="Dynamic Cash Conversion Cycle">
-          🔄 3. Dynamic CCC
+          4. Dynamic CCC
         </button>
         <button class="tab-btn" data-tab="tab-burn" onclick="switchTab('tab-burn')" title="Analisis Ketahanan Modal Kerja (NWC) & Burn-Rate Test">
-          💧 4. NWC &amp; Burn
+          5. NWC &amp; Burn
         </button>
         <button class="tab-btn" data-tab="tab-swcm" onclick="switchTab('tab-swcm')" title="Stress-Test Working Capital Model">
-          ⚡ 5. Stress-Test
+          6. Stress-Test
         </button>
         <button class="tab-btn" data-tab="tab-grade" onclick="switchTab('tab-grade')" title="Grade Risk & Indikator Penilaian">
-          🏅 6. Grade Risk
+          7. Grade Risk
         </button>
         <button class="tab-btn" data-tab="tab-score" onclick="switchTab('tab-score')" title="Rincian Perhitungan Skor 5 Pilar ASCA">
-          🧮 7. Rincian Skor
+          8. Rincian Skor
         </button>
         <button class="tab-btn" data-tab="tab-case-qa" onclick="switchTab('tab-case-qa')" title="Critical Point Temuan & Paket Mitigasi (120% Agunan dll)">
-          🎯 8. Mitigasi &amp; QA
-        </button>
-        <button class="tab-btn" data-tab="tab-portfolio" onclick="switchTab('tab-portfolio')" title="Komparasi Portofolio Debitur">
-          🗂️ 9. Komparasi
+          9. Mitigasi &amp; QA
         </button>
         <button class="tab-btn" data-tab="tab-report" onclick="switchTab('tab-report')" title="Nota Analisa Underwriting & Cetak Laporan">
-          📄 10. Nota Cetak
+          10. Nota Cetak
         </button>
       </nav>
 
@@ -299,6 +296,8 @@
       <!-- TAB 1: EXECUTIVE DASHBOARD -->
       <!-- ========================================================= -->
       <section id="tab-dashboard" class="tab-pane active">
+        <div id="dashboardEmptyState" style="display:none;"></div>
+        <div id="dashboardActiveState">
         <div class="grid-4" style="margin-bottom:0.6rem;">
           <div class="kpi-card" id="kpiCardCCC">
             <div class="kpi-label">Cash Conversion Cycle (Aktual vs Data Bank)</div>
@@ -366,6 +365,7 @@
             </div>
             <div id="redFlagsContainer" style="display:flex; flex-direction:column; gap:0.4rem;"></div>
           </div>
+        </div>
         </div>
       </section>
 
@@ -583,7 +583,22 @@
       </section>
 
       <!-- ========================================================= -->
-      <!-- TAB 3: DYNAMIC CASH CONVERSION CYCLE (DCCC) & TENOR MISMATCH -->
+      <!-- TAB 3: RASIO KEUANGAN & RAC (Financial Ratios) -->
+      <!-- ========================================================= -->
+      <section id="tab-ratios" class="tab-pane">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Analisis Rasio Keuangan &amp; Standar RAC Askrindo</div>
+            <span style="font-size:0.75rem; color:var(--askrindo-blue); font-weight:600;">Perbandingan Rasio Keuangan Debitur vs Risk Acceptance Criteria (RAC)</span>
+          </div>
+          <div id="ratiosTableContainer">
+            <div style="color:var(--text-muted); padding:1.5rem; text-align:center;">Belum ada data keuangan. Silakan pilih atau buat kasus analisa kredit terlebih dahulu.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- TAB 4: DYNAMIC CASH CONVERSION CYCLE (DCCC) & TENOR MISMATCH -->
       <!-- ========================================================= -->
       <section id="tab-dcc" class="tab-pane">
         <div class="card">
@@ -1026,6 +1041,6 @@
 
   <div class="toast-container" id="toastContainer"></div>
 
-  <script src="app.js?v=1793427513"></script>
+  <script src="app.js?v=1793442955"></script>
 </body>
 </html>

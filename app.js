@@ -937,85 +937,90 @@ function compute5CAnalysis(proj, f23, m) {
   const estYr = proj.estYear || (curYr - 5);
   const businessAge = Math.max(0, curYr - estYr);
 
-  let charAgeScore = 80;
+  // 1. Kematangan Usaha / Lama Berdiri (Bobot Maks: 25 Poin)
+  let charAgePts = 10;
   let charAgeNote = '';
   if (businessAge >= 10) {
-    charAgeScore = 95;
-    charAgeNote = `Lama berdiri ${businessAge} tahun (${estYr}) - Track record sangat matang & teruji krisis makro.`;
+    charAgePts = 25;
+    charAgeNote = `Lama berdiri ${businessAge} tahun (${estYr}) - Track record sangat matang & teruji krisis makro (25/25 Poin).`;
   } else if (businessAge >= 5) {
-    charAgeScore = 85;
-    charAgeNote = `Lama berdiri ${businessAge} tahun (${estYr}) - Stabilitas operasional & jaringan pasar mapan.`;
+    charAgePts = 20;
+    charAgeNote = `Lama berdiri ${businessAge} tahun (${estYr}) - Stabilitas operasional mapan (20/25 Poin; butuh &ge;10 thn untuk poin maksimal 25).`;
   } else if (businessAge >= 3) {
-    charAgeScore = 70;
-    charAgeNote = `Lama berdiri ${businessAge} tahun (${estYr}) - Tahap pertumbuhan dengan siklus bisnis normal.`;
+    charAgePts = 15;
+    charAgeNote = `Lama berdiri ${businessAge} tahun (${estYr}) - Tahap pertumbuhan bisnis (15/25 Poin).`;
   } else {
-    charAgeScore = 55;
-    charAgeNote = `Lama berdiri ${businessAge} tahun (${estYr}) - Usaha rintisan/baru, belum teruji siklus makro penuh.`;
+    charAgePts = 10;
+    charAgeNote = `Lama berdiri ${businessAge} tahun (${estYr}) - Usaha rintisan/baru (10/25 Poin).`;
   }
 
-  // Parameter Riwayat Wanprestasi / Gagal Bayar
+  // 2. SLIK OJK & Riwayat Wanprestasi (Bobot Maks: 30 Poin)
   const defaultHistory = proj.defaultHistory || 'clean';
-  let defaultPenalty = 0;
-  let defaultStatusText = '';
-  if (defaultHistory === 'defaulted') {
-    defaultPenalty = 35;
-    defaultStatusText = 'Pernah Wanprestasi / Gagal Bayar (Riwayat Restrukturisasi / NPL)';
-  } else {
-    defaultPenalty = 0;
-    defaultStatusText = 'Belum Pernah Wanprestasi (Track Record Bersih / Kol 1)';
-  }
-
-  // Parameter Screening Pemberitaan Negatif di Google News
-  const negativeNews = proj.negativeNews || 'clean';
-  let newsPenalty = 0;
-  let newsStatusText = '';
-  if (negativeNews === 'negative') {
-    newsPenalty = 25;
-    newsStatusText = 'Terdeteksi Berita Negatif di Google News / Media (Isu Kasus / Sengketa)';
-  } else {
-    newsPenalty = 0;
-    newsStatusText = 'Nihil Berita Negatif di Google News (Reputasi Positif)';
-  }
-
-  // Parameter INAPROC LKPP (Daftar Hitam Pengadaan)
-  const inaprocStatusVal = proj.inaprocStatus || 'clean';
-  let inaprocPenalty = 0;
-  let inaprocStatus = 'Bersih (Terverifikasi di Portal INAPROC LKPP)';
-  if (inaprocStatusVal === 'blacklisted') {
-    inaprocPenalty = 30;
-    inaprocStatus = 'Terdaftar Masuk Blacklist LKPP (Sanksi Pengadaan)';
-  } else if (inaprocStatusVal === 'unverified') {
-    inaprocPenalty = 10;
-    inaprocStatus = 'Belum Diverifikasi di INAPROC LKPP (Perlu Cek Portal)';
-  }
-
-  // Parameter SIPP Pengadilan (Perkara Hukum)
-  const sippStatusVal = proj.sippStatus || 'clean';
-  let sippPenalty = 0;
-  let sippStatus = 'Nihil Gugatan Wanprestasi / PKPU';
-  if (sippStatusVal === 'bankrupt') {
-    sippPenalty = 35;
-    sippStatus = 'Sedang Menghadapi Permohonan PKPU / Pailit';
-  } else if (sippStatusVal === 'disputed') {
-    sippPenalty = 15;
-    sippStatus = 'Terdapat Perkara Sengketa Gugatan Perdata';
-  }
-
-  // Parameter SLIK OJK
   const slikStatusVal = proj.slikStatus || 'kol1';
-  let slikPenalty = 0;
+  let charCreditPts = 30;
+  let defaultStatusText = 'Belum Pernah Wanprestasi (Track Record Bersih / Kol 1)';
   let slikStatus = 'Kolektibilitas 1 (Lancar)';
-  if (slikStatusVal === 'kol3_5') {
-    slikPenalty = 40;
-    slikStatus = 'Kolektibilitas 3-5 (Macet / NPL)';
+
+  if (slikStatusVal === 'kol3_5' || defaultHistory === 'defaulted') {
+    charCreditPts = 0;
+    if (defaultHistory === 'defaulted') defaultStatusText = 'Pernah Wanprestasi / Gagal Bayar (Riwayat Restrukturisasi / NPL)';
+    if (slikStatusVal === 'kol3_5') slikStatus = 'Kolektibilitas 3-5 (Macet / NPL)';
   } else if (slikStatusVal === 'kol2') {
-    slikPenalty = 15;
+    charCreditPts = 15;
     slikStatus = 'Kolektibilitas 2 (Dalam Perhatian Khusus)';
   }
 
+  // 3. Integritas Hukum & Kepatuhan Pengadaan (Bobot Maks: 25 Poin)
+  // INAPROC LKPP (15 Poin) & SIPP Pengadilan (10 Poin)
+  const inaprocStatusVal = proj.inaprocStatus || 'unverified';
+  let charInaprocPts = 15;
+  let inaprocStatus = 'Bersih (Terverifikasi di Portal INAPROC LKPP)';
+  if (inaprocStatusVal === 'blacklisted') {
+    charInaprocPts = 0;
+    inaprocStatus = 'Terdaftar Masuk Blacklist LKPP (Sanksi Pengadaan)';
+  } else if (inaprocStatusVal === 'unverified') {
+    charInaprocPts = 10;
+    inaprocStatus = 'Belum Diverifikasi di INAPROC LKPP (Perlu Cek Portal)';
+  }
+
+  const sippStatusVal = proj.sippStatus || 'clean';
+  let charSippPts = 10;
+  let sippStatus = 'Nihil Gugatan Wanprestasi / PKPU';
+  if (sippStatusVal === 'bankrupt') {
+    charSippPts = 0;
+    sippStatus = 'Sedang Menghadapi Permohonan PKPU / Pailit';
+  } else if (sippStatusVal === 'disputed') {
+    charSippPts = 5;
+    sippStatus = 'Terdapat Perkara Sengketa Gugatan Perdata';
+  }
+
+  // 4. Screening Reputasi Berita & Media (Bobot Maks: 20 Poin)
+  const negativeNews = proj.negativeNews || 'clean';
+  let charNewsPts = 20;
+  let newsStatusText = 'Nihil Berita Negatif di Media (Reputasi Positif)';
+  if (negativeNews === 'negative') {
+    charNewsPts = 0;
+    newsStatusText = 'Terdeteksi Berita Negatif di Media (Isu Kasus / Sengketa)';
+  }
+
+  // Total Skor Karakter (Maksimal 100 Poin)
   const charScore = Math.max(10, Math.min(100, Math.round(
-    charAgeScore * 0.4 + 90 * 0.3 + 95 * 0.3 - defaultPenalty - newsPenalty - inaprocPenalty - sippPenalty - slikPenalty
+    charAgePts + charCreditPts + charInaprocPts + charSippPts + charNewsPts
   )));
+
+  const charBreakdown = {
+    agePts: charAgePts,
+    maxAgePts: 25,
+    creditPts: charCreditPts,
+    maxCreditPts: 30,
+    inaprocPts: charInaprocPts,
+    maxInaprocPts: 15,
+    sippPts: charSippPts,
+    maxSippPts: 10,
+    newsPts: charNewsPts,
+    maxNewsPts: 20,
+    total: charScore
+  };
 
   // 2. Capacity (Bobot 25%)
   const gpm = m ? m.gpm23 : (f23.rev > 0 ? ((f23.rev - f23.cogs) / f23.rev) * 100 : 0);
@@ -1136,6 +1141,7 @@ function compute5CAnalysis(proj, f23, m) {
     estYr,
     charScore,
     charAgeNote,
+    charBreakdown,
     inaprocStatus,
     sippStatus,
     slikStatus,
@@ -2456,67 +2462,102 @@ function render5CTab(proj, m) {
                 &bull; SIPP Pengadilan: <strong>${fiveC.sippStatus}</strong>
               </div>
 
+              <!-- Rincian Akumulasi Poin Karakter (Menuju 100 Poin Penuh) -->
+              <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; padding:0.45rem 0.55rem; margin:0.45rem 0; font-size:0.67rem; line-height:1.45;">
+                <div style="font-weight:800; color:var(--askrindo-navy); margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;">
+                  <span>📊 Rincian Skor Karakter (Total: ${fiveC.charScore} / 100):</span>
+                  <span style="font-size:0.62rem; padding:1px 6px; border-radius:4px; font-weight:700; ${fiveC.charScore === 100 ? 'background:#dcfce7; color:#15803d;' : 'background:#e0f2fe; color:#0369a1;'}">
+                    ${fiveC.charScore === 100 ? '&#10003; 100 Poin Penuh' : `Kurang ${100 - fiveC.charScore} Poin`}
+                  </span>
+                </div>
+                <table style="width:100%; border-collapse:collapse; font-size:0.64rem;">
+                  <tr>
+                    <td style="padding:2px 0;">&bull; 🏢 <strong>Kematangan Usaha (${fiveC.businessAge} Thn):</strong></td>
+                    <td style="text-align:right; font-weight:700; color:${(fiveC.charBreakdown?.agePts || 0) === 25 ? '#15803d' : '#b45309'};">${fiveC.charBreakdown?.agePts || 20} / 25 Poin</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:2px 0;">&bull; 💳 <strong>SLIK OJK &amp; Riwayat Kredit:</strong></td>
+                    <td style="text-align:right; font-weight:700; color:${(fiveC.charBreakdown?.creditPts || 0) === 30 ? '#15803d' : '#dc2626'};">${fiveC.charBreakdown?.creditPts || 30} / 30 Poin</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:2px 0;">&bull; 🏛️ <strong>Daftar Hitam INAPROC LKPP:</strong></td>
+                    <td style="text-align:right; font-weight:700; color:${(fiveC.charBreakdown?.inaprocPts || 0) === 15 ? '#15803d' : ((fiveC.charBreakdown?.inaprocPts || 0) === 10 ? '#b45309' : '#dc2626')};">${fiveC.charBreakdown?.inaprocPts || 10} / 15 Poin</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:2px 0;">&bull; ⚖️ <strong>SIPP Pengadilan MA (Legal):</strong></td>
+                    <td style="text-align:right; font-weight:700; color:${(fiveC.charBreakdown?.sippPts || 0) === 10 ? '#15803d' : '#dc2626'};">${fiveC.charBreakdown?.sippPts || 10} / 10 Poin</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:2px 0;">&bull; 📰 <strong>Screening Media &amp; Publik:</strong></td>
+                    <td style="text-align:right; font-weight:700; color:${(fiveC.charBreakdown?.newsPts || 0) === 20 ? '#15803d' : '#dc2626'};">${fiveC.charBreakdown?.newsPts || 20} / 20 Poin</td>
+                  </tr>
+                </table>
+                <div style="margin-top:4px; padding-top:4px; border-top:1px dashed #cbd5e1; color:#475569; font-size:0.62rem; line-height:1.35;">
+                  <em>💡 <strong>Syarat Skor 100 Penuh:</strong> Jam terbang usaha &ge; 10 tahun (25 poin), SLIK OJK Kol 1 Lancar (30 poin), INAPROC LKPP Terverifikasi Bersih (15 poin), SIPP Pengadilan Nihil Perkara (10 poin), dan Media Nihil Isu Negatif (20 poin).</em>
+                </div>
+              </div>
+
               ${proj.inaprocStatus === 'blacklisted' ? `
                 <div style="background:#fef2f2; border:1px solid #f87171; border-radius:5px; padding:0.35rem 0.5rem; margin-bottom:0.4rem; color:#991b1b; font-size:0.67rem; font-weight:700; line-height:1.35;">
-                  &#9888; PERINGATAN LKPP: Debitur terdeteksi masuk Daftar Hitam Nasional LKPP / INAPROC (-30 Poin)!
+                  &#9888; PERINGATAN LKPP: Debitur terdeteksi masuk Daftar Hitam Nasional LKPP / INAPROC (0/15 Poin)!
                 </div>
               ` : ''}
 
               <!-- Parameter Wanprestasi -->
               <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:5px; padding:0.35rem 0.45rem; margin-bottom:0.35rem;">
                 <label style="font-size:0.65rem; font-weight:700; color:var(--askrindo-navy); display:block; margin-bottom:2px;">
-                  Riwayat Wanprestasi / Gagal Bayar:
+                  Riwayat Wanprestasi / Gagal Bayar (Maks 30 Poin bersama SLIK):
                 </label>
                 <select class="form-control" style="font-size:0.66rem; padding:2px 4px; height:auto;" onchange="updateCharacterParam('defaultHistory', this.value)">
-                  <option value="clean" ${proj.defaultHistory !== 'defaulted' ? 'selected' : ''}>&#10003; Belum Pernah (Lancar Kol 1)</option>
-                  <option value="defaulted" ${proj.defaultHistory === 'defaulted' ? 'selected' : ''}>&#9888; Pernah Wanprestasi / NPL (-35 Poin)</option>
+                  <option value="clean" ${proj.defaultHistory !== 'defaulted' ? 'selected' : ''}>&#10003; Belum Pernah (Lancar Kol 1 - Poin Penuh 30)</option>
+                  <option value="defaulted" ${proj.defaultHistory === 'defaulted' ? 'selected' : ''}>&#9888; Pernah Wanprestasi / NPL (0 Poin)</option>
                 </select>
               </div>
 
               <!-- Parameter Pemberitaan Negatif Google News -->
               <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:5px; padding:0.35rem 0.45rem; margin-bottom:0.35rem;">
                 <label style="font-size:0.65rem; font-weight:700; color:var(--askrindo-navy); display:block; margin-bottom:2px;">
-                  Screening Berita Negatif di Media:
+                  Screening Berita Negatif di Media (Maks 20 Poin):
                 </label>
                 <select class="form-control" style="font-size:0.66rem; padding:2px 4px; height:auto;" onchange="updateCharacterParam('negativeNews', this.value)">
-                  <option value="clean" ${proj.negativeNews !== 'negative' ? 'selected' : ''}>&#10003; Nihil Berita Negatif di Media</option>
-                  <option value="negative" ${proj.negativeNews === 'negative' ? 'selected' : ''}>&#9888; Terdeteksi Berita Negatif (-25 Poin)</option>
+                  <option value="clean" ${proj.negativeNews !== 'negative' ? 'selected' : ''}>&#10003; Nihil Berita Negatif di Media (Poin Penuh 20)</option>
+                  <option value="negative" ${proj.negativeNews === 'negative' ? 'selected' : ''}>&#9888; Terdeteksi Berita Negatif (0 Poin)</option>
                 </select>
               </div>
 
               <!-- Parameter Status INAPROC LKPP -->
               <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:5px; padding:0.35rem 0.45rem; margin-bottom:0.35rem;">
                 <label style="font-size:0.65rem; font-weight:700; color:var(--askrindo-navy); display:block; margin-bottom:2px;">
-                  Status Daftar Hitam INAPROC LKPP:
+                  Status Daftar Hitam INAPROC LKPP (Maks 15 Poin):
                 </label>
                 <select class="form-control" style="font-size:0.66rem; padding:2px 4px; height:auto;" onchange="updateCharacterParam('inaprocStatus', this.value)">
-                  <option value="clean" ${proj.inaprocStatus === 'clean' ? 'selected' : ''}>&#10003; Bersih (Terverifikasi di Portal INAPROC)</option>
-                  <option value="blacklisted" ${proj.inaprocStatus === 'blacklisted' ? 'selected' : ''}>&#9888; Terdaftar Blacklist LKPP (-30 Poin)</option>
-                  <option value="unverified" ${(!proj.inaprocStatus || proj.inaprocStatus === 'unverified') ? 'selected' : ''}>&#9888; Belum Diverifikasi di INAPROC (-10 Poin)</option>
+                  <option value="clean" ${proj.inaprocStatus === 'clean' ? 'selected' : ''}>&#10003; Bersih (Terverifikasi di Portal INAPROC - Poin Penuh 15)</option>
+                  <option value="unverified" ${(!proj.inaprocStatus || proj.inaprocStatus === 'unverified') ? 'selected' : ''}>&#9888; Belum Diverifikasi di INAPROC (10 Poin)</option>
+                  <option value="blacklisted" ${proj.inaprocStatus === 'blacklisted' ? 'selected' : ''}>&#9888; Terdaftar Blacklist LKPP (0 Poin)</option>
                 </select>
               </div>
 
               <!-- Parameter Status SIPP Pengadilan -->
               <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:5px; padding:0.35rem 0.45rem; margin-bottom:0.35rem;">
                 <label style="font-size:0.65rem; font-weight:700; color:var(--askrindo-navy); display:block; margin-bottom:2px;">
-                  Status SIPP Pengadilan MA (Perkara Hukum):
+                  Status SIPP Pengadilan MA - Perkara Hukum (Maks 10 Poin):
                 </label>
                 <select class="form-control" style="font-size:0.66rem; padding:2px 4px; height:auto;" onchange="updateCharacterParam('sippStatus', this.value)">
-                  <option value="clean" ${(!proj.sippStatus || proj.sippStatus === 'clean') ? 'selected' : ''}>&#10003; Nihil Gugatan / Perkara Hukum</option>
-                  <option value="disputed" ${proj.sippStatus === 'disputed' ? 'selected' : ''}>&#9888; Ada Gugatan Perdata (-15 Poin)</option>
-                  <option value="bankrupt" ${proj.sippStatus === 'bankrupt' ? 'selected' : ''}>&#9888; Menghadapi Permohonan PKPU/Pailit (-35 Poin)</option>
+                  <option value="clean" ${(!proj.sippStatus || proj.sippStatus === 'clean') ? 'selected' : ''}>&#10003; Nihil Gugatan / Perkara Hukum (Poin Penuh 10)</option>
+                  <option value="disputed" ${proj.sippStatus === 'disputed' ? 'selected' : ''}>&#9888; Ada Gugatan Perdata (5 Poin)</option>
+                  <option value="bankrupt" ${proj.sippStatus === 'bankrupt' ? 'selected' : ''}>&#9888; Menghadapi Permohonan PKPU/Pailit (0 Poin)</option>
                 </select>
               </div>
 
               <!-- Parameter Rekam Jejak SLIK OJK -->
               <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:5px; padding:0.35rem 0.45rem; margin-bottom:0.4rem;">
                 <label style="font-size:0.65rem; font-weight:700; color:var(--askrindo-navy); display:block; margin-bottom:2px;">
-                  Status Rekam Jejak SLIK OJK:
+                  Status Rekam Jejak SLIK OJK (Maks 30 Poin):
                 </label>
                 <select class="form-control" style="font-size:0.66rem; padding:2px 4px; height:auto;" onchange="updateCharacterParam('slikStatus', this.value)">
-                  <option value="kol1" ${(!proj.slikStatus || proj.slikStatus === 'kol1') ? 'selected' : ''}>&#10003; Kolektibilitas 1 (Lancar)</option>
-                  <option value="kol2" ${proj.slikStatus === 'kol2' ? 'selected' : ''}>&#9888; Kolektibilitas 2 - DPK (-15 Poin)</option>
-                  <option value="kol3_5" ${proj.slikStatus === 'kol3_5' ? 'selected' : ''}>&#9888; Kolektibilitas 3-5 - Macet/NPL (-40 Poin)</option>
+                  <option value="kol1" ${(!proj.slikStatus || proj.slikStatus === 'kol1') ? 'selected' : ''}>&#10003; Kolektibilitas 1 - Lancar (Poin Penuh 30)</option>
+                  <option value="kol2" ${proj.slikStatus === 'kol2' ? 'selected' : ''}>&#9888; Kolektibilitas 2 - DPK (15 Poin)</option>
+                  <option value="kol3_5" ${proj.slikStatus === 'kol3_5' ? 'selected' : ''}>&#9888; Kolektibilitas 3-5 - Macet/NPL (0 Poin)</option>
                 </select>
               </div>
             </div>
@@ -2544,11 +2585,11 @@ function render5CTab(proj, m) {
 
                 <!-- 2. Tombol Sinkronisasi Cepat Hasil Website -->
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:4px; margin-top:2px;">
-                  <button class="five-c-portal-btn" style="background:#fef2f2; color:#b91c1c; border-color:#fca5a5; font-weight:800; justify-content:center; text-align:center;" onclick="setInaprocResult('blacklisted', '${safeCompName}')" title="Tetapkan status terdaftar di daftar hitam berdasarkan hasil temuan di website INAPROC">
-                    &#9888; Nyata Ada di Blacklist (-30)
+                  <button class="five-c-portal-btn" style="background:#fef2f2; color:#b91c1c; border-color:#fca5a5; font-weight:800; justify-content:center; text-align:center;" onclick="setInaprocResult('blacklisted', '${safeCompName}')" title="Tetapkan status terdaftar di daftar hitam berdasarkan hasil temuan di website INAPROC (0 Poin)">
+                    &#9888; Masuk Blacklist (0 Poin)
                   </button>
-                  <button class="five-c-portal-btn" style="background:#f0fdf4; color:#15803d; border-color:#86efac; font-weight:800; justify-content:center; text-align:center;" onclick="setInaprocResult('clean', '${safeCompName}')" title="Tetapkan status bersih berdasarkan hasil pencarian nihil di website INAPROC">
-                    &#10003; Terverifikasi Bersih (Nihil)
+                  <button class="five-c-portal-btn" style="background:#f0fdf4; color:#15803d; border-color:#86efac; font-weight:800; justify-content:center; text-align:center;" onclick="setInaprocResult('clean', '${safeCompName}')" title="Tetapkan status bersih berdasarkan hasil pencarian nihil di website INAPROC (15 Poin Penuh)">
+                    &#10003; Terverifikasi Bersih (15 Poin)
                   </button>
                 </div>
 

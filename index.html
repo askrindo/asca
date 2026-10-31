@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="favicon.png" />
   <link rel="shortcut icon" href="favicon.ico" />
   <link rel="apple-touch-icon" href="favicon.png" />
-  <link rel="stylesheet" href="styles.css?v=1793478717" />
+  <link rel="stylesheet" href="styles.css?v=1793458636" />
   <style id="login-critical-styles">
     /* Anti-Cache Guarantee for Enterprise Login Interface */
     .login-screen {
@@ -157,7 +157,7 @@
           Askrindo Smart Credit Analysis (ASCA)
           <span class="badge-method">Metode DCC-SWCM</span>
         </h1>
-        <p>Dynamic Cash Conversion &amp; Stress-Tested Working Capital Model - Sistem Analisa Underwriting Penjaminan</p>
+        <p>Platform Analisa Kredit berbasis Artificial Intelligence dengan Metode DCC-SWCM</p>
       </div>
     </div>
 
@@ -233,6 +233,7 @@
           <h2>
             <span id="bannerCompanyName">-</span>
             <span id="bannerGradeBadge" class="grade-badge grade-BB" style="cursor:pointer;" onclick="switchTab('tab-grade')" title="Klik untuk melihat Penentuan Grade Risk & Indikator Penyebab">-</span>
+            <span id="bannerCoverageBadge" class="cover-badge cover-conditional" style="display:none; cursor:pointer;" onclick="switchTab('tab-mitigasi')" title="Klik untuk melihat Rekomendasi Porsi Coverage Penjaminan Askrindo">-</span>
             <span id="bannerFacilityType" style="font-size:0.68rem; background:#e0f2fe; color:#0369a1; padding:2px 7px; border-radius:99px; font-weight:600;">-</span>
           </h2>
           <div class="case-submeta">
@@ -385,7 +386,7 @@
               </div>
               <div class="form-group">
                 <label>Sektor Industri</label>
-                <input type="text" id="inp_sector" class="form-control" oninput="syncInputsToModel()" />
+                <input type="text" id="inp_sector" list="list_sectors" class="form-control" oninput="syncInputsToModel()" />
               </div>
               <div class="form-group">
                 <label>Tahun Berdiri</label>
@@ -393,11 +394,11 @@
               </div>
               <div class="form-group">
                 <label>Bank Penerima Jaminan (Mitra)</label>
-                <input type="text" id="inp_bankName" class="form-control" oninput="syncInputsToModel()" />
+                <input type="text" id="inp_bankName" list="list_banks" class="form-control" oninput="syncInputsToModel()" />
               </div>
               <div class="form-group">
                 <label>Skema Fasilitas Kredit</label>
-                <input type="text" id="inp_facilityType" class="form-control" oninput="syncInputsToModel()" />
+                <input type="text" id="inp_facilityType" list="list_facilities" class="form-control" oninput="syncInputsToModel()" />
               </div>
               <div class="form-group">
                 <label>Plafond Valas USD <span class="unit-hint">(0 jika IDR)</span></label>
@@ -968,6 +969,56 @@
     </div>
   </div>
 
+  <!-- MASTER DATALISTS UNTUK DROPDOWN CEPAT & AUTOCOMPLETE -->
+  <datalist id="list_sectors">
+    <option value="Perdagangan Besar &amp; Eceran (Komoditas, Pangan, FMCG)">
+    <option value="Manufaktur &amp; Industri Pengolahan (Makanan, Minuman, Pakan Ternak)">
+    <option value="Pertanian, Perkebunan &amp; Peternakan">
+    <option value="Konstruksi, Infrastruktur &amp; Real Estate">
+    <option value="Transportasi, Logistik &amp; Pergudangan">
+    <option value="Teknologi Informasi, Digital &amp; Telekomunikasi">
+    <option value="Jasa Keuangan, Asuransi &amp; Pasar Modal">
+    <option value="Pertambangan, Minyak &amp; Gas Bumi">
+    <option value="Kesehatan, Farmasi &amp; Alat Medis">
+    <option value="Pariwisata, Perhotelan &amp; Restoran">
+    <option value="Energi Baru Terbarukan (EBT) &amp; Kelistrikan">
+  </datalist>
+
+  <datalist id="list_banks">
+    <option value="Bank Dana">
+    <option value="Bank Mandiri">
+    <option value="Bank Rakyat Indonesia (BRI)">
+    <option value="Bank Negara Indonesia (BNI)">
+    <option value="Bank Tabungan Negara (BTN)">
+    <option value="Bank Central Asia (BCA)">
+    <option value="Bank CIMB Niaga">
+    <option value="Bank Syariah Indonesia (BSI)">
+    <option value="Bank Danamon">
+    <option value="Bank Permata">
+    <option value="Bank BJB">
+    <option value="Bank Jatim">
+    <option value="Bank Jateng">
+    <option value="Bank DKI">
+    <option value="Bank Sumut">
+    <option value="Bank Mega">
+    <option value="Bank OCBC NISP">
+    <option value="Bank Panin">
+    <option value="Citibank Indonesia">
+  </datalist>
+
+  <datalist id="list_facilities">
+    <option value="Kredit Modal Kerja (KMK) Revolving">
+    <option value="Kredit Modal Kerja (KMK) Non-Revolving / Term">
+    <option value="KMK Khusus / Sublimit / Backup Default">
+    <option value="Supply Chain Financing (SCF) - Account Payable (A/P) Financing">
+    <option value="Supply Chain Financing (SCF) - Account Receivable (A/R) Financing">
+    <option value="Paket Gabungan: SCF A/P + Forex Line + KMK Khusus (Backup Default)">
+    <option value="Letter of Credit (L/C) / SKBDN Financing">
+    <option value="Trust Receipt (T/R) Financing &amp; Import Line">
+    <option value="Kredit Investasi (KI) Mesin &amp; Pabrik">
+    <option value="Bank Garansi (Jaminan Pembayaran / Pelaksanaan / Tender)">
+  </datalist>
+
   <!-- MODAL PROYEK BARU -->
   <div class="modal-backdrop" id="newProjectModal">
     <div class="modal-content">
@@ -978,30 +1029,34 @@
       <div class="form-grid">
         <div class="form-group full">
           <label>Nama Debitur / Perusahaan</label>
-          <input type="text" id="new_companyName" class="form-control" placeholder="Contoh: PT Maju Bersama Logistik" />
+          <input type="text" id="new_companyName" class="form-control" placeholder="Contoh: PT Rahmat Santosa" />
         </div>
         <div class="form-group">
-          <label>Sektor Industri</label>
-          <input type="text" id="new_sector" class="form-control" placeholder="Contoh: Perdagangan / Manufaktur" />
+          <label>Sektor Industri (Pilih atau Ketik)</label>
+          <input type="text" id="new_sector" list="list_sectors" class="form-control" placeholder="Pilih / ketik sektor industri..." />
         </div>
         <div class="form-group">
-          <label>Bank Mitra Pengaju</label>
-          <input type="text" id="new_bankName" class="form-control" placeholder="Contoh: Bank Dana / BRI / Mandiri" />
+          <label>Bank Mitra Pengaju (Pilih atau Ketik)</label>
+          <input type="text" id="new_bankName" list="list_banks" class="form-control" placeholder="Pilih / ketik bank mitra pengaju..." />
         </div>
         <div class="form-group">
-          <label>Jenis Fasilitas Kredit</label>
-          <input type="text" id="new_facilityType" class="form-control" placeholder="Contoh: SCF A/P & KMK" />
+          <label>Jenis Fasilitas Kredit (Pilih atau Ketik)</label>
+          <input type="text" id="new_facilityType" list="list_facilities" class="form-control" placeholder="Pilih / ketik jenis fasilitas..." />
+        </div>
+        <div class="form-group">
+          <label>Tahun Berdiri Perusahaan</label>
+          <input type="number" id="new_estYear" class="form-control" placeholder="Contoh: 2018" />
         </div>
         <div class="form-group">
           <label>Plafond Kredit Diajukan (Rp)</label>
-          <input type="text" inputmode="numeric" id="new_plafond" class="form-control fmt-dots" value="15.000.000.000" oninput="handleDotInput(this)" onblur="handleDotBlur(this)" />
+          <input type="text" inputmode="numeric" id="new_plafond" class="form-control fmt-dots" placeholder="Contoh: 15.000.000.000" oninput="handleDotInput(this)" onblur="handleDotBlur(this)" />
         </div>
         <div class="form-group">
           <label>Tahun Lap. Keuangan (2 Periode)</label>
           <div style="display:flex; gap:0.3rem; align-items:center;">
-            <input type="number" id="new_year1" class="form-control" value="2022" />
+            <input type="number" id="new_year1" class="form-control" placeholder="Thn 1" />
             <span>&amp;</span>
-            <input type="number" id="new_year2" class="form-control" value="2023" />
+            <input type="number" id="new_year2" class="form-control" placeholder="Thn 2" />
           </div>
         </div>
         <div class="form-group full">
@@ -1020,8 +1075,8 @@
     </div>
   </div>
 
-  <div class="toast-container" id="toastContainer"></div>
+    <div class="toast-container" id="toastContainer"></div>
 
-  <script src="app.js?v=1793478717"></script>
+  <script src="app.js?v=1793458636"></script>
 </body>
 </html>

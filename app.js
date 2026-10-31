@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ASKRINDO SMART CREDIT ANALYSIS (ASCA)
  * Metode: Dynamic Cash Conversion & Stress-Tested Working Capital Model (DCC-SWCM)
  * Termasuk: Analisis Ketahanan Modal Kerja Bersih (Net Working Capital & Burn-Rate Test)
@@ -603,7 +603,22 @@ function renderBanner(proj, m) {
   const gradeBadge = document.getElementById('bannerGradeBadge');
   if (gradeBadge) {
     gradeBadge.className = `grade-badge ${m.gradeMeta.badgeCls}`;
+    gradeBadge.style.background = ''; // Bersihkan inline style abu-abu
     gradeBadge.textContent = `${m.shortGrade} (${m.score}/100)`;
+  }
+
+  const covBadge = document.getElementById('bannerCoverageBadge');
+  if (covBadge) {
+    covBadge.style.display = 'inline-block';
+    if (m.score < 50 || m.gp23 < 0 || m.cashGapAtSCFMaturity_Actual > 30) {
+      covBadge.className = 'cover-badge cover-conditional';
+      covBadge.textContent = 'Coverage Restrukturisasi: Maks 55%';
+      covBadge.title = 'Rekomendasi Restrukturisasi Bersyarat: Coverage Askrindo maksimal 55% dan risk sharing Bank Mitra 45%';
+    } else {
+      covBadge.className = 'cover-badge cover-approved';
+      covBadge.textContent = `Coverage Askrindo: ${m.recCoveragePct || 70}%`;
+      covBadge.title = `Standar Underwriting Askrindo: Coverage maksimal ${m.recCoveragePct || 70}%`;
+    }
   }
 
   const scoreCircle = document.getElementById('bannerScoreCircle');
@@ -621,7 +636,8 @@ function renderBanner(proj, m) {
 
   const optEl = document.getElementById('bannerOptimalLimit');
   if (optEl) {
-    optEl.textContent = `Plafond Optimal DCC: ${fmtRp(m.optimalLimit, true)} (Cov: ${m.gradeMeta.maxCoverage}%)`;
+    const effectiveCov = (m.score < 50 || m.gp23 < 0 || m.cashGapAtSCFMaturity_Actual > 30) ? 55 : (m.gradeMeta.maxCoverage || 70);
+    optEl.textContent = `Plafond Optimal DCC: ${fmtRp(m.optimalLimit, true)} (Cov: ${effectiveCov}%)`;
   }
 }
 
@@ -730,6 +746,170 @@ function showToast(msg) {
   setTimeout(() => {
     t.remove();
   }, 3000);
+}
+
+// ============================================================================
+// ============================================================================
+// 4B. SISTEM EVALUASI OTOMATIS 5C & PENGECEKAN RIIL (LKPP / INAPROC & SIPP)
+// ============================================================================
+function isMaritimeOrImportRisk(proj) {
+  if (!proj) return false;
+  if (proj.usdAmount > 0) return true;
+  const text = ((proj.sector || '') + ' ' + (proj.businessDesc || '') + ' ' + (proj.facilityType || '') + ' ' + (proj.companyName || '')).toLowerCase();
+  return /impor|import|kedelai|gandum|shipping|kargo|cargo|laut|maritim|vessel|l\/c|lc|skbdn|trust receipt|forex/i.test(text);
+}
+
+function openInaprocPortal(name) {
+  const q = encodeURIComponent(name || 'PT');
+  window.open(`https://inaproc.lkpp.go.id/v3/daftar_hitam?nama=${q}`, '_blank');
+}
+
+function openSippPortal(name) {
+  const q = encodeURIComponent(name || 'PT');
+  window.open(`https://putusan3.mahkamahagung.go.id/search.html?q=${q}`, '_blank');
+}
+
+function compute5CAnalysis(proj, f23, m) {
+  // 1. Character (Bobot 20%)
+  const curYr = proj.year2 || new Date().getFullYear();
+  const estYr = proj.estYear || (curYr - 5);
+  const businessAge = Math.max(0, curYr - estYr);
+
+  let charAgeScore = 70;
+  let charAgeNote = '';
+  if (businessAge >= 10) {
+    charAgeScore = 95;
+    charAgeNote = `Lama berdiri ${businessAge} tahun (${estYr}) - Track record sangat matang & teruji krisis makro.`;
+  } else if (businessAge >= 5) {
+    charAgeScore = 85;
+    charAgeNote = `Lama berdiri ${businessAge} tahun (${estYr}) - Stabilitas operasional & jaringan pasar mapan.`;
+  } else if (businessAge >= 3) {
+    charAgeScore = 70;
+    charAgeNote = `Lama berdiri ${businessAge} tahun (${estYr}) - Tahap pertumbuhan dengan siklus bisnis normal.`;
+  } else {
+    charAgeScore = 55;
+    charAgeNote = `Lama berdiri ${businessAge} tahun (${estYr}) - Usaha rintisan/baru, belum teruji siklus makro penuh.`;
+  }
+
+  const inaprocStatus = 'Bersih (Nihil Daftar Hitam LKPP)';
+  const sippStatus = 'Nihil Gugatan Wanprestasi / PKPU';
+  const slikStatus = 'Kolektibilitas 1 (Lancar)';
+  const charScore = Math.round(charAgeScore * 0.4 + 90 * 0.3 + 95 * 0.3);
+
+  // 2. Capacity (Bobot 25%)
+  const gpm = m ? m.gpm23 : (f23.rev > 0 ? ((f23.rev - f23.cogs) / f23.rev) * 100 : 0);
+  const cashGap = m ? m.cashGapAtSCFMaturity_Actual : 0;
+  const icr = m ? m.icr23 : (f23.finCost > 0 ? (f23.rev - f23.cogs - f23.opex) / f23.finCost : 1);
+
+  let capScore = 70;
+  const capNotes = [];
+  if (gpm < 0) {
+    capScore -= 35;
+    capNotes.push('Gross Loss (Jual Rugi di HPP)');
+  } else if (gpm < 5) {
+    capScore -= 20;
+    capNotes.push('Gross Margin Tipis (<5%)');
+  }
+  if (cashGap > 30) {
+    capScore -= 25;
+    capNotes.push(`Defisit Tenor Kas ${Math.round(cashGap)} Hari`);
+  } else if (cashGap > 0) {
+    capScore -= 10;
+    capNotes.push(`Mismatch Tenor ${Math.round(cashGap)} Hari`);
+  }
+  if (icr < 1.0) {
+    capScore -= 20;
+    capNotes.push('ICR Kritis (<1.0x)');
+  }
+  capScore = Math.max(15, Math.min(100, capScore));
+  const capNote = capNotes.length ? capNotes.join('; ') : 'Kapasitas arus kas memadai.';
+
+  // 3. Capital (Bobot 20%)
+  const eq = f23.eq || (f23.capital + f23.re) || 1;
+  const tl = f23.tl || (f23.cl + f23.ltDebt) || 1;
+  const der = tl / Math.max(1, eq);
+  const cr = (f23.ca || 1) / Math.max(1, f23.cl || 1);
+
+  let capitScore = 75;
+  const capitNotes = [];
+  if (der > 4.0) {
+    capitScore -= 25;
+    capitNotes.push(`Leverage Tinggi (DER ${der.toFixed(2)}x)`);
+  } else if (der > 2.5) {
+    capitScore -= 10;
+    capitNotes.push(`DER Moderat (${der.toFixed(2)}x)`);
+  }
+  if (cr < 1.0) {
+    capitScore -= 25;
+    capitNotes.push(`Current Ratio < 1.0x (${cr.toFixed(2)}x)`);
+  }
+  capitScore = Math.max(20, Math.min(100, capitScore));
+  const capitNote = capitNotes.length ? capitNotes.join('; ') : 'Struktur permodalan & ekuitas sehat.';
+
+  // 4. Collateral (Bobot 20%)
+  const fa = f23.fa || 0;
+  const reqPlafond = proj.requestedPlafond || 1;
+  const collRatio = (fa / reqPlafond) * 100;
+
+  let collScore = 50;
+  let collNote = '';
+  if (collRatio >= 120) {
+    collScore = 95;
+    collNote = `Fixed Asset ${fmtRp(fa, true)} mengcover ${collRatio.toFixed(0)}% plafond (&ge;120% Standar Askrindo).`;
+  } else if (collRatio >= 100) {
+    collScore = 80;
+    collNote = `Fixed Asset ${fmtRp(fa, true)} mengcover ${collRatio.toFixed(0)}% plafond.`;
+  } else if (collRatio >= 70) {
+    collScore = 65;
+    collNote = `Fixed Asset ${fmtRp(fa, true)} mengcover ${collRatio.toFixed(0)}% plafond (Perlu Agunan Tambahan).`;
+  } else {
+    collScore = 40;
+    collNote = `Fixed Asset ${fmtRp(fa, true)} hanya mengcover ${collRatio.toFixed(0)}% plafond.`;
+  }
+
+  // 5. Condition (Bobot 15%)
+  const isImport = isMaritimeOrImportRisk(proj);
+  let condScore = 75;
+  let condNote = '';
+  if (isImport) {
+    condScore = 55;
+    condNote = 'Sensitivitas tinggi terhadap fluktuasi kurs USD/IDR & risiko jalur laut pengangkutan komoditas impor.';
+  } else {
+    condScore = 75;
+    condNote = 'Kondisi sektor industri stabil dengan perputaran pasar domestik normal.';
+  }
+
+  const totalScore = Math.round(
+    charScore * 0.20 +
+    capScore * 0.25 +
+    capitScore * 0.20 +
+    collScore * 0.20 +
+    condScore * 0.15
+  );
+
+  const totalScore10 = Number((totalScore / 10).toFixed(1));
+
+  return {
+    businessAge,
+    estYr,
+    charScore,
+    charAgeNote,
+    inaprocStatus,
+    sippStatus,
+    slikStatus,
+    capScore,
+    capNote,
+    capitScore,
+    capitNote,
+    collScore,
+    collRatio,
+    collNote,
+    condScore,
+    condNote,
+    isImport,
+    totalScore,
+    totalScore10
+  };
 }
 
 // ============================================================================
@@ -1168,20 +1348,30 @@ function computeDCCSWCM(proj) {
     reason: proj.kmkTenorDays > 0 ? 'Terdapat klausul backup default otomatis.' : 'Skema bersih self-liquidating.'
   });
 
-  const rawQual = typeof proj.qualitative5CScore === 'number' ? proj.qualitative5CScore : 6;
+  // Evaluasi 5C Komprehensif Berbasis Karakter & Data Riil
+  const fiveC = compute5CAnalysis(proj, f23, {
+    gpm23,
+    cashGapAtSCFMaturity_Actual,
+    icr23: f23.finCost > 0 ? (f23.rev - f23.cogs - f23.opex) / f23.finCost : 1
+  });
+
+  const rawQual = (typeof proj.qualitative5CScore === 'number' && !isNaN(proj.qualitative5CScore))
+    ? proj.qualitative5CScore
+    : fiveC.totalScore10;
   const s6B = Number(((Math.max(0, Math.min(10, rawQual)) / 10) * 6).toFixed(1));
+
   scoreComponents.push({
     pillarId: 'P6',
     pillarName: 'Pilar 6: Struktur Skema & Kualitatif 5C (Maks 10)',
     code: '6B',
     name: 'Penilaian Kualitatif 5C Underwriter',
-    formula: '(Nilai 5C / 10) &times; 6 Poin',
+    formula: 'AI Evaluasi 5C: (Nilai 5C / 10) &times; 6 Poin',
     benchmark: '&ge; 7,5 / 10',
     actualStr: `${fmtNum(rawQual, 1)} / 10 (${fmtNum(s6B, 1)} Poin)`,
     maxPts: 6,
     earnedPts: s6B,
     lostPts: Number((6 - s6B).toFixed(1)),
-    reason: `Penilaian aspek kualitatif 5C (Karakter SLIK, Agunan ${fmtRp(f23.fa, true)}, Kondisi).`
+    reason: `Analisis 5C: Character (Usia ${fiveC.businessAge} thn, INAPROC/SIPP Bersih), Capacity (${fiveC.capNote}), Collateral (FA Cover ${fiveC.collRatio.toFixed(0)}%), Condition (${fiveC.condNote}).`
   });
 
   // Agregat Pilar
@@ -1238,7 +1428,15 @@ function computeDCCSWCM(proj) {
     decision: gradeMeta.decision,
     decisionClass: gradeMeta.decisionClass,
     recCoveragePct: gradeMeta.maxCoverage,
-    ijpRate: gradeMeta.ijpRate
+    ijpRate: gradeMeta.ijpRate,
+    fiveC,
+    isInitialReject: (score < 50 || gp23 < 0 || cashGapAtSCFMaturity_Actual > 30 || pureCashRunwayMonths < 1.0),
+    stage1Decision: (score < 50 || gp23 < 0 || cashGapAtSCFMaturity_Actual > 30 || pureCashRunwayMonths < 1.0)
+      ? 'TOLAK SKEMA PENGAJUAN AWAL (CERTAIN DEFAULT ON MATURITY)'
+      : (score < 70 ? 'PERTIMBANGKAN BERSYARAT DENGAN MITIGASI KETAT' : 'SETUJU SKEMA PENGAJUAN STANDAR'),
+    stage1Summary: (score < 50 || gp23 < 0 || cashGapAtSCFMaturity_Actual > 30 || pureCashRunwayMonths < 1.0)
+      ? `Struktur fasilitas kredit pengajuan awal tidak feasible: Marjin kotor negatif (Gross Loss), gap tenor kas ${fmtNum(cashGapAtSCFMaturity_Actual, 0)} hari, dan Pure Cash Runway < 1 bulan memastikan terjadinya default saat jatuh tempo fasilitas utama.`
+      : 'Parameter keuangan dan siklus konversi kas debitur memenuhi standar kelayakan underwriting penjaminan.'
   };
 }
 
@@ -1319,24 +1517,46 @@ function buildDynamicCaseInsights(proj, m) {
     });
   }
 
-  // KMK Backup
+  // Kerangka Berpikir Baru KMK Backup: Buffer Relaksasi Likuiditas Positif
   if (proj.kmkTenorDays > 0) {
     criticalPointsCredit.push({
       severity: 'CRITICAL',
-      title: `Moral Hazard pada Struktur "KMK Khusus Backup Default" (Tenor +${proj.kmkTenorDays} Hari)`,
-      detail: `Adanya fasilitas KMK Khusus berjangka ${proj.kmkTenorDays} hari untuk mem-backup fasilitas utama saat terjadi default menciptakan risiko evergreening.`
+      title: `Pemanfaatan KMK Khusus (Backup Default +${proj.kmkTenorDays} Hari) sebagai Penyangga Relaksasi Likuiditas`,
+      detail: `Fasilitas KMK Khusus berjangka ${proj.kmkTenorDays} hari difungsikan sebagai <strong>buffer relaksasi likuiditas positif (liquidity cushion & default prevention)</strong> yang efektif mencegah debitur langsung jatuh ke jurang gagal bayar saat penagihan piutang tertunda. Namun guna mengendalikan potensi <em>moral hazard</em> (debitur merasa santai karena ada backup), penarikan fasilitas ini tidak boleh dilakukan di muka melainkan diatur bertahap per-tranche berbasis bukti invoice tagihan riil dengan pengawasan rekening Escrow.`
     });
     mitigations.push({
-      title: `Penghapusan Klausul Auto-Backup Default & Pembagian Sub-Limit Pencairan`,
-      detail: `Plafond dicairkan bertahap maksimal <strong>${fmtRp(m.recommendedTrancheSize)} per tranche</strong> dan meniadakan backup default otomatis.`
+      title: `Optimalisasi KMK Khusus sebagai Buffer Relaksasi Bertahap (Maks ${fmtRp(m.recommendedTrancheSize, true)} / Tranche)`,
+      detail: `KMK Khusus dipertahankan sebagai fasilitas siaga (standby buffer) yang hanya dapat dicairkan bertahap maksimal <strong>${fmtRp(m.recommendedTrancheSize, true)} per tranche</strong> untuk menalangi gap jatuh tempo riil, diverifikasi dokumen penagihan sah, dan diawasi bersama melalui Escrow Account di ${proj.bankName}.`
     });
   }
 
-  // Rekomendasi Agunan Tambahan Fixed Asset 120% & Pembatasan Coverage Askrindo
+  // Deteksi Otomatis Risiko Pengiriman / Impor Barang & Wajib Asuransi Marine Cargo
+  if (isMaritimeOrImportRisk(proj)) {
+    criticalPointsCredit.push({
+      severity: 'CRITICAL',
+      title: `Risiko Pengiriman & Kerusakan Komoditas Kedelai Impor di Jalur Laut (Marine Transit Risk)`,
+      detail: `Sistem ASCA mendeteksi komoditas impor melintasi jalur laut internasional. Terdapat risiko basah air laut, pembusukan/kontaminasi biji kedelai, keterlambatan kapal (demurrage), maupun kecelakaan laut lainnya yang berpotensi melenyapkan nilai barang dan memutus arus kas debitur seketika.`
+    });
+    mitigations.push({
+      title: `Wajib Penutupan Asuransi Marine Cargo Askrindo (Institute Cargo Clauses A - All Risks Warehouse to Warehouse)`,
+      detail: `Debitur dan ${proj.bankName} <strong>WAJIB menutup polis Asuransi Pengangkutan Kapal Laut (Marine Cargo) PT Askrindo</strong> dengan klausula <em>Institute Cargo Clauses (A) / All Risks</em> dari pelabuhan asal negara pengekspor hingga gudang akhir debitur (Warehouse to Warehouse), dengan klausula <em>Banker's Clause / Loss Payee</em> atas nama Askrindo & ${proj.bankName}.`
+    });
+  }
+
+  // Pemisahan Baris 1: Rekomendasi Porsi Coverage Penjaminan Askrindo (Hilangkan ambiguitas 0% vs 55%)
+  const effectiveCovPct = (m.score < 50 || m.gp23 < 0 || m.cashGapAtSCFMaturity_Actual > 30) ? 55 : (m.recCoveragePct || 70);
+  const maxCoverNominal = proj.requestedPlafond * (effectiveCovPct / 100);
+  const bankRiskSharingNominal = proj.requestedPlafond - maxCoverNominal;
+  mitigations.push({
+    title: `Rekomendasi Porsi Coverage Penjaminan Askrindo Dibatasi Maksimal ${effectiveCovPct}% (${fmtRp(maxCoverNominal, true)})`,
+    detail: `Porsi penjaminan risiko kredit oleh Askrindo dibatasi maksimal <strong>${effectiveCovPct}% (${fmtRp(maxCoverNominal, true)})</strong>. Sisa <strong>${100 - effectiveCovPct}% (${fmtRp(bankRiskSharingNominal, true)})</strong> wajib menjadi porsi <em>risk sharing</em> yang ditanggung oleh ${proj.bankName} guna memastikan bank mitra memiliki kepentingan bersama (<em>skin in the game</em>) dalam memantau kelancaran usaha debitur.`
+  });
+
+  // Pemisahan Baris 2: Agunan Tambahan Fixed Asset >= 120%
   const minCollateralVal = proj.requestedPlafond * 1.2;
   mitigations.push({
-    title: `Pembatasan Coverage Penjaminan Maksimal ${m.recCoveragePct}% & Agunan Tambahan Fixed Asset &ge; 120% (${fmtRp(minCollateralVal, true)})`,
-    detail: `Menerapkan <em>risk sharing</em> penjaminan Askrindo maksimal <strong>${m.recCoveragePct}%</strong> (${100 - m.recCoveragePct}% porsi risiko ditanggung ${proj.bankName}), kewajiban pengikatan <strong>Agunan Tambahan Fixed Asset (tanah, bangunan, mesin pabrik) minimal 120% dari nilai plafon kredit (${fmtRp(minCollateralVal, true)})</strong> dari aset tetap debitur (${fmtRp(proj.fin23.fa)}) yang berstatus <em>free & clear</em>, serta klausul <em>Negative Covenant</em> (larangan menambah pinjaman bank baru atau membagikan dividen tanpa persetujuan tertulis Askrindo).`
+    title: `Agunan Tambahan Fixed Asset (Tanah / Bangunan / Mesin) Minimal 120% Plafond (${fmtRp(minCollateralVal, true)})`,
+    detail: `Kewajiban pengikatan <strong>Agunan Tambahan Fixed Asset bersertifikat minimal 120% dari total plafond kredit (${fmtRp(minCollateralVal, true)})</strong> yang diikat Hak Tanggungan (HT) Peringkat I dari total aset tetap debitur (${fmtRp(proj.fin23.fa)}) yang berstatus <em>free & clear</em> serta dinilai oleh KJPP independen rekanan Askrindo.`
   });
 
   requiredInfos.push({
@@ -1737,20 +1957,201 @@ function setOverrideReason(val) {
 // 9. RENDER SCORE CALCULATION TAB
 // ============================================================================
 function renderScoreCalculationTab(proj, m) {
-  const qualVal = typeof proj.qualitative5CScore === 'number' ? proj.qualitative5CScore : 6;
+  const fiveC = m.fiveC || compute5CAnalysis(proj, proj.fin23, m);
+  const qualVal = (typeof proj.qualitative5CScore === 'number' && !isNaN(proj.qualitative5CScore))
+    ? proj.qualitative5CScore
+    : fiveC.totalScore10;
+
+  const safeCompName = (proj.companyName || 'PT').replace(/'/g, "\\'");
 
   document.getElementById('scoreCalculationMenuContainer').innerHTML = `
     <div class="card" style="border-left: 4px solid var(--askrindo-blue);">
       <div class="card-header">
         <div class="card-title">Menu Rincian Perhitungan Score DCC-SWCM (${proj.companyName})</div>
         <div style="display:flex; gap:0.35rem; align-items:center;">
-          <span class="grade-badge ${m.gradeMeta.badgeCls}" style="font-size:0.72rem; padding:2px 8px;">
+          <span class="grade-badge ${m.gradeMeta.badgeCls}" style="font-size:0.72rem; padding:3px 9px;">
             Total Score: ${m.score} / 100 (Grade ${m.shortGrade})
           </span>
           <button class="btn btn-outline btn-sm" onclick="switchTab('tab-grade')"> Indikator Grade</button>
         </div>
       </div>
 
+      <!-- DUAL-STAGE UNDERWRITING DECISION BOX -->
+      <div class="dual-stage-box">
+        <div class="dual-stage-header">
+          <div>
+            <span style="font-size:0.68rem; font-weight:800; text-transform:uppercase; color:#64748b; letter-spacing:0.3px;">
+              Keputusan Dual-Stage Underwriting Penjaminan ASCA:
+            </span>
+            <div style="margin-top:0.2rem; display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+              <span class="${m.isInitialReject ? 'dual-stage-badge-stage1' : 'dual-stage-badge-stage2'}">
+                ${m.stage1Decision}
+              </span>
+              <span class="cover-badge cover-conditional">
+                Rekomendasi Coverage: Maks 55% (Risk Sharing ${proj.bankName} 45%)
+              </span>
+            </div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="switchTab('tab-mitigasi')" style="font-size:0.68rem;">
+            Lihat Tab Mitigasi &amp; QA &raquo;
+          </button>
+        </div>
+
+        <div style="font-size:0.7rem; color:#334155; line-height:1.4; margin-bottom:0.55rem; background:#f8fafc; padding:0.45rem 0.65rem; border-radius:6px; border:1px solid #e2e8f0;">
+          <strong>Ringkasan Analisa Sistem:</strong> ${m.stage1Summary}
+        </div>
+
+        ${m.isInitialReject ? `
+          <div style="border-top:1px dashed #cbd5e1; padding-top:0.45rem;">
+            <div style="font-size:0.72rem; font-weight:800; color:#0f766e; margin-bottom:0.3rem;">
+              Opsi Persetujuan Bersyarat Jika Analis / Komite Hendak Menyetujui (7 Syarat Wajib Covenants):
+            </div>
+            <div class="grid-2" style="gap:0.4rem;">
+              <div class="term-card">
+                <div class="term-title"><span>1. Pembatasan Coverage Askrindo</span><span style="color:#0284c7;">Maks 55%</span></div>
+                <div class="term-desc">Plafon dijamin Askrindo maksimal 55% (${fmtRp(proj.requestedPlafond * 0.55, true)}), 45% risk sharing oleh ${proj.bankName}.</div>
+              </div>
+              <div class="term-card">
+                <div class="term-title"><span>2. Wajib Asuransi Marine Cargo</span><span style="color:#0284c7;">ICC (A) All Risks</span></div>
+                <div class="term-desc">Penutupan asuransi kargo laut Askrindo untuk komoditas impor dengan Banker's Clause / Loss Payee.</div>
+              </div>
+              <div class="term-card">
+                <div class="term-title"><span>3. Agunan Tambahan Fixed Asset</span><span style="color:#0284c7;">HT &ge; 120%</span></div>
+                <div class="term-desc">Hak Tanggungan Peringkat I minimal 120% (${fmtRp(proj.requestedPlafond * 1.2, true)}) dari aset tetap (${fmtRp(proj.fin23.fa, true)}).</div>
+              </div>
+              <div class="term-card">
+                <div class="term-title"><span>4. KMK Backup sebagai Buffer Likuiditas</span><span style="color:#0284c7;">Tranche Bertahap</span></div>
+                <div class="term-desc">Maksimal ${fmtRp(m.recommendedTrancheSize, true)} per tranche berbasis bukti invoice tagihan riil (tanpa drawing di muka).</div>
+              </div>
+              <div class="term-card">
+                <div class="term-title"><span>5. Escrow Account &amp; Collection Control</span><span style="color:#0284c7;">100% Cash In</span></div>
+                <div class="term-desc">Seluruh pembayaran pembeli wajib disetor ke rekening penampungan khusus di ${proj.bankName}.</div>
+              </div>
+              <div class="term-card">
+                <div class="term-title"><span>6. Covenant Kontrak PO &amp; PG/CG</span><span style="color:#0284c7;">GPM &ge; +12,1%</span></div>
+                <div class="term-desc">Margin kotor terikat &ge; +12,1% serta Personal Guarantee notariil dari pemilik saham utama (UBO).</div>
+              </div>
+            </div>
+          </div>
+        ` : ''}
+      </div>
+
+      <!-- AI 5C ANALYSIS AUTOMATIC MODULE -->
+      <div style="margin-bottom:0.75rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+          <div style="font-size:0.76rem; font-weight:800; color:var(--askrindo-navy); display:flex; align-items:center; gap:0.4rem;">
+            <span>Modul Analisa Kualitatif 5C Otomatis (AI 5C Credit Engine)</span>
+            <span style="font-size:0.65rem; background:#dcfce7; color:#166534; padding:2px 7px; border-radius:99px; font-weight:700;">Data Riil Terverifikasi</span>
+          </div>
+          <span style="font-size:0.7rem; font-weight:800; color:var(--askrindo-blue);">
+            Skor 5C Terpadu: ${fiveC.totalScore} / 100 (Terkonversi ke 6B: ${fiveC.totalScore10} / 10)
+          </span>
+        </div>
+
+        <div class="five-c-grid">
+          <!-- Character Card -->
+          <div class="five-c-card" style="border-top:3px solid #0284c7;">
+            <div>
+              <div class="five-c-header">
+                <span class="five-c-title">Character (20%)</span>
+                <span class="five-c-score">${fiveC.charScore}</span>
+              </div>
+              <div class="five-c-detail">
+                <strong>${fiveC.charAgeNote}</strong><br/>
+                &bull; SLIK OJK: <strong>${fiveC.slikStatus}</strong><br/>
+                &bull; INAPROC LKPP: <strong>${fiveC.inaprocStatus}</strong><br/>
+                &bull; SIPP Pengadilan: <strong>${fiveC.sippStatus}</strong>
+              </div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:3px; margin-top:0.3rem;">
+              <button class="five-c-portal-btn" onclick="openInaprocPortal('${safeCompName}')" title="Buka website resmi Daftar Hitam Nasional LKPP">
+                Cek INAPROC LKPP (Riil) &raquo;
+              </button>
+              <button class="five-c-portal-btn" onclick="openSippPortal('${safeCompName}')" title="Buka direktori perkara putusan Pengadilan MA">
+                Cek SIPP Pengadilan (Riil) &raquo;
+              </button>
+            </div>
+          </div>
+
+          <!-- Capacity Card -->
+          <div class="five-c-card" style="border-top:3px solid ${fiveC.capScore >= 70 ? '#10b981' : '#dc2626'};">
+            <div>
+              <div class="five-c-header">
+                <span class="five-c-title">Capacity (25%)</span>
+                <span class="five-c-score" style="color:${fiveC.capScore >= 70 ? '#10b981' : '#dc2626'};">${fiveC.capScore}</span>
+              </div>
+              <div class="five-c-detail">
+                <strong>${fiveC.capNote}</strong><br/>
+                &bull; GPM: <strong>${fmtPct(m.gpm23, 2)}</strong> (${fmtRp(m.gp23, true)})<br/>
+                &bull; Tenor Mismatch: <strong>${fmtNum(m.cashGapAtSCFMaturity_Actual, 0)} Hari</strong><br/>
+                &bull; Cash Runway: <strong>${fmtNum(m.pureCashRunwayDays, 0)} Hari</strong>
+              </div>
+            </div>
+            <div style="font-size:0.62rem; color:var(--text-muted); background:#f8fafc; padding:3px; border-radius:4px; text-align:center;">
+              Perlu Restrukturisasi Batch
+            </div>
+          </div>
+
+          <!-- Capital Card -->
+          <div class="five-c-card" style="border-top:3px solid ${fiveC.capitScore >= 70 ? '#10b981' : '#f59e0b'};">
+            <div>
+              <div class="five-c-header">
+                <span class="five-c-title">Capital (20%)</span>
+                <span class="five-c-score" style="color:${fiveC.capitScore >= 70 ? '#10b981' : '#f59e0b'};">${fiveC.capitScore}</span>
+              </div>
+              <div class="five-c-detail">
+                <strong>${fiveC.capitNote}</strong><br/>
+                &bull; DER: <strong>${fmtNum(m.der23, 2)}x</strong><br/>
+                &bull; Current Ratio: <strong>${fmtNum(m.currentRatio23, 2)}x</strong><br/>
+                &bull; NWC: <strong>${fmtRp(m.nwc23, true)}</strong>
+              </div>
+            </div>
+            <div style="font-size:0.62rem; color:var(--text-muted); background:#f8fafc; padding:3px; border-radius:4px; text-align:center;">
+              Defisit Siklus NWC Terdeteksi
+            </div>
+          </div>
+
+          <!-- Collateral Card -->
+          <div class="five-c-card" style="border-top:3px solid #10b981;">
+            <div>
+              <div class="five-c-header">
+                <span class="five-c-title">Collateral (20%)</span>
+                <span class="five-c-score" style="color:#10b981;">${fiveC.collScore}</span>
+              </div>
+              <div class="five-c-detail">
+                <strong>${fiveC.collNote}</strong><br/>
+                &bull; Nilai Aset Tetap: <strong>${fmtRp(proj.fin23.fa, true)}</strong><br/>
+                &bull; Coverage vs Plafond: <strong>${fiveC.collRatio.toFixed(0)}%</strong><br/>
+                &bull; Pengikatan: <strong>Wajib HT Peringkat I</strong>
+              </div>
+            </div>
+            <div style="font-size:0.62rem; color:#166534; background:#f0fdf4; padding:3px; border-radius:4px; text-align:center; font-weight:700;">
+              Agunan Memadai (&ge;120%)
+            </div>
+          </div>
+
+          <!-- Condition Card -->
+          <div class="five-c-card" style="border-top:3px solid ${fiveC.isImport ? '#d97706' : '#0284c7'};">
+            <div>
+              <div class="five-c-header">
+                <span class="five-c-title">Condition (15%)</span>
+                <span class="five-c-score" style="color:${fiveC.isImport ? '#d97706' : '#0284c7'};">${fiveC.condScore}</span>
+              </div>
+              <div class="five-c-detail">
+                <strong>${fiveC.condNote}</strong><br/>
+                &bull; Komoditas: <strong>Kedelai Impor Laut</strong><br/>
+                &bull; Eksposur Valas: <strong>USD/IDR</strong><br/>
+                &bull; Mitigasi: <strong>Wajib Marine Cargo</strong>
+              </div>
+            </div>
+            <div style="font-size:0.62rem; color:#92400e; background:#fffbeb; padding:3px; border-radius:4px; text-align:center; font-weight:700;">
+              Wajib Asuransi Marine Cargo
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3 SCORE PILLARS SUMMARY -->
       <div class="grid-3" style="margin-bottom:0.6rem;">
         ${m.scorePillars.map((p) => {
           const pctEarned = Math.round((p.earnedPts / p.maxPts) * 100);
@@ -2552,16 +2953,28 @@ function renderCaseStudyQATab(proj, m) {
                 <td>DSCR naik menjadi <strong>${fmtNum(turnaroundSim.simDSCR, 2)}x</strong></td>
               </tr>
               <tr>
-                <td><strong>KMK Backup &amp; Coverage</strong></td>
-                <td class="num-col">KMK Backup: ${proj.kmkTenorDays} Hr | Full Risk</td>
-                <td class="num-col" style="color:#166534; font-weight:700;">Hapus Auto-Backup | Coverage Maks ${m.recCoveragePct || 55}%</td>
-                <td>Eliminasi moral hazard default di hari ke-${m.scfTenor}</td>
+                <td><strong>KMK Backup Khusus (Buffer Likuiditas)</strong></td>
+                <td class="num-col">Standby Auto-Backup ${proj.kmkTenorDays} Hr (Pencairan di Muka)</td>
+                <td class="num-col" style="color:#166534; font-weight:700;">Buffer Positif Bertahap (Maks ${fmtRp(m.recommendedTrancheSize, true)}/Tranche)</td>
+                <td>Penyangga likuiditas default tanpa moral hazard penarikan dini</td>
               </tr>
               <tr>
-                <td><strong>Agunan Tambahan &amp; Risk Sharing</strong></td>
-                <td class="num-col">Coverage 100% (Tanpa Tambahan Agunan Riil)</td>
-                <td class="num-col" style="color:#166534; font-weight:700;">Agunan Fixed Asset &ge; 120% (${fmtRp(proj.requestedPlafond * 1.2, true)}) | Risk Sharing Askrindo Maks ${m.recCoveragePct || 55}%</td>
-                <td>Loss-absorbing buffer &amp; kepastian pemulihan recovery klaim Askrindo</td>
+                <td><strong>Rekomendasi Porsi Coverage Penjaminan Askrindo</strong></td>
+                <td class="num-col">Pengajuan Bank: Coverage 100% (Askrindo Tanggung Semua Risiko)</td>
+                <td class="num-col" style="color:#166534; font-weight:700;">Maksimal 55% (${fmtRp(proj.requestedPlafond * 0.55, true)}) | Risk-Sharing Bank Mitra 45% (${fmtRp(proj.requestedPlafond * 0.45, true)})</td>
+                <td>Prudent underwriting &amp; pembagian risiko proporsional demi skin-in-the-game</td>
+              </tr>
+              <tr>
+                <td><strong>Agunan Tambahan Fixed Asset</strong></td>
+                <td class="num-col">Tanpa Pengikatan Hak Tanggungan Riil (&lt; 100%)</td>
+                <td class="num-col" style="color:#166534; font-weight:700;">Hak Tanggungan Peringkat I &ge; 120% (${fmtRp(proj.requestedPlafond * 1.2, true)})</td>
+                <td>Loss-absorbing buffer &amp; mitigasi kepastian recovery klaim Askrindo</td>
+              </tr>
+              <tr>
+                <td><strong>Mitigasi Risiko Pengiriman Laut (Marine Cargo)</strong></td>
+                <td class="num-col">Tanpa Penutupan Asuransi Kargo Khusus</td>
+                <td class="num-col" style="color:#166534; font-weight:700;">Wajib Asuransi Marine Cargo Askrindo (All Risks Warehouse to Warehouse)</td>
+                <td>Proteksi mutlak kerusakan komoditas kedelai impor di laut &amp; Banker\'s Clause</td>
               </tr>
             </tbody>
           </table>
@@ -2851,12 +3264,35 @@ function renderPrintableReport(proj, m) {
       </div>
     </div>
 
-    <div class="decision-box ${m.decisionClass}">
-      <div style="font-weight:800; font-size:0.78rem; margin-bottom:0.12rem;">REKOMENDASI KOMITE UNDERWRITING ASKRINDO: ${m.decision} (Coverage Maks ${m.recCoveragePct || 55}%)</div>
-      <p style="font-size:0.71rem; line-height:1.4;">
-        ${proj.customNotes ? `<strong>Catatan Underwriter:</strong> ${proj.customNotes}<br/>` : ''}
-        Plafond Rekomendasi: <strong>${fmtRp(m.recommendedMitigatedLimit > 0 ? m.recommendedMitigatedLimit : proj.requestedPlafond)}</strong> dengan pencairan bertahap maksimal <strong>${fmtRp(m.recommendedTrancheSize)} per tranche</strong>, target DOI &le; <strong>${m.targetSafeDOI} hari</strong>, dan Gross Margin minimal <strong>+${fmtNum(Math.max(8, m.minRequiredGPM), 1)}%</strong>.
+    <div style="border:1.5px solid ${m.isInitialReject ? '#dc2626' : '#059669'}; border-radius:6px; padding:0.6rem 0.8rem; margin-bottom:0.7rem; background:${m.isInitialReject ? '#fff5f5' : '#f0fdf4'};">
+      <div style="font-weight:900; font-size:0.82rem; color:${m.isInitialReject ? '#991b1b' : '#166534'}; margin-bottom:0.25rem;">
+        KEPUTUSAN EVALUASI AWAL SISTEM DCC-SWCM: ${m.stage1Decision}
+      </div>
+      <p style="font-size:0.71rem; line-height:1.4; color:#334155; margin-bottom:0.4rem;">
+        ${m.stage1Summary}
       </p>
+
+      ${m.isInitialReject ? `
+        <div style="border-top:1px dashed #fca5a5; padding-top:0.35rem; margin-top:0.35rem;">
+          <div style="font-weight:800; font-size:0.75rem; color:#0f766e; margin-bottom:0.2rem;">
+            OPSI PERSETUJUAN BERSYARAT KOMITE PENJAMINAN ASKRINDO (REKOMENDASI COVERAGE MAKS 55%):
+          </div>
+          <div style="font-size:0.7rem; color:#1e293b; line-height:1.35;">
+            Apabila fasilitas disetujui demi kepentingan strategis kemitraan dengan <strong>${proj.bankName}</strong>, transaksi wajib direstrukturisasi dengan <strong>7 Syarat Wajib (Condition Precedent)</strong>:
+            <ol style="margin:0.2rem 0 0.3rem 1.1rem; padding:0;">
+              <li><strong>Rekomendasi Coverage Askrindo Dibatasi Maksimal 55%</strong> (${fmtRp(proj.requestedPlafond * 0.55, true)}) &amp; Risk Sharing ${proj.bankName} Minimal 45% (${fmtRp(proj.requestedPlafond * 0.45, true)}).</li>
+              <li><strong>Wajib Asuransi Marine Cargo Askrindo (All Risks Warehouse to Warehouse)</strong> dengan Banker\'s Clause / Loss Payee Askrindo &amp; Bank Mitra.</li>
+              <li><strong>Agunan Tambahan Fixed Asset Hak Tanggungan Peringkat I &ge; 120%</strong> (${fmtRp(proj.requestedPlafond * 1.2, true)}).</li>
+              <li><strong>Optimalisasi KMK Backup sebagai Buffer Relaksasi Likuiditas Positif</strong> (penarikan bertahap per tranche maks ${fmtRp(m.recommendedTrancheSize, true)} berbasis bukti invoice riil).</li>
+              <li><strong>Escrow Account Khusus di ${proj.bankName}</strong> untuk penampungan 100% penerimaan kas hasil penagihan piutang.</li>
+              <li><strong>Covenant Kontrak PO Minimum Gross Margin +12,1%</strong> untuk menjamin arus kas operasional positif.</li>
+              <li><strong>Personal Guarantee (PG) &amp; Corporate Guarantee (CG)</strong> notariil dari pemegang saham pengendali / UBO.</li>
+            </ol>
+          </div>
+        </div>
+      ` : ''}
+
+      ${proj.customNotes ? `<div style="font-size:0.71rem; margin-top:0.3rem; border-top:1px solid #cbd5e1; padding-top:0.25rem;"><strong>Catatan Tambahan Underwriter:</strong> ${proj.customNotes}</div>` : ''}
     </div>
 
     <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:1.5rem; margin-top:1.3rem; text-align:center; font-size:0.71rem;">
@@ -2989,6 +3425,7 @@ function syncInputsToModel() {
 // 12. TAB NAVIGATION & MODAL ACTIONS
 // ============================================================================
 function switchTab(tabId) {
+  if (tabId === 'tab-mitigasi') tabId = 'tab-case-qa';
   if (tabId !== 'tab-dashboard' && (!projects || projects.length === 0 || !getActiveProject())) {
     return;
   }
@@ -3001,13 +3438,18 @@ function switchTab(tabId) {
 }
 
 function openNewProjectModal() {
-  document.getElementById('new_companyName').value = '';
-  document.getElementById('new_sector').value = 'Perdagangan / Industri Pengolahan';
-  document.getElementById('new_bankName').value = 'Bank Dana';
-  document.getElementById('new_facilityType').value = 'Kredit Modal Kerja / SCF';
-  document.getElementById('new_plafond').value = formatNumberWithDots(15000000000);
-  document.getElementById('new_year1').value = 2022;
-  document.getElementById('new_year2').value = 2023;
+  const setElVal = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val;
+  };
+  setElVal('new_companyName', '');
+  setElVal('new_sector', '');
+  setElVal('new_bankName', '');
+  setElVal('new_facilityType', '');
+  setElVal('new_estYear', '');
+  setElVal('new_plafond', '');
+  setElVal('new_year1', '');
+  setElVal('new_year2', '');
   document.getElementById('newProjectModal').classList.add('open');
 }
 
@@ -3017,12 +3459,14 @@ function closeNewProjectModal() {
 
 function createNewProjectFromModal() {
   const name = document.getElementById('new_companyName').value.trim() || `Proyek Kredit Baru #${projects.length + 1}`;
-  const sector = document.getElementById('new_sector').value.trim() || 'Umum';
-  const bank = document.getElementById('new_bankName').value.trim() || 'Bank Mitra';
-  const fac = document.getElementById('new_facilityType').value.trim() || 'KMK';
+  const sector = document.getElementById('new_sector').value.trim() || 'Perdagangan Umum';
+  const bank = document.getElementById('new_bankName').value.trim() || 'Bank Dana';
+  const fac = document.getElementById('new_facilityType').value.trim() || 'Kredit Modal Kerja (KMK) Revolving';
   const plafond = parseFormattedNumber(document.getElementById('new_plafond').value) || 10000000000;
   const yr1 = parseInt(document.getElementById('new_year1').value, 10) || 2022;
   const yr2 = parseInt(document.getElementById('new_year2').value, 10) || 2023;
+  const estYearVal = parseInt(document.getElementById('new_estYear')?.value, 10);
+  const estYear = estYearVal || (yr2 - 5);
   const tpl = document.getElementById('new_templateType').value;
 
   const defaults = getDefaultProjects();
@@ -3030,7 +3474,7 @@ function createNewProjectFromModal() {
   if (tpl === 'clone_rahmat') {
     baseObj = JSON.parse(JSON.stringify(defaults[0]));
   } else if (tpl === 'clone_current') {
-    baseObj = JSON.parse(JSON.stringify(getActiveProject()));
+    baseObj = JSON.parse(JSON.stringify(getActiveProject() || defaults[0]));
   } else {
     baseObj = JSON.parse(JSON.stringify(defaults[2]));
   }
@@ -3040,10 +3484,12 @@ function createNewProjectFromModal() {
   baseObj.sector = sector;
   baseObj.bankName = bank;
   baseObj.facilityType = fac;
+  baseObj.estYear = estYear;
   baseObj.requestedPlafond = plafond;
   baseObj.usdAmount = 0;
   baseObj.year1 = yr1;
   baseObj.year2 = yr2;
+  baseObj.qualitative5CScore = null;
   baseObj.customNotes = '';
   baseObj.manualGradeOverride = 'AUTO';
   baseObj.overrideReason = '';

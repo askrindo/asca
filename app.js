@@ -300,7 +300,7 @@ const ASKRINDO_GRADE_CATALOG = [
     ijpRate: '0,65%  -  0,90% p.a.',
     decision: 'DIREKOMENDASIKAN LAYAK PENUH (FAST-TRACK APPROVE)',
     decisionClass: 'layak',
-    criteriaSummary: 'GPM  &ge;  12%, Siklus Gross < Tenor Kredit (Buffer > 30 hr), Cash Runway  &ge;  4 bln, NWC Surplus, Quick Ratio  &ge;  1,2x, DER < 1,5x, DSCR  &ge;  1,50x.'
+    criteriaSummary: 'GPM &ge; 12%, Siklus Gross < Tenor Kredit (Buffer > 30 hr), Cash Runway &ge; 4 bln, NWC Surplus, Quick Ratio &ge; 1,2x, DER < 1,5x, DSCR &ge; 1,50x.'
   },
   {
     grade: 'AA',
@@ -314,7 +314,7 @@ const ASKRINDO_GRADE_CATALOG = [
     ijpRate: '0,90%  -  1,25% p.a.',
     decision: 'DIREKOMENDASIKAN LAYAK (APPROVE)',
     decisionClass: 'layak',
-    criteriaSummary: 'GPM  &ge;  9%, Siklus Gross  &le;  Tenor Kredit, Cash Runway  &ge;  3 bln, Quick Ratio  &ge;  0,9x, DER  &le;  2,2x, DSCR  &ge;  1,30x, Rasio data bank akurat.'
+    criteriaSummary: 'GPM &ge; 9%, Siklus Gross &le; Tenor Kredit, Cash Runway &ge; 3 bln, Quick Ratio &ge; 0,9x, DER &le; 2,2x, DSCR &ge; 1,30x, Rasio data bank akurat.'
   },
   {
     grade: 'A',
@@ -328,7 +328,7 @@ const ASKRINDO_GRADE_CATALOG = [
     ijpRate: '1,25%  -  1,60% p.a.',
     decision: 'LAYAK DENGAN COVENANT STANDAR',
     decisionClass: 'layak',
-    criteriaSummary: 'GPM  &ge;  6%, Siklus Gross  &le;  Tenor Kredit, Cash Runway 2 - 3 bln, Quick Ratio  &ge;  0,75x, DER  &le;  2,8x, DSCR  &ge;  1,15x.'
+    criteriaSummary: 'GPM &ge; 6%, Siklus Gross &le; Tenor Kredit, Cash Runway 2 - 3 bln, Quick Ratio &ge; 0,75x, DER &le; 2,8x, DSCR &ge; 1,15x.'
   },
   {
     grade: 'BBB',
@@ -397,7 +397,7 @@ function getGradeMetadataByScore(score, hasKnockOutCap = false, manualOverride =
   if (hasKnockOutCap && effectiveScore > 44) {
     effectiveScore = 44;
   }
-  const matched = ASKRINDO_GRADE_CATALOG.find((g) => effectiveScore >= g.minScore && effectiveScore <= g.maxScore) || ASKRINDO_GRADE_CATALOG[ASKRINDO_GRADE_CATALOG.length &larr;1];
+  const matched = ASKRINDO_GRADE_CATALOG.find((g) => effectiveScore >= g.minScore && effectiveScore <= g.maxScore) || ASKRINDO_GRADE_CATALOG[ASKRINDO_GRADE_CATALOG.length - 1];
   return { ...matched, isOverridden: false };
 }
 
@@ -424,71 +424,76 @@ function getCurrentProjectStorageKey() {
 
 function loadProjectsFromStorage() {
   const session = getActiveSession();
-  const uname = session ? session.username.toLowerCase() : '1922';
-  const is1922 = uname === '1922';
-  const userKey = USER_PROJECTS_KEY_PREFIX + uname;
+  const userKey = getCurrentProjectStorageKey();
 
-  // Reset state memori terlebih dahulu
-  projects = [];
-  activeProjectId = null;
-
-  if (is1922) {
-    // Akun 1922: Muat data tersimpan atau fallback contoh bawaan PT Rahmat Santosa
+  try {
+    // Cek data milik user yang login saat ini
     const rawUser = localStorage.getItem(userKey);
     if (rawUser) {
-      try {
-        const parsed = JSON.parse(rawUser);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          projects = parsed;
-          activeProjectId = projects[0].id;
-          return;
-        }
-      } catch (e) {}
+      const parsed = JSON.parse(rawUser);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        projects = parsed.map((p) => ({
+          year1: p.year1 || 2022,
+          year2: p.year2 || 2023,
+          qualitative5CScore: typeof p.qualitative5CScore === 'number' ? p.qualitative5CScore : 6,
+          manualGradeOverride: p.manualGradeOverride || 'AUTO',
+          overrideReason: p.overrideReason || '',
+          burnStressOpexGrowth: p.burnStressOpexGrowth || 0,
+          burnStressCollectionFreeze: !!p.burnStressCollectionFreeze,
+          ...p
+        }));
+        activeProjectId = projects[0].id;
+        return;
+      }
     }
 
-    const legacyKeys = [STORAGE_KEY, 'ASKRINDO_ASCA_PROJECTS_V1', 'ASKRINDO_AFCA_PROJECTS_V28'];
-    for (const k of legacyKeys) {
-      const raw = localStorage.getItem(k);
-      if (raw) {
-        try {
+    // User 1922 (akun lama/bawaan): coba muat dari legacy keys untuk migrasi
+    const is1922 = !session || session.username === '1922';
+    if (is1922) {
+      const legacyKeys = [
+        STORAGE_KEY,
+        'ASKRINDO_ASCA_PROJECTS_V1',
+        'ASKRINDO_AFCA_PROJECTS_V28',
+        'ASKRINDO_AFCA_PROJECTS_V27',
+        'ASKRINDO_AFCA_PROJECTS_V26',
+        'ASKRINDO_AFCA_PROJECTS_V25',
+        'ASKRINDO_AFCA_PROJECTS_V24',
+        'ASKRINDO_AFCA_PROJECTS'
+      ];
+      for (const k of legacyKeys) {
+        const raw = localStorage.getItem(k);
+        if (raw) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            projects = parsed;
+            projects = parsed.map((p) => ({
+              year1: p.year1 || 2022,
+              year2: p.year2 || 2023,
+              qualitative5CScore: typeof p.qualitative5CScore === 'number' ? p.qualitative5CScore : 6,
+              manualGradeOverride: p.manualGradeOverride || 'AUTO',
+              overrideReason: p.overrideReason || '',
+              burnStressOpexGrowth: p.burnStressOpexGrowth || 0,
+              burnStressCollectionFreeze: !!p.burnStressCollectionFreeze,
+              ...p
+            }));
             activeProjectId = projects[0].id;
             saveProjectsToStorage();
             return;
           }
-        } catch (e) {}
-      }
-    }
-    projects = getDefaultProjects();
-    activeProjectId = projects[0].id;
-    saveProjectsToStorage();
-    return;
-  }
-
-  // Akun analis baru (misal: analis_surakarta):
-  // Workspace WAJIB KOSONG secara default kecuali jika user telah membuat kasus baru sendiri
-  const raw = localStorage.getItem(userKey);
-  if (raw) {
-    try {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        // Buang data contoh bawaan jika pernah bocor dari sesi 1922
-        const userCreated = parsed.filter(p => !p.id.startsWith('case-rahmat') && !p.id.startsWith('case-mitra') && !p.id.startsWith('case-tri'));
-        if (userCreated.length > 0) {
-          projects = userCreated;
-          activeProjectId = projects[0].id;
-          return;
         }
       }
-    } catch (e) {}
+      // User 1922 tanpa data: muat demo bawaan
+      projects = getDefaultProjects();
+      activeProjectId = projects[0].id;
+      saveProjectsToStorage();
+      return;
+    }
+  } catch (e) {
+    console.warn('Gagal memuat localStorage:', e);
   }
 
-  // Akun baru dijamin 100% kosong (menampilkan empty-state workspace)
+  // User baru selain 1922: mulai dengan proyek KOSONG
   projects = [];
   activeProjectId = null;
-  localStorage.setItem(userKey, JSON.stringify([]));
 }
 
 function saveProjectsToStorage() {
@@ -611,7 +616,7 @@ function renderBanner(proj, m) {
 
   const optEl = document.getElementById('bannerOptimalLimit');
   if (optEl) {
-    optEl.textContent = `Plafond Optimal DCC: ${fmtRp(m.optimalLimit, true)} (Cov: ${m.gradeMeta.maxCoverage}&ge;)`;
+    optEl.textContent = `Plafond Optimal DCC: ${fmtRp(m.optimalLimit, true)} (Cov: ${m.gradeMeta.maxCoverage}%)`;
   }
 }
 
@@ -706,8 +711,8 @@ function fmtNum(val, dec = 1) {
 
 function fmtPct(val, dec = 2) {
   if (val === null || val === undefined || isNaN(val)) return '0%';
-  const sign = val > 0 ? '&rarr; : '';
-  return `${sign}${Number(val).toFixed(dec)}&ge;`;
+  const sign = val > 0 ? '+' : '';
+  return `${sign}${Number(val).toFixed(dec)}%`;
 }
 
 function showToast(msg) {
@@ -732,16 +737,16 @@ function computeDCCSWCM(proj) {
   const yr2 = proj.year2 || 2023;
 
   // Laba Rugi
-  const gp22 = f22.rev &larr;f22.cogs;
+  const gp22 = f22.rev - f22.cogs;
   const gpm22 = f22.rev > 0 ? (gp22 / f22.rev) * 100 : 0;
-  const ebt22 = gp22 &larr;f22.opex;
-  const eat22 = ebt22 &larr;f22.tax;
+  const ebt22 = gp22 - f22.opex;
+  const eat22 = ebt22 - f22.tax;
   const npm22 = f22.rev > 0 ? (eat22 / f22.rev) * 100 : 0;
 
-  const gp23 = f23.rev &larr;f23.cogs;
+  const gp23 = f23.rev - f23.cogs;
   const gpm23 = f23.rev > 0 ? (gp23 / f23.rev) * 100 : 0;
-  const ebt23 = gp23 &larr;f23.opex;
-  const eat23 = ebt23 &larr;f23.tax;
+  const ebt23 = gp23 - f23.opex;
+  const eat23 = ebt23 - f23.tax;
   const npm23 = f23.rev > 0 ? (eat23 / f23.rev) * 100 : 0;
 
   // Neraca
@@ -765,7 +770,7 @@ function computeDCCSWCM(proj) {
   const dop22_365 = f22.cogs > 0 ? (f22.ap / f22.cogs) * 365 : 0;
   const dopBroad22_365 = f22.cogs > 0 ? ((f22.ap + f22.otherAp + f22.accrued) / f22.cogs) * 365 : 0;
   const grossCycle22 = doi22_365 + dor22_365;
-  const ccc22 = grossCycle22 &larr;dop22_365;
+  const ccc22 = grossCycle22 - dop22_365;
 
   const dor23_365 = f23.rev > 0 ? (f23.ar / f23.rev) * 365 : 0;
   const doi23_365 = f23.cogs > 0 ? (f23.inv / f23.cogs) * 365 : 0;
@@ -776,44 +781,44 @@ function computeDCCSWCM(proj) {
   const dopBroad23_365 = f23.cogs > 0 ? ((f23.ap + f23.otherAp + f23.accrued) / f23.cogs) * 365 : 0;
 
   const grossCycle23 = doi23_365 + dor23_365;
-  const ccc23 = grossCycle23 &larr;dop23_365;
+  const ccc23 = grossCycle23 - dop23_365;
 
   const claimedGrossCycle = proj.claimedDOI + proj.claimedDOR;
-  const claimedCCC = proj.claimedDOI + proj.claimedDOR &larr;proj.claimedDOP;
+  const claimedCCC = proj.claimedDOI + proj.claimedDOR - proj.claimedDOP;
 
-  const diffDOR = dor23_365 &larr;proj.claimedDOR;
-  const diffDOI = doi23_365 &larr;proj.claimedDOI;
-  const diffDOP = dop23_365 &larr;proj.claimedDOP;
-  const diffCCC = ccc23 &larr;claimedCCC;
+  const diffDOR = dor23_365 - proj.claimedDOR;
+  const diffDOI = doi23_365 - proj.claimedDOI;
+  const diffDOP = dop23_365 - proj.claimedDOP;
+  const diffCCC = ccc23 - claimedCCC;
 
   const scfTenor = proj.scfTenorDays || 180;
   const kmkTenor = proj.kmkTenorDays || 0;
   const totalMaxTenor = scfTenor + kmkTenor;
 
-  const cashGapAtSCFMaturity_Claimed = claimedGrossCycle &larr;scfTenor;
-  const cashGapAtSCFMaturity_Actual = grossCycle23 &larr;scfTenor;
-  const cashGapAfterKMK_Actual = grossCycle23 &larr;totalMaxTenor;
+  const cashGapAtSCFMaturity_Claimed = claimedGrossCycle - scfTenor;
+  const cashGapAtSCFMaturity_Actual = grossCycle23 - scfTenor;
+  const cashGapAfterKMK_Actual = grossCycle23 - totalMaxTenor;
 
   const currentRatio22 = cl22 > 0 ? ca22 / cl22 : 0;
   const currentRatio23 = cl23 > 0 ? ca23 / cl23 : 0;
-  const quickRatio22 = cl22 > 0 ? (ca22 &larr;f22.inv) / cl22 : 0;
-  const quickRatio23 = cl23 > 0 ? (ca23 &larr;f23.inv) / cl23 : 0;
+  const quickRatio22 = cl22 > 0 ? (ca22 - f22.inv) / cl22 : 0;
+  const quickRatio23 = cl23 > 0 ? (ca23 - f23.inv) / cl23 : 0;
   const cashRatio23 = cl23 > 0 ? f23.cash / cl23 : 0;
   const der22 = eq22 > 0 ? tl22 / eq22 : 99;
   const der23 = eq23 > 0 ? tl23 / eq23 : 99;
   const invToCA23 = ca23 > 0 ? (f23.inv / ca23) * 100 : 0;
   const reErosionPct23 = f23.capital > 0 && f23.re < 0 ? (Math.abs(f23.re) / f23.capital) * 100 : 0;
 
-  const nwc22 = ca22 &larr;cl22;
-  const nwc23 = ca23 &larr;cl23;
-  const owc22 = f22.ar + f22.inv &larr;f22.ap;
-  const owc23 = f23.ar + f23.inv &larr;f23.ap;
+  const nwc22 = ca22 - cl22;
+  const nwc23 = ca23 - cl23;
+  const owc22 = f22.ar + f22.inv - f22.ap;
+  const owc23 = f23.ar + f23.inv - f23.ap;
   const dailyCOGS23 = f23.cogs / 365;
   const dailyRev23 = f23.rev / 365;
 
-  const cashLockedInExcessDOI = Math.max(0, doi23_365 &larr;proj.claimedDOI) * dailyCOGS23;
-  const targetSafeDOI = Math.max(30, Math.min(120, Math.round(scfTenor &larr;dor23_365 &larr;10)));
-  const cashReleasedAtSafeDOI = Math.max(0, (doi23_365 &larr;targetSafeDOI) * dailyCOGS23);
+  const cashLockedInExcessDOI = Math.max(0, doi23_365 - proj.claimedDOI) * dailyCOGS23;
+  const targetSafeDOI = Math.max(30, Math.min(120, Math.round(scfTenor - dor23_365 - 10)));
+  const cashReleasedAtSafeDOI = Math.max(0, (doi23_365 - targetSafeDOI) * dailyCOGS23);
 
   const estAnnualInterest = (f23.stDebt + proj.requestedPlafond) * (proj.interestRate / 100);
   const minRequiredGPM = f23.rev > 0 ? Math.max(8.0, Math.min(18.0, ((f23.opex * 0.65 + estAnnualInterest) / f23.rev) * 100)) : 10.0;
@@ -822,8 +827,8 @@ function computeDCCSWCM(proj) {
   const ebitdaProxy23 = ebt23 + (f23.fa * 0.05);
   const dscr23 = annualDebtService > 0 ? ebitdaProxy23 / (proj.requestedPlafond * (proj.interestRate / 100) + proj.requestedPlafond * 0.25) : 0;
 
-  const stDebtGrowth = f22.stDebt > 0 ? ((f23.stDebt &larr;f22.stDebt) / f22.stDebt) * 100 : 0;
-  const revGrowth = f22.rev > 0 ? ((f23.rev &larr;f22.rev) / f22.rev) * 100 : 0;
+  const stDebtGrowth = f22.stDebt > 0 ? ((f23.stDebt - f22.stDebt) / f22.stDebt) * 100 : 0;
+  const revGrowth = f22.rev > 0 ? ((f23.rev - f22.rev) / f22.rev) * 100 : 0;
 
   // ==========================================================================
   // MODUL BARU: ANALISIS KETAHANAN MODAL KERJA BERSIH & CASH BURN-RATE
@@ -849,7 +854,7 @@ function computeDCCSWCM(proj) {
   // Modal Kerja Tersedia yang Bebas dari Utang Jangka Pendek Non-Trade
   const effectiveFreeNWC = Math.max(0, nwc23);
   // Financing Gap Modal Kerja (KMK Deficit / Surplus)
-  const nwcFinancingGap = effectiveFreeNWC &larr;wcRequiredPerCycle;
+  const nwcFinancingGap = effectiveFreeNWC - wcRequiredPerCycle;
   const isNWCDeficit = nwcFinancingGap < 0;
 
   // Stress-Tested Cash Burn Simulation
@@ -895,19 +900,19 @@ function computeDCCSWCM(proj) {
     r1A = `Siklus Gross melampaui Tenor +${fmtNum(cashGapAtSCFMaturity_Actual, 1)} hr.`;
   } else {
     s1A = 0;
-    r1A = `Mismatch Tenor ekstrem (+${fmtNum(cashGapAtSCFMaturity_Actual, 1)} hr); kas belum kembali saat jatuh temp&#10003;`;
+    r1A = `Mismatch Tenor ekstrem (+${fmtNum(cashGapAtSCFMaturity_Actual, 1)} hr); kas belum kembali saat jatuh tempo.`;
   }
   scoreComponents.push({
     pillarId: 'P1',
     pillarName: 'Pilar 1: Dynamic CCC & Kesesuaian Tenor (Maks 25)',
     code: '1A',
     name: 'Kesesuaian Siklus Gross vs Tenor Fasilitas',
-    formula: '(DOI + DOR)  &le;  Tenor Kredit',
-    benchmark: ` &le;  ${scfTenor} Hari`,
-    actualStr: `${fmtNum(grossCycle23, 1)} Hari (Gap: ${cashGapAtSCFMaturity_Actual >= 0 ? '&rarr; : ''}${fmtNum(cashGapAtSCFMaturity_Actual, 1)} hr)`,
+    formula: '(DOI + DOR) &le; Tenor Kredit',
+    benchmark: `&le; ${scfTenor} Hari`,
+    actualStr: `${fmtNum(grossCycle23, 1)} Hari (Gap: ${cashGapAtSCFMaturity_Actual >= 0 ? '+' : ''}${fmtNum(cashGapAtSCFMaturity_Actual, 1)} hr)`,
     maxPts: 15,
     earnedPts: s1A,
-    lostPts: 15 &larr;s1A,
+    lostPts: 15 - s1A,
     reason: r1A
   });
 
@@ -915,10 +920,10 @@ function computeDCCSWCM(proj) {
   let r1B = '';
   if (doi23_365 <= 60) {
     s1B = 10;
-    r1B = `Perputaran persediaan sangat cepat (${fmtNum(doi23_365, 1)} hr  &le;  60 hr).`;
+    r1B = `Perputaran persediaan sangat cepat (${fmtNum(doi23_365, 1)} hr &le; 60 hr).`;
   } else if (doi23_365 <= 120) {
     s1B = 8;
-    r1B = `Perputaran persediaan sehat (${fmtNum(doi23_365, 1)} hr  &le;  120 hr).`;
+    r1B = `Perputaran persediaan sehat (${fmtNum(doi23_365, 1)} hr &le; 120 hr).`;
   } else if (doi23_365 <= 180) {
     s1B = 4;
     r1B = `Persediaan mulai lambat (${fmtNum(doi23_365, 1)} hr).`;
@@ -931,12 +936,12 @@ function computeDCCSWCM(proj) {
     pillarName: 'Pilar 1: Dynamic CCC & Kesesuaian Tenor (Maks 25)',
     code: '1B',
     name: 'Kecepatan Perputaran Persediaan (DOI)',
-    formula: '(Persediaan / HPP)  &times;  365',
-    benchmark: ' &le;  120 Hari',
+    formula: '(Persediaan / HPP) &times; 365',
+    benchmark: '&le; 120 Hari',
     actualStr: `${fmtNum(doi23_365, 1)} Hari`,
     maxPts: 10,
     earnedPts: s1B,
-    lostPts: 10 &larr;s1B,
+    lostPts: 10 - s1B,
     reason: r1B
   });
 
@@ -960,11 +965,11 @@ function computeDCCSWCM(proj) {
     code: '2A',
     name: 'Akurasi Data Bank Hari Persediaan (&Delta;DOI)',
     formula: '|DOI Aktual  -  DOI Data Bank|',
-    benchmark: 'Deviasi  &le;  10 Hari',
-    actualStr: `Selisih ${diffDOI >= 0 ? '&rarr; : ''}${fmtNum(diffDOI, 1)} Hari`,
+    benchmark: 'Deviasi &le; 10 Hari',
+    actualStr: `Selisih ${diffDOI >= 0 ? '+' : ''}${fmtNum(diffDOI, 1)} Hari`,
     maxPts: 8,
     earnedPts: s2A,
-    lostPts: 8 &larr;s2A,
+    lostPts: 8 - s2A,
     reason: r2A
   });
 
@@ -984,11 +989,11 @@ function computeDCCSWCM(proj) {
     code: '2B',
     name: 'Akurasi Data Bank Piutang (DOR) & Utang (DOP)',
     formula: '|DOP Aktual  -  Data Bank|',
-    benchmark: 'Deviasi  &le;  12 Hari',
+    benchmark: 'Deviasi &le; 12 Hari',
     actualStr: `&Delta;DOR: ${fmtNum(diffDOR, 1)}h | &Delta;DOP: ${fmtNum(diffDOP, 1)}h`,
     maxPts: 7,
     earnedPts: s2B,
-    lostPts: 7 &larr;s2B,
+    lostPts: 7 - s2B,
     reason: r2B
   });
 
@@ -1017,11 +1022,11 @@ function computeDCCSWCM(proj) {
     code: '3A',
     name: 'Marjin Laba Kotor (Gross Margin)',
     formula: '(Penjualan  -  HPP) / Penjualan',
-    benchmark: ' &ge;  +8,0%',
+    benchmark: '&ge; +8,0%',
     actualStr: `${fmtPct(gpm23, 2)} (${fmtRp(gp23, true)})`,
     maxPts: 12,
     earnedPts: s3A,
-    lostPts: 12 &larr;s3A,
+    lostPts: 12 - s3A,
     reason: r3A
   });
 
@@ -1036,7 +1041,7 @@ function computeDCCSWCM(proj) {
     actualStr: `EAT: ${fmtRp(eat23, true)} | Sales: ${fmtPct(revGrowth, 1)}`,
     maxPts: 6,
     earnedPts: s3B,
-    lostPts: 6 &larr;s3B,
+    lostPts: 6 - s3B,
     reason: eat23 > 0 ? 'Laba Bersih positif.' : 'Rugi bersih berlanjut.'
   });
 
@@ -1047,11 +1052,11 @@ function computeDCCSWCM(proj) {
     code: '3C',
     name: 'Debt Service Coverage Ratio (DSCR)',
     formula: 'EBITDA Proxy / Kewajiban Utang',
-    benchmark: ' &ge;  1,20x',
+    benchmark: '&ge; 1,20x',
     actualStr: `${fmtNum(dscr23, 2)}x`,
     maxPts: 7,
     earnedPts: s3C,
-    lostPts: 7 &larr;s3C,
+    lostPts: 7 - s3C,
     reason: dscr23 >= 1.2 ? 'DSCR memadai.' : 'EBITDA operasional tidak cukup menutup cicilan.'
   });
 
@@ -1060,7 +1065,7 @@ function computeDCCSWCM(proj) {
   let r4A = '';
   if (pureCashRunwayMonths >= 3.0) {
     s4A = 8;
-    r4A = `Ketahanan Kas Murni sangat kuat (${fmtNum(pureCashRunwayMonths, 1)} bulan  &ge;  3 bulan).`;
+    r4A = `Ketahanan Kas Murni sangat kuat (${fmtNum(pureCashRunwayMonths, 1)} bulan &ge; 3 bulan).`;
   } else if (pureCashRunwayMonths >= 1.5) {
     s4A = 6;
     r4A = `Ketahanan Kas Murni memadai (${fmtNum(pureCashRunwayMonths, 1)} bulan).`;
@@ -1077,11 +1082,11 @@ function computeDCCSWCM(proj) {
     code: '4A',
     name: 'Pure Cash Runway (Ketahanan Kas Murni Tanpa Omzet)',
     formula: 'Kas & Bank / Daily Gross Cash Burn',
-    benchmark: ' &ge;  1,5 Bulan ( &ge;  45 Hari)',
+    benchmark: '&ge; 1,5 Bulan (&ge; 45 Hari)',
     actualStr: `${fmtNum(pureCashRunwayMonths, 1)} Bulan (${fmtNum(pureCashRunwayDays, 0)} Hari)`,
     maxPts: 8,
     earnedPts: s4A,
-    lostPts: 8 &larr;s4A,
+    lostPts: 8 - s4A,
     reason: r4A
   });
 
@@ -1103,11 +1108,11 @@ function computeDCCSWCM(proj) {
     code: '4B',
     name: 'NWC Adequacy & Working Capital Gap per Siklus',
     formula: 'NWC Riil  -  Kebutuhan Dana 1 Siklus Gross',
-    benchmark: 'Surplus (Gap  &ge;  0)',
+    benchmark: 'Surplus (Gap &ge; 0)',
     actualStr: `${isNWCDeficit ? 'Defisit ' : 'Surplus '}${fmtRp(nwcFinancingGap, true)}`,
     maxPts: 7,
     earnedPts: s4B,
-    lostPts: 7 &larr;s4B,
+    lostPts: 7 - s4B,
     reason: r4B
   });
 
@@ -1119,11 +1124,11 @@ function computeDCCSWCM(proj) {
     code: '5A',
     name: 'Debt to Equity Ratio & Erosi Modal',
     formula: 'Total Liabilitas / Ekuitas',
-    benchmark: 'DER  &le;  2,5x & Erosi < 25%',
-    actualStr: `DER: ${fmtNum(der23, 2)}x | Erosi: ${fmtNum(reErosionPct23, 1)}&ge;`,
+    benchmark: 'DER &le; 2,5x & Erosi < 25%',
+    actualStr: `DER: ${fmtNum(der23, 2)}x | Erosi: ${fmtNum(reErosionPct23, 1)}%`,
     maxPts: 5,
     earnedPts: s5A,
-    lostPts: 5 &larr;s5A,
+    lostPts: 5 - s5A,
     reason: reErosionPct23 > 50 ? 'Akumulasi rugi menggerus sebagian besar modal.' : 'Permodalan stabil.'
   });
 
@@ -1134,11 +1139,11 @@ function computeDCCSWCM(proj) {
     code: '5B',
     name: 'Stabilitas Utang Bank Jangka Pendek',
     formula: 'Pertumbuhan Utang Bank Pendek YoY',
-    benchmark: ' &le;  +25% YoY',
+    benchmark: '&le; +25% YoY',
     actualStr: `${fmtPct(stDebtGrowth, 1)} (${fmtRp(f23.stDebt, true)})`,
     maxPts: 5,
     earnedPts: s5B,
-    lostPts: 5 &larr;s5B,
+    lostPts: 5 - s5B,
     reason: stDebtGrowth > 50 ? 'Lonjakan tajam utang bank jangka pendek; refinancing risk tinggi.' : 'Utang jangka pendek stabil.'
   });
 
@@ -1154,7 +1159,7 @@ function computeDCCSWCM(proj) {
     actualStr: proj.kmkTenorDays > 0 ? `Ada KMK Backup (${proj.kmkTenorDays} hr)` : 'Skema Mandiri',
     maxPts: 4,
     earnedPts: s6A,
-    lostPts: 4 &larr;s6A,
+    lostPts: 4 - s6A,
     reason: proj.kmkTenorDays > 0 ? 'Terdapat klausul backup default otomatis.' : 'Skema bersih self-liquidating.'
   });
 
@@ -1165,12 +1170,12 @@ function computeDCCSWCM(proj) {
     pillarName: 'Pilar 6: Struktur Skema & Kualitatif 5C (Maks 10)',
     code: '6B',
     name: 'Penilaian Kualitatif 5C Underwriter',
-    formula: '(Nilai 5C / 10)  &times;  6 Poin',
-    benchmark: ' &ge;  7,5 / 10',
+    formula: '(Nilai 5C / 10) &times; 6 Poin',
+    benchmark: '&ge; 7,5 / 10',
     actualStr: `${fmtNum(rawQual, 1)} / 10 (${fmtNum(s6B, 1)} Poin)`,
     maxPts: 6,
     earnedPts: s6B,
-    lostPts: Number((6 &larr;s6B).toFixed(1)),
+    lostPts: Number((6 - s6B).toFixed(1)),
     reason: `Penilaian aspek kualitatif 5C (Karakter SLIK, Agunan ${fmtRp(f23.fa, true)}, Kondisi).`
   });
 
@@ -1188,7 +1193,7 @@ function computeDCCSWCM(proj) {
   const scorePillars = Object.values(pillarsMap);
 
   const totalRawScore = scoreComponents.reduce((acc, item) => acc + item.earnedPts, 0);
-  const totalLostPoints = Number((100 &larr;totalRawScore).toFixed(1));
+  const totalLostPoints = Number((100 - totalRawScore).toFixed(1));
   const score = Math.max(1, Math.min(100, Math.round(totalRawScore)));
 
   const hasKnockOutCap = gp23 < 0 && cashGapAtSCFMaturity_Actual > 30;
@@ -1274,8 +1279,8 @@ function buildDynamicCaseInsights(proj, m) {
       detail: `Meminta bedah komponen HPP ${m.yr1} - ${m.yr2} (harga beli bahan baku, kurs impor, biaya pabrik/pengolahan, susut bahan baku).`
     });
     mitigations.push({
-      title: `Syarat Back-to-Back PO dengan Batas Minimum Gross Margin +${fmtNum(m.minRequiredGPM, 1)}&ge;`,
-      detail: `Setiap penarikan kredit wajib didasari Purchase Order (PO) mengikat dari pembeli yang sudah mengunci marjin kotor positif minimal <strong>+${fmtNum(m.minRequiredGPM, 1)}&ge;</strong>.`
+      title: `Syarat Back-to-Back PO dengan Batas Minimum Gross Margin +${fmtNum(m.minRequiredGPM, 1)}%`,
+      detail: `Setiap penarikan kredit wajib didasari Purchase Order (PO) mengikat dari pembeli yang sudah mengunci marjin kotor positif minimal <strong>+${fmtNum(m.minRequiredGPM, 1)}%</strong>.`
     });
   }
 
@@ -1291,7 +1296,7 @@ function buildDynamicCaseInsights(proj, m) {
       detail: `Meminta rincian fisik stok dan uji mutu/kerusakan barang di gudang karena DOI aktual mencapai ${fmtNum(m.doi23_365, 1)} hari.`
     });
     mitigations.push({
-      title: `Covenant Penurunan DOI ke  &le;  ${m.targetSafeDOI} Hari & Pengikatan Agunan CMA`,
+      title: `Covenant Penurunan DOI ke &le; ${m.targetSafeDOI} Hari & Pengikatan Agunan CMA`,
       detail: `Program pelepasan stok lama hingga DOI turun ke maksimal <strong>${m.targetSafeDOI} hari</strong> (membebaskan kas internal <strong>+${fmtRp(m.cashReleasedAtSafeDOI, true)}</strong>) serta pengawasan gudang CMA.`
     });
   }
@@ -1301,11 +1306,11 @@ function buildDynamicCaseInsights(proj, m) {
     criticalPointsCredit.push({
       severity: 'CRITICAL',
       title: `Mismatch Tenor Fasilitas (${m.scfTenor} Hari) vs Siklus Gross (${fmtNum(m.grossCycle23, 1)} Hari)`,
-      detail: `Siklus konversi barang ke kas membutuhkan <strong>${m.claimedGrossCycle} hari (versi Data Bank)</strong> atau <strong>${fmtNum(m.grossCycle23, 1)} hari (versi audit ${m.yr2})</strong>. Dengan tenor fasilitas hanya <strong>${m.scfTenor} hari</strong>, terdapat defisit waktu <strong>${fmtNum(m.cashGapAtSCFMaturity_Actual, 1)} hari</strong> saat jatuh temp&#10003;`
+      detail: `Siklus konversi barang ke kas membutuhkan <strong>${m.claimedGrossCycle} hari (versi Data Bank)</strong> atau <strong>${fmtNum(m.grossCycle23, 1)} hari (versi audit ${m.yr2})</strong>. Dengan tenor fasilitas hanya <strong>${m.scfTenor} hari</strong>, terdapat defisit waktu <strong>${fmtNum(m.cashGapAtSCFMaturity_Actual, 1)} hari</strong> saat jatuh tempo.`
     });
     mitigations.push({
-      title: `Sinkronisasi Siklus Transaksi (Ring-Fenced Batch  &le;  ${m.scfTenor} Hari) & Escrow Account`,
-      detail: `Fasilitas hanya boleh membiayai batch pesanan dengan siklus total maksimal <strong>${m.scfTenor &larr;10} hari</strong>, dan seluruh pembayaran pembeli wajib masuk ke Escrow Account di ${proj.bankName}.`
+      title: `Sinkronisasi Siklus Transaksi (Ring-Fenced Batch &le; ${m.scfTenor} Hari) & Escrow Account`,
+      detail: `Fasilitas hanya boleh membiayai batch pesanan dengan siklus total maksimal <strong>${m.scfTenor - 10} hari</strong>, dan seluruh pembayaran pembeli wajib masuk ke Escrow Account di ${proj.bankName}.`
     });
   }
 
@@ -1325,8 +1330,8 @@ function buildDynamicCaseInsights(proj, m) {
   // Rekomendasi Agunan Tambahan Fixed Asset 120% & Pembatasan Coverage Askrindo
   const minCollateralVal = proj.requestedPlafond * 1.2;
   mitigations.push({
-    title: `Pembatasan Coverage Penjaminan Maksimal ${m.recCoveragePct}&ge; & Agunan Tambahan Fixed Asset  &ge;  120% (${fmtRp(minCollateralVal, true)})`,
-    detail: `Menerapkan <em>risk sharing</em> penjaminan Askrindo maksimal <strong>${m.recCoveragePct}&ge;</strong> (${100 &larr;m.recCoveragePct}&ge; porsi risiko ditanggung ${proj.bankName}), kewajiban pengikatan <strong>Agunan Tambahan Fixed Asset (tanah, bangunan, mesin pabrik) minimal 120% dari nilai plafon kredit (${fmtRp(minCollateralVal, true)})</strong> dari aset tetap debitur (${fmtRp(proj.fin23.fa)}) yang berstatus <em>free & clear</em>, serta klausul <em>Negative Covenant</em> (larangan menambah pinjaman bank baru atau membagikan dividen tanpa persetujuan tertulis Askrindo).`
+    title: `Pembatasan Coverage Penjaminan Maksimal ${m.recCoveragePct}% & Agunan Tambahan Fixed Asset &ge; 120% (${fmtRp(minCollateralVal, true)})`,
+    detail: `Menerapkan <em>risk sharing</em> penjaminan Askrindo maksimal <strong>${m.recCoveragePct}%</strong> (${100 - m.recCoveragePct}% porsi risiko ditanggung ${proj.bankName}), kewajiban pengikatan <strong>Agunan Tambahan Fixed Asset (tanah, bangunan, mesin pabrik) minimal 120% dari nilai plafon kredit (${fmtRp(minCollateralVal, true)})</strong> dari aset tetap debitur (${fmtRp(proj.fin23.fa)}) yang berstatus <em>free & clear</em>, serta klausul <em>Negative Covenant</em> (larangan menambah pinjaman bank baru atau membagikan dividen tanpa persetujuan tertulis Askrindo).`
   });
 
   requiredInfos.push({
@@ -1351,7 +1356,7 @@ function renderBurnRateTab(proj, m) {
         <span class="badge-method" style="background:#e0f2fe; color:#0369a1;">Stress-Tested Liquidity Runway &amp; NWC Financing Gap</span>
       </div>
 
-      <!-&larr;4 TOP METRIC CARDS BURN RATE -->
+      <!-- 4 TOP METRIC CARDS BURN RATE -->
       <div class="grid-4" style="margin-bottom:0.6rem;">
         <div class="kpi-card ${m.pureCashRunwayMonths >= 1.5 ? 'kpi-green' : 'kpi-red'}">
           <div class="kpi-label">Gross Cash Burn Harian &amp; Bulanan</div>
@@ -1392,36 +1397,36 @@ function renderBurnRateTab(proj, m) {
         </div>
       </div>
 
-      <!-&larr;VISUAL RUNWAY METER -->
+      <!-- VISUAL RUNWAY METER -->
       <div class="burn-meter-box">
         <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.73rem; font-weight:700;">
           <span>Visualisasi Ketahanan Kas Bersih (Runway Meter) terhadap Batas Aman Askrindo (Minimal 2 Bulan / 60 Hari)</span>
-          <span style="color:${runwayStatusColor};">${m.pureCashRunwayMonths >= 2.0 ? '&#10003;  &#10003; Buffer Kas Aman' : (m.pureCashRunwayMonths >= 1.0 ? '&#9888; &#9888; Buffer Kas Menipis' : '[RISIKO KRITIS] Runway Kritis (<30 Hari)')}</span>
+          <span style="color:${runwayStatusColor};">${m.pureCashRunwayMonths >= 2.0 ? '&#10003; Buffer Kas Aman' : (m.pureCashRunwayMonths >= 1.0 ? '&#9888; Buffer Kas Menipis' : 'Runway Kritis (<30 Hari)')}</span>
         </div>
         <div class="burn-track">
-          <div style="width:${Math.min(100, Math.max(5, (m.pureCashRunwayMonths / 4.0) * 100))}&ge;; background:${runwayStatusColor}; display:flex; align-items:center; justify-content:center; color:#fff; font-size:0.65rem; font-weight:700;">
+          <div style="width:${Math.min(100, Math.max(5, (m.pureCashRunwayMonths / 4.0) * 100))}%; background:${runwayStatusColor}; display:flex; align-items:center; justify-content:center; color:#fff; font-size:0.65rem; font-weight:700;">
             ${fmtNum(m.pureCashRunwayMonths, 1)} Bln (${fmtNum(m.pureCashRunwayDays, 0)} Hari)
           </div>
         </div>
         <div style="display:flex; justify-content:space-between; font-size:0.64rem; color:var(--text-muted);">
           <span>0 Hari (Kas Habis)</span>
-          <span>30 Hari (1 Bulan &larr;Batas Darurat)</span>
-          <span>60 Hari (2 Bulan &larr;Batas Aman Standar)</span>
-          <span>90+ Hari (3+ Bulan &larr;Sangat Kuat)</span>
+          <span>30 Hari (1 Bulan - Batas Darurat)</span>
+          <span>60 Hari (2 Bulan - Batas Aman Standar)</span>
+          <span>90+ Hari (3+ Bulan - Sangat Kuat)</span>
         </div>
       </div>
 
-      <!-&larr;INTERACTIVE STRESS TEST RUNWAY SIMULATOR -->
+      <!-- INTERACTIVE STRESS TEST RUNWAY SIMULATOR -->
       <div class="grid-2">
         <div style="background:#fff; border:1px solid var(--border-color); border-radius:6px; padding:0.6rem;">
           <div style="font-weight:700; font-size:0.75rem; color:var(--askrindo-navy); margin-bottom:0.4rem;">
-             Simulator Uji Stress Ketahanan Kas &amp; Pembekuan Piutang
+            &#9888; Simulator Uji Stress Ketahanan Kas &amp; Pembekuan Piutang
           </div>
 
           <div class="slider-row">
             <div class="slider-top">
-              <span>Kenaikan Biaya Operasional / Inflasi HPP (&ge;)</span>
-              <span class="slider-val" id="lblBurnOpexGrowth">+${m.stressOpexGrowth}&ge;</span>
+              <span>Kenaikan Biaya Operasional / Inflasi HPP (%)</span>
+              <span class="slider-val" id="lblBurnOpexGrowth">+${m.stressOpexGrowth}%</span>
             </div>
             <input type="range" min="0" max="50" step="5" value="${m.stressOpexGrowth}" oninput="updateBurnStressOpex(this.value)" />
             <div class="slider-scale"><span>Normal (+0%)</span><span>Kenaikan +25%</span><span>Kenaikan Ekstrem +50%</span></div>
@@ -1447,12 +1452,12 @@ function renderBurnRateTab(proj, m) {
             </div>
           </div>
           <div style="font-size:0.68rem; color:${runwayStatusColor}; font-weight:700; border-top:1px dashed ${runwayStatusColor}; padding-top:0.35rem; margin-top:0.35rem;">
-            ${m.stressedRunwayMonths < 1.0 ? '[RISIKO TINGGI] Kesimpulan: Debitur tidak memiliki ketahanan likuiditas yang cukup. Wajib ada fasilitas standby line atau jaminan kas.' : '&#10003;  &#10003; Kesimpulan: Debitur memiliki ketahanan likuiditas yang cukup menyerap keterlambatan arus kas.'}
+            ${m.stressedRunwayMonths < 1.0 ? 'Kesimpulan: Debitur tidak memiliki ketahanan likuiditas yang cukup. Wajib ada fasilitas standby line atau jaminan kas.' : '&#10003; Kesimpulan: Debitur memiliki ketahanan likuiditas yang cukup menyerap keterlambatan arus kas.'}
           </div>
         </div>
       </div>
 
-      <!-&larr;TABEL RINCIAN BEDAH ARUS KAS KELUAR & NWC GAP -->
+      <!-- TABEL RINCIAN BEDAH ARUS KAS KELUAR & NWC GAP -->
       <div class="table-responsive" style="margin-top:0.6rem;">
         <table class="data-table">
           <thead>
@@ -1481,7 +1486,7 @@ function renderBurnRateTab(proj, m) {
             </tr>
             <tr>
               <td><strong>Estimasi Beban Bunga Harian</strong></td>
-              <td>Bunga Utang Bank Eksisting + Kredit Baru @ ${proj.interestRate}&ge;</td>
+              <td>Bunga Utang Bank Eksisting + Kredit Baru @ ${proj.interestRate}%</td>
               <td class="num-col"><strong>${fmtRp(m.dailyInterest23)}</strong></td>
               <td class="num-col">${fmtRp(m.dailyInterest23 * 30.4, true)}</td>
               <td>Kewajiban perbankan yang harus disetor tepat waktu</td>
@@ -1501,7 +1506,7 @@ function renderBurnRateTab(proj, m) {
             </tr>
             <tr>
               <td><strong>Kebutuhan Modal Kerja 1 Siklus Penuh (${fmtNum(m.grossCycle23, 0)} Hari)</strong></td>
-              <td>Daily Burn (${fmtRp(m.dailyGrossCashBurn)})  &times;  (${fmtNum(m.grossCycle23, 0)} hari siklus gross)</td>
+              <td>Daily Burn (${fmtRp(m.dailyGrossCashBurn)}) &times; (${fmtNum(m.grossCycle23, 0)} hari siklus gross)</td>
               <td colspan="2" class="num-col" style="font-weight:700;">${fmtRp(m.wcRequiredPerCycle)}</td>
               <td>Total biaya operasional yang harus ditalangi per siklus batch</td>
             </tr>
@@ -1563,7 +1568,7 @@ function renderGradeRiskTab(proj, m) {
     <div class="card" style="border-left: 4px solid ${m.gradeMeta.color};">
       <div class="card-header">
         <div class="card-title">Menu Penentuan Grade Risk Askrindo &amp; Indikator Penyebabnya (${proj.companyName})</div>
-        <button class="btn btn-primary btn-sm" onclick="switchTab('tab-score')">Lihat Rincian Perhitungan Score (${m.score}/100)  -> </button>
+        <button class="btn btn-primary btn-sm" onclick="switchTab('tab-score')">Lihat Rincian Perhitungan Score (${m.score}/100)  + </button>
       </div>
 
       <div class="grade-scale-bar">
@@ -1578,8 +1583,8 @@ function renderGradeRiskTab(proj, m) {
         </div>
         <div>
           <div style="font-size:0.64rem; color:#475569;">Maksimal Coverage Penjaminan</div>
-          <div style="font-size:0.92rem; font-weight:800; color:#0f172a;">${m.recCoveragePct > 0 ? `${m.recCoveragePct}&ge; Plafond` : '0% (Wajib Restrukturisasi)'}</div>
-          <div style="font-size:0.63rem; color:#64748b;">Risk Sharing Bank: ${m.recCoveragePct > 0 ? `${100 &larr;m.recCoveragePct}&ge;` : '100%'}</div>
+          <div style="font-size:0.92rem; font-weight:800; color:#0f172a;">${m.recCoveragePct > 0 ? `${m.recCoveragePct}% Plafond` : '0% (Wajib Restrukturisasi)'}</div>
+          <div style="font-size:0.63rem; color:#64748b;">Risk Sharing Bank: ${m.recCoveragePct > 0 ? `${100 - m.recCoveragePct}%` : '100%'}</div>
         </div>
         <div>
           <div style="font-size:0.64rem; color:#475569;">Indikasi Rate IJP Askrindo</div>
@@ -1594,7 +1599,7 @@ function renderGradeRiskTab(proj, m) {
 
       ${m.hasKnockOutCap ? `
       <div style="background:#fef2f2; border:1px solid #fca5a5; border-left:4px solid #dc2626; padding:0.45rem 0.65rem; border-radius:6px; margin-bottom:0.6rem; font-size:0.71rem; color:#991b1b;">
-        &#9888; <strong>&#9888; Aturan Veto / Hard-Cap Grade Underwriting Aktif:</strong> Karena debitur mengalami <strong>Gross Loss (${fmtPct(m.gpm23)})</strong> sekaligus <strong>Mismatch Tenor Berat (Siklus Gross ${fmtNum(m.grossCycle23, 1)} hr > Tenor ${m.scfTenor} hr)</strong>, maka Risk Grade otomatis terkunci maksimal pada zona <strong>High Risk / Reject (B / C)</strong> hingga struktur transaksi dimodifikasi menjadi <em>Ring-Fenced Self-Liquidating</em>.
+        &#9888; <strong>Aturan Veto / Hard-Cap Grade Underwriting&bull; Aktif:</strong> Karena debitur mengalami <strong>Gross Loss (${fmtPct(m.gpm23)})</strong> sekaligus <strong>Mismatch Tenor Berat (Siklus Gross ${fmtNum(m.grossCycle23, 1)} hr > Tenor ${m.scfTenor} hr)</strong>, maka Risk Grade otomatis terkunci maksimal pada zona <strong>High Risk / Reject (B / C)</strong> hingga struktur transaksi dimodifikasi menjadi <em>Ring-Fenced Self-Liquidating</em>.
       </div>` : ''}
 
       <div class="grid-2" style="margin-bottom:0.6rem;">
@@ -1604,7 +1609,7 @@ function renderGradeRiskTab(proj, m) {
             <span>Penalti: -${fmtNum(m.totalLostPoints, 1)} Poin</span>
           </div>
           ${negativeDrivers.length === 0
-            ? `<div style="font-size:0.71rem; color:#166534; padding:0.35rem;">&#10003;  &#10003; Tidak ada indikator penekan material. Seluruh rasio berada dalam batas sehat.</div>`
+            ? `<div style="font-size:0.71rem; color:#166534; padding:0.35rem;">&#10003; Tidak ada indikator penekan material. Seluruh rasio berada dalam batas sehat.</div>`
             : `<div style="display:flex; flex-direction:column; gap:0.3rem;">
                 ${negativeDrivers.map((d) => `
                   <div style="background:#fff; padding:0.38rem 0.5rem; border-radius:5px; border-left:3px solid #dc2626; font-size:0.69rem;">
@@ -1627,7 +1632,7 @@ function renderGradeRiskTab(proj, m) {
             <span>Diperoleh: +${fmtNum(m.totalRawScore, 1)} Poin</span>
           </div>
           ${positiveDrivers.length === 0
-            ? `<div style="font-size:0.71rem; color:#991b1b; padding:0.35rem;">&#9888; &#9888; Sangat sedikit indikator positif yang menopang grade saat ini.</div>`
+            ? `<div style="font-size:0.71rem; color:#991b1b; padding:0.35rem;">&#9888; Sangat sedikit indikator positif yang menopang grade saat ini.</div>`
             : `<div style="display:flex; flex-direction:column; gap:0.3rem;">
                 ${positiveDrivers.map((d) => `
                   <div style="background:#fff; padding:0.38rem 0.5rem; border-radius:5px; border-left:3px solid #166534; font-size:0.69rem;">
@@ -1694,7 +1699,7 @@ function renderGradeRiskTab(proj, m) {
                   <td><strong>${g.minScore}  -  ${g.maxScore}</strong></td>
                   <td>${g.name}</td>
                   <td>${g.criteriaSummary}</td>
-                  <td class="num-col"><strong>${g.maxCoverage}&ge;</strong></td>
+                  <td class="num-col"><strong>${g.maxCoverage}%</strong></td>
                   <td>${g.ijpRate}</td>
                   <td style="color:${g.color}; font-weight:700;">${g.decision}</td>
                 </tr>
@@ -1752,10 +1757,10 @@ function renderScoreCalculationTab(proj, m) {
                 <span style="color:${barColor};">${fmtNum(p.earnedPts, 1)} / ${p.maxPts} Poin</span>
               </div>
               <div class="score-progress-wrap">
-                <div class="score-progress-fill" style="width:${pctEarned}&ge;; background:${barColor};"></div>
+                <div class="score-progress-fill" style="width:${pctEarned}%; background:${barColor};"></div>
               </div>
               <div style="display:flex; justify-content:space-between; font-size:0.63rem; color:var(--text-muted); margin-top:2px;">
-                <span>Pencapaian: ${pctEarned}&ge;</span>
+                <span>Pencapaian: ${pctEarned}%</span>
                 <span>Pengurang: -${fmtNum(p.lostPts, 1)} Poin</span>
               </div>
             </div>
@@ -1775,7 +1780,7 @@ function renderScoreCalculationTab(proj, m) {
           <div class="slider-scale">
             <span>0 (Macet / Tanpa Agunan)</span>
             <span>5 (Cukup)</span>
-            <span>10 (SLIK Kol 1 + Agunan Kuat  &ge; 150%)</span>
+            <span>10 (SLIK Kol 1 + Agunan Kuat &ge;150%)</span>
           </div>
         </div>
 
@@ -1871,7 +1876,7 @@ function renderDashboardTab(proj, m) {
   document.getElementById('kpiCCCActual').textContent = `${fmtNum(m.ccc23, 1)} Hari`;
   document.getElementById('kpiCCCClaimed').textContent = `Data Bank: ${m.claimedCCC} Hr`;
   const cccDiffEl = document.getElementById('kpiCCCDiffBadge');
-  cccDiffEl.textContent = `${m.diffCCC >= 0 ? '&rarr; : ''}${fmtNum(m.diffCCC, 1)} hr`;
+  cccDiffEl.textContent = `${m.diffCCC >= 0 ? '+' : ''}${fmtNum(m.diffCCC, 1)} hr`;
   cccDiffEl.style.color = Math.abs(m.diffCCC) > 30 ? 'var(--askrindo-red)' : 'var(--askrindo-green)';
   document.getElementById('kpiCardCCC').className = `kpi-card ${Math.abs(m.diffCCC) > 30 ? 'kpi-red' : 'kpi-green'}`;
 
@@ -1906,7 +1911,7 @@ function renderDashboardTab(proj, m) {
     m.sustainableLimitBaseline > 0 ? fmtRp(m.sustainableLimitBaseline, true) : `Rp 0 (Mitigasi)`;
   document.getElementById('kpiRequestedLimit').textContent = `Diajukan: ${fmtRp(proj.requestedPlafond, true)}`;
   const covEl = document.getElementById('kpiCoverageRatio');
-  covEl.textContent = m.sustainableLimitBaseline > 0 ? `Cov ${m.recCoveragePct}&ge;` : `Ring-Fenced: ${fmtRp(m.recommendedMitigatedLimit, true)}`;
+  covEl.textContent = m.sustainableLimitBaseline > 0 ? `Cov ${m.recCoveragePct}%` : `Ring-Fenced: ${fmtRp(m.recommendedMitigatedLimit, true)}`;
   covEl.style.color = m.sustainableLimitBaseline > 0 ? 'var(--askrindo-green)' : 'var(--askrindo-gold)';
   document.getElementById('kpiCardPlafond').className = `kpi-card ${m.sustainableLimitBaseline > 0 ? 'kpi-green' : 'kpi-gold'}`;
 
@@ -1934,8 +1939,8 @@ function renderDashboardTab(proj, m) {
         <span style="color:#0369a1;">CCC (-DOP ${proj.claimedDOP}): ${m.claimedCCC} Hr</span>
       </div>
       <div class="ccc-bar-track">
-        <div class="ccc-seg-dio" style="width:${pct(proj.claimedDOI)}&ge;">DOI ${proj.claimedDOI}h</div>
-        <div class="ccc-seg-dso" style="width:${pct(proj.claimedDOR)}&ge;">DOR ${proj.claimedDOR}h</div>
+        <div class="ccc-seg-dio" style="width:${pct(proj.claimedDOI)}%">DOI ${proj.claimedDOI}h</div>
+        <div class="ccc-seg-dso" style="width:${pct(proj.claimedDOR)}%">DOR ${proj.claimedDOR}h</div>
       </div>
     </div>
 
@@ -1945,8 +1950,8 @@ function renderDashboardTab(proj, m) {
         <span style="color:${m.ccc23 > m.scfTenor ? 'var(--askrindo-red)' : 'var(--askrindo-green)'};">CCC (-DOP ${fmtNum(m.dop23_365, 0)}): ${fmtNum(m.ccc23, 0)} Hr</span>
       </div>
       <div class="ccc-bar-track">
-        <div class="ccc-seg-dio" style="width:${pct(m.doi23_365)}&ge;; background:${m.doi23_365 > 150 ? '#dc2626' : '#0284c7'};">DOI ${fmtNum(m.doi23_365, 0)}h</div>
-        <div class="ccc-seg-dso" style="width:${pct(m.dor23_365)}&ge;">DOR ${fmtNum(m.dor23_365, 0)}h</div>
+        <div class="ccc-seg-dio" style="width:${pct(m.doi23_365)}%; background:${m.doi23_365 > 150 ? '#dc2626' : '#0284c7'};">DOI ${fmtNum(m.doi23_365, 0)}h</div>
+        <div class="ccc-seg-dso" style="width:${pct(m.dor23_365)}%">DOR ${fmtNum(m.dor23_365, 0)}h</div>
       </div>
     </div>
 
@@ -1956,18 +1961,18 @@ function renderDashboardTab(proj, m) {
         <span>PK: ${proj.pkMonths} Bln</span>
       </div>
       <div class="ccc-bar-track">
-        <div style="width:${pct(m.scfTenor)}&ge;; background:#005691; display:flex; align-items:center; justify-content:center; white-space:nowrap; overflow:hidden;">
+        <div style="width:${pct(m.scfTenor)}%; background:#005691; display:flex; align-items:center; justify-content:center; white-space:nowrap; overflow:hidden;">
           Tenor Utama: ${m.scfTenor} Hr
         </div>
         ${m.kmkTenor > 0 ? `
-        <div style="width:${pct(m.kmkTenor)}&ge;; background:#f59e0b; display:flex; align-items:center; justify-content:center; white-space:nowrap; overflow:hidden;">
+        <div style="width:${pct(m.kmkTenor)}%; background:#f59e0b; display:flex; align-items:center; justify-content:center; white-space:nowrap; overflow:hidden;">
           +KMK ${m.kmkTenor}h (Total ${m.totalMaxTenor}h)
         </div>` : ''}
       </div>
       <div style="font-size:0.78rem; color:${m.cashGapAtSCFMaturity_Actual > 0 ? '#991b1b' : '#166534'}; font-weight:600; margin-top:0.2rem;">
         ${m.cashGapAtSCFMaturity_Actual > 0
-          ? `&#9888; &#9888; Defisit siklus ${fmtNum(m.cashGapAtSCFMaturity_Actual, 0)} hari saat jatuh tempo hari ke-${m.scfTenor} (Memicu klaim / KMK Backup)!`
-          : `&#10003;  &#10003; Siklus operasi masuk di dalam tenor ${m.scfTenor} hari (Surplus waktu ${fmtNum(Math.abs(m.cashGapAtSCFMaturity_Actual), 0)} hari).`}
+          ? `&#9888; Defisit siklus ${fmtNum(m.cashGapAtSCFMaturity_Actual, 0)} hari saat jatuh tempo hari ke-${m.scfTenor} (Memicu klaim / KMK Backup)!`
+          : `&#10003; Siklus operasi masuk di dalam tenor ${m.scfTenor} hari (Surplus waktu ${fmtNum(Math.abs(m.cashGapAtSCFMaturity_Actual), 0)} hari).`}
       </div>
     </div>
   `;
@@ -1993,7 +1998,7 @@ function renderDashboardTab(proj, m) {
         <td><strong>HPP (COGS)</strong></td>
         <td class="num-col">${fmtRp(proj.fin22.cogs, true)}</td>
         <td class="num-col">${fmtRp(proj.fin23.cogs, true)}</td>
-        <td class="num-col">${fmtNum((proj.fin23.cogs / proj.fin23.rev) * 100, 1)}&ge; Sales</td>
+        <td class="num-col">${fmtNum((proj.fin23.cogs / proj.fin23.rev) * 100, 1)}% Sales</td>
       </tr>
       <tr>
         <td><strong>Gross Profit</strong></td>
@@ -2047,22 +2052,22 @@ function renderDCCTab(proj, m) {
     <tbody>
       <tr>
         <td><strong>DOR / DSO</strong> (Piutang)</td>
-        <td>(AR / Sales)  &times;  365</td>
+        <td>(AR / Sales) &times; 365</td>
         <td class="num-col"><strong>${proj.claimedDOR} hr</strong></td>
         <td class="num-col">${fmtNum(m.dor22_365, 1)} hr</td>
         <td class="num-col"><strong>${fmtNum(m.dor23_365, 1)} hr</strong></td>
         <td class="num-col">${fmtNum(m.dor23_360, 1)} hr</td>
-        <td class="num-col">${m.diffDOR >= 0 ? '&rarr; : ''}${fmtNum(m.diffDOR, 1)} hr</td>
+        <td class="num-col">${m.diffDOR >= 0 ? '+' : ''}${fmtNum(m.diffDOR, 1)} hr</td>
         <td>${Math.abs(m.diffDOR) <= 10 ? 'Sesuai Data Bank (~2 bulan)' : 'Deviasi periode penagihan'}</td>
       </tr>
       <tr>
         <td><strong>DOI / DIO</strong> (Persediaan)</td>
-        <td>(Inv / HPP)  &times;  365</td>
+        <td>(Inv / HPP) &times; 365</td>
         <td class="num-col"><strong>${proj.claimedDOI} hr</strong></td>
         <td class="num-col">${fmtNum(m.doi22_365, 1)} hr</td>
         <td class="num-col" style="color:${m.diffDOI > 30 ? '#dc2626' : '#0f172a'}; font-weight:800;">${fmtNum(m.doi23_365, 1)} hr</td>
         <td class="num-col">${fmtNum(m.doi23_360, 1)} hr</td>
-        <td class="num-col" style="color:${m.diffDOI > 30 ? '#dc2626' : '#166534'}; font-weight:800;">${m.diffDOI >= 0 ? '&rarr; : ''}${fmtNum(m.diffDOI, 1)} hr</td>
+        <td class="num-col" style="color:${m.diffDOI > 30 ? '#dc2626' : '#166534'}; font-weight:800;">${m.diffDOI >= 0 ? '+' : ''}${fmtNum(m.diffDOI, 1)} hr</td>
         <td>${m.diffDOI > 30 ? `<strong style="color:#dc2626;">Stok mengendap ${fmtNum(m.doi23_365, 0)} hr (${fmtRp(proj.fin23.inv, true)})!</strong>` : 'Perputaran persediaan normal'}</td>
       </tr>
       <tr>
@@ -2072,12 +2077,12 @@ function renderDCCTab(proj, m) {
         <td class="num-col">${fmtNum(m.grossCycle22, 1)} hr</td>
         <td class="num-col" style="font-weight:800;">${fmtNum(m.grossCycle23, 1)} hr</td>
         <td class="num-col">${fmtNum(m.doi23_360 + m.dor23_360, 1)} hr</td>
-        <td class="num-col">+${fmtNum(m.grossCycle23 &larr;m.claimedGrossCycle, 1)} hr</td>
+        <td class="num-col">+${fmtNum(m.grossCycle23 - m.claimedGrossCycle, 1)} hr</td>
         <td>Tenor Utama: ${m.scfTenor} hr (${m.cashGapAtSCFMaturity_Actual > 0 ? `Defisit ${fmtNum(m.cashGapAtSCFMaturity_Actual, 1)} hr` : 'Memadai'})</td>
       </tr>
       <tr>
         <td><strong>DOP Murni</strong> (Utang Dagang)</td>
-        <td>(AP / HPP)  &times;  365</td>
+        <td>(AP / HPP) &times; 365</td>
         <td class="num-col"><strong>${proj.claimedDOP} hr</strong></td>
         <td class="num-col">${fmtNum(m.dop22_365, 1)} hr</td>
         <td class="num-col" style="font-weight:800;">${fmtNum(m.dop23_365, 1)} hr</td>
@@ -2087,12 +2092,12 @@ function renderDCCTab(proj, m) {
       </tr>
       <tr>
         <td><em>DOP Luas (+Utang Lain &amp; YMH)</em></td>
-        <td>((AP+Lain+YMH)/HPP) &times; 365</td>
+        <td>((AP+Lain+YMH)/HPP)&times;365</td>
         <td class="num-col"><em>(${proj.claimedDOP} hr)</em></td>
         <td class="num-col">${fmtNum(m.dopBroad22_365, 1)} hr</td>
         <td class="num-col">${fmtNum(m.dopBroad23_365, 1)} hr</td>
         <td class="num-col">${fmtNum((m.dopBroad23_365 * 360) / 365, 1)} hr</td>
-        <td class="num-col">+${fmtNum(m.dopBroad23_365 &larr;proj.claimedDOP, 1)} hr</td>
+        <td class="num-col">+${fmtNum(m.dopBroad23_365 - proj.claimedDOP, 1)} hr</td>
         <td>Termasuk Biaya YMH Dibayar ${fmtRp(proj.fin23.accrued, true)}</td>
       </tr>
       <tr style="background:#f0f9ff; font-weight:700;">
@@ -2101,8 +2106,8 @@ function renderDCCTab(proj, m) {
         <td class="num-col">${m.claimedCCC} hr</td>
         <td class="num-col">${fmtNum(m.ccc22, 1)} hr</td>
         <td class="num-col" style="color:${m.ccc23 > 180 ? '#dc2626' : '#166534'};">${fmtNum(m.ccc23, 1)} hr</td>
-        <td class="num-col">${fmtNum(m.doi23_360 + m.dor23_360 &larr;m.dop23_360, 1)} hr</td>
-        <td class="num-col">${m.diffCCC >= 0 ? '&rarr; : ''}${fmtNum(m.diffCCC, 1)} hr</td>
+        <td class="num-col">${fmtNum(m.doi23_360 + m.dor23_360 - m.dop23_360, 1)} hr</td>
+        <td class="num-col">${m.diffCCC >= 0 ? '+' : ''}${fmtNum(m.diffCCC, 1)} hr</td>
         <td>Siklus kas bersih aktual ${fmtNum(m.ccc23, 1)} hari</td>
       </tr>
     </tbody>
@@ -2119,7 +2124,7 @@ function renderDCCTab(proj, m) {
 
       <div style="padding:0.45rem; background:#fffbeb; border:1px solid #fde68a; border-radius:6px;">
         <div style="font-weight:700; color:#92400e; margin-bottom:0.12rem;">
-          2. Evaluasi Fasilitas Tambahan / KMK Backup (+${m.kmkTenor} Hari  ->  Total ${m.totalMaxTenor} Hari)
+          2. Evaluasi Fasilitas Tambahan / KMK Backup (+${m.kmkTenor} Hari  +  Total ${m.totalMaxTenor} Hari)
         </div>
         <p>${m.kmkTenor > 0
           ? `Fasilitas KMK Khusus (${m.kmkTenor} hari setelah fasilitas utama jatuh tempo) menjadikan total tenor ${m.totalMaxTenor} hari. Terhadap siklus aktual ${fmtNum(m.grossCycle23, 1)} hari, ${m.cashGapAfterKMK_Actual > 0 ? `masih terdapat <strong>defisit ${fmtNum(m.cashGapAfterKMK_Actual, 1)} hari</strong>!` : `total waktu 270 hari menutup siklus, namun mengonversi trade finance menjadi modal kerja saat default.`}`
@@ -2173,7 +2178,7 @@ function syncSlidersWithCurrentProject(proj, m) {
   document.querySelectorAll('.lblYear2Ref').forEach((el) => {
     el.textContent = m.yr2;
   });
-  document.getElementById('lblCurrGPM').textContent = `${fmtNum(m.gpm23, 1)}&ge;`;
+  document.getElementById('lblCurrGPM').textContent = `${fmtNum(m.gpm23, 1)}%`;
   document.getElementById('lblCurrDOI').textContent = Math.round(m.doi23_365);
   document.getElementById('lblCurrDOR').textContent = Math.round(m.dor23_365);
   document.getElementById('lblCurrDOP').textContent = Math.round(m.dop23_365);
@@ -2207,19 +2212,19 @@ function applyStressPreset(presetName, btnEl) {
     document.getElementById('rng_simFxShock').value = 0;
     document.getElementById('rng_simInvHaircut').value = 0;
   } else if (presetName === 'fx_commodity_shock') {
-    document.getElementById('rng_simGPM').value = Number((m.gpm23 &larr;3.5).toFixed(1));
+    document.getElementById('rng_simGPM').value = Number((m.gpm23 - 3.5).toFixed(1));
     document.getElementById('rng_simDOI').value = Math.min(350, Math.round(m.doi23_365 + 20));
     document.getElementById('rng_simDOR').value = Math.min(150, Math.round(m.dor23_365 + 20));
-    document.getElementById('rng_simDOP').value = Math.max(10, Math.round(m.dop23_365 &larr;5));
+    document.getElementById('rng_simDOP').value = Math.max(10, Math.round(m.dop23_365 - 5));
     document.getElementById('rng_simRevGrowth').value = -10;
     document.getElementById('rng_simOpexCut').value = 0;
     document.getElementById('rng_simFxShock').value = 10;
     document.getElementById('rng_simInvHaircut').value = 10;
   } else if (presetName === 'severe_stagflation') {
-    document.getElementById('rng_simGPM').value = Number((m.gpm23 &larr;7.0).toFixed(1));
+    document.getElementById('rng_simGPM').value = Number((m.gpm23 - 7.0).toFixed(1));
     document.getElementById('rng_simDOI').value = Math.min(360, Math.round(m.doi23_365 + 45));
     document.getElementById('rng_simDOR').value = Math.min(150, Math.round(m.dor23_365 + 40));
-    document.getElementById('rng_simDOP').value = Math.max(10, Math.round(m.dop23_365 &larr;10));
+    document.getElementById('rng_simDOP').value = Math.max(10, Math.round(m.dop23_365 - 10));
     document.getElementById('rng_simRevGrowth').value = -20;
     document.getElementById('rng_simOpexCut').value = -5;
     document.getElementById('rng_simFxShock').value = 15;
@@ -2241,24 +2246,24 @@ function applyStressPreset(presetName, btnEl) {
 function evaluateScenarioParams(proj, m, params) {
   const simRev = proj.fin23.rev * (1 + params.revGrowth / 100);
   const simGP = simRev * (params.gpm / 100);
-  const simCOGS = simRev &larr;simGP;
-  const simOPEX = proj.fin23.opex * (1 &larr;params.opexCut / 100);
+  const simCOGS = simRev - simGP;
+  const simOPEX = proj.fin23.opex * (1 - params.opexCut / 100);
   const fxExtraLiability = (proj.usdAmount > 0 ? proj.requestedPlafond : 0) * (params.fxShock / 100);
   const invWriteOff = proj.fin23.inv * (params.invHaircut / 100);
 
-  const simEBITDA = simGP &larr;simOPEX + (proj.fin23.fa * 0.04);
+  const simEBITDA = simGP - simOPEX + (proj.fin23.fa * 0.04);
   const simInterest = (proj.fin23.stDebt + proj.requestedPlafond + fxExtraLiability) * (proj.interestRate / 100);
-  const simEBT = simGP &larr;simOPEX &larr;simInterest &larr;invWriteOff;
+  const simEBT = simGP - simOPEX - simInterest - invWriteOff;
 
   const simAR = (simRev * params.dor) / 365;
   const simInv = (simCOGS * params.doi) / 365;
   const simAP = (simCOGS * params.dop) / 365;
-  const simOWC = simAR + simInv &larr;simAP;
-  const deltaOWC = m.owc23 &larr;simOWC;
+  const simOWC = simAR + simInv - simAP;
+  const deltaOWC = m.owc23 - simOWC;
 
   const simGrossCycle = params.doi + params.dor;
-  const simCCC = simGrossCycle &larr;params.dop;
-  const operatingCashFlow = simEBITDA + deltaOWC &larr;invWriteOff;
+  const simCCC = simGrossCycle - params.dop;
+  const operatingCashFlow = simEBITDA + deltaOWC - invWriteOff;
   const debtServiceRequired = proj.requestedPlafond + fxExtraLiability + simInterest;
   const simDSCR = debtServiceRequired > 0 ? (simEBITDA + Math.max(0, deltaOWC * 0.5)) / (proj.requestedPlafond * 0.5 + simInterest) : 0;
 
@@ -2287,22 +2292,22 @@ function runStressSimulation() {
   const fxShock = parseFloat(document.getElementById('rng_simFxShock').value);
   const invHaircut = parseFloat(document.getElementById('rng_simInvHaircut').value);
 
-  document.getElementById('val_simGPM').textContent = `${gpm >= 0 ? '&rarr; : ''}${gpm.toFixed(1)}&ge;`;
+  document.getElementById('val_simGPM').textContent = `${gpm >= 0 ? '+' : ''}${gpm.toFixed(1)}%`;
   document.getElementById('val_simDOI').textContent = `${doi} Hr`;
   document.getElementById('val_simDOR').textContent = `${dor} Hr`;
   document.getElementById('val_simDOP').textContent = `${dop} Hr`;
-  document.getElementById('val_simRevGrowth').textContent = `${revGrowth >= 0 ? '&rarr; : ''}${revGrowth}&ge; | -${opexCut}&ge;`;
-  document.getElementById('val_simFxAndHaircut').textContent = `Kurs +${fxShock}&ge; | Rusak ${invHaircut}&ge;`;
+  document.getElementById('val_simRevGrowth').textContent = `${revGrowth >= 0 ? '+' : ''}${revGrowth}% | -${opexCut}%`;
+  document.getElementById('val_simFxAndHaircut').textContent = `Kurs +${fxShock}% | Rusak ${invHaircut}%`;
 
   const res = evaluateScenarioParams(proj, m, { gpm, doi, dor, dop, revGrowth, opexCut, fxShock, invHaircut });
 
   const statusColor = res.isViable ? '#166534' : (res.simGP > 0 ? '#92400e' : '#991b1b');
   const statusBg = res.isViable ? '#f0fdf4' : (res.simGP > 0 ? '#fffbeb' : '#fef2f2');
   const statusLabel = res.isViable
-    ? `&#10003;  &#10003; LAYAK & SELF-LIQUIDATING (SIKLUS  &le;  ${proj.scfTenorDays} HARI)`
+    ? `&#10003; LAYAK & SELF-LIQUIDATING (SIKLUS &le; ${proj.scfTenorDays} HARI)`
     : (res.simGP > 0
-      ? '&#9888; &#9888; MARGIN POSITIF TETAPI SIKLUS/DSCR PERLU PENYESUAIAN'
-      : '&#10007; &#10007; TIDAK LAYAK (DEFISIT KAS & DEFAULT SAAT JATUH TEMPO)');
+      ? '&#9888; MARGIN POSITIF TETAPI SIKLUS/DSCR PERLU PENYESUAIAN'
+      : '&#10007; TIDAK LAYAK (DEFISIT KAS & DEFAULT SAAT JATUH TEMPO)');
 
   document.getElementById('stressTestResultPanel').innerHTML = `
     <div style="background:${statusBg}; border:1.5px solid ${statusColor}; border-radius:8px; padding:0.65rem;">
@@ -2313,7 +2318,7 @@ function runStressSimulation() {
         <div style="background:#fff; padding:0.35rem 0.5rem; border-radius:5px; border:1px solid var(--border-color);">
           <div style="font-size:0.64rem; color:var(--text-muted);">Siklus Gross (DOI + DOR)</div>
           <div style="font-size:0.9rem; font-weight:800; color:${res.tenorFit ? '#166534' : '#dc2626'};">
-            ${res.simGrossCycle} Hr ${res.tenorFit ? ` &le;  ${proj.scfTenorDays}h` : `> ${proj.scfTenorDays}h!`}
+            ${res.simGrossCycle} Hr ${res.tenorFit ? `&le; ${proj.scfTenorDays}h` : `> ${proj.scfTenorDays}h!`}
           </div>
           <div style="font-size:0.64rem; color:var(--text-muted);">CCC Bersih: <strong>${res.simCCC} Hr</strong></div>
         </div>
@@ -2321,7 +2326,7 @@ function runStressSimulation() {
         <div style="background:#fff; padding:0.35rem 0.5rem; border-radius:5px; border:1px solid var(--border-color);">
           <div style="font-size:0.64rem; color:var(--text-muted);">Pelepasan Kas Modal Kerja (&Delta;OWC)</div>
           <div style="font-size:0.9rem; font-weight:800; color:${res.deltaOWC >= 0 ? '#166534' : '#dc2626'};">
-            ${res.deltaOWC >= 0 ? '&rarr; : ''}${fmtRp(res.deltaOWC, true)}
+            ${res.deltaOWC >= 0 ? '+' : ''}${fmtRp(res.deltaOWC, true)}
           </div>
           <div style="font-size:0.64rem; color:var(--text-muted);">OWC: ${fmtRp(res.simOWC, true)}</div>
         </div>
@@ -2358,7 +2363,7 @@ function runStressSimulation() {
             <td class="num-col">AP: <strong>${fmtRp(res.simAP, true)}</strong></td>
           </tr>
           <tr>
-            <td>Shock Kurs (+${fxShock}&ge;) &amp; Rusak Stok (${invHaircut}&ge;)</td>
+            <td>Shock Kurs (+${fxShock}%) &amp; Rusak Stok (${invHaircut}%)</td>
             <td class="num-col" style="color:#dc2626;">-${fmtRp(res.fxExtraLiability + res.invWriteOff, true)}</td>
           </tr>
         </tbody>
@@ -2381,11 +2386,11 @@ function renderSWCMMatrixTable(proj, m) {
     },
     {
       name: '3. Stress Kurs (+10%) & Koleksi Melambat',
-      params: { gpm: m.gpm23 &larr;3.5, doi: Math.min(350, Math.round(m.doi23_365 + 20)), dor: Math.min(150, Math.round(m.dor23_365 + 20)), dop: Math.max(10, Math.round(m.dop23_365 &larr;5)), revGrowth: -10, opexCut: 0, fxShock: 10, invHaircut: 10 }
+      params: { gpm: m.gpm23 - 3.5, doi: Math.min(350, Math.round(m.doi23_365 + 20)), dor: Math.min(150, Math.round(m.dor23_365 + 20)), dop: Math.max(10, Math.round(m.dop23_365 - 5)), revGrowth: -10, opexCut: 0, fxShock: 10, invHaircut: 10 }
     },
     {
       name: '4. Severe Stress (Stok Rusak 20% + Stagflasi)',
-      params: { gpm: m.gpm23 &larr;7.0, doi: Math.min(360, Math.round(m.doi23_365 + 45)), dor: Math.min(150, Math.round(m.dor23_365 + 40)), dop: Math.max(10, Math.round(m.dop23_365 &larr;10)), revGrowth: -20, opexCut: -5, fxShock: 15, invHaircut: 20 }
+      params: { gpm: m.gpm23 - 7.0, doi: Math.min(360, Math.round(m.doi23_365 + 45)), dor: Math.min(150, Math.round(m.dor23_365 + 40)), dop: Math.max(10, Math.round(m.dop23_365 - 10)), revGrowth: -20, opexCut: -5, fxShock: 15, invHaircut: 20 }
     },
     {
       name: '5.  Skenario Turnaround / Mitigasi DCC-SWCM',
@@ -2413,11 +2418,11 @@ function renderSWCMMatrixTable(proj, m) {
           <tr>
             <td><strong>${s.name}</strong></td>
             <td class="num-col" style="color:${s.params.gpm >= 0 ? '#166534' : '#dc2626'}; font-weight:700;">${fmtPct(s.params.gpm, 1)}</td>
-            <td class="num-col">${r.simGrossCycle}h ${r.tenorFit ? '&#10003; ' : '&#10007;'}</td>
+            <td class="num-col">${r.simGrossCycle}h ${r.tenorFit ? '&#10003;' : '&#10007;'}</td>
             <td class="num-col">${r.simCCC}h</td>
             <td class="num-col">${fmtRp(r.simGP, true)}</td>
             <td class="num-col" style="color:${r.deltaOWC >= 0 ? '#166534' : '#dc2626'}; font-weight:700;">
-              ${r.deltaOWC >= 0 ? '&rarr; : ''}${fmtRp(r.deltaOWC, true)}
+              ${r.deltaOWC >= 0 ? '+' : ''}${fmtRp(r.deltaOWC, true)}
             </td>
             <td class="num-col" style="font-weight:700;">${fmtNum(r.simDSCR, 2)}x</td>
             <td>
@@ -2449,7 +2454,7 @@ function renderCaseStudyQATab(proj, m) {
     <div style="display:flex; flex-direction:column; gap:0.65rem; font-size:0.82rem; line-height:1.45;">
       <div style="background:#f8fafc; border:1px solid var(--border-color); border-radius:6px; padding:0.5rem 0.75rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.35rem;">
         <div>
-          <strong>Kasus Aktif:</strong> <span style="color:var(--askrindo-blue); font-weight:700;">${proj.companyName}</span>
+          <strong>Kasus&bull; Aktif:</strong> <span style="color:var(--askrindo-blue); font-weight:700;">${proj.companyName}</span>
           <span style="color:var(--text-muted); margin-left:0.35rem;">| Bank: <strong>${proj.bankName}</strong> | Plafond: <strong>${fmtRp(proj.requestedPlafond)}</strong></span>
         </div>
         <div>
@@ -2488,7 +2493,7 @@ function renderCaseStudyQATab(proj, m) {
           <div style="background:#f8fafc; padding:0.55rem; border-radius:6px; border:1px solid var(--border-color);">
             <h4 style="color:var(--askrindo-blue); font-size:0.82rem; font-weight:800; margin-bottom:0.25rem;">A. Informasi &amp; Dokumen Wajib Diminta</h4>
             <ol style="padding-left:1.1rem; display:flex; flex-direction:column; gap:0.3rem;">
-              ${ins.requiredInfos.map((info) => `<li><strong>${inf&#10003;title}:</strong> ${inf&#10003;detail}</li>`).join('')}
+              ${ins.requiredInfos.map((info) => `<li><strong>${info.title}:</strong> ${info.detail}</li>`).join('')}
             </ol>
           </div>
 
@@ -2526,31 +2531,31 @@ function renderCaseStudyQATab(proj, m) {
               <tr>
                 <td><strong>Hari Persediaan (DOI)</strong></td>
                 <td class="num-col" style="color:${m.doi23_365 > 150 ? '#dc2626' : '#0f172a'}; font-weight:700;">${fmtNum(m.doi23_365, 1)} Hari (Data Bank: ${proj.claimedDOI} hr)</td>
-                <td class="num-col" style="color:#166534; font-weight:700;"> &le;  ${m.targetSafeDOI} Hari</td>
+                <td class="num-col" style="color:#166534; font-weight:700;">&le; ${m.targetSafeDOI} Hari</td>
                 <td>Membebaskan kas internal <strong>+${fmtRp(m.cashReleasedAtSafeDOI, true)}</strong></td>
               </tr>
               <tr>
                 <td><strong>Siklus Gross (DOI+DOR)</strong></td>
                 <td class="num-col" style="color:${m.grossCycle23 > m.scfTenor ? '#dc2626' : '#166534'}; font-weight:700;">${fmtNum(m.grossCycle23, 1)} Hari vs Tenor ${m.scfTenor} Hr</td>
-                <td class="num-col" style="color:#166534; font-weight:700;">${turnaroundSim.simGrossCycle} Hari ( &le;  Tenor ${m.scfTenor} Hr)</td>
+                <td class="num-col" style="color:#166534; font-weight:700;">${turnaroundSim.simGrossCycle} Hari (&le; Tenor ${m.scfTenor} Hr)</td>
                 <td>Fasilitas menjadi 100% Self-Liquidating</td>
               </tr>
               <tr>
                 <td><strong>Gross Margin (GPM)</strong></td>
                 <td class="num-col" style="color:${m.gpm23 < 0 ? '#dc2626' : '#166534'}; font-weight:700;">${fmtPct(m.gpm23, 2)} (${fmtRp(m.gp23, true)})</td>
-                <td class="num-col" style="color:#166534; font-weight:700;"> &ge;  +${fmtNum(Math.max(10.5, m.minRequiredGPM), 1)}&ge; (${fmtRp(turnaroundSim.simGP, true)})</td>
+                <td class="num-col" style="color:#166534; font-weight:700;">&ge; +${fmtNum(Math.max(10.5, m.minRequiredGPM), 1)}% (${fmtRp(turnaroundSim.simGP, true)})</td>
                 <td>DSCR naik menjadi <strong>${fmtNum(turnaroundSim.simDSCR, 2)}x</strong></td>
               </tr>
               <tr>
                 <td><strong>KMK Backup &amp; Coverage</strong></td>
                 <td class="num-col">KMK Backup: ${proj.kmkTenorDays} Hr | Full Risk</td>
-                <td class="num-col" style="color:#166534; font-weight:700;">Hapus Auto-Backup | Coverage Maks ${m.recCoveragePct || 55}&ge;</td>
+                <td class="num-col" style="color:#166534; font-weight:700;">Hapus Auto-Backup | Coverage Maks ${m.recCoveragePct || 55}%</td>
                 <td>Eliminasi moral hazard default di hari ke-${m.scfTenor}</td>
               </tr>
               <tr>
                 <td><strong>Agunan Tambahan &amp; Risk Sharing</strong></td>
                 <td class="num-col">Coverage 100% (Tanpa Tambahan Agunan Riil)</td>
-                <td class="num-col" style="color:#166534; font-weight:700;">Agunan Fixed Asset  &ge;  120% (${fmtRp(proj.requestedPlafond * 1.2, true)}) | Risk Sharing Askrindo Maks ${m.recCoveragePct || 55}&ge;</td>
+                <td class="num-col" style="color:#166534; font-weight:700;">Agunan Fixed Asset &ge; 120% (${fmtRp(proj.requestedPlafond * 1.2, true)}) | Risk Sharing Askrindo Maks ${m.recCoveragePct || 55}%</td>
                 <td>Loss-absorbing buffer &amp; kepastian pemulihan recovery klaim Askrindo</td>
               </tr>
             </tbody>
@@ -2581,32 +2586,32 @@ function renderRatiosTab(proj, m) {
 
   const plafond = proj.requestedPlafond || 0;
 
-  // 1. Current Ratio (CR) &larr;RAC Min 100%
+  // 1. Current Ratio (CR) - RAC Min 100%
   const cr22 = m.cl22 > 0 ? (m.ca22 / m.cl22) * 100 : 0;
   const cr23 = m.cl23 > 0 ? (m.ca23 / m.cl23) * 100 : 0;
   const passCR = cr23 >= 100;
 
-  // 2. Debt to Equity Ratio (DER) &larr;RAC Max 400%
+  // 2. Debt to Equity Ratio (DER) - RAC Max 400%
   const der22 = m.eq22 > 0 ? (m.tl22 / m.eq22) * 100 : 0;
   const der23 = m.eq23 > 0 ? (m.tl23 / m.eq23) * 100 : 0;
   const passDER = der23 <= 400;
 
-  // 3. Return on Assets (ROA) &larr;RAC Min 1.0%
+  // 3. Return on Assets (ROA) - RAC Min 1.0%
   const roa22 = m.ta22 > 0 ? (m.eat22 / m.ta22) * 100 : 0;
   const roa23 = m.ta23 > 0 ? (m.eat23 / m.ta23) * 100 : 0;
   const passROA = roa23 >= 1.0;
 
-  // 4. Return on Equity (ROE) &larr;RAC Min 5.0%
+  // 4. Return on Equity (ROE) - RAC Min 5.0%
   const roe22 = m.eq22 > 0 ? (m.eat22 / m.eq22) * 100 : 0;
   const roe23 = m.eq23 > 0 ? (m.eat23 / m.eq23) * 100 : 0;
   const passROE = roe23 >= 5.0;
 
-  // 5. Net Working Capital (NWC) &larr;RAC Hasil Positif (> 0)
+  // 5. Net Working Capital (NWC) - RAC Hasil Positif (> 0)
   const nwc22 = m.nwc22;
   const nwc23 = m.nwc23;
   const passNWC = nwc23 > 0;
 
-  // 6. NWC terhadap Nilai Kredit (Plafond) &larr;RAC Min 10%
+  // 6. NWC terhadap Nilai Kredit (Plafond) - RAC Min 10%
   const nwcToCredit22 = plafond > 0 ? (nwc22 / plafond) * 100 : 0;
   const nwcToCredit23 = plafond > 0 ? (nwc23 / plafond) * 100 : 0;
   const passNWCCredit = plafond > 0 && nwcToCredit23 >= 10;
@@ -2617,48 +2622,48 @@ function renderRatiosTab(proj, m) {
       name: 'Current Ratio (CR)',
       formula: 'Aset Lancar / Liabilitas Lancar &times; 100%',
       rac: 'Minimal 100%',
-      v22: fmtNum(cr22, 1) + '&ge;',
-      v23: fmtNum(cr23, 1) + '&ge;',
+      v22: fmtNum(cr22, 1) + '%',
+      v23: fmtNum(cr23, 1) + '%',
       pass: passCR,
       ket: passCR
-        ? `Current Ratio sebesar ${fmtNum(cr23, 1)}&ge; memenuhi standar RAC (minimal 100%). Debitur memiliki likuiditas lancar yang cukup untuk melunasi kewajiban jangka pendek.`
-        : `Current Ratio sebesar ${fmtNum(cr23, 1)}&ge; di bawah standar RAC (minimal 100%). Likuiditas jangka pendek debitur ketat dan berisiko gagal bayar jika terjadi keterlambatan pencairan piutang/persediaan.`
+        ? `Current Ratio sebesar ${fmtNum(cr23, 1)}% memenuhi standar RAC (minimal 100%). Debitur memiliki likuiditas lancar yang cukup untuk melunasi kewajiban jangka pendek.`
+        : `Current Ratio sebesar ${fmtNum(cr23, 1)}% di bawah standar RAC (minimal 100%). Likuiditas jangka pendek debitur ketat dan berisiko gagal bayar jika terjadi keterlambatan pencairan piutang/persediaan.`
     },
     {
       no: 2,
       name: 'Debt to Equity Ratio (DER)',
       formula: 'Total Liabilitas / Total Ekuitas &times; 100%',
       rac: 'Maksimal 400%',
-      v22: fmtNum(der22, 1) + '&ge;',
-      v23: fmtNum(der23, 1) + '&ge;',
+      v22: fmtNum(der22, 1) + '%',
+      v23: fmtNum(der23, 1) + '%',
       pass: passDER,
       ket: passDER
-        ? `DER sebesar ${fmtNum(der23, 1)}&ge; memenuhi standar RAC (maksimal 400%). Tingkat leverage permodalan debitur masih dalam ambang batas toleransi risiko wajar.`
-        : `DER sebesar ${fmtNum(der23, 1)}&ge; melampaui standar RAC (maksimal 400%). Beban hutang terlalu dominan terhadap modal sendiri, meningkatkan risiko solvabilitas.`
+        ? `DER sebesar ${fmtNum(der23, 1)}% memenuhi standar RAC (maksimal 400%). Tingkat leverage permodalan debitur masih dalam ambang batas toleransi risiko wajar.`
+        : `DER sebesar ${fmtNum(der23, 1)}% melampaui standar RAC (maksimal 400%). Beban hutang terlalu dominan terhadap modal sendiri, meningkatkan risiko solvabilitas.`
     },
     {
       no: 3,
       name: 'Return on Assets (ROA)',
       formula: 'Laba Bersih (EAT) / Total Aset &times; 100%',
       rac: 'Minimal 1,0%',
-      v22: fmtNum(roa22, 2) + '&ge;',
-      v23: fmtNum(roa23, 2) + '&ge;',
+      v22: fmtNum(roa22, 2) + '%',
+      v23: fmtNum(roa23, 2) + '%',
       pass: passROA,
       ket: passROA
-        ? `ROA sebesar ${fmtNum(roa23, 2)}&ge; memenuhi standar RAC (minimal 1,0%). Aset perusahaan bekerja secara produktif dalam menghasilkan laba bersih.`
-        : `ROA sebesar ${fmtNum(roa23, 2)}&ge; di bawah standar RAC (minimal 1,0%). Efisiensi pemanfaatan aset untuk menghasilkan profitabilitas masih perlu ditingkatkan.`
+        ? `ROA sebesar ${fmtNum(roa23, 2)}% memenuhi standar RAC (minimal 1,0%). Aset perusahaan bekerja secara produktif dalam menghasilkan laba bersih.`
+        : `ROA sebesar ${fmtNum(roa23, 2)}% di bawah standar RAC (minimal 1,0%). Efisiensi pemanfaatan aset untuk menghasilkan profitabilitas masih perlu ditingkatkan.`
     },
     {
       no: 4,
       name: 'Return on Equity (ROE)',
       formula: 'Laba Bersih (EAT) / Total Ekuitas &times; 100%',
       rac: 'Minimal 5,0%',
-      v22: fmtNum(roe22, 2) + '&ge;',
-      v23: fmtNum(roe23, 2) + '&ge;',
+      v22: fmtNum(roe22, 2) + '%',
+      v23: fmtNum(roe23, 2) + '%',
       pass: passROE,
       ket: passROE
-        ? `ROE sebesar ${fmtNum(roe23, 2)}&ge; memenuhi standar RAC (minimal 5,0%). Imbal hasil atas modal debitur mencukupi untuk mendukung pertumbuhan internal.`
-        : `ROE sebesar ${fmtNum(roe23, 2)}&ge; di bawah standar RAC (minimal 5,0%). Kemampuan mencetak keuntungan bagi pemegang saham belum optimal.`
+        ? `ROE sebesar ${fmtNum(roe23, 2)}% memenuhi standar RAC (minimal 5,0%). Imbal hasil atas modal debitur mencukupi untuk mendukung pertumbuhan internal.`
+        : `ROE sebesar ${fmtNum(roe23, 2)}% di bawah standar RAC (minimal 5,0%). Kemampuan mencetak keuntungan bagi pemegang saham belum optimal.`
     },
     {
       no: 5,
@@ -2677,17 +2682,17 @@ function renderRatiosTab(proj, m) {
       name: 'NWC terhadap Nilai Kredit',
       formula: 'NWC Riil / Plafond Kredit &times; 100%',
       rac: 'Minimal 10,0%',
-      v22: plafond > 0 ? fmtNum(nwcToCredit22, 1) + '&ge;' : 'N/A',
-      v23: plafond > 0 ? fmtNum(nwcToCredit23, 1) + '&ge;' : 'N/A',
+      v22: plafond > 0 ? fmtNum(nwcToCredit22, 1) + '%' : 'N/A',
+      v23: plafond > 0 ? fmtNum(nwcToCredit23, 1) + '%' : 'N/A',
       pass: passNWCCredit,
       ket: passNWCCredit
-        ? `Rasio NWC terhadap Nilai Kredit sebesar ${fmtNum(nwcToCredit23, 1)}&ge; memenuhi standar RAC (minimal 10%). Debitur memiliki penyangga modal kerja bersih yang memadai dibandingkan permohonan kredit.`
-        : `Rasio NWC terhadap Nilai Kredit sebesar ${fmtNum(nwcToCredit23, 1)}&ge; di bawah standar RAC (minimal 10%). Penyangga modal kerja terlalu tipis relatif terhadap nilai fasilitas penjaminan yang diajukan.`
+        ? `Rasio NWC terhadap Nilai Kredit sebesar ${fmtNum(nwcToCredit23, 1)}% memenuhi standar RAC (minimal 10%). Debitur memiliki penyangga modal kerja bersih yang memadai dibandingkan permohonan kredit.`
+        : `Rasio NWC terhadap Nilai Kredit sebesar ${fmtNum(nwcToCredit23, 1)}% di bawah standar RAC (minimal 10%). Penyangga modal kerja terlalu tipis relatif terhadap nilai fasilitas penjaminan yang diajukan.`
     }
   ];
 
   const passCount = ratios.filter((r) => r.pass).length;
-  const failCount = ratios.length &larr;passCount;
+  const failCount = ratios.length - passCount;
   const overallSummary = passCount >= 4
     ? '<span style="color:#15803d; font-weight:700;">MEMENUHI SEBAGIAN BESAR STANDAR RAC</span>'
     : '<span style="color:#b91c1c; font-weight:700;">PERLU PERHATIAN KHUSUS &amp; MITIGASI TAMBAHAN</span>';
@@ -2695,7 +2700,7 @@ function renderRatiosTab(proj, m) {
   container.innerHTML = `
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:1rem; padding:0.85rem 1.1rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px;">
       <div>
-        <div style="font-size:0.82rem; font-weight:700; color:var(--askrindo-navy);">Status Kepatuhan Risk Acceptance Criteria (RAC) &larr;Tahun Buku ${m.yr2}:</div>
+        <div style="font-size:0.82rem; font-weight:700; color:var(--askrindo-navy);">Status Kepatuhan Risk Acceptance Criteria (RAC) - Tahun Buku ${m.yr2}:</div>
         <div style="font-size:0.76rem; color:var(--text-muted); margin-top:0.2rem;">Evaluasi berdasarkan 6 indikator rasio kunci Askrindo: Current Ratio, DER, ROA, ROE, NWC, dan NWC/Plafond.</div>
       </div>
       <div style="display:flex; gap:0.5rem; align-items:center;">
@@ -2751,7 +2756,7 @@ function renderPrintableReport(proj, m) {
   document.getElementById('printableMemoContainer').innerHTML = `
     <div style="border-bottom:2.5px solid var(--askrindo-navy); padding-bottom:0.65rem; margin-bottom:0.75rem; display:flex; justify-content:space-between; align-items:center;">
       <div style="display:flex; align-items:center; gap:0.75rem;">
-        <img src="logo-asca.png" alt="ASCA &larr;Askrindo Smart Credit Analysis" style="height:38px; width:auto; object-fit:contain;" />
+        <img src="logo-asca.png" alt="ASCA - Askrindo Smart Credit Analysis" style="height:38px; width:auto; object-fit:contain;" />
         <div>
           <h2 style="font-size:0.95rem; color:var(--askrindo-navy);">NOTA ANALISA UNDERWRITING PENJAMINAN KREDIT (ASCA)</h2>
           <p style="font-size:0.68rem; color:var(--text-muted);">Metode: Dynamic Cash Conversion &amp; Stress-Tested Working Capital Model (DCC-SWCM)</p>
@@ -2800,14 +2805,14 @@ function renderPrintableReport(proj, m) {
           <td class="num-col">${proj.claimedDOR} Hari</td>
           <td class="num-col">${fmtNum(m.dor22_365, 1)} Hari</td>
           <td class="num-col">${fmtNum(m.dor23_365, 1)} Hari</td>
-          <td class="num-col">${m.diffDOR >= 0 ? '&rarr; : ''}${fmtNum(m.diffDOR, 1)} Hari</td>
+          <td class="num-col">${m.diffDOR >= 0 ? '+' : ''}${fmtNum(m.diffDOR, 1)} Hari</td>
         </tr>
         <tr>
           <td>DOI (Days of Inventory)</td>
           <td class="num-col">${proj.claimedDOI} Hari</td>
           <td class="num-col">${fmtNum(m.doi22_365, 1)} Hari</td>
           <td class="num-col"><strong>${fmtNum(m.doi23_365, 1)} Hari</strong></td>
-          <td class="num-col" style="color:#dc2626; font-weight:700;">${m.diffDOI >= 0 ? '&rarr; : ''}${fmtNum(m.diffDOI, 1)} Hari</td>
+          <td class="num-col" style="color:#dc2626; font-weight:700;">${m.diffDOI >= 0 ? '+' : ''}${fmtNum(m.diffDOI, 1)} Hari</td>
         </tr>
         <tr>
           <td>Siklus Operasi Gross (DOI+DOR)</td>
@@ -2842,10 +2847,10 @@ function renderPrintableReport(proj, m) {
     </div>
 
     <div class="decision-box ${m.decisionClass}">
-      <div style="font-weight:800; font-size:0.78rem; margin-bottom:0.12rem;">REKOMENDASI KOMITE UNDERWRITING ASKRINDO: ${m.decision} (Coverage Maks ${m.recCoveragePct || 55}&ge;)</div>
+      <div style="font-weight:800; font-size:0.78rem; margin-bottom:0.12rem;">REKOMENDASI KOMITE UNDERWRITING ASKRINDO: ${m.decision} (Coverage Maks ${m.recCoveragePct || 55}%)</div>
       <p style="font-size:0.71rem; line-height:1.4;">
         ${proj.customNotes ? `<strong>Catatan Underwriter:</strong> ${proj.customNotes}<br/>` : ''}
-        Plafond Rekomendasi: <strong>${fmtRp(m.recommendedMitigatedLimit > 0 ? m.recommendedMitigatedLimit : proj.requestedPlafond)}</strong> dengan pencairan bertahap maksimal <strong>${fmtRp(m.recommendedTrancheSize)} per tranche</strong>, target DOI  &le;  <strong>${m.targetSafeDOI} hari</strong>, dan Gross Margin minimal <strong>+${fmtNum(Math.max(8, m.minRequiredGPM), 1)}&ge;</strong>.
+        Plafond Rekomendasi: <strong>${fmtRp(m.recommendedMitigatedLimit > 0 ? m.recommendedMitigatedLimit : proj.requestedPlafond)}</strong> dengan pencairan bertahap maksimal <strong>${fmtRp(m.recommendedTrancheSize)} per tranche</strong>, target DOI &le; <strong>${m.targetSafeDOI} hari</strong>, dan Gross Margin minimal <strong>+${fmtNum(Math.max(8, m.minRequiredGPM), 1)}%</strong>.
       </p>
     </div>
 
@@ -3325,91 +3330,7 @@ async function checkAuthAndRoute() {
   }
 }
 
-// ============================================================================
-// SINGLE-SESSION & CONCURRENT LOGIN LOCK HELPERS
-// ============================================================================
-const SESSION_ID_KEY = 'ASCA_CLIENT_SESSION_ID';
-
-function getLocalSessionId() {
-  return localStorage.getItem(SESSION_ID_KEY) || '';
-}
-
-function setLocalSessionId(sid) {
-  if (sid) {
-    localStorage.setItem(SESSION_ID_KEY, sid);
-  } else {
-    localStorage.removeItem(SESSION_ID_KEY);
-  }
-}
-
-function parseUserSessionLock(unitField) {
-  if (!unitField) return { rawUnit: '', sessionId: '', lastActive: 0 };
-  const parts = unitField.split('||SESS:');
-  const rawUnit = parts[0].trim();
-  if (parts.length < 2) {
-    return { rawUnit, sessionId: '', lastActive: 0 };
-  }
-  const sessParts = parts[1].split(':');
-  const sessionId = sessParts[0] || '';
-  const lastActive = parseInt(sessParts[1], 10) || 0;
-  return { rawUnit, sessionId, lastActive };
-}
-
-function getCleanUnit(unitField) {
-  return parseUserSessionLock(unitField).rawUnit || '-';
-}
-
-async function releaseSessionLock(username) {
-  if (!username) return;
-  try {
-    const data = await supabaseFetch(`users?username=eq.${encodeURIComponent(username)}&select=unit`);
-    if (data && data[0]) {
-      const lock = parseUserSessionLock(data[0].unit);
-      await supabaseFetch(`users?username=eq.${encodeURIComponent(username)}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ unit: lock.rawUnit })
-      });
-    }
-  } catch (e) {
-    console.warn('Gagal merilis session lock:', e);
-  }
-}
-
-let sessionHeartbeatTimer = null;
-function startSessionHeartbeat(username, sessionId) {
-  if (sessionHeartbeatTimer) clearInterval(sessionHeartbeatTimer);
-  sessionHeartbeatTimer = setInterval(async () => {
-    const session = getActiveSession();
-    if (!session || session.username.toLowerCase() !== username.toLowerCase()) {
-      clearInterval(sessionHeartbeatTimer);
-      return;
-    }
-    const currentSid = getLocalSessionId();
-    if (!currentSid) return;
-
-    try {
-      const data = await supabaseFetch(`users?username=eq.${encodeURIComponent(username)}&select=unit`);
-      if (data && data[0]) {
-        const lock = parseUserSessionLock(data[0].unit);
-        // Jika ada perangkat lain yang paksa masuk / mengambil alih
-        if (lock.sessionId && lock.sessionId !== currentSid) {
-          clearInterval(sessionHeartbeatTimer);
-          alert('Perhatian: Akun ini telah login di perangkat lain. Sesi Anda di perangkat ini telah diakhiri.');
-          logoutSession();
-          return;
-        }
-        // Perbarui timestamp heartbeat
-        const updatedUnit = `${lock.rawUnit}||SESS:${currentSid}:${Date.now()}`;
-        supabaseFetch(`users?username=eq.${encodeURIComponent(username)}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ unit: updatedUnit })
-        }).catch(() => {});
-      }
-    } catch (e) {}
-  }, 45000);
-}
-
-async function handleLoginSubmit(event, isForce = false) {
+async function handleLoginSubmit(event) {
   if (event) event.preventDefault();
   const usernameInput = document.getElementById('loginUsername');
   const passwordInput = document.getElementById('loginPassword');
@@ -3512,28 +3433,21 @@ async function handleLoginSubmit(event, isForce = false) {
 function togglePasswordVisibility(inputId, btn) {
   const input = document.getElementById(inputId);
   if (!input) return;
-  if (input.type === 'password') {
-    input.type = 'text';
+  if (input.type === "password") {
+    input.type = "text";
     btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
-    btn.title = 'Sembunyikan Password';
+    btn.title = "Sembunyikan Password";
   } else {
-    input.type = 'password';
+    input.type = "password";
     btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
-    btn.title = 'Tampilkan Password';
+    btn.title = "Tampilkan Password";
   }
 }
 
 function logoutSession() {
   const session = getActiveSession();
   const name = session ? session.fullName : 'Pengguna';
-  if (session && session.username) {
-    releaseSessionLock(session.username);
-  }
-  setLocalSessionId(null);
-  if (sessionHeartbeatTimer) clearInterval(sessionHeartbeatTimer);
   setActiveSession(null);
-  projects = [];
-  activeProjectId = null;
   showToast(`Sampai jumpa, ${name}. Sesi telah diakhiri.`);
   checkAuthAndRoute();
 }
@@ -3613,7 +3527,7 @@ async function renderAdminUserManagement() {
           <strong style="color:var(--askrindo-navy); font-size:0.85rem;">${u.username}</strong>
         </td>
         <td><strong>${u.fullName}</strong></td>
-        <td><span style="color:var(--text-muted); font-size:0.75rem;">${getCleanUnit(u.unit)}</span></td>
+        <td><span style="color:var(--text-muted); font-size:0.75rem;">${getCleanUnit(u.unit) || '-'}</span></td>
         <td>${roleBadge}</td>
         <td>${statusBadge}</td>
         <td style="font-size:0.74rem; color:var(--text-muted);">${lastLoginStr}</td>
@@ -3623,7 +3537,7 @@ async function renderAdminUserManagement() {
               Reset
             </button>
             ${!isMainAdmin ? `
-              <button class="btn btn-sm ${u.status === 'active' ? 'btn-outline' : 'btn-primary'}" onclick="toggleUserStatus('${u.username}')" title="${u.status === 'active' ? 'Nonaktifkan Akun' : 'Aktifkan Akun'}">
+              <button class="btn btn-sm ${u.status === 'active' ? 'btn-outline' : 'btn-primary'}" onclick="toggleUserStatus('' + u.username + '')" title="${u.status === 'active' ? 'Nonaktifkan Akun' : 'Aktifkan Akun'}>
                 ${u.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}
               </button>
               <button class="btn btn-sm btn-danger" onclick="confirmDeleteUser('${u.username}')" title="Hapus Pengguna">
@@ -3762,7 +3676,7 @@ async function toggleUserStatus(username) {
   const user = users.find((u) => u.username.toLowerCase() === username.toLowerCase());
   if (!user) return;
   if (user.username.toLowerCase() === 'admin') {
-    alert('Akun Super Admin utama tidak boleh dinonaktifkan!');
+    alert('AkunSuper Admin utama tidak boleh dinonaktifkan!');
     return;
   }
 
@@ -3781,7 +3695,7 @@ async function toggleUserStatus(username) {
 
 async function confirmDeleteUser(username) {
   if (username.toLowerCase() === 'admin') {
-    alert('Akun Super Admin utama tidak boleh dihapus!');
+    alert('AkunSuper Admin utama tidak boleh dihapus!');
     return;
   }
   if (!confirm(`Apakah Anda yakin ingin menghapus akun pengguna "${username}" secara permanen dari server cloud?`)) {
@@ -3798,12 +3712,4 @@ async function confirmDeleteUser(username) {
   } catch (err) {
     alert('Gagal menghapus pengguna dari server: ' + err.message);
   }
-}
-
-function forceLoginSubmit(uname, pwd) {
-  const usernameInput = document.getElementById('loginUsername');
-  const passwordInput = document.getElementById('loginPassword');
-  if (usernameInput) usernameInput.value = uname;
-  if (passwordInput) passwordInput.value = pwd;
-  handleLoginSubmit(null, true);
 }

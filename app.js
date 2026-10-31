@@ -3406,49 +3406,49 @@ function renderRatiosTab(proj, m) {
       no: 1,
       name: 'Current Ratio (CR)',
       formula: 'Aset Lancar / Liabilitas Lancar &times; 100%',
-      rac: 'Minimal 100%',
-      v22: fmtNum(cr22, 1) + '%',
-      v23: fmtNum(cr23, 1) + '%',
+      rac: 'Minimal 100,00%',
+      v22: fmtNum(cr22, 2) + '%',
+      v23: fmtNum(cr23, 2) + '%',
       pass: passCR,
       ket: passCR
-        ? `Current Ratio sebesar ${fmtNum(cr23, 1)}% memenuhi standar RAC (minimal 100%). Debitur memiliki likuiditas lancar yang cukup untuk melunasi kewajiban jangka pendek.`
-        : `Current Ratio sebesar ${fmtNum(cr23, 1)}% di bawah standar RAC (minimal 100%). Likuiditas jangka pendek debitur ketat dan berisiko gagal bayar jika terjadi keterlambatan pencairan piutang/persediaan.`
+        ? `Current Ratio sebesar ${fmtNum(cr23, 2)}% memenuhi standar RAC (minimal 100,00%). Debitur memiliki likuiditas lancar yang cukup untuk melunasi kewajiban jangka pendek.`
+        : `Current Ratio sebesar ${fmtNum(cr23, 2)}% di bawah standar RAC (minimal 100,00%). Likuiditas jangka pendek debitur ketat dan berisiko gagal bayar jika terjadi keterlambatan pencairan piutang/persediaan.`
     },
     {
       no: 2,
       name: 'Debt to Equity Ratio (DER)',
       formula: 'Total Liabilitas / Total Ekuitas &times; 100%',
-      rac: 'Maksimal 400%',
-      v22: fmtNum(der22, 1) + '%',
-      v23: fmtNum(der23, 1) + '%',
+      rac: 'Maksimal 400,00%',
+      v22: fmtNum(der22, 2) + '%',
+      v23: fmtNum(der23, 2) + '%',
       pass: passDER,
       ket: passDER
-        ? `DER sebesar ${fmtNum(der23, 1)}% memenuhi standar RAC (maksimal 400%). Tingkat leverage permodalan debitur masih dalam ambang batas toleransi risiko wajar.`
-        : `DER sebesar ${fmtNum(der23, 1)}% melampaui standar RAC (maksimal 400%). Beban hutang terlalu dominan terhadap modal sendiri, meningkatkan risiko solvabilitas.`
+        ? `DER sebesar ${fmtNum(der23, 2)}% memenuhi standar RAC (maksimal 400,00%). Tingkat leverage permodalan debitur masih dalam ambang batas toleransi risiko wajar.`
+        : `DER sebesar ${fmtNum(der23, 2)}% melampaui standar RAC (maksimal 400,00%). Beban hutang terlalu dominan terhadap modal sendiri, meningkatkan risiko solvabilitas.`
     },
     {
       no: 3,
       name: 'Return on Assets (ROA)',
       formula: 'Laba Bersih (EAT) / Total Aset &times; 100%',
-      rac: 'Minimal 1,0%',
+      rac: 'Minimal 1,00%',
       v22: fmtNum(roa22, 2) + '%',
       v23: fmtNum(roa23, 2) + '%',
       pass: passROA,
       ket: passROA
-        ? `ROA sebesar ${fmtNum(roa23, 2)}% memenuhi standar RAC (minimal 1,0%). Aset perusahaan bekerja secara produktif dalam menghasilkan laba bersih.`
-        : `ROA sebesar ${fmtNum(roa23, 2)}% di bawah standar RAC (minimal 1,0%). Efisiensi pemanfaatan aset untuk menghasilkan profitabilitas masih perlu ditingkatkan.`
+        ? `ROA sebesar ${fmtNum(roa23, 2)}% memenuhi standar RAC (minimal 1,00%). Aset perusahaan bekerja secara produktif dalam menghasilkan laba bersih.`
+        : `ROA sebesar ${fmtNum(roa23, 2)}% di bawah standar RAC (minimal 1,00%). Efisiensi pemanfaatan aset untuk menghasilkan profitabilitas masih perlu ditingkatkan.`
     },
     {
       no: 4,
       name: 'Return on Equity (ROE)',
       formula: 'Laba Bersih (EAT) / Total Ekuitas &times; 100%',
-      rac: 'Minimal 5,0%',
+      rac: 'Minimal 5,00%',
       v22: fmtNum(roe22, 2) + '%',
       v23: fmtNum(roe23, 2) + '%',
       pass: passROE,
       ket: passROE
-        ? `ROE sebesar ${fmtNum(roe23, 2)}% memenuhi standar RAC (minimal 5,0%). Imbal hasil atas modal debitur mencukupi untuk mendukung pertumbuhan internal.`
-        : `ROE sebesar ${fmtNum(roe23, 2)}% di bawah standar RAC (minimal 5,0%). Kemampuan mencetak keuntungan bagi pemegang saham belum optimal.`
+        ? `ROE sebesar ${fmtNum(roe23, 2)}% memenuhi standar RAC (minimal 5,00%). Imbal hasil atas modal debitur mencukupi untuk mendukung pertumbuhan internal.`
+        : `ROE sebesar ${fmtNum(roe23, 2)}% di bawah standar RAC (minimal 5,00%). Kemampuan mencetak keuntungan bagi pemegang saham belum optimal.`
     },
     {
       no: 5,
@@ -3466,13 +3466,13 @@ function renderRatiosTab(proj, m) {
       no: 6,
       name: 'NWC terhadap Nilai Kredit',
       formula: 'NWC Riil / Plafond Kredit &times; 100%',
-      rac: 'Minimal 10,0%',
-      v22: plafond > 0 ? fmtNum(nwcToCredit22, 1) + '%' : 'N/A',
-      v23: plafond > 0 ? fmtNum(nwcToCredit23, 1) + '%' : 'N/A',
+      rac: 'Minimal 10,00%',
+      v22: plafond > 0 ? fmtNum(nwcToCredit22, 2) + '%' : 'N/A',
+      v23: plafond > 0 ? fmtNum(nwcToCredit23, 2) + '%' : 'N/A',
       pass: passNWCCredit,
       ket: passNWCCredit
-        ? `Rasio NWC terhadap Nilai Kredit sebesar ${fmtNum(nwcToCredit23, 1)}% memenuhi standar RAC (minimal 10%). Debitur memiliki penyangga modal kerja bersih yang memadai dibandingkan permohonan kredit.`
-        : `Rasio NWC terhadap Nilai Kredit sebesar ${fmtNum(nwcToCredit23, 1)}% di bawah standar RAC (minimal 10%). Penyangga modal kerja terlalu tipis relatif terhadap nilai fasilitas asuransi kredit yang diajukan.`
+        ? `Rasio NWC terhadap Nilai Kredit sebesar ${fmtNum(nwcToCredit23, 2)}% memenuhi standar RAC (minimal 10,00%). Debitur memiliki penyangga modal kerja bersih yang memadai dibandingkan permohonan kredit.`
+        : `Rasio NWC terhadap Nilai Kredit sebesar ${fmtNum(nwcToCredit23, 2)}% di bawah standar RAC (minimal 10,00%). Penyangga modal kerja terlalu tipis relatif terhadap nilai fasilitas asuransi kredit yang diajukan.`
     }
   ];
 
@@ -3495,35 +3495,35 @@ function renderRatiosTab(proj, m) {
       </div>
     </div>
 
-    <div class="table-responsive">
-      <table class="data-table">
+    <div class="table-responsive" style="border:1px solid #e2e8f0; border-radius:8px; background:#ffffff; box-shadow:0 1px 2px rgba(0,0,0,0.03);">
+      <table class="data-table ratios-table">
         <thead>
           <tr>
-            <th style="width:30px;">No</th>
-            <th>Indikator Rasio Keuangan</th>
-            <th>Rumus Perhitungan</th>
-            <th>Standar RAC Askrindo</th>
-            <th class="num-col">${m.yr1}</th>
-            <th class="num-col">${m.yr2} (Tahun Evaluasi)</th>
-            <th style="text-align:center;">Status RAC</th>
-            <th style="min-width:320px;">Keterangan &amp; Analisis Komparasi</th>
+            <th class="col-no">No</th>
+            <th class="col-indicator">Indikator Rasio Keuangan</th>
+            <th class="col-formula">Rumus Perhitungan</th>
+            <th class="col-rac">Standar RAC Askrindo</th>
+            <th class="col-val">Tahun ${m.yr1}</th>
+            <th class="col-eval">Tahun ${m.yr2} (Evaluasi)</th>
+            <th class="col-status">Status RAC</th>
+            <th class="col-notes">Keterangan &amp; Analisis Komparasi</th>
           </tr>
         </thead>
         <tbody>
           ${ratios.map((r) => `
             <tr>
-              <td style="text-align:center; color:var(--text-muted); font-size:0.78rem;">${r.no}</td>
-              <td style="font-weight:700; color:var(--askrindo-navy);">${r.name}</td>
-              <td style="font-size:0.76rem; color:var(--text-muted);">${r.formula}</td>
-              <td style="font-weight:700; font-size:0.78rem; color:var(--askrindo-blue);">${r.rac}</td>
-              <td class="num-col" style="color:var(--text-muted);">${r.v22}</td>
-              <td class="num-col" style="font-weight:700; font-size:0.86rem; color:${r.pass ? '#15803d' : '#b91c1c'};">${r.v23}</td>
-              <td style="text-align:center;">
+              <td class="col-no">${r.no}</td>
+              <td class="col-indicator">${r.name}</td>
+              <td class="col-formula">${r.formula}</td>
+              <td class="col-rac">${r.rac}</td>
+              <td class="col-val" style="color:var(--text-muted);">${r.v22}</td>
+              <td class="col-eval" style="color:${r.pass ? '#15803d' : '#b91c1c'};">${r.v23}</td>
+              <td class="col-status">
                 <span class="badge-rac ${r.pass ? 'badge-rac-pass' : 'badge-rac-fail'}">
                   ${r.pass ? 'LULUS' : 'TIDAK LULUS'}
                 </span>
               </td>
-              <td style="font-size:0.76rem; line-height:1.45; color:${r.pass ? '#14532d' : '#7f1d1d'};">
+              <td class="col-notes" style="color:${r.pass ? '#14532d' : '#7f1d1d'};">
                 ${r.ket}
               </td>
             </tr>

@@ -990,7 +990,8 @@ input[type="range"] {
 /* TABLES */
 .table-responsive {
   width: 100%;
-  overflow-x: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .data-table {
@@ -1002,10 +1003,10 @@ input[type="range"] {
 
 .data-table th,
 .data-table td {
-  padding: 0.36rem 0.5rem;
+  padding: 0.48rem 0.65rem;
   border-bottom: 1px solid var(--border-color);
   text-align: left;
-  word-break: break-word;
+  vertical-align: middle;
 }
 
 .data-table th {
@@ -1013,6 +1014,7 @@ input[type="range"] {
   font-weight: 700;
   color: #334155;
   font-size: 0.8rem;
+  white-space: nowrap;
 }
 
 .data-table tr:hover td {
@@ -1023,6 +1025,92 @@ input[type="range"] {
   text-align: right !important;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+/* FINANCIAL RATIOS TABLE (TAB RASIO KEUANGAN) */
+.ratios-table {
+  min-width: 1000px;
+  background: #ffffff;
+}
+
+.ratios-table thead th {
+  padding: 0.65rem 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #1e293b;
+  background: #f1f5f9;
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 2px solid #cbd5e1;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+
+.ratios-table tbody td {
+  padding: 0.6rem 0.85rem;
+  font-size: 0.82rem;
+  vertical-align: middle;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.ratios-table tbody tr:hover td {
+  background: #f8fafc;
+}
+
+.ratios-table .col-no {
+  width: 40px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.ratios-table .col-indicator {
+  min-width: 190px;
+  font-weight: 700;
+  color: var(--askrindo-navy);
+  white-space: nowrap;
+}
+
+.ratios-table .col-formula {
+  min-width: 210px;
+  font-size: 0.78rem;
+  color: #475569;
+}
+
+.ratios-table .col-rac {
+  min-width: 140px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: var(--askrindo-blue);
+  white-space: nowrap;
+}
+
+.ratios-table .col-val {
+  min-width: 110px;
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ratios-table .col-eval {
+  min-width: 150px;
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  font-weight: 700;
+  font-size: 0.86rem;
+}
+
+.ratios-table .col-status {
+  width: 115px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.ratios-table .col-notes {
+  min-width: 320px;
+  font-size: 0.78rem;
+  line-height: 1.5;
 }
 
 .fmt-dots {

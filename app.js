@@ -769,13 +769,18 @@ function openSippPortal(name) {
   window.open(`https://putusan3.mahkamahagung.go.id/search.html?q=${q}`, '_blank');
 }
 
+function openGoogleNewsPortal(name) {
+  const q = encodeURIComponent((name || 'PT') + ' kasus OR sengketa OR pailit OR macet OR fraud OR gagal bayar');
+  window.open(`https://news.google.com/search?q=${q}&hl=id&gl=ID&ceid=ID:id`, '_blank');
+}
+
 function compute5CAnalysis(proj, f23, m) {
   // 1. Character (Bobot 20%)
   const curYr = proj.year2 || new Date().getFullYear();
   const estYr = proj.estYear || (curYr - 5);
   const businessAge = Math.max(0, curYr - estYr);
 
-  let charAgeScore = 70;
+  let charAgeScore = 80;
   let charAgeNote = '';
   if (businessAge >= 10) {
     charAgeScore = 95;
@@ -791,10 +796,37 @@ function compute5CAnalysis(proj, f23, m) {
     charAgeNote = `Lama berdiri ${businessAge} tahun (${estYr}) - Usaha rintisan/baru, belum teruji siklus makro penuh.`;
   }
 
-  const inaprocStatus = 'Bersih (Nihil Daftar Hitam LKPP)';
+  // Parameter Riwayat Wanprestasi / Gagal Bayar
+  const defaultHistory = proj.defaultHistory || 'clean';
+  let defaultPenalty = 0;
+  let defaultStatusText = '';
+  if (defaultHistory === 'defaulted') {
+    defaultPenalty = 35;
+    defaultStatusText = 'Pernah Wanprestasi / Gagal Bayar (Riwayat Restrukturisasi / NPL)';
+  } else {
+    defaultPenalty = 0;
+    defaultStatusText = 'Belum Pernah Wanprestasi (Track Record Bersih / Kol 1)';
+  }
+
+  // Parameter Screening Pemberitaan Negatif di Google News
+  const negativeNews = proj.negativeNews || 'clean';
+  let newsPenalty = 0;
+  let newsStatusText = '';
+  if (negativeNews === 'negative') {
+    newsPenalty = 25;
+    newsStatusText = 'Terdeteksi Berita Negatif di Google News / Media (Isu Kasus / Sengketa)';
+  } else {
+    newsPenalty = 0;
+    newsStatusText = 'Nihil Berita Negatif di Google News (Reputasi Positif)';
+  }
+
+  const inaprocStatus = 'Bersih (Nihil Daftar Hitam Nasional LKPP)';
   const sippStatus = 'Nihil Gugatan Wanprestasi / PKPU';
   const slikStatus = 'Kolektibilitas 1 (Lancar)';
-  const charScore = Math.round(charAgeScore * 0.4 + 90 * 0.3 + 95 * 0.3);
+
+  const charScore = Math.max(10, Math.min(100, Math.round(
+    charAgeScore * 0.4 + 90 * 0.3 + 95 * 0.3 - defaultPenalty - newsPenalty
+  )));
 
   // 2. Capacity (Bobot 25%)
   const gpm = m ? m.gpm23 : (f23.rev > 0 ? ((f23.rev - f23.cogs) / f23.rev) * 100 : 0);
@@ -1355,9 +1387,8 @@ function computeDCCSWCM(proj) {
     icr23: f23.finCost > 0 ? (f23.rev - f23.cogs - f23.opex) / f23.finCost : 1
   });
 
-  const rawQual = (typeof proj.qualitative5CScore === 'number' && !isNaN(proj.qualitative5CScore))
-    ? proj.qualitative5CScore
-    : fiveC.totalScore10;
+  // Nilai Sub-Indikator 6B bersumber otomatis 100% dari Modul Analisa 5C
+  const rawQual = fiveC.totalScore10;
   const s6B = Number(((Math.max(0, Math.min(10, rawQual)) / 10) * 6).toFixed(1));
 
   scoreComponents.push({
@@ -1365,13 +1396,13 @@ function computeDCCSWCM(proj) {
     pillarName: 'Pilar 6: Struktur Skema & Kualitatif 5C (Maks 10)',
     code: '6B',
     name: 'Penilaian Kualitatif 5C Underwriter',
-    formula: 'AI Evaluasi 5C: (Nilai 5C / 10) &times; 6 Poin',
+    formula: 'Otomatis dari Modul Analisa 5C: (Skor 5C / 10) &times; 6 Poin',
     benchmark: '&ge; 7,5 / 10',
     actualStr: `${fmtNum(rawQual, 1)} / 10 (${fmtNum(s6B, 1)} Poin)`,
     maxPts: 6,
     earnedPts: s6B,
     lostPts: Number((6 - s6B).toFixed(1)),
-    reason: `Analisis 5C: Character (Usia ${fiveC.businessAge} thn, INAPROC/SIPP Bersih), Capacity (${fiveC.capNote}), Collateral (FA Cover ${fiveC.collRatio.toFixed(0)}%), Condition (${fiveC.condNote}).`
+    reason: `Analisis 5C Otomatis: Character (${fiveC.defaultStatusText}; ${fiveC.newsStatusText}), Capacity (${fiveC.capNote}), Collateral (FA Cover ${fiveC.collRatio.toFixed(0)}%), Condition (${fiveC.condNote}).`
   });
 
   // Agregat Pilar
@@ -1954,25 +1985,45 @@ function setOverrideReason(val) {
 }
 
 // ============================================================================
-// 9. RENDER SCORE CALCULATION TAB
+// 8B. RENDER TAB 5C: ANALISA KUALITATIF 5C UNDERWRITING (AI 5C CREDIT ENGINE)
 // ============================================================================
-function renderScoreCalculationTab(proj, m) {
+function updateCharacterParam(paramKey, val) {
+  const proj = getActiveProject();
+  if (!proj) return;
+  proj[paramKey] = val;
+  saveProjectsToStorage();
+  renderAll();
+  const label = paramKey === 'defaultHistory' ? 'Riwayat Wanprestasi' : 'Pemberitaan Negatif';
+  showToast(`Parameter Character (${label}) diperbarui menjadi: ${val === 'clean' ? 'Bersih' : 'Terdeteksi Risiko'}!`);
+}
+
+function render5CTab(proj, m) {
   const fiveC = m.fiveC || compute5CAnalysis(proj, proj.fin23, m);
-  const qualVal = (typeof proj.qualitative5CScore === 'number' && !isNaN(proj.qualitative5CScore))
-    ? proj.qualitative5CScore
-    : fiveC.totalScore10;
+  const container = document.getElementById('fiveCMenuContainer');
+  if (!container) return;
 
   const safeCompName = (proj.companyName || 'PT').replace(/'/g, "\\'");
+  const s6B = Number(((Math.max(0, Math.min(10, fiveC.totalScore10)) / 10) * 6).toFixed(1));
 
-  document.getElementById('scoreCalculationMenuContainer').innerHTML = `
-    <div class="card" style="border-left: 4px solid var(--askrindo-blue);">
+  container.innerHTML = `
+    <div class="card" style="border-left: 4px solid var(--askrindo-navy);">
       <div class="card-header">
-        <div class="card-title">Menu Rincian Perhitungan Score DCC-SWCM (${proj.companyName})</div>
-        <div style="display:flex; gap:0.35rem; align-items:center;">
-          <span class="grade-badge ${m.gradeMeta.badgeCls}" style="font-size:0.72rem; padding:3px 9px;">
-            Total Score: ${m.score} / 100 (Grade ${m.shortGrade})
+        <div>
+          <div class="card-title">Modul Analisa Kualitatif 5C Underwriting (${proj.companyName})</div>
+          <p style="font-size:0.71rem; color:var(--text-muted); margin:0.15rem 0 0;">
+            Evaluasi Otomatis Character, Capacity, Capital, Collateral &amp; Condition Berbasis Data Finansial, Riwayat Wanprestasi, Pengecekan Riil LKPP, SIPP Pengadilan &amp; Google News Screening.
+          </p>
+        </div>
+        <div style="display:flex; gap:0.4rem; align-items:center; flex-wrap:wrap;">
+          <span class="grade-badge ${m.gradeMeta.badgeCls}" style="font-size:0.75rem; padding:3px 10px;">
+            Skor 5C Terpadu: ${fiveC.totalScore} / 100
           </span>
-          <button class="btn btn-outline btn-sm" onclick="switchTab('tab-grade')"> Indikator Grade</button>
+          <span style="font-size:0.7rem; font-weight:800; background:#e0f2fe; color:#0369a1; padding:3px 8px; border-radius:6px; border:1px solid #bae6fd;">
+            Sub-Indikator 6B: ${fiveC.totalScore10} / 10 (+${fmtNum(s6B, 1)} Poin)
+          </span>
+          <button class="btn btn-outline btn-sm" onclick="switchTab('tab-score')">
+            Lihat Rincian Skor DCC &raquo;
+          </button>
         </div>
       </div>
 
@@ -1992,7 +2043,7 @@ function renderScoreCalculationTab(proj, m) {
               </span>
             </div>
           </div>
-          <button class="btn btn-outline btn-sm" onclick="switchTab('tab-mitigasi')" style="font-size:0.68rem;">
+          <button class="btn btn-outline btn-sm" onclick="switchTab('tab-case-qa')" style="font-size:0.68rem;">
             Lihat Tab Mitigasi &amp; QA &raquo;
           </button>
         </div>
@@ -2036,25 +2087,15 @@ function renderScoreCalculationTab(proj, m) {
         ` : ''}
       </div>
 
-      <!-- AI 5C ANALYSIS AUTOMATIC MODULE -->
+      <!-- 5C DIMENSIONS INTERACTIVE CARDS -->
       <div style="margin-bottom:0.75rem;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
-          <div style="font-size:0.76rem; font-weight:800; color:var(--askrindo-navy); display:flex; align-items:center; gap:0.4rem;">
-            <span>Modul Analisa Kualitatif 5C Otomatis (AI 5C Credit Engine)</span>
-            <span style="font-size:0.65rem; background:#dcfce7; color:#166534; padding:2px 7px; border-radius:99px; font-weight:700;">Data Riil Terverifikasi</span>
-          </div>
-          <span style="font-size:0.7rem; font-weight:800; color:var(--askrindo-blue);">
-            Skor 5C Terpadu: ${fiveC.totalScore} / 100 (Terkonversi ke 6B: ${fiveC.totalScore10} / 10)
-          </span>
-        </div>
-
         <div class="five-c-grid">
-          <!-- Character Card -->
-          <div class="five-c-card" style="border-top:3px solid #0284c7;">
+          <!-- 1. Character Card -->
+          <div class="five-c-card" style="border-top:3.5px solid #0284c7;">
             <div>
               <div class="five-c-header">
-                <span class="five-c-title">Character (20%)</span>
-                <span class="five-c-score">${fiveC.charScore}</span>
+                <span class="five-c-title">1. Character (20%)</span>
+                <span class="five-c-score" style="color:${fiveC.charScore >= 70 ? '#10b981' : '#dc2626'};">${fiveC.charScore} / 100</span>
               </div>
               <div class="five-c-detail">
                 <strong>${fiveC.charAgeNote}</strong><br/>
@@ -2062,8 +2103,35 @@ function renderScoreCalculationTab(proj, m) {
                 &bull; INAPROC LKPP: <strong>${fiveC.inaprocStatus}</strong><br/>
                 &bull; SIPP Pengadilan: <strong>${fiveC.sippStatus}</strong>
               </div>
+
+              <!-- Parameter Wanprestasi -->
+              <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:5px; padding:0.35rem 0.45rem; margin-bottom:0.35rem;">
+                <label style="font-size:0.65rem; font-weight:700; color:var(--askrindo-navy); display:block; margin-bottom:2px;">
+                  Riwayat Wanprestasi / Gagal Bayar:
+                </label>
+                <select class="form-control" style="font-size:0.66rem; padding:2px 4px; height:auto;" onchange="updateCharacterParam('defaultHistory', this.value)">
+                  <option value="clean" ${proj.defaultHistory !== 'defaulted' ? 'selected' : ''}>&#10003; Belum Pernah (Lancar Kol 1)</option>
+                  <option value="defaulted" ${proj.defaultHistory === 'defaulted' ? 'selected' : ''}>&#9888; Pernah Wanprestasi / NPL (-35 Poin)</option>
+                </select>
+              </div>
+
+              <!-- Parameter Pemberitaan Negatif Google News -->
+              <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:5px; padding:0.35rem 0.45rem; margin-bottom:0.4rem;">
+                <label style="font-size:0.65rem; font-weight:700; color:var(--askrindo-navy); display:block; margin-bottom:2px;">
+                  Screening Berita Negatif di Media:
+                </label>
+                <select class="form-control" style="font-size:0.66rem; padding:2px 4px; height:auto;" onchange="updateCharacterParam('negativeNews', this.value)">
+                  <option value="clean" ${proj.negativeNews !== 'negative' ? 'selected' : ''}>&#10003; Nihil Berita Negatif di Media</option>
+                  <option value="negative" ${proj.negativeNews === 'negative' ? 'selected' : ''}>&#9888; Terdeteksi Berita Negatif (-25 Poin)</option>
+                </select>
+              </div>
             </div>
-            <div style="display:flex; flex-direction:column; gap:3px; margin-top:0.3rem;">
+
+            <!-- Tombol Pengecekan Riil -->
+            <div style="display:flex; flex-direction:column; gap:3px;">
+              <button class="five-c-portal-btn" style="background:#fff1f2; color:#be123c; border-color:#fecdd3;" onclick="openGoogleNewsPortal('${safeCompName}')" title="Cari berita kasus/sengketa/pailit di Google News">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block; vertical-align:middle;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Cari Google News (Riil) &raquo;
+              </button>
               <button class="five-c-portal-btn" onclick="openInaprocPortal('${safeCompName}')" title="Buka website resmi Daftar Hitam Nasional LKPP">
                 Cek INAPROC LKPP (Riil) &raquo;
               </button>
@@ -2073,81 +2141,108 @@ function renderScoreCalculationTab(proj, m) {
             </div>
           </div>
 
-          <!-- Capacity Card -->
-          <div class="five-c-card" style="border-top:3px solid ${fiveC.capScore >= 70 ? '#10b981' : '#dc2626'};">
+          <!-- 2. Capacity Card -->
+          <div class="five-c-card" style="border-top:3.5px solid ${fiveC.capScore >= 70 ? '#10b981' : '#dc2626'};">
             <div>
               <div class="five-c-header">
-                <span class="five-c-title">Capacity (25%)</span>
-                <span class="five-c-score" style="color:${fiveC.capScore >= 70 ? '#10b981' : '#dc2626'};">${fiveC.capScore}</span>
+                <span class="five-c-title">2. Capacity (25%)</span>
+                <span class="five-c-score" style="color:${fiveC.capScore >= 70 ? '#10b981' : '#dc2626'};">${fiveC.capScore} / 100</span>
               </div>
               <div class="five-c-detail">
                 <strong>${fiveC.capNote}</strong><br/>
-                &bull; GPM: <strong>${fmtPct(m.gpm23, 2)}</strong> (${fmtRp(m.gp23, true)})<br/>
+                &bull; Gross Margin: <strong>${fmtPct(m.gpm23, 2)}</strong> (${fmtRp(m.gp23, true)})<br/>
                 &bull; Tenor Mismatch: <strong>${fmtNum(m.cashGapAtSCFMaturity_Actual, 0)} Hari</strong><br/>
-                &bull; Cash Runway: <strong>${fmtNum(m.pureCashRunwayDays, 0)} Hari</strong>
+                &bull; Pure Cash Runway: <strong>${fmtNum(m.pureCashRunwayDays, 0)} Hari</strong><br/>
+                &bull; ICR: <strong>${m.icr23 < 0 ? 'Negatif' : fmtNum(m.icr23, 2)}x</strong>
               </div>
             </div>
-            <div style="font-size:0.62rem; color:var(--text-muted); background:#f8fafc; padding:3px; border-radius:4px; text-align:center;">
-              Perlu Restrukturisasi Batch
+            <div style="font-size:0.62rem; color:${fiveC.capScore >= 70 ? '#166534' : '#991b1b'}; background:${fiveC.capScore >= 70 ? '#f0fdf4' : '#fef2f2'}; padding:4px; border-radius:4px; text-align:center; font-weight:700;">
+              ${fiveC.capScore >= 70 ? 'Arus Kas Memadai' : 'Perlu Rekayasa Tenor / Buffer Kas'}
             </div>
           </div>
 
-          <!-- Capital Card -->
-          <div class="five-c-card" style="border-top:3px solid ${fiveC.capitScore >= 70 ? '#10b981' : '#f59e0b'};">
+          <!-- 3. Capital Card -->
+          <div class="five-c-card" style="border-top:3.5px solid ${fiveC.capitScore >= 70 ? '#10b981' : '#f59e0b'};">
             <div>
               <div class="five-c-header">
-                <span class="five-c-title">Capital (20%)</span>
-                <span class="five-c-score" style="color:${fiveC.capitScore >= 70 ? '#10b981' : '#f59e0b'};">${fiveC.capitScore}</span>
+                <span class="five-c-title">3. Capital (20%)</span>
+                <span class="five-c-score" style="color:${fiveC.capitScore >= 70 ? '#10b981' : '#f59e0b'};">${fiveC.capitScore} / 100</span>
               </div>
               <div class="five-c-detail">
                 <strong>${fiveC.capitNote}</strong><br/>
-                &bull; DER: <strong>${fmtNum(m.der23, 2)}x</strong><br/>
+                &bull; DER: <strong>${fmtNum(m.der23, 2)}x</strong> (Batas Maks 4,0x)<br/>
                 &bull; Current Ratio: <strong>${fmtNum(m.currentRatio23, 2)}x</strong><br/>
-                &bull; NWC: <strong>${fmtRp(m.nwc23, true)}</strong>
+                &bull; NWC Riil: <strong>${fmtRp(m.nwc23, true)}</strong><br/>
+                &bull; Ekuitas: <strong>${fmtRp(proj.fin23.capital + proj.fin23.re, true)}</strong>
               </div>
             </div>
-            <div style="font-size:0.62rem; color:var(--text-muted); background:#f8fafc; padding:3px; border-radius:4px; text-align:center;">
-              Defisit Siklus NWC Terdeteksi
+            <div style="font-size:0.62rem; color:${fiveC.capitScore >= 70 ? '#166534' : '#92400e'}; background:${fiveC.capitScore >= 70 ? '#f0fdf4' : '#fffbeb'}; padding:4px; border-radius:4px; text-align:center; font-weight:700;">
+              ${fiveC.capitScore >= 70 ? 'Permodalan Sehat' : 'Defisit Siklus NWC Terdeteksi'}
             </div>
           </div>
 
-          <!-- Collateral Card -->
-          <div class="five-c-card" style="border-top:3px solid #10b981;">
+          <!-- 4. Collateral Card -->
+          <div class="five-c-card" style="border-top:3.5px solid #10b981;">
             <div>
               <div class="five-c-header">
-                <span class="five-c-title">Collateral (20%)</span>
-                <span class="five-c-score" style="color:#10b981;">${fiveC.collScore}</span>
+                <span class="five-c-title">4. Collateral (20%)</span>
+                <span class="five-c-score" style="color:#10b981;">${fiveC.collScore} / 100</span>
               </div>
               <div class="five-c-detail">
                 <strong>${fiveC.collNote}</strong><br/>
-                &bull; Nilai Aset Tetap: <strong>${fmtRp(proj.fin23.fa, true)}</strong><br/>
+                &bull; Aset Tetap Free &amp; Clear: <strong>${fmtRp(proj.fin23.fa, true)}</strong><br/>
                 &bull; Coverage vs Plafond: <strong>${fiveC.collRatio.toFixed(0)}%</strong><br/>
-                &bull; Pengikatan: <strong>Wajib HT Peringkat I</strong>
+                &bull; Target Underwriting: <strong>&ge; 120% (${fmtRp(proj.requestedPlafond * 1.2, true)})</strong><br/>
+                &bull; Pengikatan: <strong>Wajib Hak Tanggungan Peringkat I</strong>
               </div>
             </div>
-            <div style="font-size:0.62rem; color:#166534; background:#f0fdf4; padding:3px; border-radius:4px; text-align:center; font-weight:700;">
-              Agunan Memadai (&ge;120%)
+            <div style="font-size:0.62rem; color:#166534; background:#f0fdf4; padding:4px; border-radius:4px; text-align:center; font-weight:700;">
+              Agunan Memadai (&ge; 120%)
             </div>
           </div>
 
-          <!-- Condition Card -->
-          <div class="five-c-card" style="border-top:3px solid ${fiveC.isImport ? '#d97706' : '#0284c7'};">
+          <!-- 5. Condition Card -->
+          <div class="five-c-card" style="border-top:3.5px solid ${fiveC.isImport ? '#d97706' : '#0284c7'};">
             <div>
               <div class="five-c-header">
-                <span class="five-c-title">Condition (15%)</span>
-                <span class="five-c-score" style="color:${fiveC.isImport ? '#d97706' : '#0284c7'};">${fiveC.condScore}</span>
+                <span class="five-c-title">5. Condition (15%)</span>
+                <span class="five-c-score" style="color:${fiveC.isImport ? '#d97706' : '#0284c7'};">${fiveC.condScore} / 100</span>
               </div>
               <div class="five-c-detail">
                 <strong>${fiveC.condNote}</strong><br/>
-                &bull; Komoditas: <strong>Kedelai Impor Laut</strong><br/>
-                &bull; Eksposur Valas: <strong>USD/IDR</strong><br/>
-                &bull; Mitigasi: <strong>Wajib Marine Cargo</strong>
+                &bull; Komoditas: <strong>${proj.sector}</strong><br/>
+                &bull; Eksposur Valas: <strong>${proj.usdAmount > 0 ? `USD ${proj.usdAmount.toLocaleString('id-ID')}` : 'Domestik IDR'}</strong><br/>
+                &bull; Mitigasi Maritim: <strong>Wajib Marine Cargo All Risks</strong>
               </div>
             </div>
-            <div style="font-size:0.62rem; color:#92400e; background:#fffbeb; padding:3px; border-radius:4px; text-align:center; font-weight:700;">
-              Wajib Asuransi Marine Cargo
+            <div style="font-size:0.62rem; color:#92400e; background:#fffbeb; padding:4px; border-radius:4px; text-align:center; font-weight:700;">
+              Wajib Asuransi Marine Cargo Askrindo
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================================
+// 9. RENDER SCORE CALCULATION TAB
+// ============================================================================
+function renderScoreCalculationTab(proj, m) {
+  const fiveC = m.fiveC || compute5CAnalysis(proj, proj.fin23, m);
+  const qualVal = fiveC.totalScore10;
+  const s6B = Number(((Math.max(0, Math.min(10, qualVal)) / 10) * 6).toFixed(1));
+
+  document.getElementById('scoreCalculationMenuContainer').innerHTML = `
+    <div class="card" style="border-left: 4px solid var(--askrindo-blue);">
+      <div class="card-header">
+        <div class="card-title">Menu Rincian Perhitungan Score DCC-SWCM (${proj.companyName})</div>
+        <div style="display:flex; gap:0.35rem; align-items:center;">
+          <span class="grade-badge ${m.gradeMeta.badgeCls}" style="font-size:0.72rem; padding:3px 9px;">
+            Total Score: ${m.score} / 100 (Grade ${m.shortGrade})
+          </span>
+          <button class="btn btn-outline btn-sm" onclick="switchTab('tab-5c')"> Analisa 5C</button>
+          <button class="btn btn-outline btn-sm" onclick="switchTab('tab-grade')"> Indikator Grade</button>
         </div>
       </div>
 
@@ -2175,19 +2270,18 @@ function renderScoreCalculationTab(proj, m) {
       </div>
 
       <div class="grid-2" style="margin-bottom:0.6rem;">
-        <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:6px; padding:0.5rem 0.65rem;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.2rem;">
-            <span style="font-weight:700; font-size:0.73rem; color:var(--askrindo-navy);">
-              Kalibrasi Penilaian Kualitatif 5C Underwriter (Sub-Indikator 6B)
-            </span>
-            <span class="slider-val" id="lblQual5CScore">${fmtNum(qualVal, 1)} / 10 (+${fmtNum((qualVal / 10) * 6, 1)} Poin)</span>
+        <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:6px; padding:0.5rem 0.75rem; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="font-weight:800; font-size:0.74rem; color:var(--askrindo-navy);">
+              Sub-Indikator 6B: Penilaian Kualitatif 5C Underwriter
+            </div>
+            <div style="font-size:0.68rem; color:#0369a1; margin-top:2px;">
+              Skor otomatis: <strong>${fmtNum(qualVal, 1)} / 10</strong> (+${fmtNum(s6B, 1)} Poin) bersumber dari Modul Analisa 5C.
+            </div>
           </div>
-          <input type="range" min="0" max="10" step="0.5" value="${qualVal}" oninput="updateQualitative5CScore(this.value)" />
-          <div class="slider-scale">
-            <span>0 (Macet / Tanpa Agunan)</span>
-            <span>5 (Cukup)</span>
-            <span>10 (SLIK Kol 1 + Agunan Kuat &ge;150%)</span>
-          </div>
+          <button class="btn btn-outline btn-sm" onclick="switchTab('tab-5c')" style="font-size:0.68rem; padding:3px 8px;">
+            Buka Analisa 5C &raquo;
+          </button>
         </div>
 
         <div style="background:#fff; border:1px solid var(--border-color); border-radius:6px; padding:0.5rem 0.65rem; display:flex; flex-direction:column; justify-content:center;">
@@ -2258,22 +2352,7 @@ function renderScoreCalculationTab(proj, m) {
   `;
 }
 
-function updateQualitative5CScore(val) {
-  const proj = getActiveProject();
-  if (!proj) return;
-  proj.qualitative5CScore = parseFloat(val) || 0;
-  saveProjectsToStorage();
-  const m = computeDCCSWCM(proj);
-  renderProjectList();
-  renderBanner(proj, m);
-  renderDashboardTab(proj, m);
-  renderBurnRateTab(proj, m);
-  renderGradeRiskTab(proj, m);
-  renderScoreCalculationTab(proj, m);
-  renderCaseStudyQATab(proj, m);
-  renderRatiosTab(proj, m);
-  renderPrintableReport(proj, m);
-}
+
 
 // ============================================================================
 // 10. RENDER DASHBOARD, DCC, STRESS-TEST, MEMO, PORTFOLIO
@@ -3415,6 +3494,7 @@ function syncInputsToModel() {
   renderBurnRateTab(proj, m);
   runStressSimulation();
   renderGradeRiskTab(proj, m);
+  render5CTab(proj, m);
   renderScoreCalculationTab(proj, m);
   renderCaseStudyQATab(proj, m);
   renderRatiosTab(proj, m);
@@ -3734,6 +3814,7 @@ function renderAll() {
   syncSlidersWithCurrentProject(proj, m);
   runStressSimulation();
   renderGradeRiskTab(proj, m);
+  render5CTab(proj, m);
   renderScoreCalculationTab(proj, m);
   renderCaseStudyQATab(proj, m);
   renderPrintableReport(proj, m);

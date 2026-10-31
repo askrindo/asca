@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="favicon.png" />
   <link rel="shortcut icon" href="favicon.ico" />
   <link rel="apple-touch-icon" href="favicon.png" />
-  <link rel="stylesheet" href="styles.css?v=1793458636" />
+  <link rel="stylesheet" href="styles.css?v=1793465002" />
   <style id="login-critical-styles">
     /* Anti-Cache Guarantee for Enterprise Login Interface */
     .login-screen {
@@ -250,6 +250,7 @@
           <div>
             <div style="font-size:0.64rem; text-transform:uppercase; color:var(--text-muted); font-weight:700; display:flex; gap:0.4rem; align-items:center;">
               <span>Skor DCC-SWCM</span>
+              <a href="javascript:void(0)" onclick="switchTab('tab-5c')" style="color:var(--askrindo-blue); text-decoration:underline; font-size:0.62rem;">[Analisa 5C]</a>
               <a href="javascript:void(0)" onclick="switchTab('tab-score')" style="color:var(--askrindo-blue); text-decoration:underline; font-size:0.62rem;">[Rincian Skor]</a>
               <a href="javascript:void(0)" onclick="switchTab('tab-grade')" style="color:var(--askrindo-blue); text-decoration:underline; font-size:0.62rem;">[Indikator Grade]</a>
             </div>
@@ -281,6 +282,9 @@
         </button>
         <button class="tab-btn" data-tab="tab-grade" onclick="switchTab('tab-grade')" title="Grade Risk & Indikator Penilaian">
           Grade Risk
+        </button>
+        <button class="tab-btn" data-tab="tab-5c" onclick="switchTab('tab-5c')" title="Analisa Kualitatif 5C Underwriting (Character, Capacity, Capital, Collateral, Condition)">
+          Analisa 5C
         </button>
         <button class="tab-btn" data-tab="tab-score" onclick="switchTab('tab-score')" title="Rincian Perhitungan Skor 5 Pilar ASCA">
           Rincian Skor
@@ -750,7 +754,14 @@
       </section>
 
       <!-- ========================================================= -->
-      <!-- TAB 7: RINCIAN PERHITUNGAN SCORE DCC-SWCM -->
+      <!-- TAB 7: ANALISA KUALITATIF 5C (AI 5C CREDIT ENGINE) -->
+      <!-- ========================================================= -->
+      <section id="tab-5c" class="tab-pane">
+        <div id="fiveCMenuContainer"></div>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- TAB 8: RINCIAN PERHITUNGAN SCORE DCC-SWCM -->
       <!-- ========================================================= -->
       <section id="tab-score" class="tab-pane">
         <div id="scoreCalculationMenuContainer"></div>
@@ -1077,6 +1088,6 @@
 
     <div class="toast-container" id="toastContainer"></div>
 
-  <script src="app.js?v=1793458636"></script>
+  <script src="app.js?v=1793465002"></script>
 </body>
 </html>

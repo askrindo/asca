@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="favicon.png" />
   <link rel="shortcut icon" href="favicon.ico" />
   <link rel="apple-touch-icon" href="favicon.png" />
-  <link rel="stylesheet" href="styles.css?v=1793465002" />
+  <link rel="stylesheet" href="styles.css?v=1793470276" />
   <style id="login-critical-styles">
     /* Anti-Cache Guarantee for Enterprise Login Interface */
     .login-screen {
@@ -233,7 +233,7 @@
           <h2>
             <span id="bannerCompanyName">-</span>
             <span id="bannerGradeBadge" class="grade-badge grade-BB" style="cursor:pointer;" onclick="switchTab('tab-grade')" title="Klik untuk melihat Penentuan Grade Risk & Indikator Penyebab">-</span>
-            <span id="bannerCoverageBadge" class="cover-badge cover-conditional" style="display:none; cursor:pointer;" onclick="switchTab('tab-mitigasi')" title="Klik untuk melihat Rekomendasi Porsi Coverage Penjaminan Askrindo">-</span>
+            <span id="bannerCoverageBadge" class="cover-badge cover-conditional" style="display:none; cursor:pointer;" onclick="switchTab('tab-mitigasi')" title="Klik untuk melihat Rekomendasi Porsi Coverage Asuransi Kredit Askrindo">-</span>
             <span id="bannerFacilityType" style="font-size:0.68rem; background:#e0f2fe; color:#0369a1; padding:2px 7px; border-radius:99px; font-weight:600;">-</span>
           </h2>
           <div class="case-submeta">
@@ -255,7 +255,7 @@
               <a href="javascript:void(0)" onclick="switchTab('tab-grade')" style="color:var(--askrindo-blue); text-decoration:underline; font-size:0.62rem;">[Indikator Grade]</a>
             </div>
             <div id="bannerDecisionText" style="font-size:0.8rem; font-weight:800; color:var(--askrindo-navy);">-</div>
-            <div id="bannerOptimalLimit" style="font-size:0.66rem; color:var(--text-muted);">Rekomendasi: -</div>
+            <div id="bannerOptimalLimit" style="font-size:0.66rem; color:var(--text-muted);">Rekomendasi Coverage: -</div>
           </div>
         </div>
       </div>
@@ -269,7 +269,10 @@
           Input Data
         </button>
         <button class="tab-btn" data-tab="tab-ratios" onclick="switchTab('tab-ratios')" title="Analisis Rasio Keuangan & Standar RAC Askrindo">
-          Rasio Keuangan &amp; RAC
+          Rasio Keuangan
+        </button>
+        <button class="tab-btn" data-tab="tab-5c" onclick="switchTab('tab-5c')" title="Analisa Kualitatif 5C Underwriting (Character, Capacity, Capital, Collateral, Condition)">
+          Analisa 5C
         </button>
         <button class="tab-btn" data-tab="tab-dcc" onclick="switchTab('tab-dcc')" title="Dynamic Cash Conversion Cycle">
           Dynamic CCC
@@ -283,16 +286,13 @@
         <button class="tab-btn" data-tab="tab-grade" onclick="switchTab('tab-grade')" title="Grade Risk & Indikator Penilaian">
           Grade Risk
         </button>
-        <button class="tab-btn" data-tab="tab-5c" onclick="switchTab('tab-5c')" title="Analisa Kualitatif 5C Underwriting (Character, Capacity, Capital, Collateral, Condition)">
-          Analisa 5C
-        </button>
-        <button class="tab-btn" data-tab="tab-score" onclick="switchTab('tab-score')" title="Rincian Perhitungan Skor 5 Pilar ASCA">
+        <button class="tab-btn" data-tab="tab-score" onclick="switchTab('tab-score')" title="Rincian Perhitungan Skor 6 Pilar ASCA">
           Rincian Skor
         </button>
-        <button class="tab-btn" data-tab="tab-case-qa" onclick="switchTab('tab-case-qa')" title="Critical Point Temuan & Paket Mitigasi (120% Agunan dll)">
+        <button class="tab-btn" data-tab="tab-case-qa" onclick="switchTab('tab-case-qa')" title="Critical Point Temuan & Paket Mitigasi Asuransi Kredit">
           Mitigasi &amp; QA
         </button>
-        <button class="tab-btn" data-tab="tab-report" onclick="switchTab('tab-report')" title="Nota Analisa Underwriting & Cetak Laporan">
+        <button class="tab-btn" data-tab="tab-report" onclick="switchTab('tab-report')" title="Nota Analisa Underwriting Asuransi Kredit Final">
           Nota Cetak
         </button>
       </nav>
@@ -440,6 +440,28 @@
                 <label>Deskripsi Tujuan Penggunaan Fasilitas &amp; Rantai Pasok Bisnis</label>
                 <textarea id="inp_businessDesc" class="form-control" oninput="syncInputsToModel()"></textarea>
               </div>
+              <div class="form-group full" style="background:#f0f9ff; border:1px solid #bae6fd; padding:0.6rem 0.75rem; border-radius:6px; margin-top:0.3rem;">
+                <label style="font-weight:700; color:var(--askrindo-navy); margin-bottom:0.25rem;">
+                  Metode Pengadaan &amp; Jalur Logistik Pengiriman Bahan Baku / Barang Dagang:
+                </label>
+                <div style="display:flex; flex-wrap:wrap; gap:1.2rem; align-items:center; font-size:0.75rem;">
+                  <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;">
+                    <input type="radio" name="inp_procurementMethod" id="inp_proc_import" value="import_sea" onchange="syncInputsToModel()" />
+                    <span><strong>Impor Luar Negeri / Jalur Laut (Sea Freight)</strong> &mdash; <em style="color:#0284c7;">Otomatis Wajib Asuransi Marine Cargo Askrindo</em></span>
+                  </label>
+                  <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;">
+                    <input type="radio" name="inp_procurementMethod" id="inp_proc_domestic" value="domestic" onchange="syncInputsToModel()" />
+                    <span><strong>Domestik / Lokal (Inland Transit)</strong> &mdash; <em>Jalur Darat / Antar Kota</em></span>
+                  </label>
+                  <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;">
+                    <input type="radio" name="inp_procurementMethod" id="inp_proc_none" value="none" onchange="syncInputsToModel()" />
+                    <span><strong>Tidak Ada Pengiriman Fisik</strong> &mdash; <em>Jasa / Konstruksi Non-Pengiriman</em></span>
+                  </label>
+                </div>
+                <div style="font-size:0.68rem; color:#0369a1; margin-top:0.3rem;">
+                  &bull; Berdasarkan pilihan ini, sistem ASCA menentukan kewajiban penutupan <strong>Asuransi Marine Cargo (All Risks Warehouse to Warehouse)</strong> pada syarat mitigasi asuransi kredit.
+                </div>
+              </div>
             </div>
 
             <div style="margin-top:0.6rem; padding-top:0.5rem; border-top:1px solid var(--border-color);">
@@ -463,7 +485,7 @@
 
           <div class="card">
             <div class="card-header">
-              <div class="card-title">C. Data Laporan Keuangan Audited (Tahun Dinamis dalam Rp)</div>
+              <div class="card-title">C. Data Laporan Keuangan Audited (Rp)</div>
               <div style="display:flex; align-items:center; gap:0.35rem; font-size:0.7rem;">
                 <span style="color:var(--text-muted); font-weight:600;">Ubah Tahun:</span>
                 <input type="number" id="inp_year1" class="form-control" style="width:68px; padding:2px 5px; font-weight:700; text-align:center;" oninput="syncInputsToModel()" title="Tahun Periode 1" />
@@ -482,7 +504,7 @@
                 </thead>
                 <tbody>
                   <tr>
-                    <td colspan="3" style="background:#e2e8f0; font-weight:700; font-size:0.68rem; padding:2px 6px;">LAPORAN LABA RUGI</td>
+                    <td colspan="3" style="background:#e2e8f0; font-weight:700; font-size:0.68rem; padding:2px 6px;">1. LAPORAN LABA RUGI (INCOME STATEMENT)</td>
                   </tr>
                   <tr>
                     <td>Penjualan (Revenue)</td>
@@ -505,7 +527,7 @@
                     <td><input type="text" inputmode="numeric" id="inp_tax23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
                   </tr>
                   <tr>
-                    <td colspan="3" style="background:#e2e8f0; font-weight:700; font-size:0.68rem; padding:2px 6px;">NERACA - ASET</td>
+                    <td colspan="3" style="background:#e2e8f0; font-weight:700; font-size:0.68rem; padding:2px 6px;">2. NERACA &mdash; ASET LANCAR (CURRENT ASSETS)</td>
                   </tr>
                   <tr>
                     <td>Kas dan Bank</td>
@@ -533,6 +555,9 @@
                     <td><input type="text" inputmode="numeric" id="inp_otherCa23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
                   </tr>
                   <tr>
+                    <td colspan="3" style="background:#e2e8f0; font-weight:700; font-size:0.68rem; padding:2px 6px;">3. NERACA &mdash; ASET TIDAK LANCAR (NON-CURRENT ASSETS)</td>
+                  </tr>
+                  <tr>
                     <td>Aset Tetap (Fixed Assets)</td>
                     <td><input type="text" inputmode="numeric" id="inp_fa22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
                     <td><input type="text" inputmode="numeric" id="inp_fa23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
@@ -543,7 +568,7 @@
                     <td><input type="text" inputmode="numeric" id="inp_taxAsset23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
                   </tr>
                   <tr>
-                    <td colspan="3" style="background:#e2e8f0; font-weight:700; font-size:0.68rem; padding:2px 6px;">NERACA - LIABILITAS &amp; EKUITAS</td>
+                    <td colspan="3" style="background:#e2e8f0; font-weight:700; font-size:0.68rem; padding:2px 6px;">4. NERACA &mdash; LIABILITAS JANGKA PENDEK (CURRENT LIABILITIES)</td>
                   </tr>
                   <tr>
                     <td>Utang Bank Jangka Pendek</td>
@@ -566,12 +591,18 @@
                     <td><input type="text" inputmode="numeric" id="inp_accrued23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
                   </tr>
                   <tr>
-                    <td>Liabilitas Jangka Panjang</td>
+                    <td colspan="3" style="background:#e2e8f0; font-weight:700; font-size:0.68rem; padding:2px 6px;">5. NERACA &mdash; LIABILITAS JANGKA PANJANG (NON-CURRENT LIABILITIES)</td>
+                  </tr>
+                  <tr>
+                    <td>Utang Bank Jangka Panjang &amp; Liabilitas Lainnya</td>
                     <td><input type="text" inputmode="numeric" id="inp_ltDebt22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
                     <td><input type="text" inputmode="numeric" id="inp_ltDebt23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
                   </tr>
                   <tr>
-                    <td>Modal Dasar / Disetor</td>
+                    <td colspan="3" style="background:#e2e8f0; font-weight:700; font-size:0.68rem; padding:2px 6px;">6. NERACA &mdash; EKUITAS (EQUITY)</td>
+                  </tr>
+                  <tr>
+                    <td>Modal Dasar &amp; Disetor (Paid-up Capital)</td>
                     <td><input type="text" inputmode="numeric" id="inp_capital22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
                     <td><input type="text" inputmode="numeric" id="inp_capital23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
                   </tr>
@@ -588,7 +619,7 @@
       </section>
 
       <!-- ========================================================= -->
-      <!-- TAB 3: RASIO KEUANGAN & RAC (Financial Ratios) -->
+      <!-- TAB 3: RASIO KEUANGAN (Financial Ratios & RAC) -->
       <!-- ========================================================= -->
       <section id="tab-ratios" class="tab-pane">
         <div class="card">
@@ -600,6 +631,13 @@
             <div style="color:var(--text-muted); padding:1.5rem; text-align:center;">Belum ada data keuangan. Silakan pilih atau buat kasus analisa kredit terlebih dahulu.</div>
           </div>
         </div>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- TAB 4: ANALISA KUALITATIF 5C (AI 5C CREDIT ENGINE) -->
+      <!-- ========================================================= -->
+      <section id="tab-5c" class="tab-pane">
+        <div id="fiveCMenuContainer"></div>
       </section>
 
       <!-- ========================================================= -->
@@ -753,12 +791,7 @@
         <div id="gradeRiskMenuContainer"></div>
       </section>
 
-      <!-- ========================================================= -->
-      <!-- TAB 7: ANALISA KUALITATIF 5C (AI 5C CREDIT ENGINE) -->
-      <!-- ========================================================= -->
-      <section id="tab-5c" class="tab-pane">
-        <div id="fiveCMenuContainer"></div>
-      </section>
+
 
       <!-- ========================================================= -->
       <!-- TAB 8: RINCIAN PERHITUNGAN SCORE DCC-SWCM -->
@@ -1088,6 +1121,6 @@
 
     <div class="toast-container" id="toastContainer"></div>
 
-  <script src="app.js?v=1793465002"></script>
+  <script src="app.js?v=1793470276"></script>
 </body>
 </html>

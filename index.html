@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="favicon.png" />
   <link rel="shortcut icon" href="favicon.ico" />
   <link rel="apple-touch-icon" href="favicon.png" />
-  <link rel="stylesheet" href="styles.css?v=1793483000" />
+  <link rel="stylesheet" href="styles.css?v=1793484000" />
   <style id="login-critical-styles">
     /* Anti-Cache Guarantee for Enterprise Login Interface */
     .login-screen {
@@ -269,6 +269,9 @@
         </button>
         <button class="tab-btn" data-tab="tab-ratios" onclick="switchTab('tab-ratios')" title="Analisis Rasio Keuangan & Standar RAC Askrindo">
           Rasio Keuangan
+        </button>
+        <button class="tab-btn" data-tab="tab-cashflow" onclick="switchTab('tab-cashflow')" title="Proyeksi Arus Kas 12 Bulan ke Depan &amp; Debt Service Coverage">
+          Proyeksi Cash Flow
         </button>
         <button class="tab-btn" data-tab="tab-5c" onclick="switchTab('tab-5c')" title="Analisa Kualitatif 5C Underwriting (Character, Capacity, Capital, Collateral, Condition)">
           Analisa 5C
@@ -650,6 +653,13 @@
             <div style="color:var(--text-muted); padding:1.5rem; text-align:center;">Belum ada data keuangan. Silakan pilih atau buat kasus analisa kredit terlebih dahulu.</div>
           </div>
         </div>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- TAB: PROYEKSI CASH FLOW (Cash Flow Projection & Debt Service) -->
+      <!-- ========================================================= -->
+      <section id="tab-cashflow" class="tab-pane">
+        <div id="cashFlowMenuContainer"></div>
       </section>
 
       <!-- ========================================================= -->
@@ -1140,6 +1150,6 @@
 
     <div class="toast-container" id="toastContainer"></div>
 
-  <script src="app.js?v=1793483000"></script>
+  <script src="app.js?v=1793484000"></script>
 </body>
 </html>

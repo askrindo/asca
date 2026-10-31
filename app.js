@@ -1159,6 +1159,137 @@ function compute5CAnalysis(proj, f23, m) {
 }
 
 // ============================================================================
+// 4B. CASH FLOW PROJECTION & DEBT SERVICE ENGINE (FORWARD-LOOKING ANALYSIS)
+// ============================================================================
+function computeCashFlowProjection(proj, overrides = {}) {
+  const f23 = proj.fin23 || {};
+  const requestedPlafond = proj.requestedPlafond || 10000000000;
+  const interestRate = overrides.interestRate !== undefined ? overrides.interestRate : (proj.interestRate || 9.5);
+  const salesGrowth = overrides.salesGrowth !== undefined ? overrides.salesGrowth : (proj.cfProjGrowth !== undefined ? proj.cfProjGrowth : 5.0);
+  
+  // Hitung GPM default dari audited fin23
+  const histGPM = (f23.rev && f23.rev > 0) ? ((f23.rev - f23.cogs) / f23.rev) * 100 : 8.0;
+  const targetGPM = overrides.targetGPM !== undefined ? overrides.targetGPM : (proj.cfProjGPM !== undefined ? proj.cfProjGPM : histGPM);
+  
+  const histDOR = (f23.rev && f23.rev > 0) ? (f23.ar / f23.rev) * 365 : 60;
+  const dorDays = overrides.dorDays !== undefined ? overrides.dorDays : (proj.cfProjDOR !== undefined ? proj.cfProjDOR : histDOR);
+  
+  const repaymentType = overrides.repaymentType || proj.cfProjRepaymentType || (proj.scfTenorDays > 0 ? 'semi_annual' : 'bullet'); // 'bullet', 'semi_annual', 'amortized'
+
+  const baseRev = f23.rev || (requestedPlafond * 4);
+  const projectedAnnualSales = baseRev * (1 + salesGrowth / 100);
+  const projectedAnnualCOGS = projectedAnnualSales * (1 - targetGPM / 100);
+  const baseOpex = f23.opex || (baseRev * 0.08);
+  const projectedAnnualOpex = baseOpex * 1.05; // Asumsi inflasi operasional 5%
+
+  const monthlySales = projectedAnnualSales / 12;
+  const monthlyCOGS = projectedAnnualCOGS / 12;
+  const monthlyOpex = projectedAnnualOpex / 12;
+
+  let currentCash = f23.cash || (requestedPlafond * 0.1);
+  const initialCash = currentCash;
+  const monthlyData = [];
+
+  let totalInflow = 0;
+  let totalOutflow = 0;
+  let totalNOCF = 0;
+  let totalDebtService = 0;
+  let minEndingCash = Infinity;
+
+  for (let month = 1; month <= 12; month++) {
+    const begCash = currentCash;
+
+    // Penerimaan kas masuk dari penjualan (memperhitungkan penundaan DOR)
+    let collectionLag = Math.min(1.0, 30 / Math.max(25, dorDays));
+    let cashInflow = monthlySales;
+    if (month === 1 && dorDays > 30) {
+      cashInflow = monthlySales * collectionLag;
+    }
+
+    // Pengeluaran kas operasional: HPP, OPEX, Pajak
+    const cogsPayment = monthlyCOGS;
+    const opexPayment = monthlyOpex;
+    const monthlyOperatingIncome = monthlySales - monthlyCOGS - monthlyOpex;
+    const taxPayment = Math.max(0, monthlyOperatingIncome * 0.22);
+    const operatingOutflow = cogsPayment + opexPayment + taxPayment;
+    const nocf = cashInflow - operatingOutflow;
+
+    // Kewajiban pembayaran utang: Bunga + Pokok
+    const monthlyInterest = (requestedPlafond * (interestRate / 100)) / 12;
+    let principalRepayment = 0;
+    if (repaymentType === 'semi_annual') {
+      if (month === 6) principalRepayment = requestedPlafond * 0.5;
+      if (month === 12) principalRepayment = requestedPlafond * 0.5;
+    } else if (repaymentType === 'amortized') {
+      principalRepayment = requestedPlafond / 12;
+    } else { // bullet di akhir tenor M12
+      if (month === 12) principalRepayment = requestedPlafond;
+    }
+
+    const debtService = monthlyInterest + principalRepayment;
+    const endingCash = begCash + nocf - debtService;
+
+    // DSCR Bulanan
+    const availableForDS = nocf + begCash;
+    const monthDSCR = debtService > 0 ? (availableForDS / debtService) : 99.9;
+
+    monthlyData.push({
+      month,
+      monthName: `Bulan ${month}`,
+      begCash,
+      sales: monthlySales,
+      cashInflow,
+      cogsPayment,
+      opexPayment,
+      taxPayment,
+      operatingOutflow,
+      nocf,
+      monthlyInterest,
+      principalRepayment,
+      debtService,
+      endingCash,
+      monthDSCR: Math.max(0, monthDSCR),
+      isDeficit: endingCash < 0
+    });
+
+    currentCash = endingCash;
+    totalInflow += cashInflow;
+    totalOutflow += operatingOutflow;
+    totalNOCF += nocf;
+    totalDebtService += debtService;
+    if (endingCash < minEndingCash) {
+      minEndingCash = endingCash;
+    }
+  }
+
+  const annualDSCR = totalDebtService > 0 ? ((totalNOCF + initialCash) / totalDebtService) : 0;
+  const fcf = totalNOCF - totalDebtService;
+  const lowestCash = minEndingCash;
+  const isHealthy = annualDSCR >= 1.20 && lowestCash > 0;
+
+  return {
+    salesGrowth,
+    targetGPM,
+    interestRate,
+    dorDays,
+    repaymentType,
+    initialCash,
+    projectedAnnualSales,
+    projectedAnnualCOGS,
+    projectedAnnualOpex,
+    totalInflow,
+    totalOutflow,
+    totalNOCF,
+    totalDebtService,
+    annualDSCR,
+    lowestCash,
+    fcf,
+    isHealthy,
+    monthlyData
+  };
+}
+
+// ============================================================================
 // 5. CORE DCC-SWCM ENGINE & NWC BURN-RATE ANALYZER
 // ============================================================================
 function computeDCCSWCM(proj) {
@@ -1580,59 +1711,62 @@ function computeDCCSWCM(proj) {
     reason: r5B
   });
 
-  // PILAR 6: SOLVABILITAS & STRUKTUR SKEMA (BOBOT MAKS: 10 POIN)
-  let s6A = der23 <= 2.0 && reErosionPct23 === 0 ? 5 : (der23 <= 3.0 && reErosionPct23 <= 30 ? 3.5 : 1);
+  // PILAR 6: SOLVABILITAS & STRUKTUR MODAL (BOBOT MAKS: 10 POIN)
+  let s6A = der23 <= 2.0 && reErosionPct23 === 0 ? 5 : (der23 <= 3.0 && reErosionPct23 <= 30 ? 3.5 : (der23 <= 4.0 ? 2 : 1));
   scoreComponents.push({
     pillarId: 'P6',
-    pillarName: 'Pilar 6: Solvabilitas & Struktur Skema (Maks 10)',
+    pillarName: 'Pilar 6: Solvabilitas & Struktur Modal (Maks 10)',
     code: '6A',
-    name: 'Debt to Equity Ratio & Erosi Modal',
+    name: 'Debt to Equity Ratio (DER) & Proteksi Erosi Modal',
     formula: 'Total Liabilitas / Ekuitas',
-    benchmark: 'DER &le; 2,5x & Erosi < 25%',
+    benchmark: 'DER &le; 2,5x & Erosi Modal < 25%',
     actualStr: `DER: ${fmtNum(der23, 2)}x | Erosi: ${fmtNum(reErosionPct23, 1)}%`,
     maxPts: 5,
     earnedPts: s6A,
     lostPts: 5 - s6A,
-    reason: reErosionPct23 > 50 ? 'Akumulasi rugi menggerus sebagian besar modal.' : 'Permodalan stabil.'
+    reason: reErosionPct23 > 50 ? 'Akumulasi rugi menggerus sebagian besar modal saham.' : (der23 <= 2.5 ? 'Permodalan kuat & solvabel.' : 'Leverage utang tinggi.')
   });
 
-  let s6B = (stDebtGrowth <= 25 ? 3 : (stDebtGrowth <= 50 ? 1.5 : 0)) + (proj.kmkTenorDays > 0 ? 0 : 2);
+  let s6B = (stDebtGrowth <= 25 ? 3 : (stDebtGrowth <= 50 ? 2 : 1)) + (proj.kmkTenorDays > 0 ? 0 : 2);
   scoreComponents.push({
     pillarId: 'P6',
-    pillarName: 'Pilar 6: Solvabilitas & Struktur Skema (Maks 10)',
+    pillarName: 'Pilar 6: Solvabilitas & Struktur Modal (Maks 10)',
     code: '6B',
-    name: 'Stabilitas Utang Bank & Anti-Moral Hazard Backup',
-    formula: 'Evaluasi Stabilitas Utang & Klausul Backup',
-    benchmark: 'Utang Stabil & Skema Self-Liquidating',
-    actualStr: `${fmtPct(stDebtGrowth, 1)} | ${proj.kmkTenorDays > 0 ? 'Ada Backup' : 'Mandiri'}`,
+    name: 'Kualitas Struktur Utang Bank & Kemandirian Skema',
+    formula: 'Pertumbuhan Utang Jk Pendek & Anti-Moral Hazard',
+    benchmark: 'Utang Stabil (&Delta; &le; +25%) & Skema Mandiri',
+    actualStr: `&Delta;Utang: ${fmtPct(stDebtGrowth, 1)} | ${proj.kmkTenorDays > 0 ? 'Ada Backup Default' : 'Struktur Mandiri'}`,
     maxPts: 5,
     earnedPts: s6B,
     lostPts: 5 - s6B,
-    reason: proj.kmkTenorDays > 0 ? 'Terdapat klausul backup default otomatis.' : 'Utang terkendali tanpa moral hazard backup.'
+    reason: proj.kmkTenorDays > 0 ? 'Fasilitas mengandalkan backup default otomatis (risiko moral hazard).' : 'Struktur utang terkendali tanpa risiko moral hazard.'
   });
 
-  // PILAR 7: VERIFIKASI DATA BANK VS AUDITED (BOBOT MAKS: 10 POIN)
+  // PILAR 7: PROYEKSI ARUS KAS & KAPASITAS PELUNASAN (CASH FLOW PROJECTION & DEBT SERVICE) (BOBOT MAKS: 10 POIN)
+  const cfProj = computeCashFlowProjection(proj);
   let s7A = 0;
   let r7A = '';
-  const absDiffDOI = Math.abs(diffDOI);
-  if (absDiffDOI <= 10) {
+  if (cfProj.annualDSCR >= 1.30 && cfProj.totalNOCF > 0) {
     s7A = 5;
-    r7A = `Data Bank DOI (${proj.claimedDOI} hr) terverifikasi akurat sesuai laporan audited (${fmtNum(doi23_365, 1)} hr).`;
-  } else if (absDiffDOI <= 30) {
-    s7A = 3;
-    r7A = `Deviasi moderat terhadap Data Bank DOI (${proj.claimedDOI} hr vs aktual ${fmtNum(doi23_365, 1)} hr).`;
+    r7A = `Projected DSCR sangat kuat (${fmtNum(cfProj.annualDSCR, 2)}x &ge; 1,30x); arus kas operasional mampu melunasi pokok & bunga kredit.`;
+  } else if (cfProj.annualDSCR >= 1.15 && cfProj.totalNOCF > 0) {
+    s7A = 4;
+    r7A = `Projected DSCR memadai (${fmtNum(cfProj.annualDSCR, 2)}x); kapasitas bayar proyeksi memenuhi standar underwriting Askrindo.`;
+  } else if (cfProj.annualDSCR >= 1.00) {
+    s7A = 2;
+    r7A = `Projected DSCR pas-pasan (${fmtNum(cfProj.annualDSCR, 2)}x); kas operasional tipis untuk melunasi cicilan utang.`;
   } else {
     s7A = 0;
-    r7A = `Deviasi material terhadap Data Bank DOI: tertulis ${proj.claimedDOI} hr padahal riil ${fmtNum(doi23_365, 1)} hr (selisih +${fmtNum(diffDOI, 1)} hr).`;
+    r7A = `Projected DSCR defisit (${fmtNum(cfProj.annualDSCR, 2)}x < 1,00x); proyeksi arus kas operasional minus (cash shortfall) memastikan gagal bayar saat jatuh tempo.`;
   }
   scoreComponents.push({
     pillarId: 'P7',
-    pillarName: 'Pilar 7: Verifikasi Data Bank vs Audited (Maks 10)',
+    pillarName: 'Pilar 7: Proyeksi Arus Kas & Debt Service (Maks 10)',
     code: '7A',
-    name: 'Akurasi Data Bank Hari Persediaan (&Delta;DOI)',
-    formula: '|DOI Aktual  -  DOI Data Bank|',
-    benchmark: 'Deviasi &le; 10 Hari',
-    actualStr: `Selisih ${diffDOI >= 0 ? '+' : ''}${fmtNum(diffDOI, 1)} Hari`,
+    name: 'Projected Debt Service Coverage Ratio (DSCR Proyeksi 12 Bulan)',
+    formula: '(Arus Kas Operasi Proyeksi + Kas Awal) / Total Debt Service',
+    benchmark: '&ge; 1,20x Standar Underwriting',
+    actualStr: `DSCR: ${fmtNum(cfProj.annualDSCR, 2)}x (NOCF: ${fmtRp(cfProj.totalNOCF, true)})`,
     maxPts: 5,
     earnedPts: s7A,
     lostPts: 5 - s7A,
@@ -1641,22 +1775,24 @@ function computeDCCSWCM(proj) {
 
   let s7B = 0;
   let r7B = '';
-  const absDiffDOP = Math.abs(diffDOP);
-  if (absDiffDOP <= 12) {
+  if (cfProj.lowestCash > 0 && cfProj.fcf > 0) {
     s7B = 5;
-    r7B = `Data Bank DOR (${proj.claimedDOR} hr) & DOP (${proj.claimedDOP} hr) sesuai Neraca.`;
+    r7B = `Saldo kas akhir selalu surplus (Terendah: ${fmtRp(cfProj.lowestCash, true)}) & Free Cash Flow positif (+${fmtRp(cfProj.fcf, true)}).`;
+  } else if (cfProj.lowestCash >= 0) {
+    s7B = 3;
+    r7B = `Saldo kas akhir proyeksi bertahan positif tipis tanpa tembus defisit kas.`;
   } else {
-    s7B = 1.5;
-    r7B = `DOP Utang Dagang murni ${fmtNum(dop23_365, 1)} hr berbeda dari Data Bank ${proj.claimedDOP} hr.`;
+    s7B = 0;
+    r7B = `Terjadi defisit saldo kas (Terendah ${fmtRp(cfProj.lowestCash, true)}); arus kas internal tidak mampu menopang operasional dan cicilan pinjaman.`;
   }
   scoreComponents.push({
     pillarId: 'P7',
-    pillarName: 'Pilar 7: Verifikasi Data Bank vs Audited (Maks 10)',
+    pillarName: 'Pilar 7: Proyeksi Arus Kas & Debt Service (Maks 10)',
     code: '7B',
-    name: 'Akurasi Data Bank Piutang (DOR) & Utang (DOP)',
-    formula: '|DOP Aktual  -  Data Bank|',
-    benchmark: 'Deviasi &le; 12 Hari',
-    actualStr: `&Delta;DOR: ${fmtNum(diffDOR, 1)}h | &Delta;DOP: ${fmtNum(diffDOP, 1)}h`,
+    name: 'Ketahanan Saldo Kas Akhir & Free Cash Flow (FCF) Proyeksi',
+    formula: 'Minimum Ending Cash Balance & FCF Proyeksi',
+    benchmark: 'Saldo Kas Akhir > Rp 0 & FCF Positif',
+    actualStr: `Kas Terendah: ${fmtRp(cfProj.lowestCash, true)} | FCF: ${fmtRp(cfProj.fcf, true)}`,
     maxPts: 5,
     earnedPts: s7B,
     lostPts: 5 - s7B,
@@ -1711,6 +1847,7 @@ function computeDCCSWCM(proj) {
     sustainableLimitBaseline, recommendedMitigatedLimit,
     scoreComponents, scorePillars, totalRawScore, totalLostPoints,
     hasKnockOutCap, gradeMeta,
+    cfProj,
     score,
     riskGrade: `${gradeMeta.grade} (${gradeMeta.name})`,
     shortGrade: gradeMeta.grade,
@@ -3643,6 +3780,290 @@ function renderRatiosTab(proj, m) {
   `;
 }
 
+// ============================================================================
+// 10B. RENDER TAB PROYEKSI CASH FLOW (FORWARD-LOOKING 12-MONTH REPAYMENT ADEQUACY)
+// ============================================================================
+function renderCashFlowTab(proj, m) {
+  const container = document.getElementById('cashFlowMenuContainer');
+  if (!container) return;
+  const cf = m.cfProj || computeCashFlowProjection(proj);
+
+  const statusColor = cf.isHealthy ? '#166534' : '#991b1b';
+  const statusBg = cf.isHealthy ? '#f0fdf4' : '#fef2f2';
+
+  // SVG Chart points calculation
+  const cashVals = cf.monthlyData.map((d) => d.endingCash);
+  const minVal = Math.min(0, ...cashVals);
+  const maxVal = Math.max(1000000, ...cashVals);
+  const range = maxVal - minVal || 1;
+  const svgWidth = 860;
+  const svgHeight = 160;
+  const paddingX = 40;
+  const paddingY = 25;
+  const plotW = svgWidth - paddingX * 2;
+  const plotH = svgHeight - paddingY * 2;
+
+  // Zero line Y
+  const zeroY = paddingY + plotH - ((0 - minVal) / range) * plotH;
+
+  const points = cf.monthlyData.map((d, idx) => {
+    const x = paddingX + (idx / 11) * plotW;
+    const y = paddingY + plotH - ((d.endingCash - minVal) / range) * plotH;
+    return { x, y, val: d.endingCash, month: d.month, isDeficit: d.isDeficit };
+  });
+
+  const polylineStr = points.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+
+  container.innerHTML = `
+    <div class="card" style="border-left: 4px solid var(--askrindo-blue);">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Modul Proyeksi Arus Kas &amp; Kapasitas Pelunasan Utang (Cash Flow Projection)</div>
+          <p style="font-size:0.71rem; color:var(--text-muted); margin:0.15rem 0 0;">
+            Simulasi Forward-Looking 12 Bulan: Menguji kemampuan riil arus kas operasional debitur dalam melunasi bunga &amp; pokok kredit (${proj.companyName}).
+          </p>
+        </div>
+        <span class="badge-method" style="background:#e0f2fe; color:#0369a1;">Pilar 7 Skor ASCA (Maks 10 Poin)</span>
+      </div>
+
+      <!-- 4 TOP KPI CARDS -->
+      <div class="grid-4" style="margin-bottom:0.75rem;">
+        <div class="kpi-card kpi-blue">
+          <div class="kpi-label">Proyeksi Penjualan (12 Bulan)</div>
+          <div class="kpi-value">${fmtRp(cf.projectedAnnualSales, true)}</div>
+          <div class="kpi-sub">
+            <span>Inflow Kas: ${fmtRp(cf.totalInflow, true)}</span>
+            <span style="font-weight:700;">Growth ${cf.salesGrowth >= 0 ? '+' : ''}${cf.salesGrowth}%</span>
+          </div>
+        </div>
+
+        <div class="kpi-card ${cf.totalNOCF >= 0 ? 'kpi-green' : 'kpi-red'}">
+          <div class="kpi-label">Net Operating Cash Flow (NOCF)</div>
+          <div class="kpi-value" style="color:${cf.totalNOCF >= 0 ? '#166534' : '#dc2626'};">${fmtRp(cf.totalNOCF, true)}</div>
+          <div class="kpi-sub">
+            <span>Kas Masuk  -  Biaya Operasi</span>
+            <span style="font-weight:700;">${cf.totalNOCF >= 0 ? 'Surplus Operasional' : 'Defisit Operasional'}</span>
+          </div>
+        </div>
+
+        <div class="kpi-card kpi-gold">
+          <div class="kpi-label">Total Debt Service (Kewajiban Utang)</div>
+          <div class="kpi-value">${fmtRp(cf.totalDebtService, true)}</div>
+          <div class="kpi-sub">
+            <span>Plafond: ${fmtRp(proj.requestedPlafond, true)}</span>
+            <span style="font-weight:700;">Bunga ${cf.interestRate}% p.a.</span>
+          </div>
+        </div>
+
+        <div class="kpi-card ${cf.isHealthy ? 'kpi-green' : 'kpi-red'}">
+          <div class="kpi-label">Projected DSCR &amp; Kas Minimum</div>
+          <div class="kpi-value" style="color:${statusColor};">${fmtNum(cf.annualDSCR, 2)}x</div>
+          <div class="kpi-sub">
+            <span>Kas Terendah: ${fmtRp(cf.lowestCash, true)}</span>
+            <span style="font-weight:700; color:${statusColor};">${cf.annualDSCR >= 1.20 && cf.lowestCash >= 0 ? 'Kapasitas Bayar Kuat' : 'Risiko Default Tinggi'}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONTROL PANEL: PARAMETER ASUMSI PROYEKSI -->
+      <div style="background:#f8fafc; border:1px solid var(--border-color); border-radius:8px; padding:0.75rem 1rem; margin-bottom:0.85rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.6rem;">
+          <div style="font-weight:800; font-size:0.82rem; color:var(--askrindo-navy);">
+            Simulasi Parameter Asumsi Proyeksi (12 Bulan ke Depan)
+          </div>
+          <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+            <button class="btn btn-outline btn-sm" onclick="setCashFlowPreset('status_quo')" style="font-size:0.68rem;">Skenario Status Quo (Historis)</button>
+            <button class="btn btn-outline btn-sm" onclick="setCashFlowPreset('turnaround')" style="font-size:0.68rem; color:#0369a1; border-color:#0284c7;">Skenario Restrukturisasi DCC-SWCM</button>
+            <button class="btn btn-outline btn-sm" onclick="setCashFlowPreset('stress')" style="font-size:0.68rem; color:#b91c1c; border-color:#f87171;">Skenario Konservatif (Stress)</button>
+          </div>
+        </div>
+
+        <div class="grid-4" style="gap:0.6rem; font-size:0.72rem;">
+          <div>
+            <label style="display:block; font-weight:700; margin-bottom:0.25rem;">Pertumbuhan Penjualan (% YoY):</label>
+            <input type="number" step="0.5" id="cf_inp_growth" class="form-control" value="${cf.salesGrowth}" onchange="updateCashFlowCustomParam()" style="font-size:0.78rem; padding:4px 8px;" />
+          </div>
+          <div>
+            <label style="display:block; font-weight:700; margin-bottom:0.25rem;">Target Gross Profit Margin (%):</label>
+            <input type="number" step="0.5" id="cf_inp_gpm" class="form-control" value="${fmtNum(cf.targetGPM, 1)}" onchange="updateCashFlowCustomParam()" style="font-size:0.78rem; padding:4px 8px;" />
+          </div>
+          <div>
+            <label style="display:block; font-weight:700; margin-bottom:0.25rem;">Hari Piutang / DOR (Hari):</label>
+            <input type="number" step="1" id="cf_inp_dor" class="form-control" value="${Math.round(cf.dorDays)}" onchange="updateCashFlowCustomParam()" style="font-size:0.78rem; padding:4px 8px;" />
+          </div>
+          <div>
+            <label style="display:block; font-weight:700; margin-bottom:0.25rem;">Skema Pelunasan Pokok Pinjaman:</label>
+            <select id="cf_inp_repayment" class="form-control" onchange="updateCashFlowCustomParam()" style="font-size:0.78rem; padding:4px 8px;">
+              <option value="semi_annual" ${cf.repaymentType === 'semi_annual' ? 'selected' : ''}>Dua Tahap / 6 Bulanan (Bln 6 &amp; 12)</option>
+              <option value="bullet" ${cf.repaymentType === 'bullet' ? 'selected' : ''}>Pelunasan Penuh Akhir Tenor (Bln 12)</option>
+              <option value="amortized" ${cf.repaymentType === 'amortized' ? 'selected' : ''}>Amortisasi Cicilan Bulanan (M1 - M12)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- VISUALISASI GRAFIK TREN SALDO KAS -->
+      <div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:0.75rem 1rem; margin-bottom:0.85rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+          <div style="font-weight:800; font-size:0.78rem; color:var(--askrindo-navy);">
+            Grafik Proyeksi Saldo Kas Akhir Bulanan (M1 s/d M12)
+          </div>
+          <div style="font-size:0.68rem; color:var(--text-muted);">
+            Garis merah putus-putus menandai batas defisit kas (Rp 0)
+          </div>
+        </div>
+
+        <div style="width:100%; overflow-x:auto;">
+          <svg viewBox="0 0 ${svgWidth} ${svgHeight}" style="width:100%; min-width:650px; height:150px; display:block;">
+            <!-- Grid line & Zero line -->
+            <line x1="${paddingX}" y1="${zeroY}" x2="${svgWidth - paddingX}" y2="${zeroY}" stroke="${minVal < 0 ? '#dc2626' : '#cbd5e1'}" stroke-width="1.8" stroke-dasharray="${minVal < 0 ? '4,4' : 'none'}" />
+            <text x="${paddingX - 6}" y="${zeroY + 4}" font-size="9" text-anchor="end" fill="#64748b" font-weight="700">Rp 0</text>
+
+            <!-- Line chart -->
+            <polyline fill="none" stroke="${cf.lowestCash >= 0 ? '#0284c7' : '#dc2626'}" stroke-width="2.5" points="${polylineStr}" />
+
+            <!-- Points & labels -->
+            ${points.map((p) => `
+              <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4.5" fill="${p.isDeficit ? '#dc2626' : '#0284c7'}" stroke="#fff" stroke-width="1.5" />
+              <text x="${p.x.toFixed(1)}" y="${p.y < 35 ? p.y + 14 : p.y - 7}" font-size="8" text-anchor="middle" font-weight="700" fill="${p.isDeficit ? '#991b1b' : '#0f172a'}">
+                ${fmtRp(p.val, true)}
+              </text>
+              <text x="${p.x.toFixed(1)}" y="${svgHeight - 4}" font-size="9" text-anchor="middle" fill="#64748b" font-weight="600">
+                M${p.month}
+              </text>
+            `).join('')}
+          </svg>
+        </div>
+      </div>
+
+      <!-- TABEL RINCIAN BULANAN 12 BULAN -->
+      <div style="font-weight:800; font-size:0.82rem; color:var(--askrindo-navy); margin-bottom:0.4rem;">
+        Tabel Rincian Proyeksi Arus Kas Bulanan (12 Bulan) &amp; Total Tahunan
+      </div>
+      <div class="table-responsive" style="margin-bottom:0.75rem;">
+        <table class="data-table" style="font-size:0.69rem; width:100%; text-align:right;">
+          <thead>
+            <tr>
+              <th style="text-align:left;">Periode</th>
+              <th class="num-col">Kas Awal</th>
+              <th class="num-col">Inflow Penjualan</th>
+              <th class="num-col">Outflow HPP</th>
+              <th class="num-col">Outflow OPEX</th>
+              <th class="num-col">Arus Kas Operasi (NOCF)</th>
+              <th class="num-col">Bunga Pinjaman</th>
+              <th class="num-col">Pokok Pinjaman</th>
+              <th class="num-col">Total Debt Service</th>
+              <th class="num-col">Saldo Kas Akhir</th>
+              <th class="num-col">DSCR</th>
+              <th style="text-align:center;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${cf.monthlyData.map((d) => `
+              <tr style="${d.isDeficit ? 'background:#fef2f2;' : ''}">
+                <td style="text-align:left; font-weight:700;">${d.monthName}</td>
+                <td class="num-col">${fmtRp(d.begCash, true)}</td>
+                <td class="num-col" style="color:#0369a1; font-weight:600;">+${fmtRp(d.cashInflow, true)}</td>
+                <td class="num-col" style="color:#b91c1c;">-${fmtRp(d.cogsPayment, true)}</td>
+                <td class="num-col" style="color:#b91c1c;">-${fmtRp(d.opexPayment, true)}</td>
+                <td class="num-col" style="font-weight:700; color:${d.nocf >= 0 ? '#166534' : '#dc2626'};">${fmtRp(d.nocf, true)}</td>
+                <td class="num-col">-${fmtRp(d.monthlyInterest, true)}</td>
+                <td class="num-col">${d.principalRepayment > 0 ? `-${fmtRp(d.principalRepayment, true)}` : '-'}</td>
+                <td class="num-col" style="font-weight:700; color:#b45309;">${fmtRp(d.debtService, true)}</td>
+                <td class="num-col" style="font-weight:800; color:${d.endingCash >= 0 ? '#166534' : '#dc2626'};">${fmtRp(d.endingCash, true)}</td>
+                <td class="num-col" style="font-weight:700; color:${d.monthDSCR >= 1.2 ? '#166534' : (d.monthDSCR >= 1.0 ? '#b45309' : '#dc2626')};">${fmtNum(d.monthDSCR, 2)}x</td>
+                <td style="text-align:center;">
+                  <span style="font-size:0.62rem; padding:2px 6px; border-radius:3px; font-weight:700; background:${d.isDeficit ? '#fee2e2; color:#991b1b;' : '#dcfce7; color:#15803d;'}">
+                    ${d.isDeficit ? 'DEFISIT' : 'SURPLUS'}
+                  </span>
+                </td>
+              </tr>
+            `).join('')}
+            <tr style="background:#f1f5f9; font-weight:800; border-top:2px solid #94a3b8;">
+              <td style="text-align:left;">TOTAL TAHUNAN</td>
+              <td class="num-col">${fmtRp(cf.initialCash, true)} (Awal)</td>
+              <td class="num-col" style="color:#0369a1;">+${fmtRp(cf.totalInflow, true)}</td>
+              <td class="num-col" style="color:#b91c1c;">-${fmtRp(cf.projectedAnnualCOGS, true)}</td>
+              <td class="num-col" style="color:#b91c1c;">-${fmtRp(cf.projectedAnnualOpex, true)}</td>
+              <td class="num-col" style="color:${cf.totalNOCF >= 0 ? '#166534' : '#dc2626'};">${fmtRp(cf.totalNOCF, true)}</td>
+              <td class="num-col">-${fmtRp(cf.totalDebtService - proj.requestedPlafond, true)}</td>
+              <td class="num-col">-${fmtRp(proj.requestedPlafond, true)}</td>
+              <td class="num-col" style="color:#b45309;">${fmtRp(cf.totalDebtService, true)}</td>
+              <td class="num-col" style="color:${cf.lowestCash >= 0 ? '#166534' : '#dc2626'};">${fmtRp(cf.monthlyData[11].endingCash, true)}</td>
+              <td class="num-col" style="color:${cf.annualDSCR >= 1.2 ? '#166534' : '#dc2626'};">${fmtNum(cf.annualDSCR, 2)}x</td>
+              <td style="text-align:center;">
+                <span style="font-size:0.62rem; padding:2px 6px; border-radius:3px; font-weight:800; background:${cf.isHealthy ? '#dcfce7; color:#15803d;' : '#fee2e2; color:#991b1b;'}">
+                  ${cf.isHealthy ? 'LAYAK BAYAR' : 'DEFISIT BAYAR'}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- INSIGHT & REKOMENDASI UNDERWRITING -->
+      <div style="background:${statusBg}; border:1px solid ${cf.isHealthy ? '#86efac' : '#fca5a5'}; border-left:4px solid ${statusColor}; padding:0.65rem 0.85rem; border-radius:6px; font-size:0.73rem;">
+        <div style="font-weight:800; color:${statusColor}; margin-bottom:0.25rem;">
+          ${cf.isHealthy ? 'KESIMPULAN PROYEKSI CASH FLOW: ARUS KAS OPERASIONAL MEMENUHI KAPASITAS PELUNASAN' : 'KESIMPULAN PROYEKSI CASH FLOW: DEFISIT ARUS KAS OPERASIONAL TERHADAP BEBAN UTANG'}
+        </div>
+        <p style="margin:0; line-height:1.45; color:#334155;">
+          ${cf.isHealthy
+            ? `Proyeksi membuktikan bahwa dengan pertumbuhan penjualan ${cf.salesGrowth}% dan Target GPM ${fmtNum(cf.targetGPM, 1)}%, debitur mampu menghasilkan Net Operating Cash Flow positif sebesar ${fmtRp(cf.totalNOCF, true)}. Projected DSCR mencapai <strong>${fmtNum(cf.annualDSCR, 2)}x (&ge; 1,20x)</strong> dengan saldo kas terendah tetap surplus ${fmtRp(cf.lowestCash, true)}. Transaksi layak dipertimbangkan dengan skema pelunasan berjalan.`
+            : `Proyeksi membuktikan bahwa dengan struktur saat ini (GPM ${fmtNum(cf.targetGPM, 1)}%), debitur mengalami defisit arus kas operasional (NOCF ${fmtRp(cf.totalNOCF, true)}). Saldo kas terendah anjlok hingga <strong>${fmtRp(cf.lowestCash, true)}</strong> sehingga Projected DSCR hanya <strong>${fmtNum(cf.annualDSCR, 2)}x (&lt; 1,00x)</strong>. Jika tidak dilakukan restrukturisasi tranche dan perbaikan marjin kontrak, debitur dipastikan default saat jatuh tempo kewajiban pokok.`
+          }
+        </p>
+      </div>
+    </div>
+  `;
+}
+
+function setCashFlowPreset(presetType) {
+  const proj = getActiveProject();
+  if (!proj) return;
+  const m = computeDCCSWCM(proj);
+  if (presetType === 'status_quo') {
+    const histGPM = ((proj.fin23.rev - proj.fin23.cogs) / proj.fin23.rev) * 100;
+    proj.cfProjGrowth = 0;
+    proj.cfProjGPM = Number(histGPM.toFixed(1));
+    proj.cfProjDOR = Math.round(m.dor23_365);
+    proj.cfProjRepaymentType = 'semi_annual';
+    showToast('Preset Status Quo diterapkan: Menggunakan data audited riil.');
+  } else if (presetType === 'turnaround') {
+    proj.cfProjGrowth = 15;
+    proj.cfProjGPM = 10.5;
+    proj.cfProjDOR = 55;
+    proj.cfProjRepaymentType = 'semi_annual';
+    showToast('Preset Restrukturisasi DCC-SWCM diterapkan: Target GPM +10,5% &amp; DOR 55 hari.');
+  } else if (presetType === 'stress') {
+    const histGPM = ((proj.fin23.rev - proj.fin23.cogs) / proj.fin23.rev) * 100;
+    proj.cfProjGrowth = -5;
+    proj.cfProjGPM = Number((histGPM - 2.5).toFixed(1));
+    proj.cfProjDOR = Math.round(m.dor23_365 + 20);
+    proj.cfProjRepaymentType = 'bullet';
+    showToast('Preset Konservatif diterapkan: Penjualan -5%, DOR +20 hari.');
+  }
+  saveProjectsToStorage();
+  renderAll();
+}
+
+function updateCashFlowCustomParam() {
+  const proj = getActiveProject();
+  if (!proj) return;
+  const g = parseFloat(document.getElementById('cf_inp_growth').value);
+  const gpm = parseFloat(document.getElementById('cf_inp_gpm').value);
+  const dor = parseInt(document.getElementById('cf_inp_dor').value, 10);
+  const rep = document.getElementById('cf_inp_repayment').value;
+
+  if (!isNaN(g)) proj.cfProjGrowth = g;
+  if (!isNaN(gpm)) proj.cfProjGPM = gpm;
+  if (!isNaN(dor)) proj.cfProjDOR = dor;
+  if (rep) proj.cfProjRepaymentType = rep;
+
+  saveProjectsToStorage();
+  renderAll();
+  showToast('Parameter Proyeksi Cash Flow diperbarui!');
+}
+
 function renderPrintableReport(proj, m) {
   const today = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
   const ins = buildDynamicCaseInsights(proj, m);
@@ -3942,6 +4363,7 @@ function syncInputsToModel() {
   renderScoreCalculationTab(proj, m);
   renderCaseStudyQATab(proj, m);
   renderRatiosTab(proj, m);
+  renderCashFlowTab(proj, m);
   renderPrintableReport(proj, m);
 }
 
@@ -4275,6 +4697,7 @@ function renderAll() {
   populateFormInputs(proj);
   renderDashboardTab(proj, m);
   renderRatiosTab(proj, m);
+  renderCashFlowTab(proj, m);
   renderDCCTab(proj, m);
   renderBurnRateTab(proj, m);
   syncSlidersWithCurrentProject(proj, m);

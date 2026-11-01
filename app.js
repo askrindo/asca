@@ -1169,15 +1169,19 @@ function normalizeNewsSearchQuery(rawName) {
 }
 
 let isFetchingGoogleNews = false;
+const fetchedGoogleNewsCache = new Set();
 
 function runAutoGoogleNewsCheckSync(proj, notifyToast = false) {
   if (!proj) return;
   const cleanName = normalizeNewsSearchQuery(proj.companyName || 'Perusahaan');
-  proj.googleNewsCompany = cleanName;
-  proj.googleNewsAccessedAt = formatGoogleNewsAccessedDate(new Date());
-  proj.googleNewsItems = [];
-  proj.googleNewsLiveVersion = 'REAL_LIVE_PENDING';
-  proj.negativeNews = 'clean'; // Jika belum/tidak ditemukan berita negatif, perusahaan bersih (20/20 Poin)
+  if (proj.googleNewsCompany !== cleanName) {
+    proj.googleNewsCompany = cleanName;
+    proj.googleNewsAccessedAt = formatGoogleNewsAccessedDate(new Date());
+    proj.googleNewsItems = [];
+    proj.googleNewsFetchedCompany = null;
+    proj.googleNewsLiveVersion = 'REAL_LIVE_V2';
+    proj.negativeNews = 'clean'; // Jika belum/tidak ditemukan berita negatif, perusahaan bersih (20/20 Poin)
+  }
   if (notifyToast) {
     showToast(`📰 Memindai berita riil Google News untuk "${cleanName}"...`);
   }
@@ -1186,41 +1190,53 @@ function runAutoGoogleNewsCheckSync(proj, notifyToast = false) {
 function ensureGoogleNewsInitialized(proj) {
   if (!proj) return;
   const cleanName = normalizeNewsSearchQuery(proj.companyName || 'Perusahaan');
-  if (
-    !Array.isArray(proj.googleNewsItems) ||
-    proj.googleNewsCompany !== cleanName ||
-    proj.googleNewsLiveVersion !== 'REAL_LIVE_V2'
-  ) {
-    proj.googleNewsCompany = cleanName;
-    proj.googleNewsAccessedAt = formatGoogleNewsAccessedDate(new Date());
-    if (proj.googleNewsLiveVersion !== 'REAL_LIVE_V2') {
-      proj.googleNewsItems = [];
-      proj.negativeNews = 'clean';
-      proj.googleNewsLiveVersion = 'REAL_LIVE_PENDING';
-    }
-    // Trigger background live fetch from Google News RSS (Data Riil)
-    setTimeout(() => {
-      fetchGoogleNewsForProject(false, false);
-    }, 100);
+  if (!Array.isArray(proj.googleNewsItems)) {
+    proj.googleNewsItems = [];
   }
+  if (!proj.googleNewsCompany) {
+    proj.googleNewsCompany = cleanName;
+  }
+  if (!proj.googleNewsAccessedAt) {
+    proj.googleNewsAccessedAt = formatGoogleNewsAccessedDate(new Date());
+  }
+  if (!proj.negativeNews) {
+    proj.negativeNews = 'clean';
+  }
+  // Jangan pernah memicu fetch jaringan di dalam fungsi kalkulasi/render agar sistem tetap ringan!
 }
 
 async function fetchGoogleNewsForProject(isManualClick = false, isAutoInputTrigger = false) {
   const proj = getActiveProject();
-  if (!proj || isFetchingGoogleNews) return;
+  if (!proj) return;
+
+  const cleanName = normalizeNewsSearchQuery(proj.companyName || 'Perusahaan');
+  if (!cleanName || cleanName.length < 3) return;
+
+  const cacheKey = `${proj.id || 'default'}::${cleanName.toLowerCase()}`;
+
+  // Cegah pencarian berulang otomatis untuk nama perusahaan yang sama (kecuali user klik tombol Update Berita secara manual)
+  if (!isManualClick && (proj.googleNewsFetchedCompany === cleanName || fetchedGoogleNewsCache.has(cacheKey))) {
+    return;
+  }
+  if (isFetchingGoogleNews) return;
 
   isFetchingGoogleNews = true;
+  // Tandai langsung di awal agar tidak pernah terpanggil berulang (zero loop)
+  proj.googleNewsFetchedCompany = cleanName;
+  proj.googleNewsCompany = cleanName;
+  proj.googleNewsLiveVersion = 'REAL_LIVE_V2';
+  fetchedGoogleNewsCache.add(cacheKey);
+
   const btn = document.getElementById('btnUpdateGoogleNews');
   if (btn) {
     btn.disabled = true;
     btn.textContent = 'Memuat Berita...';
   }
 
-  const cleanName = normalizeNewsSearchQuery(proj.companyName || 'Perusahaan');
   const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent('"' + cleanName + '"')}&hl=id&gl=ID&ceid=ID:id`;
 
   const oldMap = {};
-  if (Array.isArray(proj.googleNewsItems) && proj.googleNewsCompany === cleanName && proj.googleNewsLiveVersion === 'REAL_LIVE_V2') {
+  if (Array.isArray(proj.googleNewsItems) && proj.googleNewsCompany === cleanName) {
     proj.googleNewsItems.forEach((it) => {
       if (it && it.title) oldMap[it.title] = it.status || 'unmarked';
     });
@@ -1232,7 +1248,7 @@ async function fetchGoogleNewsForProject(isManualClick = false, isAutoInputTrigg
   try {
     const rss2JsonUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
     const controller1 = new AbortController();
-    const timer1 = setTimeout(() => controller1.abort(), 9500);
+    const timer1 = setTimeout(() => controller1.abort(), 5000);
     const res1 = await fetch(rss2JsonUrl, { signal: controller1.signal });
     clearTimeout(timer1);
     if (res1.ok) {
@@ -1259,7 +1275,7 @@ async function fetchGoogleNewsForProject(isManualClick = false, isAutoInputTrigg
     try {
       const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(rssUrl)}`;
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 8500);
+      const timer = setTimeout(() => controller.abort(), 5000);
       const res = await fetch(proxyUrl, { signal: controller.signal });
       clearTimeout(timer);
 
@@ -1295,6 +1311,7 @@ async function fetchGoogleNewsForProject(isManualClick = false, isAutoInputTrigg
   // TANPA HARDCODE: Jika tidak ada berita di Google News (parsedItems.length === 0),
   // maka googleNewsItems tetap [] (kosong) dan negativeNews otomatis 'clean' (20/20 Poin).
   proj.googleNewsCompany = cleanName;
+  proj.googleNewsFetchedCompany = cleanName;
   proj.googleNewsAccessedAt = formatGoogleNewsAccessedDate(new Date());
   proj.googleNewsItems = parsedItems;
   proj.googleNewsLiveVersion = 'REAL_LIVE_V2';
@@ -1304,7 +1321,11 @@ async function fetchGoogleNewsForProject(isManualClick = false, isAutoInputTrigg
 
   isFetchingGoogleNews = false;
   saveProjectsToStorage();
-  renderAll();
+  const m = computeDCCSWCM(proj);
+  renderBanner(proj, m);
+  render5CTab(proj, m);
+  renderScoreCalculationTab(proj, m);
+  renderGradeRiskTab(proj, m);
 
   if (isManualClick) {
     if (proj.googleNewsItems.length === 0) {
@@ -5511,14 +5532,14 @@ function syncInputsToModel() {
   const oldCompName = (proj.companyName || '').trim();
   proj.companyName = getStr('inp_companyName');
   if (proj.companyName.trim() !== oldCompName) {
-    // Otomatis memicu pencarian Daftar Hitam INAPROC LKPP & Berita Google News setiap nama perusahaan berubah di Input Data
+    // Otomatis memicu pencarian Daftar Hitam INAPROC LKPP & Berita Google News 1x setelah user selesai mengetik nama perusahaan
     runAutoInaprocCheckSync(proj, false);
     runAutoGoogleNewsCheckSync(proj, false);
     if (inaprocAutoTriggerTimer) clearTimeout(inaprocAutoTriggerTimer);
     inaprocAutoTriggerTimer = setTimeout(() => {
       triggerLiveInaprocCheck(false);
       fetchGoogleNewsForProject(false, true);
-    }, 600);
+    }, 1200);
   }
 
   proj.sector = getStr('inp_sector');
@@ -5673,6 +5694,15 @@ function switchTab(tabId) {
   document.querySelectorAll('.tab-pane').forEach((pane) => {
     pane.classList.toggle('active', pane.id === tabId);
   });
+  if (tabId === 'tab-5c') {
+    const proj = getActiveProject();
+    if (proj) {
+      const cleanName = normalizeNewsSearchQuery(proj.companyName || 'Perusahaan');
+      if (proj.googleNewsFetchedCompany !== cleanName) {
+        fetchGoogleNewsForProject(false, false);
+      }
+    }
+  }
 }
 
 function openNewProjectModal() {
@@ -5743,6 +5773,9 @@ function createNewProjectFromModal() {
   closeNewProjectModal();
   renderAll();
   switchTab('tab-input');
+  setTimeout(() => {
+    fetchGoogleNewsForProject(false, true);
+  }, 400);
   showToast(`Proyek "${name}" berhasil dibuat!`);
 }
 

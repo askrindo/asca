@@ -3334,12 +3334,12 @@ function render5CTab(proj, m) {
                         </button>
                       </div>
 
-                      <div style="display:grid; grid-template-columns: 1.25fr 1fr; gap:4px; margin-top:2px;">
-                        <button type="button" class="five-c-portal-btn" style="background:#0284c7; color:#ffffff; border-color:#0284c7; font-size:0.63rem; font-weight:700; justify-content:center;" onclick="openSippPortal('${safeCompName}', '${(proj.city || '').replace(/'/g, "\\'")}')" title="Buka web utama ${sippInfo.baseUrl} (nama perusahaan otomatis disalin ke clipboard)">
-                          🏛️ Buka SIPP ${sippInfo.pnName.replace('Pengadilan Negeri', 'PN')} &raquo;
+                      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:3px; margin-top:2px;">
+                        <button type="button" class="five-c-portal-btn" style="background:#0284c7; color:#ffffff; border-color:#0284c7; font-size:0.61rem; font-weight:700; justify-content:center; padding:3px 2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" onclick="openSippPortal('${safeCompName}', '${(proj.city || '').replace(/'/g, "\\'")}')" title="Buka web utama ${sippInfo.baseUrl} (nama perusahaan otomatis disalin ke clipboard)">
+                          🏛️ SIPP ${sippInfo.pnName.replace('Pengadilan Negeri', 'PN')} &raquo;
                         </button>
-                        <button type="button" class="five-c-portal-btn" style="background:#ffffff; color:#475569; border-color:#cbd5e1; font-size:0.62rem; justify-content:center;" onclick="openDirectPutusanMAPortal('${safeCompName}')" title="Buka Direktori Putusan Mahkamah Agung RI (Nasional)">
-                          🌐 Putusan MA RI &raquo;
+                        <button type="button" class="five-c-portal-btn" style="background:#ffffff; color:#475569; border-color:#cbd5e1; font-size:0.61rem; justify-content:center; padding:3px 2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" onclick="openDirectPutusanMAPortal('${safeCompName}')" title="Buka Direktori Putusan Mahkamah Agung RI (Nasional)">
+                          🌐 Putusan MA &raquo;
                         </button>
                       </div>
                     </div>

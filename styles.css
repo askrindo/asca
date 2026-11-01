@@ -454,21 +454,33 @@ body {
 /* 5C AI ANALYSIS & DUAL-STAGE DECISION BOX STYLING */
 .five-c-grid {
   display: grid;
-  grid-template-columns: minmax(330px, 1.55fr) repeat(4, minmax(0, 1fr));
-  gap: 0.5rem;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.55rem;
   margin-bottom: 0.75rem;
   align-items: stretch;
 }
-@media (max-width: 1100px) {
+@media (max-width: 1280px) {
+  .five-c-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 860px) {
   .five-c-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+@media (max-width: 540px) {
+  .five-c-grid {
+    grid-template-columns: 1fr;
+  }
+}
 .five-c-card {
+  min-width: 0;
+  box-sizing: border-box;
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  padding: 0.6rem 0.7rem;
+  padding: 0.6rem 0.65rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;

@@ -4824,18 +4824,18 @@ function renderCashFlowTab(proj, m) {
           </div>
         </div>
 
-        <div class="grid-4" style="gap:0.6rem; font-size:0.72rem;">
+        <div class="grid-4" style="gap:0.6rem; font-size:0.72rem; align-items:flex-end;">
           <div>
             <label style="display:block; font-weight:700; margin-bottom:0.25rem;">Pertumbuhan Penjualan (% YoY):</label>
-            <input type="number" step="0.5" id="cf_inp_growth" class="form-control" value="${cf.salesGrowth}" onchange="updateCashFlowCustomParam()" style="font-size:0.78rem; padding:4px 8px;" />
+            <input type="number" step="0.1" id="cf_inp_growth" class="form-control" value="${typeof cf.salesGrowth === 'number' && !isNaN(cf.salesGrowth) ? Number(cf.salesGrowth).toFixed(1) : '5.0'}" onchange="updateCashFlowCustomParam()" onkeydown="if(event.key==='Enter') updateCashFlowCustomParam()" style="font-size:0.78rem; padding:4px 8px;" />
           </div>
           <div>
             <label style="display:block; font-weight:700; margin-bottom:0.25rem;">Target Gross Profit Margin (%):</label>
-            <input type="number" step="0.5" id="cf_inp_gpm" class="form-control" value="${fmtNum(cf.targetGPM, 1)}" onchange="updateCashFlowCustomParam()" style="font-size:0.78rem; padding:4px 8px;" />
+            <input type="number" step="0.1" id="cf_inp_gpm" class="form-control" value="${typeof cf.targetGPM === 'number' && !isNaN(cf.targetGPM) ? Number(cf.targetGPM).toFixed(1) : '8.0'}" onchange="updateCashFlowCustomParam()" onkeydown="if(event.key==='Enter') updateCashFlowCustomParam()" style="font-size:0.78rem; padding:4px 8px;" />
           </div>
           <div>
             <label style="display:block; font-weight:700; margin-bottom:0.25rem;">Hari Piutang / DOR (Hari):</label>
-            <input type="number" step="1" id="cf_inp_dor" class="form-control" value="${Math.round(cf.dorDays)}" onchange="updateCashFlowCustomParam()" style="font-size:0.78rem; padding:4px 8px;" />
+            <input type="number" step="1" id="cf_inp_dor" class="form-control" value="${Math.round(cf.dorDays || 60)}" onchange="updateCashFlowCustomParam()" onkeydown="if(event.key==='Enter') updateCashFlowCustomParam()" style="font-size:0.78rem; padding:4px 8px;" />
           </div>
           <div>
             <label style="display:block; font-weight:700; margin-bottom:0.25rem;">Skema Pelunasan Pokok Pinjaman:</label>
@@ -4845,6 +4845,15 @@ function renderCashFlowTab(proj, m) {
               <option value="amortized" ${cf.repaymentType === 'amortized' ? 'selected' : ''}>Amortisasi Cicilan Bulanan (M1 - M12)</option>
             </select>
           </div>
+        </div>
+        <div style="margin-top:0.6rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.4rem; padding-top:0.5rem; border-top:1px dashed #cbd5e1;">
+          <span style="font-size:0.68rem; color:#64748b;">
+            💡 Masukkan target margin / DOR lalu klik <strong>Terapkan &amp; Simpan</strong> (atau tekan <em>Enter</em>).
+          </span>
+          <button type="button" class="btn btn-primary btn-sm" onclick="updateCashFlowCustomParam()" style="font-size:0.72rem; font-weight:700; padding:4px 12px; display:inline-flex; align-items:center; gap:4px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Terapkan &amp; Simpan Parameter
+          </button>
         </div>
       </div>
 
@@ -4882,67 +4891,72 @@ function renderCashFlowTab(proj, m) {
         </div>
       </div>
 
-      <!-- TABEL RINCIAN BULANAN 12 BULAN -->
-      <div style="font-weight:800; font-size:0.82rem; color:var(--askrindo-navy); margin-bottom:0.4rem;">
-        Tabel Rincian Proyeksi Arus Kas Bulanan (12 Bulan) &amp; Siklus Konversi SCF AP (Persediaan &rarr; Kas)
+      <!-- TABEL RINCIAN BULANAN 12 BULAN (1-VIEW FIT) -->
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:0.35rem; gap:0.5rem;">
+        <div style="font-weight:800; font-size:0.80rem; color:var(--askrindo-navy);">
+          Tabel Rincian Proyeksi Arus Kas Bulanan (12 Bulan) &amp; Siklus Konversi SCF AP (Persediaan &rarr; Kas)
+        </div>
+        <div style="font-size:0.65rem; color:#64748b; font-style:italic;">
+          ✨ Tampilan 1-View Fit Screen (arahkan kursor pada angka untuk rincian nominal lengkap)
+        </div>
       </div>
-      <div class="table-responsive" style="margin-bottom:0.75rem;">
-        <table class="data-table" style="font-size:0.67rem; width:100%; text-align:right;">
+      <div style="width:100%; overflow-x:auto; margin-bottom:0.75rem; border:1px solid #cbd5e1; border-radius:6px; background:#fff;">
+        <table class="data-table" style="font-size:0.60rem; width:100%; table-layout:fixed; border-collapse:collapse; text-align:right;">
           <thead>
-            <tr>
-              <th style="text-align:left;">Periode</th>
-              <th class="num-col">Kas Awal</th>
-              <th class="num-col" title="Pencairan Kredit SCF AP oleh Bank untuk Membantu Pembelian Persediaan">Pencairan SCF (Persediaan)</th>
-              <th class="num-col" title="Kas Masuk Hasil Penjualan Persediaan">Inflow Kas Penjualan</th>
-              <th class="num-col">Outflow HPP (Persediaan)</th>
-              <th class="num-col">Outflow OPEX</th>
-              <th class="num-col">Arus Kas Operasi (NOCF)</th>
-              <th class="num-col">Bunga SCF</th>
-              <th class="num-col">Pelunasan Pokok SCF</th>
-              <th class="num-col">Total Debt Service</th>
-              <th class="num-col">Saldo Kas Akhir</th>
-              <th class="num-col">DSCR</th>
-              <th style="text-align:center;">Status</th>
+            <tr style="background:#f8fafc; border-bottom:1.5px solid #cbd5e1;">
+              <th style="width:4.5%; text-align:center; padding:4px 2px; white-space:normal; font-size:0.60rem;" title="Periode Proyeksi Bulan ke-1 s/d ke-12">Bln</th>
+              <th class="num-col" style="width:8%; padding:4px 2px; white-space:normal; font-size:0.60rem;" title="Saldo Kas di Awal Periode">Kas Awal</th>
+              <th class="num-col" style="width:7.5%; padding:4px 2px; white-space:normal; font-size:0.60rem; color:#0284c7;" title="Pencairan Kredit SCF AP oleh Bank untuk Pembelian Persediaan">+SCF</th>
+              <th class="num-col" style="width:8%; padding:4px 2px; white-space:normal; font-size:0.60rem; color:#0369a1;" title="Kas Masuk Hasil Penjualan Persediaan">+Inflow</th>
+              <th class="num-col" style="width:8%; padding:4px 2px; white-space:normal; font-size:0.60rem; color:#b91c1c;" title="Outflow Pembayaran HPP Persediaan">-HPP</th>
+              <th class="num-col" style="width:7.5%; padding:4px 2px; white-space:normal; font-size:0.60rem; color:#b91c1c;" title="Outflow Beban Operasional">-OPEX</th>
+              <th class="num-col" style="width:8%; padding:4px 2px; white-space:normal; font-size:0.60rem;" title="Net Operating Cash Flow (Arus Kas Operasi Bersih)">NOCF</th>
+              <th class="num-col" style="width:7%; padding:4px 2px; white-space:normal; font-size:0.60rem; color:#b45309;" title="Beban Bunga Fasilitas SCF AP">-Bunga</th>
+              <th class="num-col" style="width:7.5%; padding:4px 2px; white-space:normal; font-size:0.60rem; color:#b45309;" title="Pelunasan Pokok Fasilitas SCF AP">-Pokok</th>
+              <th class="num-col" style="width:8.5%; padding:4px 2px; white-space:normal; font-size:0.60rem; font-weight:800;" title="Total Kewajiban Debt Service (Bunga + Pokok SCF)">Debt Svc</th>
+              <th class="num-col" style="width:8.5%; padding:4px 2px; white-space:normal; font-size:0.60rem; font-weight:800;" title="Saldo Kas Akhir Periode">Kas Akhir</th>
+              <th class="num-col" style="width:6.5%; padding:4px 2px; white-space:normal; font-size:0.60rem; font-weight:800;" title="Monthly Debt Service Coverage Ratio">DSCR</th>
+              <th style="width:8.5%; text-align:center; padding:4px 2px; white-space:normal; font-size:0.60rem;" title="Status Likuiditas Kas Bulanan">Status</th>
             </tr>
           </thead>
           <tbody>
             ${cf.monthlyData.map((d) => `
-              <tr style="${d.isDeficit ? 'background:#fef2f2;' : ''}">
-                <td style="text-align:left; font-weight:700;">${d.monthName}</td>
-                <td class="num-col">${fmtRp(d.begCash, true)}</td>
-                <td class="num-col" style="color:${d.scfDrawdown > 0 ? '#0284c7' : '#94a3b8'}; font-weight:700;">${d.scfDrawdown > 0 ? `+${fmtRp(d.scfDrawdown, true)}` : '-'}</td>
-                <td class="num-col" style="color:#0369a1; font-weight:600;">+${fmtRp(d.cashInflow, true)}</td>
-                <td class="num-col" style="color:#b91c1c;">-${fmtRp(d.cogsPayment, true)}</td>
-                <td class="num-col" style="color:#b91c1c;">-${fmtRp(d.opexPayment, true)}</td>
-                <td class="num-col" style="font-weight:700; color:${d.nocf >= 0 ? '#166534' : '#dc2626'};">${fmtRp(d.nocf, true)}</td>
-                <td class="num-col">-${fmtRp(d.monthlyInterest, true)}</td>
-                <td class="num-col" style="font-weight:${d.principalRepayment > 0 ? '700' : '400'};">${d.principalRepayment > 0 ? `-${fmtRp(d.principalRepayment, true)}` : '-'}</td>
-                <td class="num-col" style="font-weight:700; color:#b45309;">${fmtRp(d.debtService, true)}</td>
-                <td class="num-col" style="font-weight:800; color:${d.endingCash >= 0 ? '#166534' : '#dc2626'};">${fmtRp(d.endingCash, true)}</td>
-                <td class="num-col" style="font-weight:700; color:${d.monthDSCR >= 1.2 ? '#166534' : (d.monthDSCR >= 1.0 ? '#b45309' : '#dc2626')};">${fmtNum(d.monthDSCR, 2)}x</td>
-                <td style="text-align:center;">
-                  <span style="font-size:0.62rem; padding:2px 6px; border-radius:3px; font-weight:700; background:${d.isDeficit ? '#fee2e2; color:#991b1b;' : '#dcfce7; color:#15803d;'}">
+              <tr style="${d.isDeficit ? 'background:#fef2f2;' : ''} border-bottom:1px solid #f1f5f9;">
+                <td style="text-align:center; font-weight:700; padding:3px 2px; white-space:nowrap;" title="Bulan ke-${d.month}">B${String(d.month).padStart(2, '0')}</td>
+                <td class="num-col" style="padding:3px 2px; white-space:nowrap;" title="Kas Awal Bulan ${d.month}: ${fmtRp(d.begCash)}">${fmtRp(d.begCash, true)}</td>
+                <td class="num-col" style="padding:3px 2px; white-space:nowrap; color:${d.scfDrawdown > 0 ? '#0284c7' : '#94a3b8'}; font-weight:700;" title="Pencairan SCF: ${fmtRp(d.scfDrawdown)}">${d.scfDrawdown > 0 ? `+${fmtRp(d.scfDrawdown, true)}` : '-'}</td>
+                <td class="num-col" style="padding:3px 2px; white-space:nowrap; color:#0369a1; font-weight:600;" title="Inflow Kas: ${fmtRp(d.cashInflow)}">+${fmtRp(d.cashInflow, true)}</td>
+                <td class="num-col" style="padding:3px 2px; white-space:nowrap; color:#b91c1c;" title="Outflow HPP: ${fmtRp(d.cogsPayment)}">-${fmtRp(d.cogsPayment, true)}</td>
+                <td class="num-col" style="padding:3px 2px; white-space:nowrap; color:#b91c1c;" title="Outflow OPEX: ${fmtRp(d.opexPayment)}">-${fmtRp(d.opexPayment, true)}</td>
+                <td class="num-col" style="padding:3px 2px; white-space:nowrap; font-weight:700; color:${d.nocf >= 0 ? '#166534' : '#dc2626'};" title="NOCF: ${fmtRp(d.nocf)}">${fmtRp(d.nocf, true)}</td>
+                <td class="num-col" style="padding:3px 2px; white-space:nowrap;" title="Bunga SCF: ${fmtRp(d.monthlyInterest)}">-${fmtRp(d.monthlyInterest, true)}</td>
+                <td class="num-col" style="padding:3px 2px; white-space:nowrap; font-weight:${d.principalRepayment > 0 ? '700' : '400'};" title="Pokok SCF: ${fmtRp(d.principalRepayment)}">${d.principalRepayment > 0 ? `-${fmtRp(d.principalRepayment, true)}` : '-'}</td>
+                <td class="num-col" style="padding:3px 2px; white-space:nowrap; font-weight:700; color:#b45309;" title="Debt Service: ${fmtRp(d.debtService)}">${fmtRp(d.debtService, true)}</td>
+                <td class="num-col" style="padding:3px 2px; white-space:nowrap; font-weight:800; color:${d.endingCash >= 0 ? '#166534' : '#dc2626'};" title="Kas Akhir: ${fmtRp(d.endingCash)}">${fmtRp(d.endingCash, true)}</td>
+                <td class="num-col" style="padding:3px 2px; white-space:nowrap; font-weight:700; color:${d.monthDSCR >= 1.2 ? '#166534' : (d.monthDSCR >= 1.0 ? '#b45309' : '#dc2626')};" title="DSCR Bulan ${d.month}: ${fmtNum(d.monthDSCR, 2)}x">${fmtNum(d.monthDSCR, 2)}x</td>
+                <td style="text-align:center; padding:3px 1px; white-space:nowrap;">
+                  <span style="font-size:0.56rem; padding:1px 4px; border-radius:3px; font-weight:700; display:inline-block; background:${d.isDeficit ? '#fee2e2; color:#991b1b;' : '#dcfce7; color:#15803d;'}">
                     ${d.isDeficit ? 'DEFISIT' : 'SURPLUS'}
                   </span>
                 </td>
               </tr>
             `).join('')}
             <tr style="background:#f1f5f9; font-weight:800; border-top:2px solid #94a3b8;">
-              <td style="text-align:left;">TOTAL TAHUNAN</td>
-              <td class="num-col">${fmtRp(cf.initialCash, true)} (Awal)</td>
-              <td class="num-col" style="color:#0284c7;">+${fmtRp(cf.totalSCFDrawdown, true)}</td>
-              <td class="num-col" style="color:#0369a1;">+${fmtRp(cf.totalInflow, true)}</td>
-              <td class="num-col" style="color:#b91c1c;">-${fmtRp(cf.projectedAnnualCOGS, true)}</td>
-              <td class="num-col" style="color:#b91c1c;">-${fmtRp(cf.projectedAnnualOpex, true)}</td>
-              <td class="num-col" style="color:${cf.totalNOCF >= 0 ? '#166534' : '#dc2626'};">${fmtRp(cf.totalNOCF, true)}</td>
-              <td class="num-col">-${fmtRp(cf.totalDebtService - proj.requestedPlafond, true)}</td>
-              <td class="num-col">-${fmtRp(proj.requestedPlafond, true)}</td>
-              <td class="num-col" style="color:#b45309;">${fmtRp(cf.totalDebtService, true)}</td>
-              <td class="num-col" style="color:${cf.lowestCash >= 0 ? '#166534' : '#dc2626'};">${fmtRp(cf.monthlyData[11].endingCash, true)}</td>
-              <td class="num-col" style="color:${cf.annualDSCR >= 1.2 ? '#166534' : '#dc2626'};">${fmtNum(cf.annualDSCR, 2)}x</td>
-              <td style="text-align:center;">
-                <span style="font-size:0.62rem; padding:2px 6px; border-radius:3px; font-weight:800; background:${cf.isHealthy ? '#dcfce7; color:#15803d;' : '#fee2e2; color:#991b1b;'}">
-                  ${cf.isHealthy ? 'LAYAK BAYAR' : 'DEFISIT BAYAR'}
+              <td style="text-align:center; padding:4px 2px; font-size:0.58rem; white-space:nowrap;">TOTAL</td>
+              <td class="num-col" style="padding:4px 2px; white-space:nowrap;" title="Kas Awal Tahun: ${fmtRp(cf.initialCash)}">${fmtRp(cf.initialCash, true)}</td>
+              <td class="num-col" style="padding:4px 2px; white-space:nowrap; color:#0284c7;" title="Total Pencairan SCF: ${fmtRp(cf.totalSCFDrawdown)}">+${fmtRp(cf.totalSCFDrawdown, true)}</td>
+              <td class="num-col" style="padding:4px 2px; white-space:nowrap; color:#0369a1;" title="Total Inflow Penjualan: ${fmtRp(cf.totalInflow)}">+${fmtRp(cf.totalInflow, true)}</td>
+              <td class="num-col" style="padding:4px 2px; white-space:nowrap; color:#b91c1c;" title="Total Outflow HPP: ${fmtRp(cf.projectedAnnualCOGS)}">-${fmtRp(cf.projectedAnnualCOGS, true)}</td>
+              <td class="num-col" style="padding:4px 2px; white-space:nowrap; color:#b91c1c;" title="Total Outflow OPEX: ${fmtRp(cf.projectedAnnualOpex)}">-${fmtRp(cf.projectedAnnualOpex, true)}</td>
+              <td class="num-col" style="padding:4px 2px; white-space:nowrap; color:${cf.totalNOCF >= 0 ? '#166534' : '#dc2626'};" title="Total NOCF: ${fmtRp(cf.totalNOCF)}">${fmtRp(cf.totalNOCF, true)}</td>
+              <td class="num-col" style="padding:4px 2px; white-space:nowrap;" title="Total Beban Bunga: ${fmtRp(cf.totalDebtService - proj.requestedPlafond)}">-${fmtRp(cf.totalDebtService - proj.requestedPlafond, true)}</td>
+              <td class="num-col" style="padding:4px 2px; white-space:nowrap;" title="Total Pelunasan Pokok: ${fmtRp(proj.requestedPlafond)}">-${fmtRp(proj.requestedPlafond, true)}</td>
+              <td class="num-col" style="padding:4px 2px; white-space:nowrap; color:#b45309;" title="Total Debt Service: ${fmtRp(cf.totalDebtService)}">${fmtRp(cf.totalDebtService, true)}</td>
+              <td class="num-col" style="padding:4px 2px; white-space:nowrap; color:${cf.lowestCash >= 0 ? '#166534' : '#dc2626'};" title="Saldo Kas Akhir Bulan 12: ${fmtRp(cf.monthlyData[11].endingCash)}">${fmtRp(cf.monthlyData[11].endingCash, true)}</td>
+              <td class="num-col" style="padding:4px 2px; white-space:nowrap; color:${cf.annualDSCR >= 1.2 ? '#166534' : '#dc2626'};" title="DSCR Tahunan: ${fmtNum(cf.annualDSCR, 2)}x">${fmtNum(cf.annualDSCR, 2)}x</td>
+              <td style="text-align:center; padding:4px 1px; white-space:nowrap;">
+                <span style="font-size:0.56rem; padding:1px 4px; border-radius:3px; font-weight:800; display:inline-block; background:${cf.isHealthy ? '#dcfce7; color:#15803d;' : '#fee2e2; color:#991b1b;'}">
+                  ${cf.isHealthy ? 'LAYAK' : 'DEFISIT'}
                 </span>
               </td>
             </tr>
@@ -4998,19 +5012,29 @@ function setCashFlowPreset(presetType) {
 function updateCashFlowCustomParam() {
   const proj = getActiveProject();
   if (!proj) return;
-  const g = parseFloat(document.getElementById('cf_inp_growth').value);
-  const gpm = parseFloat(document.getElementById('cf_inp_gpm').value);
-  const dor = parseInt(document.getElementById('cf_inp_dor').value, 10);
-  const rep = document.getElementById('cf_inp_repayment').value;
 
-  if (!isNaN(g)) proj.cfProjGrowth = g;
-  if (!isNaN(gpm)) proj.cfProjGPM = gpm;
-  if (!isNaN(dor)) proj.cfProjDOR = dor;
+  const rawG = document.getElementById('cf_inp_growth')?.value;
+  const rawGpm = document.getElementById('cf_inp_gpm')?.value;
+  const rawDor = document.getElementById('cf_inp_dor')?.value;
+  const rep = document.getElementById('cf_inp_repayment')?.value;
+
+  const parseVal = (str) => {
+    if (str === undefined || str === null || String(str).trim() === '') return NaN;
+    return parseFloat(String(str).trim().replace(/\s/g, '').replace(',', '.'));
+  };
+
+  const g = parseVal(rawG);
+  const gpm = parseVal(rawGpm);
+  const dor = parseVal(rawDor);
+
+  if (!isNaN(g)) proj.cfProjGrowth = Number(g.toFixed(2));
+  if (!isNaN(gpm)) proj.cfProjGPM = Number(gpm.toFixed(2));
+  if (!isNaN(dor)) proj.cfProjDOR = Math.round(dor);
   if (rep) proj.cfProjRepaymentType = rep;
 
   saveProjectsToStorage();
   renderAll();
-  showToast('Parameter Proyeksi Cash Flow diperbarui!');
+  showToast(`💾 Parameter Proyeksi Cash Flow tersimpan! (Target GPM: ${proj.cfProjGPM}%, Pertumbuhan: ${proj.cfProjGrowth}%, DOR: ${proj.cfProjDOR} hr)`);
 }
 
 function renderPrintableReport(proj, m) {

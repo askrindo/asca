@@ -1343,7 +1343,7 @@
                 <th>Role</th>
                 <th>Status</th>
                 <th>Login Terakhir</th>
-                <th style="text-align:center; width:220px;">Aksi Kelola</th>
+                <th style="text-align:center; min-width:260px;">Aksi Kelola</th>
               </tr>
             </thead>
             <tbody id="adminUserTableBody">
@@ -1397,6 +1397,53 @@
       <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
         <button class="btn btn-outline" onclick="closeModalAddUser()">&times;</button>
         <button class="btn btn-primary" onclick="saveNewUserFromModal()">Simpan Pengguna</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL EDIT PENGGUNA (ADMIN) -->
+  <div class="modal-backdrop" id="modalEditUser">
+    <div class="modal-content" style="max-width:500px;">
+      <div class="card-header">
+        <div class="card-title">Edit Data Pengguna (ASCA User)</div>
+        <button class="btn btn-outline btn-sm" onclick="closeModalEditUser()">&times;</button>
+      </div>
+      <input type="hidden" id="adminEditOriginalUsername" />
+      <input type="hidden" id="adminEditUserId" />
+      <div id="adminEditMainAdminNote" style="display:none; font-size:0.75rem; color:#b45309; background:#fef3c7; border-left:3px solid #f59e0b; padding:0.45rem 0.65rem; border-radius:4px; margin-bottom:0.75rem;">
+        ℹ️ <strong>Akun Super Admin Utama:</strong> Username, Role, dan Status tidak dapat diubah demi keamanan akses sistem.
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Username / NIP <span style="color:var(--askrindo-red);">*</span></label>
+          <input type="text" id="adminEditUsername" class="form-control" placeholder="Contoh: 1923 atau analis_jkt" />
+        </div>
+        <div class="form-group">
+          <label>Role / Hak Akses <span style="color:var(--askrindo-red);">*</span></label>
+          <select id="adminEditRole" class="form-control">
+            <option value="analyst">Analis Kredit (Underwriter)</option>
+            <option value="admin">Super Administrator</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label>Nama Lengkap <span style="color:var(--askrindo-red);">*</span></label>
+          <input type="text" id="adminEditFullName" class="form-control" placeholder="Contoh: Budi Prasetyo, S.E." />
+        </div>
+        <div class="form-group full">
+          <label>Unit Kerja / Divisi</label>
+          <input type="text" id="adminEditUnit" class="form-control" placeholder="Contoh: Divisi Underwriting Komersial" />
+        </div>
+        <div class="form-group full">
+          <label>Status Akun <span style="color:var(--askrindo-red);">*</span></label>
+          <select id="adminEditStatus" class="form-control">
+            <option value="active">Aktif (Dapat Login)</option>
+            <option value="inactive">Non-Aktif (Terkunci)</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1.2rem;">
+        <button type="button" class="btn btn-outline" onclick="closeModalEditUser()">Batal</button>
+        <button type="button" class="btn btn-primary" onclick="saveEditUserFromModal()">Simpan Perubahan</button>
       </div>
     </div>
   </div>
@@ -2169,6 +2216,6 @@
   <div class="toast-container" id="toastContainer"></div>
 
   <script src="inaproc-blacklist-db.js?v=1793516000"></script>
-  <script src="app.js?v=1793527000"></script>
+  <script src="app.js?v=1793530000"></script>
 </body>
 </html>

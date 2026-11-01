@@ -7946,11 +7946,14 @@ async function renderAdminUserManagement() {
         <td style="font-size:0.74rem; color:var(--text-muted);">${lastLoginStr}</td>
         <td>
           <div class="admin-actions" style="justify-content:center;">
+            <button class="btn btn-sm btn-primary" onclick="openModalEditUser('${u.username}')" style="background:#005691; border-color:#005691; color:#fff;" title="Edit Data Pengguna">
+              Edit
+            </button>
             <button class="btn btn-sm btn-outline" onclick="openModalResetPassword('${u.username}')" title="Reset Kata Sandi">
               Reset
             </button>
             ${!isMainAdmin ? `
-              <button class="btn btn-sm ${u.status === 'active' ? 'btn-outline' : 'btn-primary'}" onclick="toggleUserStatus('' + u.username + '')" title="${u.status === 'active' ? 'Nonaktifkan Akun' : 'Aktifkan Akun'}>
+              <button class="btn btn-sm ${u.status === 'active' ? 'btn-outline' : 'btn-primary'}" onclick="toggleUserStatus('${u.username}')" title="${u.status === 'active' ? 'Nonaktifkan Akun' : 'Aktifkan Akun'}">
                 ${u.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}
               </button>
               <button class="btn btn-sm btn-danger" onclick="confirmDeleteUser('${u.username}')" title="Hapus Pengguna">
@@ -8040,6 +8043,165 @@ async function saveNewUserFromModal() {
   } catch (err) {
     alert('Gagal menyimpan ke server Supabase: ' + err.message);
   }
+}
+
+async function openModalEditUser(username) {
+  let user = null;
+  try {
+    const cloudUsers = await fetchUsersFromCloud();
+    user = cloudUsers.find(u => u.username.toLowerCase() === username.toLowerCase());
+  } catch (e) {
+    console.warn('Gagal fetch cloud saat buka modal edit user:', e);
+  }
+  if (!user) {
+    const localUsers = getUsersFromStorage();
+    user = localUsers.find(u => u.username.toLowerCase() === username.toLowerCase());
+  }
+  if (!user) {
+    alert('Data pengguna tidak ditemukan!');
+    return;
+  }
+
+  const isMainAdmin = user.username.toLowerCase() === 'admin';
+
+  const origInput = document.getElementById('adminEditOriginalUsername');
+  if (origInput) origInput.value = user.username;
+  const idInput = document.getElementById('adminEditUserId');
+  if (idInput) idInput.value = user.id || '';
+
+  const unInput = document.getElementById('adminEditUsername');
+  if (unInput) {
+    unInput.value = user.username;
+    unInput.disabled = isMainAdmin;
+  }
+
+  const roleSelect = document.getElementById('adminEditRole');
+  if (roleSelect) {
+    roleSelect.value = user.role || 'analyst';
+    roleSelect.disabled = isMainAdmin;
+  }
+
+  const fnInput = document.getElementById('adminEditFullName');
+  if (fnInput) fnInput.value = user.fullName || '';
+
+  const unitInput = document.getElementById('adminEditUnit');
+  if (unitInput) unitInput.value = getCleanUnit(user.unit) || '';
+
+  const stSelect = document.getElementById('adminEditStatus');
+  if (stSelect) {
+    stSelect.value = user.status || 'active';
+    stSelect.disabled = isMainAdmin;
+  }
+
+  const noteEl = document.getElementById('adminEditMainAdminNote');
+  if (noteEl) {
+    noteEl.style.display = isMainAdmin ? 'block' : 'none';
+  }
+
+  const modal = document.getElementById('modalEditUser');
+  if (modal) modal.classList.add('open');
+}
+
+function closeModalEditUser() {
+  const modal = document.getElementById('modalEditUser');
+  if (modal) modal.classList.remove('open');
+}
+
+async function saveEditUserFromModal() {
+  const origUname = (document.getElementById('adminEditOriginalUsername')?.value || '').trim();
+  const userId = (document.getElementById('adminEditUserId')?.value || '').trim();
+  const isMainAdmin = origUname.toLowerCase() === 'admin';
+
+  const newUname = isMainAdmin ? 'admin' : (document.getElementById('adminEditUsername')?.value || '').trim();
+  const newFullName = (document.getElementById('adminEditFullName')?.value || '').trim();
+  const newUnit = (document.getElementById('adminEditUnit')?.value || '').trim();
+  const newRole = isMainAdmin ? 'admin' : (document.getElementById('adminEditRole')?.value || 'analyst');
+  const newStatus = isMainAdmin ? 'active' : (document.getElementById('adminEditStatus')?.value || 'active');
+
+  if (!newUname || !newFullName) {
+    alert('Harap lengkapi Username dan Nama Lengkap!');
+    return;
+  }
+
+  const allUsers = getUsersFromStorage();
+  // Validasi duplikasi username bila diubah
+  if (newUname.toLowerCase() !== origUname.toLowerCase()) {
+    if (allUsers.some(u => u.username.toLowerCase() === newUname.toLowerCase() && u.username.toLowerCase() !== origUname.toLowerCase())) {
+      alert(`Username "${newUname}" sudah digunakan oleh pengguna lain! Harap pilih username unik.`);
+      return;
+    }
+  }
+
+  const targetUser = allUsers.find(u => u.username.toLowerCase() === origUname.toLowerCase());
+  const rawUnit = targetUser?.unit || '';
+  const sessLock = rawUnit.includes('||SESS:') ? '||SESS:' + rawUnit.split('||SESS:')[1] : '';
+  const finalUnit = newUnit + sessLock;
+
+  const patchBody = {
+    username: newUname,
+    full_name: newFullName,
+    unit: finalUnit,
+    role: newRole,
+    status: newStatus
+  };
+
+  try {
+    if (userId) {
+      await supabaseFetch(`users?id=eq.${encodeURIComponent(userId)}`, {
+        method: 'PATCH',
+        body: JSON.stringify(patchBody)
+      });
+    } else {
+      await supabaseFetch(`users?username=eq.${encodeURIComponent(origUname)}`, {
+        method: 'PATCH',
+        body: JSON.stringify(patchBody)
+      });
+    }
+  } catch (err) {
+    console.warn('Gagal sinkronisasi update ke Supabase cloud (mungkin offline), data lokal tetap diperbarui:', err);
+  }
+
+  // Migrasikan workspace project lokal bila username diubah
+  if (newUname.toLowerCase() !== origUname.toLowerCase()) {
+    const oldKey = USER_PROJECTS_KEY_PREFIX + origUname;
+    const newKey = USER_PROJECTS_KEY_PREFIX + newUname;
+    const oldProjects = localStorage.getItem(oldKey);
+    if (oldProjects) {
+      localStorage.setItem(newKey, oldProjects);
+      localStorage.removeItem(oldKey);
+    }
+  }
+
+  // Sinkronkan session saat ini jika mengedit akun sendiri
+  const currentSession = getActiveSession();
+  if (currentSession && currentSession.username.toLowerCase() === origUname.toLowerCase()) {
+    currentSession.username = newUname;
+    currentSession.fullName = newFullName;
+    currentSession.unit = newUnit;
+    currentSession.role = newRole;
+    setActiveSession(currentSession);
+
+    const navUserEl = document.getElementById('navUserName');
+    if (navUserEl) navUserEl.textContent = newUname;
+    const adminUnameEl = document.getElementById('adminSessionUserName');
+    if (adminUnameEl) adminUnameEl.textContent = newUname;
+  }
+
+  // Perbarui cache localStorage pengguna
+  const localUsers = getUsersFromStorage();
+  const lIdx = localUsers.findIndex(u => u.username.toLowerCase() === origUname.toLowerCase());
+  if (lIdx !== -1) {
+    localUsers[lIdx].username = newUname;
+    localUsers[lIdx].fullName = newFullName;
+    localUsers[lIdx].unit = finalUnit;
+    localUsers[lIdx].role = newRole;
+    localUsers[lIdx].status = newStatus;
+    saveUsersToStorage(localUsers);
+  }
+
+  closeModalEditUser();
+  await renderAdminUserManagement();
+  showToast(`Data pengguna "${newUname}" berhasil diperbarui!`);
 }
 
 function openModalResetPassword(username) {

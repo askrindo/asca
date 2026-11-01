@@ -491,7 +491,9 @@ function loadProjectsFromStorage() {
             procurementMethod: p.procurementMethod || (isMaritimeOrImportRisk(p) ? 'import_sea' : 'none'),
             ...p
           }));
+          projects.forEach((p) => ensureInaprocAutoChecked(p));
           activeProjectId = projects[0].id;
+          saveProjectsToStorage();
           return;
         }
       }
@@ -524,6 +526,7 @@ function loadProjectsFromStorage() {
               procurementMethod: p.procurementMethod || (isMaritimeOrImportRisk(p) ? 'import_sea' : 'none'),
               ...p
             }));
+            projects.forEach((p) => ensureInaprocAutoChecked(p));
             activeProjectId = projects[0].id;
             saveProjectsToStorage();
             return;
@@ -531,6 +534,7 @@ function loadProjectsFromStorage() {
         }
       }
       projects = getDefaultProjects();
+      projects.forEach((p) => ensureInaprocAutoChecked(p));
       activeProjectId = projects[0].id;
       saveProjectsToStorage();
       return;
@@ -823,45 +827,6 @@ function showToast(msg) {
 // ============================================================================
 // 4B. SISTEM EVALUASI OTOMATIS 5C & PENGECEKAN RIIL (LKPP / INAPROC & SIPP)
 // ============================================================================
-const KNOWN_INAPROC_BLACKLIST = [
-  'cv dhea putri',
-  'cv. dhea putri',
-  'dhea putri',
-  'pt karya bersama abadi',
-  'cv tri karya mandiri',
-  'cv bumi perkasa',
-  'pt bina mandiri pratama',
-  'cv anugrah agung',
-  'pt sinergi mega utama',
-  'cv berkah mulia jaya',
-  'pt cahaya makmur abadi',
-  'cv bintang timur perkasa',
-  'pt mitra karya utama',
-  'cv cahaya abadi sejahtera',
-  'pt indo pratama jaya',
-  'cv sarana bangun karya',
-  'pt mega citra gemilang',
-  'cv samudra jaya persada',
-  'pt nusantara cipta karya',
-  'cv multi teknik mandiri',
-  'pt berkah anugerah sejahtera',
-  'cv adhi karya mandiri',
-  'pt agung perkasa abadi',
-  'cv tiara jaya abadi',
-  'pt graha sarana utama',
-  'cv persada mandiri',
-  'pt surya utama kencana',
-  'cv kencana makmur',
-  'pt kreasi karya abadi',
-  'cv tunas jaya bersama',
-  'pt citra prima mandiri',
-  'cv wahana karya sejahtera',
-  'pt multi karya persada',
-  'cv sumber rejeki jaya',
-  'pt bina karya mandiri',
-  'cv abadi jaya makmur'
-];
-
 function normalizeInaprocCompanyName(raw) {
   if (!raw) return '';
   return String(raw)
@@ -872,10 +837,20 @@ function normalizeInaprocCompanyName(raw) {
     .trim();
 }
 
+function extractInaprocEntityType(normStr) {
+  if (!normStr) return '';
+  const lead = normStr.match(/^(pt|cv|ud|pd|firma|fa|koperasi|yayasan|perum|perumda|kjpp|kap)\b/i);
+  if (lead) return lead[1].toLowerCase();
+  const tail = normStr.match(/\b(pt|cv|ud|pd|firma|fa|koperasi|yayasan|perum|perumda|kjpp|kap)$/i);
+  if (tail) return tail[1].toLowerCase();
+  return '';
+}
+
 function stripEntityPrefixSuffix(normStr) {
   if (!normStr) return '';
   return normStr
     .replace(/^(pt|cv|ud|pd|firma|fa|koperasi|yayasan|perum|perumda|persero|tbk|kjpp|kap)\s+/i, '')
+    .replace(/\s+(pt|cv|ud|pd|firma|fa|koperasi|yayasan|perum|perumda|persero|tbk|kjpp|kap)$/i, '')
     .replace(/\s+(tbk|persero)$/i, '')
     .trim();
 }
@@ -884,90 +859,39 @@ function checkInaprocBlacklist(name) {
   if (!name) return { isBlacklisted: false, reason: '', skNumber: '', status: '', expiredDate: '', institution: '' };
   const qFull = normalizeInaprocCompanyName(name);
   const qCore = stripEntityPrefixSuffix(qFull);
-  if (!qFull) return { isBlacklisted: false, reason: '', skNumber: '', status: '', expiredDate: '', institution: '' };
+  const qEntity = extractInaprocEntityType(qFull);
+  if (!qFull || qCore.length < 3) {
+    return { isBlacklisted: false, reason: '', skNumber: '', status: '', expiredDate: '', institution: '' };
+  }
 
   const realDb = Array.isArray(window.INAPROC_REAL_DB) ? window.INAPROC_REAL_DB : [];
   if (realDb.length > 0) {
-    let bestMatch = null;
-
-    // Pass 1: Exact match pada nama lengkap maupun nama inti (tanpa PT/CV)
+    // Hanya cocokkan sanksi yang sedang TAYANG AKTIF (PUBLISHED) di https://daftar-hitam.inaproc.id/
+    // dan wajib EXACT MATCH pada nama perusahaan (tanpa substring/includes agar tidak pernah salah deteksi)
     for (let i = 0; i < realDb.length; i++) {
       const rec = realDb[i];
-      if (!rec || !rec.n) continue;
+      if (!rec || !rec.n || rec.st !== 'PUBLISHED') continue;
       const dbFull = normalizeInaprocCompanyName(rec.n);
       const dbCore = stripEntityPrefixSuffix(dbFull);
-      if (dbFull === qFull || (qCore.length >= 3 && dbCore === qCore)) {
-        if (rec.st === 'PUBLISHED') {
-          bestMatch = rec;
-          break; // Prioritaskan yang sedang TAYANG (PUBLISHED)
-        }
-        if (!bestMatch) bestMatch = rec;
+      const dbEntity = extractInaprocEntityType(dbFull);
+      if (!dbCore || dbCore.length < 3) continue;
+
+      // Jika keduanya mencantumkan badan usaha (misal PT vs CV) dan berbeda, maka bukan entitas yang sama
+      if (qEntity && dbEntity && qEntity !== dbEntity) continue;
+
+      if (dbFull === qFull || dbCore === qCore) {
+        const insLabel = rec.ins ? ` (${rec.ins})` : '';
+        return {
+          isBlacklisted: true,
+          matchedName: rec.n,
+          skNumber: rec.sk || '-',
+          status: 'PUBLISHED',
+          expiredDate: rec.exp || '-',
+          institution: rec.ins || 'Portal Daftar Hitam Nasional LKPP',
+          reason: `Terdaftar Masuk Daftar Hitam Nasional LKPP - Status TAYANG AKTIF s/d ${rec.exp || '-'}${insLabel}`
+        };
       }
     }
-
-    // Pass 2: Partial / Substring match jika nama inti cukup spesifik (>= 6 karakter dan >= 2 kata)
-    const qWords = qCore.split(' ').filter(Boolean);
-    if (!bestMatch && qCore.length >= 6 && qWords.length >= 2) {
-      for (let i = 0; i < realDb.length; i++) {
-        const rec = realDb[i];
-        if (!rec || !rec.n) continue;
-        const dbFull = normalizeInaprocCompanyName(rec.n);
-        const dbCore = stripEntityPrefixSuffix(dbFull);
-        if (dbCore.length < 6) continue;
-        if (dbFull.includes(qFull) || qFull.includes(dbFull) || dbCore === qCore) {
-          if (rec.st === 'PUBLISHED') {
-            bestMatch = rec;
-            break;
-          }
-          if (!bestMatch) bestMatch = rec;
-        }
-      }
-    }
-
-    if (bestMatch) {
-      const isPub = bestMatch.st === 'PUBLISHED';
-      const insLabel = bestMatch.ins ? ` (${bestMatch.ins})` : '';
-      return {
-        isBlacklisted: true,
-        matchedName: bestMatch.n,
-        skNumber: bestMatch.sk || '-',
-        status: bestMatch.st || 'PUBLISHED',
-        expiredDate: bestMatch.exp || '-',
-        institution: bestMatch.ins || 'Portal Daftar Hitam Nasional LKPP',
-        reason: isPub
-          ? `Terdaftar Masuk Daftar Hitam Nasional LKPP - Status TAYANG AKTIF s/d ${bestMatch.exp || '-'}${insLabel}`
-          : `Tercatat dalam Database Daftar Hitam Nasional LKPP (${bestMatch.st || 'Riwayat Sanksi'})${insLabel}`
-      };
-    }
-  }
-
-  for (let i = 0; i < KNOWN_INAPROC_BLACKLIST.length; i++) {
-    const b = KNOWN_INAPROC_BLACKLIST[i];
-    const bFull = normalizeInaprocCompanyName(b);
-    const bCore = stripEntityPrefixSuffix(bFull);
-    if (qFull === bFull || (qCore.length >= 4 && qCore === bCore) || qFull.includes(bFull)) {
-      return {
-        isBlacklisted: true,
-        matchedName: name,
-        reason: 'Terdaftar Masuk Blacklist LKPP (Sanksi Pengadaan Nasional)',
-        skNumber: `SK-PA/LKPP-DH/2025/${String(101 + i).padStart(4, '0')}`,
-        status: 'PUBLISHED',
-        expiredDate: '-',
-        institution: 'Portal Daftar Hitam Nasional LKPP'
-      };
-    }
-  }
-
-  if (/daftar[\s_-]*hitam|blacklist|sanksi[\s_-]*lkpp|wanprestasi[\s_-]*tender/i.test(name)) {
-    return {
-      isBlacklisted: true,
-      matchedName: name,
-      reason: 'Terindikasi Catatan Sanksi Pengadaan LKPP',
-      skNumber: 'SK-PA/LKPP-DH/2025/0999',
-      status: 'PUBLISHED',
-      expiredDate: '-',
-      institution: 'Portal Daftar Hitam Nasional LKPP'
-    };
   }
 
   return { isBlacklisted: false, reason: '', skNumber: '', status: '', expiredDate: '', institution: '' };
@@ -980,7 +904,7 @@ function ensureInaprocAutoChecked(proj) {
   if (!proj) return;
   const cleanName = (proj.companyName || 'Perusahaan').replace(/\s*\([^)]*\)/g, '').trim();
   const dbReady = Array.isArray(window.INAPROC_REAL_DB) && window.INAPROC_REAL_DB.length > 0;
-  const targetVer = dbReady ? 'REAL_DB_V2_LOADED' : 'REAL_DB_V2_PENDING';
+  const targetVer = dbReady ? 'REAL_DB_V3_STRICT_PUBLISHED' : 'REAL_DB_V3_PENDING';
   if (
     !proj.inaprocCheckedCompany ||
     proj.inaprocCheckedCompany !== cleanName ||
@@ -1001,7 +925,7 @@ function runAutoInaprocCheckSync(proj, notifyToast = false) {
   const dbReady = Array.isArray(window.INAPROC_REAL_DB) && window.INAPROC_REAL_DB.length > 0;
 
   proj.inaprocCheckedCompany = cleanName;
-  proj.inaprocDbVersion = dbReady ? 'REAL_DB_V2_LOADED' : 'REAL_DB_V2_PENDING';
+  proj.inaprocDbVersion = dbReady ? 'REAL_DB_V3_STRICT_PUBLISHED' : 'REAL_DB_V3_PENDING';
   proj.inaprocVerifiedAt = new Date().toISOString();
 
   if (chk.isBlacklisted) {

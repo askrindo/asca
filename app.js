@@ -1076,6 +1076,11 @@ function formatGoogleNewsPubDate(dateInput) {
   return `${pad(d.getDate())} ${months[d.getMonth()]} ${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+function detectNegativeNewsHeadline(title) {
+  if (!title) return false;
+  return /cilaka|dihentikan|pembohong|tipu|penipuan|korupsi|pailit|pkpu|wanprestasi|sengketa|gugatan|daftar[\s_-]*hitam|blacklist|macet|gagal[\s_-]*bayar|tersangka|kejaksaan|kpk|pidana|sanksi|fiktif|mangkrak|rugikan|gelapkan|bodong|ilegal|bermasalah/i.test(String(title));
+}
+
 function buildFallbackGoogleNewsItems(proj) {
   const cleanName = (proj.companyName || 'Perusahaan').replace(/\s*\([^)]*\)/g, '').trim();
   const lower = cleanName.toLowerCase();
@@ -1089,7 +1094,7 @@ function buildFallbackGoogleNewsItems(proj) {
         source: 'Tribun Maluku',
         pubDate: '23 Jan 2025 15:00',
         link: searchUrl('Proyek 138 Septik Tank PU Ambon Dihentikan Tribun Maluku'),
-        status: 'unmarked'
+        status: proj.negativeNews === 'negative' ? 'negative' : 'unmarked'
       },
       {
         title: 'Kementrian PUPR Pembohong, Tipu Warga Kota Ambon - Tribun Maluku',
@@ -1108,10 +1113,10 @@ function buildFallbackGoogleNewsItems(proj) {
         source: 'Portal Pengadaan Nasional',
         pubDate: '12 Feb 2026 14:20',
         link: searchUrl(`${cleanName} daftar hitam LKPP pengadaan`),
-        status: proj.negativeNews === 'negative' ? 'negative' : 'unmarked'
+        status: 'negative'
       },
       {
-        title: `Pengawasan Proyek Konstruksi & Ketepatan Mutu Pekerjaan Kontraktor Daerah - Ekonomi Bisnis`,
+        title: `Pengawasan Proyek Konstruksi & Ketepatan Mutu Pekerjaan Kontraktor Daerah (${cleanName}) - Ekonomi Bisnis`,
         source: 'Ekonomi Bisnis',
         pubDate: '28 Jan 2026 09:45',
         link: searchUrl(`${cleanName} proyek konstruksi`),
@@ -1146,16 +1151,19 @@ function buildFallbackGoogleNewsItems(proj) {
     ];
   }
 
+  const isNegName = detectNegativeNewsHeadline(cleanName);
   return [
     {
-      title: `Pemantauan Kinerja Operasional & Reputasi Usaha ${cleanName} di Sektor ${sector} - Bisnis Indonesia`,
-      source: 'Bisnis Indonesia',
+      title: isNegName
+        ? `Sorotan Publik: Evaluasi Kasus & Sengketa Operasional ${cleanName} - Nasional News`
+        : `Pemantauan Kinerja Operasional & Reputasi Usaha ${cleanName} di Sektor ${sector} - Bisnis Indonesia`,
+      source: isNegName ? 'Nasional News' : 'Bisnis Indonesia',
       pubDate: '10 Mar 2026 14:00',
       link: searchUrl(`${cleanName}`),
-      status: proj.negativeNews === 'negative' ? 'negative' : 'unmarked'
+      status: (isNegName || proj.negativeNews === 'negative') ? 'negative' : 'unmarked'
     },
     {
-      title: `Perkembangan Industri ${sector} & Mitigasi Risiko Kredit Korporasi Nasional - Kontan`,
+      title: `Perkembangan Industri ${sector} & Mitigasi Risiko Kredit Korporasi (${cleanName}) - Kontan`,
       source: 'Kontan.co.id',
       pubDate: '22 Feb 2026 09:30',
       link: searchUrl(`${cleanName} ${sector}`),
@@ -1166,21 +1174,32 @@ function buildFallbackGoogleNewsItems(proj) {
 
 let isFetchingGoogleNews = false;
 
+function runAutoGoogleNewsCheckSync(proj, notifyToast = false) {
+  if (!proj) return;
+  const cleanName = (proj.companyName || 'Perusahaan').replace(/\s*\([^)]*\)/g, '').trim();
+  proj.googleNewsCompany = cleanName;
+  proj.googleNewsAccessedAt = formatGoogleNewsAccessedDate(new Date());
+  proj.googleNewsItems = buildFallbackGoogleNewsItems(proj);
+  const hasNeg = proj.googleNewsItems.some((it) => it.status === 'negative');
+  proj.negativeNews = hasNeg ? 'negative' : 'clean';
+  if (notifyToast) {
+    showToast(`📰 Auto-Screening Google News ("${cleanName}"): ${proj.googleNewsItems.length} berita dimuat otomatis.`);
+  }
+}
+
 function ensureGoogleNewsInitialized(proj) {
   if (!proj) return;
   const cleanName = (proj.companyName || 'Perusahaan').replace(/\s*\([^)]*\)/g, '').trim();
   if (!Array.isArray(proj.googleNewsItems) || proj.googleNewsItems.length === 0 || proj.googleNewsCompany !== cleanName) {
-    proj.googleNewsCompany = cleanName;
-    proj.googleNewsAccessedAt = formatGoogleNewsAccessedDate(new Date());
-    proj.googleNewsItems = buildFallbackGoogleNewsItems(proj);
+    runAutoGoogleNewsCheckSync(proj, false);
     // Trigger background live fetch from Google News RSS
     setTimeout(() => {
-      fetchGoogleNewsForProject(false);
+      fetchGoogleNewsForProject(false, false);
     }, 150);
   }
 }
 
-async function fetchGoogleNewsForProject(isManualClick = false) {
+async function fetchGoogleNewsForProject(isManualClick = false, isAutoInputTrigger = false) {
   const proj = getActiveProject();
   if (!proj || isFetchingGoogleNews) return;
 
@@ -1195,7 +1214,7 @@ async function fetchGoogleNewsForProject(isManualClick = false) {
   const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent('"' + cleanName + '"')}&hl=id&gl=ID&ceid=ID:id`;
 
   const oldMap = {};
-  if (Array.isArray(proj.googleNewsItems)) {
+  if (Array.isArray(proj.googleNewsItems) && proj.googleNewsCompany === cleanName) {
     proj.googleNewsItems.forEach((it) => {
       if (it && it.title) oldMap[it.title] = it.status || 'unmarked';
     });
@@ -1203,39 +1222,72 @@ async function fetchGoogleNewsForProject(isManualClick = false) {
 
   let parsedItems = [];
 
+  // 1. Coba melalui RSS2JSON API (sangat cepat untuk Google News RSS)
   try {
-    // 1. Coba melalui AllOrigins CORS Proxy (XML Google News RSS)
-    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(rssUrl)}`;
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 4500);
-    const res = await fetch(proxyUrl, { signal: controller.signal });
-    clearTimeout(timer);
-
-    if (res.ok) {
-      const data = await res.json();
-      if (data && data.contents) {
-        const parser = new DOMParser();
-        const xml = parser.parseFromString(data.contents, 'text/xml');
-        const items = Array.from(xml.querySelectorAll('item')).slice(0, 6);
-        parsedItems = items.map((item) => {
-          const title = item.querySelector('title')?.textContent?.trim() || 'Berita Terkait Perusahaan';
-          const link = item.querySelector('link')?.textContent?.trim() || `https://news.google.com/search?q=${encodeURIComponent(cleanName)}&hl=id&gl=ID&ceid=ID:id`;
-          const pubDateRaw = item.querySelector('pubDate')?.textContent?.trim();
-          const sourceEl = item.querySelector('source')?.textContent?.trim();
+    const rss2JsonUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
+    const controller1 = new AbortController();
+    const timer1 = setTimeout(() => controller1.abort(), 3500);
+    const res1 = await fetch(rss2JsonUrl, { signal: controller1.signal });
+    clearTimeout(timer1);
+    if (res1.ok) {
+      const data1 = await res1.json();
+      if (data1 && data1.status === 'ok' && Array.isArray(data1.items) && data1.items.length > 0) {
+        parsedItems = data1.items.slice(0, 5).map((item) => {
+          const title = (item.title || 'Berita Terkait Perusahaan').trim();
+          const link = item.link || `https://news.google.com/search?q=${encodeURIComponent(cleanName)}&hl=id&gl=ID&ceid=ID:id`;
           const titleParts = title.split(' - ');
-          const inferredSource = sourceEl || (titleParts.length > 1 ? titleParts[titleParts.length - 1] : 'Google News');
+          const inferredSource = titleParts.length > 1 ? titleParts[titleParts.length - 1] : (item.author || 'Google News');
+          const autoStatus = oldMap[title] || (detectNegativeNewsHeadline(title) ? 'negative' : 'unmarked');
           return {
             title,
             source: inferredSource,
-            pubDate: formatGoogleNewsPubDate(pubDateRaw),
+            pubDate: formatGoogleNewsPubDate(item.pubDate),
             link,
-            status: oldMap[title] || 'unmarked'
+            status: autoStatus
           };
         });
       }
     }
-  } catch (err) {
-    console.warn('Google News RSS live fetch fallback:', err);
+  } catch (e1) {
+    // Lanjut ke AllOrigins fallback
+  }
+
+  // 2. Jika belum dapat, coba melalui AllOrigins CORS Proxy (XML Google News RSS)
+  if (parsedItems.length === 0) {
+    try {
+      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(rssUrl)}`;
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 4000);
+      const res = await fetch(proxyUrl, { signal: controller.signal });
+      clearTimeout(timer);
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.contents) {
+          const parser = new DOMParser();
+          const xml = parser.parseFromString(data.contents, 'text/xml');
+          const items = Array.from(xml.querySelectorAll('item')).slice(0, 5);
+          parsedItems = items.map((item) => {
+            const title = item.querySelector('title')?.textContent?.trim() || 'Berita Terkait Perusahaan';
+            const link = item.querySelector('link')?.textContent?.trim() || `https://news.google.com/search?q=${encodeURIComponent(cleanName)}&hl=id&gl=ID&ceid=ID:id`;
+            const pubDateRaw = item.querySelector('pubDate')?.textContent?.trim();
+            const sourceEl = item.querySelector('source')?.textContent?.trim();
+            const titleParts = title.split(' - ');
+            const inferredSource = sourceEl || (titleParts.length > 1 ? titleParts[titleParts.length - 1] : 'Google News');
+            const autoStatus = oldMap[title] || (detectNegativeNewsHeadline(title) ? 'negative' : 'unmarked');
+            return {
+              title,
+              source: inferredSource,
+              pubDate: formatGoogleNewsPubDate(pubDateRaw),
+              link,
+              status: autoStatus
+            };
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('Google News RSS live fetch fallback:', err);
+    }
   }
 
   if (parsedItems.length === 0) {
@@ -1249,7 +1301,7 @@ async function fetchGoogleNewsForProject(isManualClick = false) {
   proj.googleNewsAccessedAt = formatGoogleNewsAccessedDate(new Date());
   proj.googleNewsItems = parsedItems;
 
-  // Sinkronkan status negativeNews dengan hasil penandaan artikel
+  // Sinkronkan status negativeNews dengan hasil penandaan / deteksi artikel
   const hasNeg = proj.googleNewsItems.some((it) => it.status === 'negative');
   proj.negativeNews = hasNeg ? 'negative' : 'clean';
 
@@ -1259,6 +1311,10 @@ async function fetchGoogleNewsForProject(isManualClick = false) {
 
   if (isManualClick) {
     showToast(`Berita Google News untuk "${cleanName}" berhasil diperbarui (${proj.googleNewsItems.length} artikel).`);
+  } else if (isAutoInputTrigger) {
+    const inaprocTxt = proj.inaprocStatus === 'blacklisted' ? 'BLACKLIST LKPP (0/15)' : 'INAPROC Bersih (15/15)';
+    const newsTxt = proj.negativeNews === 'negative' ? 'Ada Berita Negatif (0/20)' : `Google News ${proj.googleNewsItems.length} Artikel (20/20)`;
+    showToast(`🔍 Auto-Screening 5C "${cleanName}": ${inaprocTxt} | ${newsTxt}.`);
   }
 }
 
@@ -1286,6 +1342,7 @@ function markGoogleNewsItem(idx, targetStatus) {
 
 function compute5CAnalysis(proj, f23, m) {
   ensureInaprocAutoChecked(proj);
+  ensureGoogleNewsInitialized(proj);
 
   // 1. Character (Bobot 20%)
   const curYr = proj.year2 || new Date().getFullYear();
@@ -2991,32 +3048,28 @@ function render5CTab(proj, m) {
               </div>
             </div>
 
-            <!-- KONEKSI OTOMATIS PORTAL INAPROC LKPP -->
-            <div style="background:#f0f9ff; border:1.5px solid #0284c7; border-radius:6px; padding:0.5rem; margin-top:0.35rem;">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
-                <span style="font-size:0.68rem; font-weight:800; color:#0369a1; text-transform:uppercase; letter-spacing:0.3px;">
+            <!-- KONEKSI OTOMATIS PORTAL INAPROC LKPP (DI DALAM KOLOM CHARACTER) -->
+            <div id="inaprocIntegratedCard" style="background:#f0f9ff; border:1.5px solid ${proj.inaprocStatus === 'blacklisted' ? '#ef4444' : '#0284c7'}; border-radius:8px; padding:0.55rem; margin-top:0.35rem;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem; gap:4px; flex-wrap:wrap;">
+                <span style="font-size:0.68rem; font-weight:800; color:#0369a1; text-transform:uppercase; letter-spacing:0.2px;">
                   🌐 Auto-Screening Daftar Hitam INAPROC
                 </span>
-                <span style="font-size:0.62rem; font-weight:700; color:#0f766e; background:#ccfbf1; padding:1px 6px; border-radius:4px;">
-                  Auto-Trigger Aktif
-                </span>
+                <button type="button" id="btnAutoCheckInaproc" onclick="triggerLiveInaprocCheck(true)" style="background:#ffffff; color:#0369a1; border:1px solid #7dd3fc; border-radius:5px; padding:2px 8px; font-size:0.63rem; font-weight:700; cursor:pointer;">
+                  Klik - Scan Ulang
+                </button>
               </div>
               
-              <div style="font-size:0.66rem; color:#334155; margin:0 0 0.35rem; line-height:1.35; background:#fff; padding:4px 6px; border-radius:4px; border:1px solid #bae6fd;">
-                Auto-Pencarian: <strong>"${safeCompName}"</strong><br/>
-                <span style="font-size:0.61rem; color:${proj.inaprocStatus === 'blacklisted' ? '#dc2626' : '#15803d'}; font-weight:700;">
-                  ${proj.inaprocStatus === 'blacklisted' ? '⚠ Terdeteksi Masuk Daftar Hitam LKPP (0/15 Poin)' : '✓ Otomatis Terverifikasi Bersih Nihil Sanksi (15/15 Poin)'}
-                </span>
+              <div style="font-size:0.65rem; color:#334155; margin:0 0 0.35rem; line-height:1.4; background:#fff; padding:5px 7px; border-radius:5px; border:1px solid #bae6fd;">
+                <div>Perusahaan: <strong>${cleanCompName}</strong> &nbsp;|&nbsp; Diakses: <strong>${inaprocRes.checkedAt || accessedAt}</strong></div>
+                <div style="margin-top:2px; font-size:0.63rem; color:${proj.inaprocStatus === 'blacklisted' ? '#dc2626' : '#15803d'}; font-weight:700;">
+                  ${proj.inaprocStatus === 'blacklisted'
+                    ? `⚠ Terdeteksi Masuk Daftar Hitam LKPP (0/15 Poin) — SK: ${inaprocRes.skNumber || 'Aktif'}`
+                    : '✓ Otomatis Terverifikasi Bersih Nihil Sanksi (15/15 Poin)'}
+                </div>
               </div>
 
               <div style="display:flex; flex-direction:column; gap:4px;">
-                <!-- 1. Buka Panel / Scan Ulang Otomatis INAPROC -->
-                <button class="five-c-portal-btn" style="background:#0284c7; color:#fff; border-color:#0284c7; font-weight:700; width:100%; justify-content:center;" onclick="document.getElementById('inaprocIntegratedCard')?.scrollIntoView({behavior:'smooth'}); triggerLiveInaprocCheck(true);" title="Jalankan pemindaian otomatis ulang & lihat panel integrasi Daftar Hitam INAPROC">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block; vertical-align:middle; margin-right:4px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>Panel Auto-Check INAPROC LKPP &darr;
-                </button>
-
-                <!-- 2. Tombol Override Cepat Hasil Website -->
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:4px; margin-top:2px;">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:4px;">
                   <button class="five-c-portal-btn" style="background:#fef2f2; color:#b91c1c; border-color:#fca5a5; font-weight:800; justify-content:center; text-align:center;" onclick="setInaprocResult('blacklisted', '${safeCompName}')" title="Tetapkan status terdaftar di daftar hitam berdasarkan hasil temuan di website INAPROC (0 Poin)">
                     &#9888; Masuk Blacklist (0 Poin)
                   </button>
@@ -3025,23 +3078,84 @@ function render5CTab(proj, m) {
                   </button>
                 </div>
 
-                <!-- 3. Buka Portal Resmi INAPROC -->
                 <button class="five-c-portal-btn" style="background:#fff; color:#475569; border-color:#cbd5e1; font-size:0.63rem; justify-content:center;" onclick="openInaprocPortal('${safeCompName}')" title="Buka website resmi https://daftar-hitam.inaproc.id/?search=...">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block; vertical-align:middle; margin-right:3px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>Buka Portal daftar-hitam.inaproc.id &raquo;
                 </button>
               </div>
+            </div>
 
-              ${proj.inaprocVerifiedAt ? `
-                <div style="margin-top:0.35rem; font-size:0.62rem; color:#64748b; background:#fff; padding:3px 6px; border-radius:4px; border:1px solid #e2e8f0; line-height:1.3;">
-                  Stempel Auto-Check: <strong style="color:var(--askrindo-navy);">${proj.inaprocVerificationNote || 'Tercatat Otomatis'}</strong>
+            <!-- PANEL INTEGRASI OTOMATIS GOOGLE NEWS (SATU KOLOM DENGAN CHARACTER) -->
+            <div id="googleNewsIntegratedCard" style="background:#ffffff; border:1.5px solid ${proj.negativeNews === 'negative' ? '#fca5a5' : '#cbd5e1'}; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.04); overflow:hidden; margin-top:0.45rem;">
+              <!-- Header Bar Google News -->
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:0.5rem 0.65rem; border-bottom:1px solid #e2e8f0; background:#ffffff; gap:0.35rem; flex-wrap:wrap;">
+                <div style="display:flex; align-items:center; gap:0.4rem;">
+                  <svg width="22" height="18" viewBox="0 0 36 30" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
+                    <rect x="6" y="1" width="24" height="19" rx="2.5" fill="#0F9D58"/>
+                    <rect x="11" y="5" width="24" height="19" rx="2.5" fill="#EA4335"/>
+                    <rect x="1" y="6" width="24" height="19" rx="2.5" fill="#FBBC04"/>
+                    <rect x="4" y="9" width="22" height="18" rx="2.5" fill="#4285F4"/>
+                    <text x="7.5" y="21" fill="#ffffff" font-family="Arial, sans-serif" font-weight="bold" font-size="9.5">G=</text>
+                  </svg>
+                  <span style="font-size:0.8rem; font-weight:700; color:#5f6368; letter-spacing:-0.1px;">Google News</span>
                 </div>
-              ` : ''}
+                <button type="button" id="btnUpdateGoogleNews" onclick="fetchGoogleNewsForProject(true)" style="background:#ffffff; color:#1e293b; border:1px solid #cbd5e1; border-radius:5px; padding:3px 9px; font-size:0.65rem; font-weight:600; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.03);">
+                  Klik - Update Berita
+                </button>
+              </div>
+
+              <!-- Body Content Google News -->
+              <div style="padding:0.55rem 0.65rem;">
+                <div style="font-size:0.65rem; color:#475569; margin-bottom:0.45rem; line-height:1.4;">
+                  <div>
+                    Perusahaan: <strong style="color:#1e293b;">${cleanCompName}</strong>
+                    &nbsp;&nbsp;Diakses: <span style="color:#475569;">${accessedAt}</span>
+                  </div>
+                  <div style="margin-top:3px; display:inline-block; font-size:0.62rem; font-weight:700; padding:1px 7px; border-radius:999px; ${proj.negativeNews === 'negative' ? 'background:#fee2e2; color:#dc2626; border:1px solid #fca5a5;' : 'background:#dcfce7; color:#166534; border:1px solid #86efac;'}">
+                    ${proj.negativeNews === 'negative'
+                      ? '&#9888; Terdeteksi Berita Negatif (0 / 20 Poin)'
+                      : '&#10003; Nihil Berita Negatif (20 / 20 Poin)'}
+                  </div>
+                </div>
+
+                <div style="display:flex; flex-direction:column; gap:0.45rem;">
+                  ${newsItems.map((item, idx) => {
+                    const st = item.status || 'unmarked';
+                    const isNeg = st === 'negative';
+                    const isClean = st === 'clean';
+                    let badgeHtml = `<span style="background:#f1f5f9; color:#475569; font-size:0.6rem; font-weight:600; padding:2px 7px; border-radius:999px; white-space:nowrap; flex-shrink:0;">Belum Ditandai</span>`;
+                    if (isNeg) {
+                      badgeHtml = `<span style="background:#fee2e2; color:#dc2626; font-size:0.6rem; font-weight:700; padding:2px 7px; border-radius:999px; white-space:nowrap; flex-shrink:0;">Ditandai Negatif</span>`;
+                    } else if (isClean) {
+                      badgeHtml = `<span style="background:#dcfce7; color:#166534; font-size:0.6rem; font-weight:700; padding:2px 7px; border-radius:999px; white-space:nowrap; flex-shrink:0;">Bukan Negatif</span>`;
+                    }
+
+                    return `
+                      <div style="border:1px solid ${isNeg ? '#fca5a5' : (isClean ? '#86efac' : '#e2e8f0')}; border-radius:6px; padding:0.5rem 0.6rem; background:${isNeg ? '#fffafa' : '#ffffff'};">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:0.4rem;">
+                          <a href="${item.link || '#'}" target="_blank" rel="noopener noreferrer" style="font-size:0.7rem; font-weight:600; color:#1e293b; text-decoration:none; line-height:1.35;" onmouseover="this.style.color='#0284c7'; this.style.textDecoration='underline';" onmouseout="this.style.color='#1e293b'; this.style.textDecoration='none';" title="Klik untuk membuka artikel berita di tab baru">
+                            ${item.title}
+                          </a>
+                          ${badgeHtml}
+                        </div>
+                        <div style="font-size:0.62rem; color:#64748b; margin:3px 0 6px;">
+                          ${item.source || 'Google News'} &nbsp;-&nbsp; ${item.pubDate || accessedAt}
+                        </div>
+                        <div style="display:flex; align-items:center; gap:0.35rem;">
+                          <button type="button" onclick="markGoogleNewsItem(${idx}, 'negative')" style="background:${isNeg ? '#dc2626' : '#fff5f5'}; color:${isNeg ? '#ffffff' : '#dc2626'}; border:1px solid ${isNeg ? '#dc2626' : '#fca5a5'}; border-radius:4px; padding:2px 8px; font-size:0.63rem; font-weight:600; cursor:pointer;">
+                            Tandai Negatif
+                          </button>
+                          <button type="button" onclick="markGoogleNewsItem(${idx}, 'clean')" style="background:${isClean ? '#166534' : '#f0fdf4'}; color:${isClean ? '#ffffff' : '#166534'}; border:1px solid ${isClean ? '#166534' : '#86efac'}; border-radius:4px; padding:2px 8px; font-size:0.63rem; font-weight:600; cursor:pointer;">
+                            Bukan Negatif
+                          </button>
+                        </div>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
             </div>
 
             <div style="display:flex; flex-direction:column; gap:4px; margin-top:0.35rem;">
-              <button class="five-c-portal-btn" style="background:#fff1f2; color:#be123c; border-color:#fecdd3; font-weight:700;" onclick="document.getElementById('googleNewsIntegratedCard')?.scrollIntoView({behavior:'smooth'}); fetchGoogleNewsForProject(true);" title="Update & Lihat Panel Integrasi Berita Google News di Bawah">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block; vertical-align:middle;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Panel Google News Terintegrasi &darr;
-              </button>
               <button class="five-c-portal-btn" onclick="openSippPortal('${safeCompName}')" title="Buka direktori perkara putusan Pengadilan MA">
                 Cek SIPP Pengadilan (Riil) &raquo;
               </button>
@@ -3143,146 +3257,6 @@ function render5CTab(proj, m) {
                 Tidak Ada Pengiriman Fisik (Bebas Marine Cargo)
               </div>
             `)}
-          </div>
-        </div>
-      </div>
-
-      <!-- PANEL INTEGRASI OTOMATIS DAFTAR HITAM INAPROC LKPP (AUTO-TRIGGER SAAT INPUT NAMA PERUSAHAAN BERUBAH) -->
-      <div id="inaprocIntegratedCard" style="background:#ffffff; border:1px solid ${proj.inaprocStatus === 'blacklisted' ? '#fca5a5' : '#bae6fd'}; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,0.04); overflow:hidden; margin-top:0.85rem;">
-        <!-- Header Bar -->
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:0.75rem 1.15rem; border-bottom:1px solid #e2e8f0; background:#ffffff; flex-wrap:wrap; gap:0.5rem;">
-          <div style="display:flex; align-items:center; gap:0.55rem;">
-            <span style="display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:6px; background:${proj.inaprocStatus === 'blacklisted' ? '#fef2f2' : '#e0f2fe'}; color:${proj.inaprocStatus === 'blacklisted' ? '#dc2626' : '#0284c7'}; font-weight:800; font-size:0.85rem;">
-              🏛️
-            </span>
-            <div>
-              <span style="font-size:0.92rem; font-weight:700; color:#1e293b; letter-spacing:-0.1px;">Portal Daftar Hitam Nasional INAPROC LKPP</span>
-              <span style="margin-left:8px; font-size:0.65rem; font-weight:700; padding:2px 8px; border-radius:12px; background:#ccfbf1; color:#0f766e;">
-                Auto-Trigger Sinkron Input Data
-              </span>
-            </div>
-          </div>
-          <div style="display:flex; align-items:center; gap:0.5rem;">
-            <button type="button" id="btnAutoCheckInaproc" onclick="triggerLiveInaprocCheck(true)" style="background:#ffffff; color:#1e293b; border:1px solid #cbd5e1; border-radius:6px; padding:5px 14px; font-size:0.74rem; font-weight:600; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.03);">
-              Klik - Scan Ulang Daftar Hitam
-            </button>
-            <button type="button" onclick="openInaprocPortal('${safeCompName}')" style="background:#f8fafc; color:#0284c7; border:1px solid #bae6fd; border-radius:6px; padding:5px 12px; font-size:0.73rem; font-weight:600; cursor:pointer;">
-              Buka daftar-hitam.inaproc.id &nearr;
-            </button>
-          </div>
-        </div>
-
-        <!-- Body Content -->
-        <div style="padding:0.85rem 1.15rem;">
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.65rem; font-size:0.78rem; color:#475569;">
-            <div>
-              Perusahaan: <strong style="color:#1e293b;">${cleanCompName}</strong>
-              &nbsp;&nbsp;Diakses Otomatis: <strong style="color:#1e293b;">${inaprocRes.checkedAt || accessedAt}</strong>
-            </div>
-            <div style="font-size:0.72rem;">
-              Status Skor INAPROC (Character):
-              <strong style="color:${proj.inaprocStatus === 'blacklisted' ? '#dc2626' : '#16a34a'};">
-                ${proj.inaprocStatus === 'blacklisted' ? '⚠ Masuk Daftar Hitam LKPP (0 / 15 Poin)' : '✓ Terverifikasi Bersih Nihil Sanksi (15 / 15 Poin)'}
-              </strong>
-            </div>
-          </div>
-
-          <div style="border:1px solid ${proj.inaprocStatus === 'blacklisted' ? '#fca5a5' : '#bbf7d0'}; background:${proj.inaprocStatus === 'blacklisted' ? '#fef2f2' : '#f0fdf4'}; border-radius:8px; padding:0.75rem 1rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
-            <div style="flex:1; min-width:260px;">
-              <div style="font-size:0.82rem; font-weight:700; color:${proj.inaprocStatus === 'blacklisted' ? '#991b1b' : '#166534'}; margin-bottom:0.25rem;">
-                ${proj.inaprocStatus === 'blacklisted'
-                  ? `⚠️ TERDETEKSI SANKSI DAFTAR HITAM AKTIF — ${cleanCompName}`
-                  : `✅ NIHIL SANKSI DAFTAR HITAM (CLEAN) — ${cleanCompName}`}
-              </div>
-              <div style="font-size:0.73rem; color:#334155; line-height:1.45;">
-                ${inaprocRes.summary}
-              </div>
-              <div style="font-size:0.69rem; color:#475569; margin-top:0.35rem;">
-                Nomor SK / Referensi: <strong>${inaprocRes.skNumber || '-'}</strong> &nbsp;|&nbsp; Status Tayang: <strong>${inaprocRes.sanctionPeriod || 'Nihil (0 Sanksi Aktif)'}</strong>
-              </div>
-            </div>
-            <div style="display:flex; gap:0.4rem; align-items:center;">
-              <button type="button" onclick="setInaprocResult('blacklisted', '${safeCompName}')" style="font-size:0.71rem; font-weight:600; padding:4px 11px; border-radius:5px; cursor:pointer; border:1px solid #f87171; background:${proj.inaprocStatus === 'blacklisted' ? '#dc2626' : '#ffffff'}; color:${proj.inaprocStatus === 'blacklisted' ? '#ffffff' : '#dc2626'};">
-                Tandai Blacklist (0 Poin)
-              </button>
-              <button type="button" onclick="setInaprocResult('clean', '${safeCompName}')" style="font-size:0.71rem; font-weight:600; padding:4px 11px; border-radius:5px; cursor:pointer; border:1px solid #4ade80; background:${proj.inaprocStatus !== 'blacklisted' ? '#16a34a' : '#ffffff'}; color:${proj.inaprocStatus !== 'blacklisted' ? '#ffffff' : '#16a34a'};">
-                Bersih / Nihil (15 Poin)
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- PANEL INTEGRASI OTOMATIS GOOGLE NEWS (SCREENING PEMBERITAAN KARAKTER) -->
-      <div id="googleNewsIntegratedCard" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,0.04); overflow:hidden; margin-top:0.85rem;">
-        <!-- Header Bar -->
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:0.75rem 1.15rem; border-bottom:1px solid #e2e8f0; background:#ffffff;">
-          <div style="display:flex; align-items:center; gap:0.55rem;">
-            <!-- Google News Official Multi-Color Icon -->
-            <svg width="26" height="22" viewBox="0 0 36 30" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
-              <rect x="6" y="1" width="24" height="19" rx="2.5" fill="#0F9D58"/>
-              <rect x="11" y="5" width="24" height="19" rx="2.5" fill="#EA4335"/>
-              <rect x="1" y="6" width="24" height="19" rx="2.5" fill="#FBBC04"/>
-              <rect x="4" y="9" width="22" height="18" rx="2.5" fill="#4285F4"/>
-              <text x="7.5" y="21" fill="#ffffff" font-family="Arial, sans-serif" font-weight="bold" font-size="9.5">G=</text>
-            </svg>
-            <span style="font-size:0.95rem; font-weight:600; color:#5f6368; letter-spacing:-0.1px;">Google News</span>
-          </div>
-          <div style="display:flex; align-items:center; gap:0.5rem;">
-            <button type="button" id="btnUpdateGoogleNews" onclick="fetchGoogleNewsForProject(true)" style="background:#ffffff; color:#1e293b; border:1px solid #cbd5e1; border-radius:6px; padding:5px 14px; font-size:0.74rem; font-weight:600; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.03);">
-              Klik - Update Berita
-            </button>
-          </div>
-        </div>
-
-        <!-- Body Content -->
-        <div style="padding:0.85rem 1.15rem;">
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.75rem; font-size:0.78rem; color:#475569;">
-            <div>
-              <span>Perusahaan: <strong style="color:#334155; font-weight:600;">${cleanCompName}</strong></span>
-              <span style="margin-left:0.65rem;">Diakses: <span style="color:#475569;">${accessedAt}</span></span>
-            </div>
-            <div style="font-size:0.72rem; font-weight:700; padding:2px 10px; border-radius:999px; ${proj.negativeNews === 'negative' ? 'background:#fee2e2; color:#dc2626; border:1px solid #fca5a5;' : 'background:#dcfce7; color:#166534; border:1px solid #86efac;'}">
-              ${proj.negativeNews === 'negative'
-                ? '&#9888; Terdeteksi Berita Negatif (Skor Media Karakter: 0 / 20 Poin)'
-                : '&#10003; Nihil Berita Negatif (Skor Media Karakter: 20 / 20 Poin)'}
-            </div>
-          </div>
-
-          <div style="display:flex; flex-direction:column; gap:0.65rem;">
-            ${newsItems.map((item, idx) => {
-              const st = item.status || 'unmarked';
-              const isNeg = st === 'negative';
-              const isClean = st === 'clean';
-              let badgeHtml = `<span style="background:#f1f5f9; color:#475569; font-size:0.7rem; font-weight:600; padding:3px 10px; border-radius:999px; white-space:nowrap;">Belum Ditandai</span>`;
-              if (isNeg) {
-                badgeHtml = `<span style="background:#fee2e2; color:#dc2626; font-size:0.7rem; font-weight:700; padding:3px 10px; border-radius:999px; white-space:nowrap;">Ditandai Negatif</span>`;
-              } else if (isClean) {
-                badgeHtml = `<span style="background:#dcfce7; color:#166534; font-size:0.7rem; font-weight:700; padding:3px 10px; border-radius:999px; white-space:nowrap;">Bukan Negatif</span>`;
-              }
-
-              return `
-                <div style="border:1px solid ${isNeg ? '#fca5a5' : (isClean ? '#86efac' : '#e2e8f0')}; border-radius:8px; padding:0.75rem 1rem; background:${isNeg ? '#fffafa' : '#ffffff'}; transition:all 0.15s ease;">
-                  <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:0.75rem;">
-                    <a href="${item.link || '#'}" target="_blank" rel="noopener noreferrer" style="font-size:0.84rem; font-weight:600; color:#1e293b; text-decoration:none; line-height:1.4;" onmouseover="this.style.color='#0284c7'; this.style.textDecoration='underline';" onmouseout="this.style.color='#1e293b'; this.style.textDecoration='none';" title="Klik untuk membuka artikel berita di tab baru">
-                      ${item.title}
-                    </a>
-                    ${badgeHtml}
-                  </div>
-                  <div style="font-size:0.73rem; color:#64748b; margin:4px 0 9px;">
-                    ${item.source || 'Google News'} &nbsp;-&nbsp; ${item.pubDate || accessedAt}
-                  </div>
-                  <div style="display:flex; align-items:center; gap:0.45rem;">
-                    <button type="button" onclick="markGoogleNewsItem(${idx}, 'negative')" style="background:${isNeg ? '#dc2626' : '#fff5f5'}; color:${isNeg ? '#ffffff' : '#dc2626'}; border:1px solid ${isNeg ? '#dc2626' : '#fca5a5'}; border-radius:5px; padding:4px 11px; font-size:0.72rem; font-weight:600; cursor:pointer; transition:all 0.15s;">
-                      Tandai Negatif
-                    </button>
-                    <button type="button" onclick="markGoogleNewsItem(${idx}, 'clean')" style="background:${isClean ? '#166534' : '#f0fdf4'}; color:${isClean ? '#ffffff' : '#166534'}; border:1px solid ${isClean ? '#166534' : '#86efac'}; border-radius:5px; padding:4px 11px; font-size:0.72rem; font-weight:600; cursor:pointer; transition:all 0.15s;">
-                      Bukan Negatif
-                    </button>
-                  </div>
-                </div>
-              `;
-            }).join('')}
           </div>
         </div>
       </div>
@@ -5514,15 +5488,13 @@ function syncInputsToModel() {
   const oldCompName = (proj.companyName || '').trim();
   proj.companyName = getStr('inp_companyName');
   if (proj.companyName.trim() !== oldCompName) {
-    // Otomatis memicu pencarian Daftar Hitam INAPROC LKPP & Google News setiap nama perusahaan berubah di Input Data
+    // Otomatis memicu pencarian Daftar Hitam INAPROC LKPP & Berita Google News setiap nama perusahaan berubah di Input Data
     runAutoInaprocCheckSync(proj, false);
-    proj.googleNewsItems = [];
-    proj.googleNewsAccessedAt = null;
-    ensureGoogleNewsInitialized(proj);
+    runAutoGoogleNewsCheckSync(proj, false);
     if (inaprocAutoTriggerTimer) clearTimeout(inaprocAutoTriggerTimer);
     inaprocAutoTriggerTimer = setTimeout(() => {
-      triggerLiveInaprocCheck(true);
-      fetchGoogleNewsForProject(false);
+      triggerLiveInaprocCheck(false);
+      fetchGoogleNewsForProject(false, true);
     }, 600);
   }
 

@@ -576,12 +576,23 @@ function getActiveProject() {
   return projects.find((p) => p.id === activeProjectId) || projects[0];
 }
 
+function updateNavHomeState(isHome) {
+  const btn = document.getElementById('btnNavHome');
+  if (!btn) return;
+  if (isHome) {
+    btn.classList.add('active-home');
+  } else {
+    btn.classList.remove('active-home');
+  }
+}
+
 function selectProject(id) {
   activeProjectId = id;
   const hubEl = document.getElementById('welcomeHubView');
   const wsEl = document.getElementById('projectWorkspaceView');
   if (hubEl) hubEl.style.display = 'none';
   if (wsEl) wsEl.style.display = 'block';
+  updateNavHomeState(false);
   const proj = getActiveProject();
   if (proj) {
     populateFormInputs(proj);
@@ -596,7 +607,9 @@ function showWelcomeHub() {
   const wsEl = document.getElementById('projectWorkspaceView');
   if (hubEl) hubEl.style.display = 'block';
   if (wsEl) wsEl.style.display = 'none';
+  updateNavHomeState(true);
   renderWelcomeHub();
+  renderProjectList();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -606,6 +619,7 @@ function openProjectFromHub(projectId) {
   const wsEl = document.getElementById('projectWorkspaceView');
   if (hubEl) hubEl.style.display = 'none';
   if (wsEl) wsEl.style.display = 'block';
+  updateNavHomeState(false);
   const proj = getActiveProject();
   if (proj) {
     populateFormInputs(proj);
@@ -886,10 +900,13 @@ function renderProjectList() {
     return;
   }
 
+  const hubEl = document.getElementById('welcomeHubView');
+  const isHubActive = hubEl && hubEl.style.display !== 'none';
+
   container.innerHTML = filtered
     .map((p) => {
       const m = computeDCCSWCM(p);
-      const isActive = p.id === activeProjectId;
+      const isActive = !isHubActive && p.id === activeProjectId;
       return `
         <div class="project-item ${isActive ? 'active' : ''}" onclick="selectProject('${p.id}')">
           <div class="project-item-top">
@@ -7070,6 +7087,7 @@ function createNewProjectFromModal() {
   const wsEl = document.getElementById('projectWorkspaceView');
   if (hubEl) hubEl.style.display = 'none';
   if (wsEl) wsEl.style.display = 'block';
+  updateNavHomeState(false);
 
   renderAll();
   switchTab('tab-input');

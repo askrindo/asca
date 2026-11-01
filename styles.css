@@ -1997,6 +1997,18 @@ input[type="range"] {
 /* ============================================================================
    WELCOME HUB / PORTAL BERANDA ANALIS
    ============================================================================ */
+#btnNavHome.active-home {
+  background: var(--askrindo-navy, #003366) !important;
+  color: #ffffff !important;
+  border-color: var(--askrindo-navy, #003366) !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 8px rgba(0, 51, 102, 0.25) !important;
+}
+
+#btnNavHome.active-home svg {
+  stroke: #ffffff !important;
+}
+
 .welcome-hub-view {
   padding: 1.25rem 1.5rem 3rem;
   max-width: 1280px;

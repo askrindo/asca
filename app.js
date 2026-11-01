@@ -1491,109 +1491,200 @@ function compute5CAnalysis(proj, f23, m) {
     total: charScore
   };
 
-  // 2. Capacity (Bobot 25%)
+  // 2. Capacity (Bobot 25%) — Rincian Skor Maksimal 100 Poin
   const gpm = m ? m.gpm23 : (f23.rev > 0 ? ((f23.rev - f23.cogs) / f23.rev) * 100 : 0);
   const cashGap = m ? m.cashGapAtSCFMaturity_Actual : 0;
-  const icr = m ? m.icr23 : (f23.finCost > 0 ? (f23.rev - f23.cogs - f23.opex) / f23.finCost : 1);
+  const f23Ebit = (f23.rev || 0) - (f23.cogs || 0) - (f23.opex || 0) + (f23.otherInc || 0) - (f23.otherExp || 0);
+  const f23Int = f23.intExp || f23.finCost || (( (f23.stDebt || 0) + (proj.requestedPlafond || 0) ) * ((proj.interestRate || 10) / 100));
+  const icr = (m && typeof m.icr23 === 'number') ? m.icr23 : (f23Int > 0 ? f23Ebit / f23Int : 1.5);
+  const runwayDays = m ? m.pureCashRunwayDays : 30;
 
-  let capScore = 70;
+  // 2A. Profitabilitas Gross Margin / GPM (Maks 35 Poin)
+  let capGpmPts = 10;
+  if (gpm >= 12) capGpmPts = 35;
+  else if (gpm >= 8) capGpmPts = 28;
+  else if (gpm >= 5) capGpmPts = 20;
+  else if (gpm >= 0) capGpmPts = 10;
+  else capGpmPts = 0;
+
+  // 2B. Kesesuaian Siklus Kas vs Tenor Fasilitas (Maks 30 Poin)
+  let capTenorPts = 5;
+  if (cashGap <= 0) capTenorPts = 30;
+  else if (cashGap <= 15) capTenorPts = 20;
+  else if (cashGap <= 30) capTenorPts = 12;
+  else capTenorPts = 5;
+
+  // 2C. Interest Coverage Ratio / ICR (Maks 20 Poin)
+  let capIcrPts = 0;
+  if (icr >= 2.0) capIcrPts = 20;
+  else if (icr >= 1.25) capIcrPts = 15;
+  else if (icr >= 1.0) capIcrPts = 10;
+  else capIcrPts = 0;
+
+  // 2D. Ketahanan Kas Murni / Pure Cash Runway (Maks 15 Poin)
+  let capRunwayPts = 2;
+  if (runwayDays >= 45) capRunwayPts = 15;
+  else if (runwayDays >= 25) capRunwayPts = 10;
+  else if (runwayDays >= 10) capRunwayPts = 5;
+  else capRunwayPts = 2;
+
+  const capScore = Math.max(10, Math.min(100, Math.round(capGpmPts + capTenorPts + capIcrPts + capRunwayPts)));
   const capNotes = [];
-  if (gpm < 0) {
-    capScore -= 35;
-    capNotes.push('Gross Loss (Jual Rugi di HPP)');
-  } else if (gpm < 5) {
-    capScore -= 20;
-    capNotes.push('Gross Margin Tipis (<5%)');
-  }
-  if (cashGap > 30) {
-    capScore -= 25;
-    capNotes.push(`Defisit Tenor Kas ${Math.round(cashGap)} Hari`);
-  } else if (cashGap > 0) {
-    capScore -= 10;
-    capNotes.push(`Mismatch Tenor ${Math.round(cashGap)} Hari`);
-  }
-  if (icr < 1.0) {
-    capScore -= 20;
-    capNotes.push('ICR Kritis (<1.0x)');
-  }
-  capScore = Math.max(15, Math.min(100, capScore));
-  const capNote = capNotes.length ? capNotes.join('; ') : 'Kapasitas arus kas memadai.';
+  if (gpm < 0) capNotes.push('Gross Loss (Jual Rugi di HPP)');
+  else if (gpm < 5) capNotes.push('Gross Margin Tipis (<5%)');
+  if (cashGap > 30) capNotes.push(`Defisit Tenor Kas ${Math.round(cashGap)} Hari`);
+  else if (cashGap > 0) capNotes.push(`Mismatch Tenor ${Math.round(cashGap)} Hari`);
+  if (icr < 1.0) capNotes.push('ICR Kritis (<1.0x)');
+  const capNote = capNotes.length ? capNotes.join('; ') : 'Kapasitas arus kas & kemampuan bayar memadai.';
 
-  // 3. Capital (Bobot 20%)
-  const eq = f23.eq || (f23.capital + f23.re) || 1;
-  const tl = f23.tl || (f23.cl + f23.ltDebt) || 1;
-  const der = tl / Math.max(1, eq);
-  const cr = (f23.ca || 1) / Math.max(1, f23.cl || 1);
+  const capBreakdown = {
+    gpmPts: capGpmPts,
+    maxGpmPts: 35,
+    tenorPts: capTenorPts,
+    maxTenorPts: 30,
+    icrPts: capIcrPts,
+    maxIcrPts: 20,
+    runwayPts: capRunwayPts,
+    maxRunwayPts: 15,
+    icrVal: icr,
+    total: capScore
+  };
 
-  let capitScore = 75;
+  // 3. Capital (Bobot 20%) — Rincian Skor Maksimal 100 Poin
+  const eq = m ? m.eq23 : ((f23.capital || 0) + (f23.otherCap || 0) + (f23.retEarn || 0) + (f23.re || 0));
+  const tl = m ? m.tl23 : ((f23.ap || 0) + (f23.stDebt || 0) + (f23.otherAp || 0) + (f23.accrued || 0) + (f23.ltDebt || 0));
+  const der = m ? m.der23 : (eq > 0 ? tl / eq : 99);
+  const cr = m ? m.currentRatio23 : ((f23.ca || 1) / Math.max(1, f23.cl || 1));
+  const nwcVal = m ? m.nwc23 : ((f23.cash || 0) + (f23.ar || 0) + (f23.inv || 0) - (f23.ap || 0) - (f23.stDebt || 0));
+  const reTotal = (f23.retEarn || 0) + (f23.re || 0);
+  const reErosion = m ? m.reErosionPct23 : ((f23.capital > 0 && reTotal < 0) ? (Math.abs(reTotal) / f23.capital) * 100 : 0);
+
+  // 3A. Leverage Utang terhadap Modal / DER (Maks 35 Poin)
+  let capDerPts = 5;
+  if (eq > 0 && der <= 2.0) capDerPts = 35;
+  else if (eq > 0 && der <= 2.5) capDerPts = 28;
+  else if (eq > 0 && der <= 4.0) capDerPts = 18;
+  else capDerPts = 5;
+
+  // 3B. Likuiditas Lancar / Current Ratio (Maks 25 Poin)
+  let capCrPts = 5;
+  if (cr >= 1.5) capCrPts = 25;
+  else if (cr >= 1.2) capCrPts = 20;
+  else if (cr >= 1.0) capCrPts = 15;
+  else capCrPts = 5;
+
+  // 3C. Kecukupan Net Working Capital / NWC Riil (Maks 20 Poin)
+  let capNwcPts = 5;
+  if (nwcVal > 0 && (!m || !m.isNWCDeficit)) capNwcPts = 20;
+  else if (nwcVal > 0) capNwcPts = 15;
+  else capNwcPts = 5;
+
+  // 3D. Ketahanan Ekuitas & Laba Ditahan (Maks 20 Poin)
+  let capEqPts = 5;
+  if (eq > 0 && reErosion === 0) capEqPts = 20;
+  else if (eq > 0 && reErosion <= 25) capEqPts = 12;
+  else capEqPts = 5;
+
+  const capitScore = Math.max(15, Math.min(100, Math.round(capDerPts + capCrPts + capNwcPts + capEqPts)));
   const capitNotes = [];
-  if (der > 4.0) {
-    capitScore -= 25;
-    capitNotes.push(`Leverage Tinggi (DER ${der.toFixed(2)}x)`);
-  } else if (der > 2.5) {
-    capitScore -= 10;
-    capitNotes.push(`DER Moderat (${der.toFixed(2)}x)`);
-  }
-  if (cr < 1.0) {
-    capitScore -= 25;
-    capitNotes.push(`Current Ratio < 1.0x (${cr.toFixed(2)}x)`);
-  }
-  capitScore = Math.max(20, Math.min(100, capitScore));
+  if (der > 4.0) capitNotes.push(`Leverage Tinggi (DER ${der.toFixed(2)}x)`);
+  else if (der > 2.5) capitNotes.push(`DER Moderat (${der.toFixed(2)}x)`);
+  if (cr < 1.0) capitNotes.push(`Current Ratio < 1.0x (${cr.toFixed(2)}x)`);
+  if (reErosion > 0) capitNotes.push(`Erosi Modal ${reErosion.toFixed(1)}%`);
   const capitNote = capitNotes.length ? capitNotes.join('; ') : 'Struktur permodalan & ekuitas sehat.';
 
-  // 4. Collateral (Bobot 20%): Agunan Pokok Persediaan & Jaminan Tambahan Fixed Assets
+  const capitBreakdown = {
+    derPts: capDerPts,
+    maxDerPts: 35,
+    crPts: capCrPts,
+    maxCrPts: 25,
+    nwcPts: capNwcPts,
+    maxNwcPts: 20,
+    eqPts: capEqPts,
+    maxEqPts: 20,
+    total: capitScore
+  };
+
+  // 4. Collateral (Bobot 20%): Agunan Pokok Persediaan (Maks 50 Poin) & Jaminan Tambahan Fixed Assets (Maks 50 Poin)
   const inv = f23.inv || 0;
   const fa = f23.fa || 0;
   const reqPlafond = proj.requestedPlafond || 1;
   const invRatio = (inv / reqPlafond) * 100;
   const faRatio = (fa / reqPlafond) * 100;
 
-  // Evaluasi Agunan Pokok (Persediaan Barang)
-  let invScore = 50;
-  if (invRatio >= 100) {
-    invScore = 95;
-  } else if (invRatio >= 80) {
-    invScore = 80;
-  } else if (invRatio >= 50) {
-    invScore = 65;
-  } else {
-    invScore = 40;
-  }
+  // 4A. Agunan Pokok (Persediaan Barang - Maks 50 Poin)
+  let collInvPts = 20;
+  if (invRatio >= 100) collInvPts = 50;
+  else if (invRatio >= 80) collInvPts = 42;
+  else if (invRatio >= 50) collInvPts = 32;
+  else if (invRatio > 0) collInvPts = 20;
+  else collInvPts = 0;
 
-  // Evaluasi Jaminan Tambahan (Fixed Assets - Standar HT >= 120%)
-  let faScore = 50;
-  if (faRatio >= 120) {
-    faScore = 95;
-  } else if (faRatio >= 100) {
-    faScore = 80;
-  } else if (faRatio >= 70) {
-    faScore = 65;
-  } else {
-    faScore = 40;
-  }
+  // 4B. Jaminan Tambahan (Fixed Assets HT Peringkat I >= 120% - Maks 50 Poin)
+  let collFaPts = 20;
+  if (faRatio >= 120) collFaPts = 50;
+  else if (faRatio >= 100) collFaPts = 42;
+  else if (faRatio >= 70) collFaPts = 32;
+  else if (faRatio > 0) collFaPts = 20;
+  else collFaPts = 0;
 
-  // Skor Gabungan Collateral (Bobot: Agunan Pokok Persediaan 50% + Jaminan Tambahan FA 50%)
-  const collScore = Math.round(invScore * 0.5 + faScore * 0.5);
+  const collScore = Math.max(10, Math.min(100, Math.round(collInvPts + collFaPts)));
   const collRatio = faRatio; // Backward compatibility
   const collNote = `Agunan Pokok Persediaan ${fmtRp(inv, true)} (${invRatio.toFixed(0)}%) & Jaminan Tambahan Fixed Asset ${fmtRp(fa, true)} (${faRatio.toFixed(0)}% plafond).`;
 
-  // 5. Condition (Bobot 15%)
+  const collBreakdown = {
+    invPts: collInvPts,
+    maxInvPts: 50,
+    faPts: collFaPts,
+    maxFaPts: 50,
+    total: collScore
+  };
+
+  // 5. Condition (Bobot 15%) — Rincian Skor Maksimal 100 Poin
   const isImport = isMaritimeOrImportRisk(proj);
-  let condScore = 75;
+  const revGrowthYoY = m ? m.revGrowth : 0;
+
+  // 5A. Risiko Rantai Pasok & Jalur Logistik (Maks 35 Poin)
+  let condLogPts = 30;
+  if (isImport) condLogPts = 18;
+  else if (proj.procurementMethod === 'none') condLogPts = 35;
+  else condLogPts = 30;
+
+  // 5B. Eksposur Fluktuasi Kurs Valas / USD (Maks 30 Poin)
+  let condFxPts = (proj.usdAmount || 0) > 0 ? 15 : 30;
+
+  // 5C. Pertumbuhan Omzet & Permintaan Pasar YoY (Maks 20 Poin)
+  let condGrowthPts = 16;
+  if (revGrowthYoY >= 10) condGrowthPts = 20;
+  else if (revGrowthYoY >= 0) condGrowthPts = 16;
+  else condGrowthPts = 10;
+
+  // 5D. Kemandirian Struktur Skema Fasilitas (Maks 15 Poin)
+  let condSchemePts = (proj.kmkTenorDays || 0) > 0 ? 10 : 15;
+
+  const condScore = Math.max(15, Math.min(100, Math.round(condLogPts + condFxPts + condGrowthPts + condSchemePts)));
   let condNote = '';
   if (isImport) {
-    condScore = 55;
     condNote = 'Sensitivitas tinggi terhadap fluktuasi kurs USD/IDR & risiko jalur laut pengangkutan komoditas impor.';
   } else if (proj.procurementMethod === 'none') {
-    condScore = 80;
     condNote = 'Model bisnis bebas risiko logistik maritim/kargo fisik; risiko operasional terkonsentrasi pada eksekusi kontrak jasa/lokal.';
   } else if (proj.procurementMethod === 'domestic') {
-    condScore = 75;
     condNote = 'Rantai pasok distribusi domestik jalur darat (inland transit) tanpa eksposur risiko pelayaran laut internasional.';
   } else {
-    condScore = 75;
     condNote = 'Kondisi sektor industri stabil dengan perputaran pasar domestik normal.';
   }
+
+  const condBreakdown = {
+    logPts: condLogPts,
+    maxLogPts: 35,
+    fxPts: condFxPts,
+    maxFxPts: 30,
+    growthPts: condGrowthPts,
+    maxGrowthPts: 20,
+    schemePts: condSchemePts,
+    maxSchemePts: 15,
+    total: condScore
+  };
 
   const totalScore = Math.round(
     charScore * 0.20 +
@@ -1616,17 +1707,21 @@ function compute5CAnalysis(proj, f23, m) {
     slikStatus,
     capScore,
     capNote,
+    capBreakdown,
     capitScore,
     capitNote,
+    capitBreakdown,
     collScore,
     collRatio,
     collNote,
+    collBreakdown,
     invVal: inv,
     invRatio,
     faVal: fa,
     faRatio,
     condScore,
     condNote,
+    condBreakdown,
     isImport,
     totalScore,
     totalScore10
@@ -3251,7 +3346,38 @@ function render5CTab(proj, m) {
                 &bull; Gross Margin: <strong>${fmtPct(m.gpm23, 2)}</strong> (${fmtRp(m.gp23, true)})<br/>
                 &bull; Tenor Mismatch: <strong>${fmtNum(m.cashGapAtSCFMaturity_Actual, 0)} Hari</strong><br/>
                 &bull; Pure Cash Runway: <strong>${fmtNum(m.pureCashRunwayDays, 0)} Hari</strong><br/>
-                &bull; ICR: <strong>${m.icr23 < 0 ? 'Negatif' : fmtNum(m.icr23, 2)}x</strong>
+                &bull; ICR: <strong>${(fiveC.capBreakdown?.icrVal ?? m.icr23 ?? 0) < 0 ? 'Negatif' : fmtNum(fiveC.capBreakdown?.icrVal ?? m.icr23 ?? 0, 2)}x</strong>
+              </div>
+
+              <!-- Rincian Skor Capacity (Menuju 100 Poin Penuh) -->
+              <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; padding:0.45rem 0.55rem; margin:0.45rem 0; font-size:0.67rem; line-height:1.45;">
+                <div style="font-weight:800; color:var(--askrindo-navy); margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;">
+                  <span>📊 Rincian Skor Capacity (Total: ${fiveC.capScore} / 100):</span>
+                  <span style="font-size:0.62rem; padding:1px 6px; border-radius:4px; font-weight:700; ${fiveC.capScore === 100 ? 'background:#dcfce7; color:#15803d;' : 'background:#e0f2fe; color:#0369a1;'}">
+                    ${fiveC.capScore === 100 ? '&#10003; 100 Poin Penuh' : `Kurang ${100 - fiveC.capScore} Poin`}
+                  </span>
+                </div>
+                <table style="width:100%; border-collapse:collapse; font-size:0.64rem;">
+                  <tr>
+                    <td style="padding:2px 0;">&bull; 📈 <strong>Gross Profit Margin (${fmtPct(m.gpm23, 1)}):</strong></td>
+                    <td style="text-align:right; font-weight:700; color:${(fiveC.capBreakdown?.gpmPts || 0) >= 28 ? '#15803d' : ((fiveC.capBreakdown?.gpmPts || 0) >= 20 ? '#b45309' : '#dc2626')};">${fiveC.capBreakdown?.gpmPts ?? 0} / 35 Poin</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:2px 0;">&bull; ⏱️ <strong>Kesesuaian Siklus Kas vs Tenor:</strong></td>
+                    <td style="text-align:right; font-weight:700; color:${(fiveC.capBreakdown?.tenorPts || 0) >= 25 ? '#15803d' : ((fiveC.capBreakdown?.tenorPts || 0) >= 12 ? '#b45309' : '#dc2626')};">${fiveC.capBreakdown?.tenorPts ?? 0} / 30 Poin</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:2px 0;">&bull; 💵 <strong>Interest Coverage Ratio (ICR):</strong></td>
+                    <td style="text-align:right; font-weight:700; color:${(fiveC.capBreakdown?.icrPts || 0) >= 15 ? '#15803d' : ((fiveC.capBreakdown?.icrPts || 0) >= 10 ? '#b45309' : '#dc2626')};">${fiveC.capBreakdown?.icrPts ?? 0} / 20 Poin</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:2px 0;">&bull; 🛡️ <strong>Pure Cash Runway (${fmtNum(m.pureCashRunwayDays, 0)} Hr):</strong></td>
+                    <td style="text-align:right; font-weight:700; color:${(fiveC.capBreakdown?.runwayPts || 0) >= 10 ? '#15803d' : '#dc2626'};">${fiveC.capBreakdown?.runwayPts ?? 0} / 15 Poin</td>
+                  </tr>
+                </table>
+                <div style="margin-top:4px; padding-top:4px; border-top:1px dashed #cbd5e1; color:#475569; font-size:0.62rem; line-height:1.35;">
+                  <em>💡 <strong>Syarat Skor 100 Penuh:</strong> Gross Margin &ge; 12% (35 poin), Siklus Operasi &le; Tenor Kredit (30 poin), ICR &ge; 2,0x (20 poin), dan Pure Cash Runway &ge; 45 hari (15 poin).</em>
+                </div>
               </div>
             </div>
             <div style="font-size:0.62rem; color:${fiveC.capScore >= 70 ? '#166534' : '#991b1b'}; background:${fiveC.capScore >= 70 ? '#f0fdf4' : '#fef2f2'}; padding:4px; border-radius:4px; text-align:center; font-weight:700;">
@@ -3271,7 +3397,38 @@ function render5CTab(proj, m) {
                 &bull; DER: <strong>${fmtNum(m.der23, 2)}x</strong> (Batas Maks 4,0x)<br/>
                 &bull; Current Ratio: <strong>${fmtNum(m.currentRatio23, 2)}x</strong><br/>
                 &bull; NWC Riil: <strong>${fmtRp(m.nwc23, true)}</strong><br/>
-                &bull; Ekuitas: <strong>${fmtRp(proj.fin23.capital + proj.fin23.re, true)}</strong>
+                &bull; Ekuitas: <strong>${fmtRp(m.eq23, true)}</strong>
+              </div>
+
+              <!-- Rincian Skor Capital (Menuju 100 Poin Penuh) -->
+              <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; padding:0.45rem 0.55rem; margin:0.45rem 0; font-size:0.67rem; line-height:1.45;">
+                <div style="font-weight:800; color:var(--askrindo-navy); margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;">
+                  <span>📊 Rincian Skor Capital (Total: ${fiveC.capitScore} / 100):</span>
+                  <span style="font-size:0.62rem; padding:1px 6px; border-radius:4px; font-weight:700; ${fiveC.capitScore === 100 ? 'background:#dcfce7; color:#15803d;' : 'background:#e0f2fe; color:#0369a1;'}">
+                    ${fiveC.capitScore === 100 ? '&#10003; 100 Poin Penuh' : `Kurang ${100 - fiveC.capitScore} Poin`}
+                  </span>
+                </div>
+                <table style="width:100%; border-collapse:collapse; font-size:0.64rem;">
+                  <tr>
+                    <td style="padding:2px 0;">&bull; ⚖️ <strong>Leverage DER (${fmtNum(m.der23, 2)}x):</strong></td>
+                    <td style="text-align:right; font-weight:700; color:${(fiveC.capitBreakdown?.derPts || 0) >= 28 ? '#15803d' : ((fiveC.capitBreakdown?.derPts || 0) >= 18 ? '#b45309' : '#dc2626')};">${fiveC.capitBreakdown?.derPts ?? 0} / 35 Poin</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:2px 0;">&bull; 💧 <strong>Current Ratio (${fmtNum(m.currentRatio23, 2)}x):</strong></td>
+                    <td style="text-align:right; font-weight:700; color:${(fiveC.capitBreakdown?.crPts || 0) >= 20 ? '#15803d' : ((fiveC.capitBreakdown?.crPts || 0) >= 15 ? '#b45309' : '#dc2626')};">${fiveC.capitBreakdown?.crPts ?? 0} / 25 Poin</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:2px 0;">&bull; 🔄 <strong>Kecukupan NWC Riil:</strong></td>
+                    <td style="text-align:right; font-weight:700; color:${(fiveC.capitBreakdown?.nwcPts || 0) >= 15 ? '#15803d' : '#dc2626'};">${fiveC.capitBreakdown?.nwcPts ?? 0} / 20 Poin</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:2px 0;">&bull; 🏛️ <strong>Ketahanan Ekuitas &amp; Laba Ditahan:</strong></td>
+                    <td style="text-align:right; font-weight:700; color:${(fiveC.capitBreakdown?.eqPts || 0) >= 15 ? '#15803d' : ((fiveC.capitBreakdown?.eqPts || 0) >= 12 ? '#b45309' : '#dc2626')};">${fiveC.capitBreakdown?.eqPts ?? 0} / 20 Poin</td>
+                  </tr>
+                </table>
+                <div style="margin-top:4px; padding-top:4px; border-top:1px dashed #cbd5e1; color:#475569; font-size:0.62rem; line-height:1.35;">
+                  <em>💡 <strong>Syarat Skor 100 Penuh:</strong> DER &le; 2,0x (35 poin), Current Ratio &ge; 1,50x (25 poin), NWC Surplus 1 Siklus (20 poin), dan Laba Ditahan Positif Tanpa Erosi Modal (20 poin).</em>
+                </div>
               </div>
             </div>
             <div style="font-size:0.62rem; color:${fiveC.capitScore >= 70 ? '#166534' : '#92400e'}; background:${fiveC.capitScore >= 70 ? '#f0fdf4' : '#fffbeb'}; padding:4px; border-radius:4px; text-align:center; font-weight:700;">
@@ -3301,6 +3458,29 @@ function render5CTab(proj, m) {
                   &bull; Pengikatan: <strong>Wajib Hak Tanggungan (HT) Peringkat I</strong>
                 </div>
               </div>
+
+              <!-- Rincian Skor Collateral (Menuju 100 Poin Penuh) -->
+              <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; padding:0.45rem 0.55rem; margin:0.45rem 0; font-size:0.67rem; line-height:1.45;">
+                <div style="font-weight:800; color:var(--askrindo-navy); margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;">
+                  <span>📊 Rincian Skor Collateral (Total: ${fiveC.collScore} / 100):</span>
+                  <span style="font-size:0.62rem; padding:1px 6px; border-radius:4px; font-weight:700; ${fiveC.collScore === 100 ? 'background:#dcfce7; color:#15803d;' : 'background:#e0f2fe; color:#0369a1;'}">
+                    ${fiveC.collScore === 100 ? '&#10003; 100 Poin Penuh' : `Kurang ${100 - fiveC.collScore} Poin`}
+                  </span>
+                </div>
+                <table style="width:100%; border-collapse:collapse; font-size:0.64rem;">
+                  <tr>
+                    <td style="padding:2px 0;">&bull; 📦 <strong>Agunan Pokok Persediaan (${(fiveC.invRatio || 0).toFixed(0)}%):</strong></td>
+                    <td style="text-align:right; font-weight:700; color:${(fiveC.collBreakdown?.invPts || 0) >= 42 ? '#15803d' : ((fiveC.collBreakdown?.invPts || 0) >= 32 ? '#b45309' : '#dc2626')};">${fiveC.collBreakdown?.invPts ?? 0} / 50 Poin</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:2px 0;">&bull; 🏢 <strong>Jaminan Tambahan Fixed Asset (${(fiveC.faRatio || 0).toFixed(0)}%):</strong></td>
+                    <td style="text-align:right; font-weight:700; color:${(fiveC.collBreakdown?.faPts || 0) >= 42 ? '#15803d' : ((fiveC.collBreakdown?.faPts || 0) >= 32 ? '#b45309' : '#dc2626')};">${fiveC.collBreakdown?.faPts ?? 0} / 50 Poin</td>
+                  </tr>
+                </table>
+                <div style="margin-top:4px; padding-top:4px; border-top:1px dashed #cbd5e1; color:#475569; font-size:0.62rem; line-height:1.35;">
+                  <em>💡 <strong>Syarat Skor 100 Penuh:</strong> Coverage Agunan Pokok Persediaan &ge; 100% Plafond (50 poin) dan Jaminan Tambahan Fixed Assets HT Peringkat I &ge; 120% Plafond (50 poin).</em>
+                </div>
+              </div>
             </div>
             <div style="font-size:0.62rem; color:${(fiveC.faRatio || 0) >= 120 && (fiveC.invRatio || 0) >= 80 ? '#166534' : '#92400e'}; background:${(fiveC.faRatio || 0) >= 120 && (fiveC.invRatio || 0) >= 80 ? '#f0fdf4' : '#fffbeb'}; padding:4px; border-radius:4px; text-align:center; font-weight:700; margin-top:0.3rem;">
               ${(fiveC.faRatio || 0) >= 120 ? `Agunan Pokok Persediaan &amp; Jaminan Tambahan HT Memadai (${(fiveC.faRatio || 0).toFixed(0)}% &ge; 120%)` : `Jaminan Tambahan HT Mengcover ${(fiveC.faRatio || 0).toFixed(0)}% (Target &ge; 120%)`}
@@ -3319,6 +3499,37 @@ function render5CTab(proj, m) {
                 &bull; Komoditas / Sektor: <strong>${proj.sector}</strong><br/>
                 &bull; Eksposur Valas: <strong>${proj.usdAmount > 0 ? `USD ${proj.usdAmount.toLocaleString('id-ID')}` : 'Domestik IDR'}</strong><br/>
                 &bull; Mitigasi Logistik: <strong>${isMaritimeOrImportRisk(proj) ? 'Wajib Marine Cargo All Risks' : (proj.procurementMethod === 'domestic' ? 'Asuransi Inland Transit (Darat)' : 'Tanpa Pengiriman Fisik (Nihil)')}</strong>
+              </div>
+
+              <!-- Rincian Skor Condition (Menuju 100 Poin Penuh) -->
+              <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; padding:0.45rem 0.55rem; margin:0.45rem 0; font-size:0.67rem; line-height:1.45;">
+                <div style="font-weight:800; color:var(--askrindo-navy); margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;">
+                  <span>📊 Rincian Skor Condition (Total: ${fiveC.condScore} / 100):</span>
+                  <span style="font-size:0.62rem; padding:1px 6px; border-radius:4px; font-weight:700; ${fiveC.condScore === 100 ? 'background:#dcfce7; color:#15803d;' : 'background:#e0f2fe; color:#0369a1;'}">
+                    ${fiveC.condScore === 100 ? '&#10003; 100 Poin Penuh' : `Kurang ${100 - fiveC.condScore} Poin`}
+                  </span>
+                </div>
+                <table style="width:100%; border-collapse:collapse; font-size:0.64rem;">
+                  <tr>
+                    <td style="padding:2px 0;">&bull; 🚢 <strong>Risiko Rantai Pasok &amp; Logistik:</strong></td>
+                    <td style="text-align:right; font-weight:700; color:${(fiveC.condBreakdown?.logPts || 0) >= 30 ? '#15803d' : '#b45309'};">${fiveC.condBreakdown?.logPts ?? 0} / 35 Poin</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:2px 0;">&bull; 💱 <strong>Eksposur Nilai Tukar Valas (USD):</strong></td>
+                    <td style="text-align:right; font-weight:700; color:${(fiveC.condBreakdown?.fxPts || 0) === 30 ? '#15803d' : '#b45309'};">${fiveC.condBreakdown?.fxPts ?? 0} / 30 Poin</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:2px 0;">&bull; 📊 <strong>Pertumbuhan Omzet Pasar (${fmtPct(m.revGrowth, 1)}):</strong></td>
+                    <td style="text-align:right; font-weight:700; color:${(fiveC.condBreakdown?.growthPts || 0) >= 16 ? '#15803d' : '#dc2626'};">${fiveC.condBreakdown?.growthPts ?? 0} / 20 Poin</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:2px 0;">&bull; 🏦 <strong>Kemandirian Struktur Skema Kredit:</strong></td>
+                    <td style="text-align:right; font-weight:700; color:${(fiveC.condBreakdown?.schemePts || 0) === 15 ? '#15803d' : '#b45309'};">${fiveC.condBreakdown?.schemePts ?? 0} / 15 Poin</td>
+                  </tr>
+                </table>
+                <div style="margin-top:4px; padding-top:4px; border-top:1px dashed #cbd5e1; color:#475569; font-size:0.62rem; line-height:1.35;">
+                  <em>💡 <strong>Syarat Skor 100 Penuh:</strong> Bebas risiko logistik laut (35 poin), Transaksi 100% Rupiah bebas risiko kurs USD (30 poin), Pertumbuhan Penjualan YoY &ge; 10% (20 poin), dan Skema Fasilitas Mandiri (15 poin).</em>
+                </div>
               </div>
             </div>
             ${isMaritimeOrImportRisk(proj) ? `
@@ -5009,7 +5220,12 @@ function renderPrintableReport(proj, m) {
                 <tr>
                   <td><strong>2. Capacity (25%)</strong></td>
                   <td class="num-col"><strong style="color:${fiveC.capScore >= 70 ? '#166534' : '#dc2626'};">${fiveC.capScore} / 100</strong></td>
-                  <td>${fiveC.capNote} | GPM: ${m.gpm23.toFixed(2)}%, Tenor Mismatch: ${Math.round(m.cashGapAtSCFMaturity_Actual)} Hari, Cash Runway: ${fmtNum(m.pureCashRunwayMonths, 1)} Bln</td>
+                  <td>
+                    &bull; Gross Margin: ${m.gpm23.toFixed(2)}% (${fiveC.capBreakdown?.gpmPts ?? 0}/35 Poin)<br/>
+                    &bull; Kesesuaian Siklus Kas vs Tenor: Mismatch ${Math.round(m.cashGapAtSCFMaturity_Actual)} Hr (${fiveC.capBreakdown?.tenorPts ?? 0}/30 Poin)<br/>
+                    &bull; Interest Coverage Ratio (ICR): ${fmtNum(fiveC.capBreakdown?.icrVal ?? 0, 2)}x (${fiveC.capBreakdown?.icrPts ?? 0}/20 Poin)<br/>
+                    &bull; Pure Cash Runway: ${fmtNum(m.pureCashRunwayDays, 0)} Hari (${fiveC.capBreakdown?.runwayPts ?? 0}/15 Poin)
+                  </td>
                   <td style="color:${fiveC.capScore >= 70 ? '#166534' : '#dc2626'}; font-weight:700;">
                     ${fiveC.capScore >= 70 ? 'Kapasitas Memadai' : 'Kapasitas Tertekan (Cash Gap)'}
                   </td>
@@ -5017,7 +5233,12 @@ function renderPrintableReport(proj, m) {
                 <tr>
                   <td><strong>3. Capital (20%)</strong></td>
                   <td class="num-col"><strong style="color:${fiveC.capitScore >= 70 ? '#166534' : '#dc2626'};">${fiveC.capitScore} / 100</strong></td>
-                  <td>${fiveC.capitNote} | DER: ${m.der23.toFixed(2)}x, Current Ratio: ${m.currentRatio23.toFixed(2)}x, Ekuitas Bersih: ${fmtRp(m.eq23, true)}</td>
+                  <td>
+                    &bull; Leverage DER: ${m.der23.toFixed(2)}x (${fiveC.capitBreakdown?.derPts ?? 0}/35 Poin)<br/>
+                    &bull; Current Ratio: ${m.currentRatio23.toFixed(2)}x (${fiveC.capitBreakdown?.crPts ?? 0}/25 Poin)<br/>
+                    &bull; Kecukupan NWC Riil: ${fmtRp(m.nwc23, true)} (${fiveC.capitBreakdown?.nwcPts ?? 0}/20 Poin)<br/>
+                    &bull; Ketahanan Ekuitas: ${fmtRp(m.eq23, true)} (${fiveC.capitBreakdown?.eqPts ?? 0}/20 Poin)
+                  </td>
                   <td style="color:${fiveC.capitScore >= 70 ? '#166534' : '#dc2626'}; font-weight:700;">
                     ${fiveC.capitScore >= 70 ? 'Permodalan Sehat' : 'Struktur Modal Agresif'}
                   </td>
@@ -5026,8 +5247,8 @@ function renderPrintableReport(proj, m) {
                   <td><strong>4. Collateral (20%)</strong></td>
                   <td class="num-col"><strong style="color:${fiveC.collScore >= 70 ? '#166534' : '#dc2626'};">${fiveC.collScore} / 100</strong></td>
                   <td>
-                    &bull; Agunan Pokok Persediaan: ${fmtRp(fiveC.invVal, true)} (${fiveC.invRatio.toFixed(0)}% plafond) via Fidusia/CMA<br/>
-                    &bull; Jaminan Tambahan Fixed Assets: ${fmtRp(fiveC.faVal, true)} (${fiveC.faRatio.toFixed(0)}% plafond, Standar HT &ge; 120%)
+                    &bull; Agunan Pokok Persediaan: ${fmtRp(fiveC.invVal, true)} (${fiveC.invRatio.toFixed(0)}% plafond — ${fiveC.collBreakdown?.invPts ?? 0}/50 Poin)<br/>
+                    &bull; Jaminan Tambahan Fixed Assets: ${fmtRp(fiveC.faVal, true)} (${fiveC.faRatio.toFixed(0)}% plafond — ${fiveC.collBreakdown?.faPts ?? 0}/50 Poin)
                   </td>
                   <td style="color:${fiveC.collScore >= 70 ? '#166534' : '#d97706'}; font-weight:700;">
                     ${fiveC.collScore >= 80 ? 'Sangat Memadai (HT &ge; 120%)' : (fiveC.collScore >= 60 ? 'Cukup / Standar' : 'Agunan Kurang')}
@@ -5036,7 +5257,12 @@ function renderPrintableReport(proj, m) {
                 <tr>
                   <td><strong>5. Condition (15%)</strong></td>
                   <td class="num-col"><strong style="color:${fiveC.condScore >= 70 ? '#166534' : '#dc2626'};">${fiveC.condScore} / 100</strong></td>
-                  <td>${fiveC.condNote} | Metode Logistik: ${procMethodLabel}</td>
+                  <td>
+                    &bull; Risiko Rantai Pasok &amp; Logistik: ${procMethodLabel} (${fiveC.condBreakdown?.logPts ?? 0}/35 Poin)<br/>
+                    &bull; Eksposur Nilai Tukar Valas: ${proj.usdAmount > 0 ? 'Valas USD' : 'Domestik IDR'} (${fiveC.condBreakdown?.fxPts ?? 0}/30 Poin)<br/>
+                    &bull; Pertumbuhan Omzet Pasar: ${fmtPct(m.revGrowth, 1)} (${fiveC.condBreakdown?.growthPts ?? 0}/20 Poin)<br/>
+                    &bull; Kemandirian Skema Kredit: ${proj.kmkTenorDays > 0 ? 'Dengan KMK Backup' : 'Skema Mandiri'} (${fiveC.condBreakdown?.schemePts ?? 0}/15 Poin)
+                  </td>
                   <td style="color:${fiveC.condScore >= 75 ? '#166534' : '#d97706'}; font-weight:700;">
                     ${fiveC.condScore >= 75 ? 'Risiko Terkendali' : 'Sensitif terhadap Fluktuasi Eksternal'}
                   </td>

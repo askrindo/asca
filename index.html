@@ -238,6 +238,7 @@
           <div class="case-submeta">
             <span><strong>Bank:</strong> <span id="bannerBankName">-</span></span>
             <span><strong>Sektor:</strong> <span id="bannerSector">-</span></span>
+            <span><strong>Domisili:</strong> <span id="bannerCity">Kab. Sukoharjo</span></span>
             <span><strong>Plafond:</strong> <span id="bannerPlafond">-</span></span>
             <span><strong>Lap. Keu:</strong> <span id="bannerFinYears">2022 &amp; 2023</span></span>
             <span><strong>Underwriter:</strong> <span id="bannerUnderwriter">-</span></span>
@@ -399,6 +400,10 @@
               <div class="form-group full">
                 <label>Nama Perusahaan / Debitur</label>
                 <input type="text" id="inp_companyName" class="form-control" oninput="syncInputsToModel()" />
+              </div>
+              <div class="form-group">
+                <label>Kabupaten / Kota Domisili Debitur <span class="unit-hint">(Yurisdiksi SIPP PN)</span></label>
+                <input type="text" id="inp_city" list="list_regencies" class="form-control" placeholder="Contoh: Kab. Sukoharjo" oninput="syncInputsToModel()" />
               </div>
               <div class="form-group">
                 <label>Sektor Industri</label>
@@ -1442,6 +1447,129 @@
     <option value="Bank Garansi (Jaminan Pembayaran / Pelaksanaan / Tender)">
   </datalist>
 
+  <datalist id="list_regencies">
+    <option value="Kab. Sukoharjo">
+    <option value="Kota Surakarta">
+    <option value="Kab. Karanganyar">
+    <option value="Kab. Klaten">
+    <option value="Kab. Boyolali">
+    <option value="Kab. Wonogiri">
+    <option value="Kab. Sragen">
+    <option value="Kota Semarang">
+    <option value="Kab. Semarang">
+    <option value="Kab. Kudus">
+    <option value="Kab. Pati">
+    <option value="Kab. Jepara">
+    <option value="Kab. Demak">
+    <option value="Kab. Grobogan">
+    <option value="Kab. Kendal">
+    <option value="Kab. Batang">
+    <option value="Kota Pekalongan">
+    <option value="Kab. Pekalongan">
+    <option value="Kab. Pemalang">
+    <option value="Kota Tegal">
+    <option value="Kab. Tegal">
+    <option value="Kab. Brebes">
+    <option value="Kab. Banyumas">
+    <option value="Kab. Cilacap">
+    <option value="Kab. Purbalingga">
+    <option value="Kab. Banjarnegara">
+    <option value="Kab. Kebumen">
+    <option value="Kab. Purworejo">
+    <option value="Kab. Wonosobo">
+    <option value="Kota Magelang">
+    <option value="Kab. Magelang">
+    <option value="Kota Salatiga">
+    <option value="Kab. Temanggung">
+    <option value="Kab. Blora">
+    <option value="Kab. Rembang">
+    <option value="Kota Yogyakarta">
+    <option value="Kab. Sleman">
+    <option value="Kab. Bantul">
+    <option value="Kab. Kulon Progo">
+    <option value="Kab. Gunungkidul">
+    <option value="Kota Jakarta Pusat">
+    <option value="Kota Jakarta Selatan">
+    <option value="Kota Jakarta Barat">
+    <option value="Kota Jakarta Timur">
+    <option value="Kota Jakarta Utara">
+    <option value="Kota Tangerang">
+    <option value="Kota Tangerang Selatan">
+    <option value="Kab. Tangerang">
+    <option value="Kota Bekasi">
+    <option value="Kab. Bekasi">
+    <option value="Kota Bogor">
+    <option value="Kab. Bogor">
+    <option value="Kota Depok">
+    <option value="Kota Bandung">
+    <option value="Kab. Bandung">
+    <option value="Kab. Bandung Barat">
+    <option value="Kota Cimahi">
+    <option value="Kota Cirebon">
+    <option value="Kab. Cirebon">
+    <option value="Kab. Karawang">
+    <option value="Kab. Purwakarta">
+    <option value="Kab. Subang">
+    <option value="Kab. Indramayu">
+    <option value="Kab. Garut">
+    <option value="Kota Tasikmalaya">
+    <option value="Kab. Tasikmalaya">
+    <option value="Kota Sukabumi">
+    <option value="Kab. Sukabumi">
+    <option value="Kab. Cianjur">
+    <option value="Kota Serang">
+    <option value="Kab. Serang">
+    <option value="Kota Cilegon">
+    <option value="Kab. Lebak">
+    <option value="Kab. Pandeglang">
+    <option value="Kota Surabaya">
+    <option value="Kab. Sidoarjo">
+    <option value="Kab. Gresik">
+    <option value="Kota Malang">
+    <option value="Kab. Malang">
+    <option value="Kota Batu">
+    <option value="Kota Mojokerto">
+    <option value="Kab. Mojokerto">
+    <option value="Kota Pasuruan">
+    <option value="Kab. Pasuruan">
+    <option value="Kota Probolinggo">
+    <option value="Kab. Probolinggo">
+    <option value="Kab. Jombang">
+    <option value="Kota Kediri">
+    <option value="Kab. Kediri">
+    <option value="Kota Madiun">
+    <option value="Kab. Madiun">
+    <option value="Kab. Bojonegoro">
+    <option value="Kab. Tuban">
+    <option value="Kab. Lamongan">
+    <option value="Kab. Jember">
+    <option value="Kab. Banyuwangi">
+    <option value="Kota Medan">
+    <option value="Kota Palembang">
+    <option value="Kota Pekanbaru">
+    <option value="Kota Padang">
+    <option value="Kota Batam">
+    <option value="Kota Bandar Lampung">
+    <option value="Kota Jambi">
+    <option value="Kota Pangkal Pinang">
+    <option value="Kota Banda Aceh">
+    <option value="Kota Pontianak">
+    <option value="Kota Banjarmasin">
+    <option value="Kota Balikpapan">
+    <option value="Kota Samarinda">
+    <option value="Kota Palangka Raya">
+    <option value="Kota Makassar">
+    <option value="Kota Manado">
+    <option value="Kota Palu">
+    <option value="Kota Kendari">
+    <option value="Kota Denpasar">
+    <option value="Kab. Badung">
+    <option value="Kota Mataram">
+    <option value="Kota Kupang">
+    <option value="Kota Ambon">
+    <option value="Kota Jayapura">
+  </datalist>
+
   <!-- MODAL PROYEK BARU -->
   <div class="modal-backdrop" id="newProjectModal">
     <div class="modal-content">
@@ -1453,6 +1581,10 @@
         <div class="form-group full">
           <label>Nama Debitur / Perusahaan</label>
           <input type="text" id="new_companyName" class="form-control" placeholder="Contoh: PT Rahmat Santosa" />
+        </div>
+        <div class="form-group">
+          <label>Kabupaten / Kota Domisili Debitur</label>
+          <input type="text" id="new_city" list="list_regencies" class="form-control" placeholder="Pilih / ketik misal: Kab. Sukoharjo" />
         </div>
         <div class="form-group">
           <label>Sektor Industri (Pilih atau Ketik)</label>
@@ -1500,7 +1632,7 @@
 
     <div class="toast-container" id="toastContainer"></div>
 
-  <script src="inaproc-blacklist-db.js?v=1793507000"></script>
-  <script src="app.js?v=1793507000"></script>
+  <script src="inaproc-blacklist-db.js?v=1793508800"></script>
+  <script src="app.js?v=1793508800"></script>
 </body>
 </html>

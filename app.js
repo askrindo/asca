@@ -112,6 +112,7 @@ function getDefaultProjects() {
       id: 'case-rahmat-santosa',
       caseNumber: '20261101-0101',
       companyName: 'PT Rahmat Santosa (Kasus Trade Financing)',
+      city: 'Kab. Sukoharjo',
       sector: 'Industri Pengolahan & Perdagangan Kedelai Impor (Tempe, Tahu, Kecap, Pakan Ternak)',
       estYear: 2018,
       bankName: 'Bank Dana',
@@ -183,6 +184,7 @@ function getDefaultProjects() {
       id: 'case-rahmat-restructured',
       caseNumber: '20261101-0102',
       companyName: 'PT Rahmat Santosa (Simulasi Turnaround DCC-SWCM)',
+      city: 'Kab. Sukoharjo',
       sector: 'Industri Pengolahan & Perdagangan Kedelai Impor (Skema Mitigasi Ring-Fenced)',
       estYear: 2018,
       bankName: 'Bank Dana',
@@ -254,6 +256,7 @@ function getDefaultProjects() {
       id: 'case-nusantara-pangan',
       caseNumber: '20261101-0103',
       companyName: 'PT Nusantara Distribusi Pangan',
+      city: 'Kota Jakarta Pusat',
       sector: 'Distribusi FMCG & Bahan Pokok Nasional',
       estYear: 2015,
       bankName: 'Bank Mandiri / BRI',
@@ -651,6 +654,7 @@ function renderBanner(proj, m) {
   setEl('bannerFacilityType', proj.facilityType || '-');
   setEl('bannerBankName', proj.bankName || '-');
   setEl('bannerSector', proj.sector || '-');
+  setEl('bannerCity', proj.city || 'Kab. Sukoharjo');
   setEl('bannerPlafond', fmtRp(proj.requestedPlafond));
   setEl('bannerFinYears', `${m.yr1} & ${m.yr2}`);
   setEl('bannerUnderwriter', proj.underwriter || '-');
@@ -1057,9 +1061,99 @@ function autoVerifyInaproc(proj) {
   }
 }
 
-function openSippPortal(name) {
-  const q = encodeURIComponent(name || 'PT');
+// ============================================================================
+// RESOLUSI SISTEM INFORMASI PENELUSURAN PERKARA (SIPP) PENGADILAN NEGERI
+// ============================================================================
+function getSippPnInfo(cityOrKab, companyName) {
+  const rawCity = String(cityOrKab || 'Kab. Sukoharjo').trim();
+  const cleanCompName = (companyName || '').replace(/\s*\([^)]*\)/g, '').trim();
+
+  // Bersihkan awalan Kabupaten / Kab. / Kota
+  const norm = rawCity.toLowerCase()
+    .replace(/^kabupaten\s+|^kab\.\s*|^kota\s+/gi, '')
+    .trim();
+
+  // Alias yurisdiksi PN di Indonesia yang letak/nama kantornya berbeda
+  const ALIAS_MAP = {
+    'kulon progo': { slug: 'wates', pnName: 'Pengadilan Negeri Wates' },
+    'gunungkidul': { slug: 'wonosari', pnName: 'Pengadilan Negeri Wonosari' },
+    'gunung kidul': { slug: 'wonosari', pnName: 'Pengadilan Negeri Wonosari' },
+    'kab. bandung': { slug: 'balebandung', pnName: 'Pengadilan Negeri Bale Bandung' },
+    'bandung barat': { slug: 'balebandung', pnName: 'Pengadilan Negeri Bale Bandung' },
+    'kab. bogor': { slug: 'cibinong', pnName: 'Pengadilan Negeri Cibinong' },
+    'kab. bekasi': { slug: 'cikarang', pnName: 'Pengadilan Negeri Cikarang' },
+    'kab. malang': { slug: 'kepanjen', pnName: 'Pengadilan Negeri Kepanjen' },
+    'kab. tegal': { slug: 'slawi', pnName: 'Pengadilan Negeri Slawi' },
+    'kab. magelang': { slug: 'mungkid', pnName: 'Pengadilan Negeri Mungkid' },
+    'grobogan': { slug: 'purwodadi', pnName: 'Pengadilan Negeri Purwodadi' },
+    'banyumas': { slug: 'purwokerto', pnName: 'Pengadilan Negeri Purwokerto' },
+    'jakarta pusat': { slug: 'jakartapusat', pnName: 'Pengadilan Negeri Jakarta Pusat' },
+    'jakarta selatan': { slug: 'jakartaselatan', pnName: 'Pengadilan Negeri Jakarta Selatan' },
+    'jakarta barat': { slug: 'jakartabarat', pnName: 'Pengadilan Negeri Jakarta Barat' },
+    'jakarta timur': { slug: 'jakartatimur', pnName: 'Pengadilan Negeri Jakarta Timur' },
+    'jakarta utara': { slug: 'jakartautara', pnName: 'Pengadilan Negeri Jakarta Utara' },
+    'tangerang selatan': { slug: 'tangerang', pnName: 'Pengadilan Negeri Tangerang' },
+    'surakarta': { slug: 'surakarta', pnName: 'Pengadilan Negeri Surakarta' },
+    'solo': { slug: 'surakarta', pnName: 'Pengadilan Negeri Surakarta' },
+    'sukoharjo': { slug: 'sukoharjo', pnName: 'Pengadilan Negeri Sukoharjo' },
+  };
+
+  let slug = '';
+  let pnName = '';
+
+  const rawLower = rawCity.toLowerCase();
+  if (ALIAS_MAP[rawLower]) {
+    slug = ALIAS_MAP[rawLower].slug;
+    pnName = ALIAS_MAP[rawLower].pnName;
+  } else if (ALIAS_MAP[norm]) {
+    slug = ALIAS_MAP[norm].slug;
+    pnName = ALIAS_MAP[norm].pnName;
+  } else {
+    slug = norm.replace(/[^a-z0-9]/g, '');
+    const titleCased = norm.split(' ').filter(Boolean).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    pnName = `Pengadilan Negeri ${titleCased}`;
+  }
+
+  const baseUrl = `https://sipp.pn-${slug}.go.id/`;
+  const searchUrl = cleanCompName
+    ? `https://sipp.pn-${slug}.go.id/search?q=${encodeURIComponent(cleanCompName)}`
+    : baseUrl;
+  const putusanMaUrl = cleanCompName
+    ? `https://putusan3.mahkamahagung.go.id/search.html?q=${encodeURIComponent(cleanCompName)}`
+    : 'https://putusan3.mahkamahagung.go.id/';
+
+  return {
+    city: rawCity,
+    slug,
+    pnName,
+    baseUrl,
+    searchUrl,
+    putusanMaUrl,
+    cleanCompName
+  };
+}
+
+function openSippPortal(name, city) {
+  const proj = getActiveProject();
+  const targetCity = city || (proj ? proj.city : '') || 'Kab. Sukoharjo';
+  const cleanName = (name || (proj ? proj.companyName : '') || 'PT').replace(/\s*\([^)]*\)/g, '').trim();
+  const info = getSippPnInfo(targetCity, cleanName);
+  window.open(info.searchUrl, '_blank');
+}
+
+function openDirectPutusanMAPortal(name) {
+  const proj = getActiveProject();
+  const cleanName = (name || (proj ? proj.companyName : '') || 'PT').replace(/\s*\([^)]*\)/g, '').trim();
+  const q = encodeURIComponent(cleanName);
   window.open(`https://putusan3.mahkamahagung.go.id/search.html?q=${q}`, '_blank');
+}
+
+function setSippResult(status, compName) {
+  updateCharacterParam('sippStatus', status);
+  const statusLabel = status === 'clean' 
+    ? 'Nihil Perkara / Gugatan (10 Poin Penuh)' 
+    : (status === 'disputed' ? 'Ada Sengketa Perdata (5 Poin)' : 'PKPU / Pailit (0 Poin)');
+  showToast(`⚖️ Status SIPP Pengadilan berhasil diperbarui: ${statusLabel}`);
 }
 
 function openGoogleNewsPortal(name) {
@@ -3251,11 +3345,60 @@ function render5CTab(proj, m) {
               </div>
             </div>
 
-            <div style="display:flex; flex-direction:column; gap:4px; margin-top:0.35rem;">
-              <button class="five-c-portal-btn" onclick="openSippPortal('${safeCompName}')" title="Buka direktori perkara putusan Pengadilan MA">
-                Cek SIPP Pengadilan (Riil) &raquo;
-              </button>
-            </div>
+            <!-- KONEKSI OTOMATIS SIPP PENGADILAN NEGERI (BERDASARKAN KABUPATEN/KOTA) -->
+            ${(() => {
+              const sippInfo = getSippPnInfo(proj.city || 'Kab. Sukoharjo', cleanCompName);
+              const isClean = (!proj.sippStatus || proj.sippStatus === 'clean');
+              const isDisputed = proj.sippStatus === 'disputed';
+              const isBankrupt = proj.sippStatus === 'bankrupt';
+              const cardBorder = isBankrupt ? '#ef4444' : (isDisputed ? '#f59e0b' : '#0284c7');
+              const cardBg = isBankrupt ? '#fef2f2' : (isDisputed ? '#fffbeb' : '#f0f9ff');
+              const headerColor = isBankrupt ? '#b91c1c' : (isDisputed ? '#b45309' : '#0369a1');
+
+              return `
+                <div id="sippIntegratedCard" style="background:${cardBg}; border:1.5px solid ${cardBorder}; border-radius:8px; padding:0.55rem; margin-top:0.45rem;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem; gap:4px; flex-wrap:wrap;">
+                    <span style="font-size:0.68rem; font-weight:800; color:${headerColor}; text-transform:uppercase; letter-spacing:0.2px;">
+                      🏛️ Auto-Screening SIPP PN &amp; Legal Perkara
+                    </span>
+                    <span style="font-size:0.6rem; font-weight:700; background:#ffffff; color:#334155; padding:2px 6px; border-radius:4px; border:1px solid #cbd5e1;">
+                      Wilayah: ${sippInfo.city}
+                    </span>
+                  </div>
+
+                  <div style="font-size:0.65rem; color:#334155; margin:0 0 0.35rem; line-height:1.4; background:#fff; padding:5px 7px; border-radius:5px; border:1px solid ${cardBorder};">
+                    <div>Perusahaan: <strong>${cleanCompName}</strong></div>
+                    <div>Yurisdiksi PN: <strong>${sippInfo.pnName}</strong></div>
+                    <div style="margin-top:2px; font-size:0.63rem; font-weight:700; color:${isClean ? '#15803d' : (isDisputed ? '#b45309' : '#dc2626')};">
+                      ${isClean ? '✓ Nihil Gugatan / Perkara Hukum Aktif (10/10 Poin)' : (isDisputed ? '⚠ Ada Catatan Gugatan / Perdata (5/10 Poin)' : '⛔ Terdeteksi Menghadapi Permohonan PKPU/Pailit (0/10 Poin)')}
+                    </div>
+                  </div>
+
+                  <div style="display:flex; flex-direction:column; gap:4px;">
+                    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:3px;">
+                      <button type="button" class="five-c-portal-btn" style="background:${isClean ? '#15803d' : '#f0fdf4'}; color:${isClean ? '#ffffff' : '#15803d'}; border-color:${isClean ? '#15803d' : '#86efac'}; font-weight:700; font-size:0.61rem; padding:3px 2px; justify-content:center; text-align:center;" onclick="setSippResult('clean', '${safeCompName}')" title="Tetapkan status Nihil Perkara (10 Poin Penuh)">
+                        ✓ Nihil (10 Pt)
+                      </button>
+                      <button type="button" class="five-c-portal-btn" style="background:${isDisputed ? '#d97706' : '#fffbeb'}; color:${isDisputed ? '#ffffff' : '#b45309'}; border-color:${isDisputed ? '#d97706' : '#fde68a'}; font-weight:700; font-size:0.61rem; padding:3px 2px; justify-content:center; text-align:center;" onclick="setSippResult('disputed', '${safeCompName}')" title="Tetapkan status Ada Sengketa Perdata (5 Poin)">
+                        ⚠ Sengketa (5 Pt)
+                      </button>
+                      <button type="button" class="five-c-portal-btn" style="background:${isBankrupt ? '#dc2626' : '#fef2f2'}; color:${isBankrupt ? '#ffffff' : '#b91c1c'}; border-color:${isBankrupt ? '#dc2626' : '#fca5a5'}; font-weight:700; font-size:0.61rem; padding:3px 2px; justify-content:center; text-align:center;" onclick="setSippResult('bankrupt', '${safeCompName}')" title="Tetapkan status PKPU / Pailit (0 Poin)">
+                        ⛔ Pailit (0 Pt)
+                      </button>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns: 1.2fr 1fr; gap:4px; margin-top:2px;">
+                      <button type="button" class="five-c-portal-btn" style="background:#0284c7; color:#ffffff; border-color:#0284c7; font-size:0.63rem; font-weight:700; justify-content:center;" onclick="openSippPortal('${safeCompName}', '${(proj.city || '').replace(/'/g, "\\'")}')" title="Buka website pencarian perkara di ${sippInfo.pnName}">
+                        🔍 Cari di SIPP ${sippInfo.pnName.replace('Pengadilan Negeri', 'PN')} &raquo;
+                      </button>
+                      <button type="button" class="five-c-portal-btn" style="background:#ffffff; color:#475569; border-color:#cbd5e1; font-size:0.62rem; justify-content:center;" onclick="openDirectPutusanMAPortal('${safeCompName}')" title="Buka Direktori Putusan Mahkamah Agung RI (Nasional)">
+                        🌐 Putusan MA RI &raquo;
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              `;
+            })()}
           </div>
 
           <!-- 2. Capacity Card -->
@@ -4921,6 +5064,8 @@ function renderPrintableReport(proj, m) {
         ? 'Domestik / Lokal (Inland Transit Jalur Darat)' 
         : 'Impor Luar Negeri / Jalur Laut (Sea Freight)');
 
+  const sippInfo = getSippPnInfo(proj.city || 'Kab. Sukoharjo', proj.companyName);
+
   document.getElementById('printableMemoContainer').innerHTML = `
     <table class="memo-print-table">
       <thead>
@@ -4951,6 +5096,7 @@ function renderPrintableReport(proj, m) {
               <table class="data-table">
                 <tbody>
                   <tr><td style="width:38%;"><strong>Nama Debitur</strong></td><td><strong>${proj.companyName}</strong></td></tr>
+                  <tr><td><strong>Domisili / Wilayah Hukum</strong></td><td>${proj.city || 'Kab. Sukoharjo'} (${sippInfo.pnName})</td></tr>
                   <tr><td><strong>Sektor Usaha</strong></td><td>${proj.sector} (Berdiri ${proj.estYear})</td></tr>
                   <tr><td><strong>Bank Mitra</strong></td><td>${proj.bankName}</td></tr>
                   <tr><td><strong>Skema Fasilitas</strong></td><td>${proj.facilityType}</td></tr>
@@ -5484,6 +5630,7 @@ function populateFormInputs(proj) {
   };
 
   setVal('inp_companyName', proj.companyName);
+  setVal('inp_city', proj.city || 'Kab. Sukoharjo');
   setVal('inp_sector', proj.sector);
   setVal('inp_estYear', proj.estYear);
   setVal('inp_bankName', proj.bankName);
@@ -5714,6 +5861,7 @@ function syncInputsToModel() {
 
   const oldCompName = (proj.companyName || '').trim();
   proj.companyName = getStr('inp_companyName');
+  proj.city = getStr('inp_city') || 'Kab. Sukoharjo';
   if (proj.companyName.trim() !== oldCompName) {
     // Otomatis memicu pencarian Daftar Hitam INAPROC LKPP & Berita Google News 1x setelah user selesai mengetik nama perusahaan
     runAutoInaprocCheckSync(proj, false);
@@ -5894,6 +6042,7 @@ function openNewProjectModal() {
     if (el) el.value = val;
   };
   setElVal('new_companyName', '');
+  setElVal('new_city', 'Kab. Sukoharjo');
   setElVal('new_sector', '');
   setElVal('new_bankName', '');
   setElVal('new_facilityType', '');
@@ -5910,6 +6059,7 @@ function closeNewProjectModal() {
 
 function createNewProjectFromModal() {
   const name = document.getElementById('new_companyName').value.trim() || `Proyek Kredit Baru #${projects.length + 1}`;
+  const city = document.getElementById('new_city')?.value.trim() || 'Kab. Sukoharjo';
   const sector = document.getElementById('new_sector').value.trim() || 'Perdagangan Umum';
   const bank = document.getElementById('new_bankName').value.trim() || 'Bank Dana';
   const fac = document.getElementById('new_facilityType').value.trim() || 'Kredit Modal Kerja (KMK) Revolving';
@@ -5933,6 +6083,7 @@ function createNewProjectFromModal() {
   baseObj.id = 'case-' + Date.now();
   baseObj.caseNumber = generateNumericCaseNumber();
   baseObj.companyName = name;
+  baseObj.city = city;
   runAutoInaprocCheckSync(baseObj, false);
   baseObj.googleNewsItems = [];
   baseObj.googleNewsAccessedAt = null;

@@ -3164,247 +3164,219 @@ function render5CTab(proj, m) {
                 </div>
               ` : ''}
 
-              <!-- Parameter Wanprestasi -->
-              <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:5px; padding:0.35rem 0.45rem; margin-bottom:0.35rem;">
-                <label style="font-size:0.65rem; font-weight:700; color:var(--askrindo-navy); display:block; margin-bottom:2px;">
-                  Riwayat Wanprestasi / Gagal Bayar (Maks 30 Poin bersama SLIK):
-                </label>
-                <select class="form-control" style="font-size:0.66rem; padding:2px 4px; height:auto;" onchange="updateCharacterParam('defaultHistory', this.value)">
-                  <option value="clean" ${proj.defaultHistory !== 'defaulted' ? 'selected' : ''}>&#10003; Belum Pernah (Lancar Kol 1 - Poin Penuh 30)</option>
-                  <option value="defaulted" ${proj.defaultHistory === 'defaulted' ? 'selected' : ''}>&#9888; Pernah Wanprestasi / NPL (0 Poin)</option>
-                </select>
-              </div>
-
-              <!-- Parameter Pemberitaan Negatif Google News -->
-              <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:5px; padding:0.35rem 0.45rem; margin-bottom:0.35rem;">
-                <label style="font-size:0.65rem; font-weight:700; color:var(--askrindo-navy); display:block; margin-bottom:2px;">
-                  Screening Berita Negatif di Media (Maks 20 Poin):
-                </label>
-                <select class="form-control" style="font-size:0.66rem; padding:2px 4px; height:auto;" onchange="updateCharacterParam('negativeNews', this.value)">
-                  <option value="clean" ${proj.negativeNews !== 'negative' ? 'selected' : ''}>&#10003; Nihil Berita Negatif di Media (Poin Penuh 20)</option>
-                  <option value="negative" ${proj.negativeNews === 'negative' ? 'selected' : ''}>&#9888; Terdeteksi Berita Negatif (0 Poin)</option>
-                </select>
-              </div>
-
-              <!-- Parameter Status INAPROC LKPP -->
-              <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:5px; padding:0.35rem 0.45rem; margin-bottom:0.35rem;">
-                <label style="font-size:0.65rem; font-weight:700; color:var(--askrindo-navy); display:block; margin-bottom:2px;">
-                  Status Daftar Hitam INAPROC LKPP (Maks 15 Poin):
-                </label>
-                <select class="form-control" style="font-size:0.66rem; padding:2px 4px; height:auto;" onchange="updateCharacterParam('inaprocStatus', this.value)">
-                  <option value="clean" ${proj.inaprocStatus === 'clean' ? 'selected' : ''}>&#10003; Bersih (Terverifikasi di Portal INAPROC - Poin Penuh 15)</option>
-                  <option value="unverified" ${(!proj.inaprocStatus || proj.inaprocStatus === 'unverified') ? 'selected' : ''}>&#9888; Belum Diverifikasi di INAPROC (10 Poin)</option>
-                  <option value="blacklisted" ${proj.inaprocStatus === 'blacklisted' ? 'selected' : ''}>&#9888; Terdaftar Blacklist LKPP (0 Poin)</option>
-                </select>
-              </div>
-
-              <!-- Parameter Status SIPP Pengadilan -->
-              <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:5px; padding:0.35rem 0.45rem; margin-bottom:0.35rem;">
-                <label style="font-size:0.65rem; font-weight:700; color:var(--askrindo-navy); display:block; margin-bottom:2px;">
-                  Status SIPP Pengadilan MA - Perkara Hukum (Maks 10 Poin):
-                </label>
-                <select class="form-control" style="font-size:0.66rem; padding:2px 4px; height:auto;" onchange="updateCharacterParam('sippStatus', this.value)">
-                  <option value="clean" ${(!proj.sippStatus || proj.sippStatus === 'clean') ? 'selected' : ''}>&#10003; Nihil Gugatan / Perkara Hukum (Poin Penuh 10)</option>
-                  <option value="disputed" ${proj.sippStatus === 'disputed' ? 'selected' : ''}>&#9888; Ada Gugatan Perdata (5 Poin)</option>
-                  <option value="bankrupt" ${proj.sippStatus === 'bankrupt' ? 'selected' : ''}>&#9888; Menghadapi Permohonan PKPU/Pailit (0 Poin)</option>
-                </select>
-              </div>
-
-              <!-- Parameter Rekam Jejak SLIK OJK -->
-              <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:5px; padding:0.35rem 0.45rem; margin-bottom:0.4rem;">
-                <label style="font-size:0.65rem; font-weight:700; color:var(--askrindo-navy); display:block; margin-bottom:2px;">
-                  Status Rekam Jejak SLIK OJK (Maks 30 Poin):
-                </label>
-                <select class="form-control" style="font-size:0.66rem; padding:2px 4px; height:auto;" onchange="updateCharacterParam('slikStatus', this.value)">
-                  <option value="kol1" ${(!proj.slikStatus || proj.slikStatus === 'kol1') ? 'selected' : ''}>&#10003; Kolektibilitas 1 - Lancar (Poin Penuh 30)</option>
-                  <option value="kol2" ${proj.slikStatus === 'kol2' ? 'selected' : ''}>&#9888; Kolektibilitas 2 - DPK (15 Poin)</option>
-                  <option value="kol3_5" ${proj.slikStatus === 'kol3_5' ? 'selected' : ''}>&#9888; Kolektibilitas 3-5 - Macet/NPL (0 Poin)</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- KONEKSI OTOMATIS PORTAL INAPROC LKPP (DI DALAM KOLOM CHARACTER) -->
-            <div id="inaprocIntegratedCard" style="background:${proj.inaprocStatus === 'blacklisted' ? '#fef2f2' : '#f0f9ff'}; border:1.5px solid ${proj.inaprocStatus === 'blacklisted' ? '#ef4444' : '#0284c7'}; border-radius:8px; padding:0.55rem; margin-top:0.35rem;">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem; gap:4px; flex-wrap:wrap;">
-                <span style="font-size:0.68rem; font-weight:800; color:${proj.inaprocStatus === 'blacklisted' ? '#b91c1c' : '#0369a1'}; text-transform:uppercase; letter-spacing:0.2px;">
-                  🌐 Auto-Screening Daftar Hitam INAPROC
-                </span>
-                <button type="button" id="btnAutoCheckInaproc" onclick="triggerLiveInaprocCheck(true)" style="background:#ffffff; color:#0369a1; border:1px solid #7dd3fc; border-radius:5px; padding:2px 8px; font-size:0.63rem; font-weight:700; cursor:pointer;">
-                  Klik - Scan Ulang
-                </button>
-              </div>
-              
-              <div style="font-size:0.65rem; color:#334155; margin:0 0 0.35rem; line-height:1.4; background:#fff; padding:5px 7px; border-radius:5px; border:1px solid ${proj.inaprocStatus === 'blacklisted' ? '#fca5a5' : '#bae6fd'};">
-                <div>Perusahaan: <strong>${cleanCompName}</strong> &nbsp;|&nbsp; Diakses: <strong>${inaprocRes.checkedAt || accessedAt}</strong></div>
-                <div style="margin-top:2px; font-size:0.63rem; color:${proj.inaprocStatus === 'blacklisted' ? '#dc2626' : '#15803d'}; font-weight:700;">
-                  ${proj.inaprocStatus === 'blacklisted'
-                    ? `⚠ TERDETEKSI MASUK DAFTAR HITAM LKPP (0/15 Poin)`
-                    : '✓ Otomatis Terverifikasi Bersih Nihil Sanksi (15/15 Poin)'}
-                </div>
-                ${proj.inaprocStatus === 'blacklisted' ? `
-                  <div style="margin-top:3px; padding-top:3px; border-top:1px dashed #fca5a5; font-size:0.61rem; color:#7f1d1d;">
-                    &bull; No. SK Sanksi: <strong>${inaprocRes.skNumber || '-'}</strong><br/>
-                    &bull; Status / Masa Sanksi: <strong>${inaprocRes.sanctionPeriod || 'Tayang di Portal INAPROC'}</strong><br/>
-                    ${inaprocRes.institution && inaprocRes.institution !== '-' ? `&bull; Instansi Penetap: <strong>${inaprocRes.institution}</strong>` : ''}
-                  </div>
-                ` : ''}
-              </div>
-
-              <div style="display:flex; flex-direction:column; gap:4px;">
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:4px;">
-                  <button class="five-c-portal-btn" style="background:#fef2f2; color:#b91c1c; border-color:#fca5a5; font-weight:800; justify-content:center; text-align:center;" onclick="setInaprocResult('blacklisted', '${safeCompName}')" title="Tetapkan status terdaftar di daftar hitam berdasarkan hasil temuan di website INAPROC (0 Poin)">
-                    &#9888; Masuk Blacklist (0 Poin)
+              <!-- 1. KONEKSI OTOMATIS PORTAL INAPROC LKPP (AUTO-SCREENING) -->
+              <div id="inaprocIntegratedCard" style="background:${proj.inaprocStatus === 'blacklisted' ? '#fef2f2' : '#f0f9ff'}; border:1.5px solid ${proj.inaprocStatus === 'blacklisted' ? '#ef4444' : '#0284c7'}; border-radius:8px; padding:0.55rem; margin-bottom:0.45rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem; gap:4px; flex-wrap:wrap;">
+                  <span style="font-size:0.68rem; font-weight:800; color:${proj.inaprocStatus === 'blacklisted' ? '#b91c1c' : '#0369a1'}; text-transform:uppercase; letter-spacing:0.2px;">
+                    🌐 Auto-Screening Daftar Hitam INAPROC
+                  </span>
+                  <button type="button" id="btnAutoCheckInaproc" onclick="triggerLiveInaprocCheck(true)" style="background:#ffffff; color:#0369a1; border:1px solid #7dd3fc; border-radius:5px; padding:2px 8px; font-size:0.63rem; font-weight:700; cursor:pointer;">
+                    Klik - Scan Ulang
                   </button>
-                  <button class="five-c-portal-btn" style="background:#f0fdf4; color:#15803d; border-color:#86efac; font-weight:800; justify-content:center; text-align:center;" onclick="setInaprocResult('clean', '${safeCompName}')" title="Tetapkan status bersih berdasarkan hasil pencarian nihil di website INAPROC (15 Poin Penuh)">
-                    &#10003; Terverifikasi Bersih (15 Poin)
+                </div>
+                
+                <div style="font-size:0.65rem; color:#334155; margin:0 0 0.35rem; line-height:1.4; background:#fff; padding:5px 7px; border-radius:5px; border:1px solid ${proj.inaprocStatus === 'blacklisted' ? '#fca5a5' : '#bae6fd'};">
+                  <div>Perusahaan: <strong>${cleanCompName}</strong> &nbsp;|&nbsp; Diakses: <strong>${inaprocRes.checkedAt || accessedAt}</strong></div>
+                  <div style="margin-top:2px; font-size:0.63rem; color:${proj.inaprocStatus === 'blacklisted' ? '#dc2626' : '#15803d'}; font-weight:700;">
+                    ${proj.inaprocStatus === 'blacklisted'
+                      ? `⚠ TERDETEKSI MASUK DAFTAR HITAM LKPP (0/15 Poin)`
+                      : '✓ Otomatis Terverifikasi Bersih Nihil Sanksi (15/15 Poin)'}
+                  </div>
+                  ${proj.inaprocStatus === 'blacklisted' ? `
+                    <div style="margin-top:3px; padding-top:3px; border-top:1px dashed #fca5a5; font-size:0.61rem; color:#7f1d1d;">
+                      &bull; No. SK Sanksi: <strong>${inaprocRes.skNumber || '-'}</strong><br/>
+                      &bull; Status / Masa Sanksi: <strong>${inaprocRes.sanctionPeriod || 'Tayang di Portal INAPROC'}</strong><br/>
+                      ${inaprocRes.institution && inaprocRes.institution !== '-' ? `&bull; Instansi Penetap: <strong>${inaprocRes.institution}</strong>` : ''}
+                    </div>
+                  ` : ''}
+                </div>
+
+                <div style="display:flex; flex-direction:column; gap:4px;">
+                  <div style="display:grid; grid-template-columns: 1fr 1fr; gap:4px;">
+                    <button class="five-c-portal-btn" style="background:#fef2f2; color:#b91c1c; border-color:#fca5a5; font-weight:800; justify-content:center; text-align:center;" onclick="setInaprocResult('blacklisted', '${safeCompName}')" title="Tetapkan status terdaftar di daftar hitam berdasarkan hasil temuan di website INAPROC (0 Poin)">
+                      &#9888; Masuk Blacklist (0 Poin)
+                    </button>
+                    <button class="five-c-portal-btn" style="background:#f0fdf4; color:#15803d; border-color:#86efac; font-weight:800; justify-content:center; text-align:center;" onclick="setInaprocResult('clean', '${safeCompName}')" title="Tetapkan status bersih berdasarkan hasil pencarian nihil di website INAPROC (15 Poin Penuh)">
+                      &#10003; Terverifikasi Bersih (15 Poin)
+                    </button>
+                  </div>
+
+                  <button class="five-c-portal-btn" style="background:#fff; color:#475569; border-color:#cbd5e1; font-size:0.63rem; justify-content:center;" onclick="openInaprocPortal('${safeCompName}')" title="Buka website resmi https://daftar-hitam.inaproc.id/?search=...">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block; vertical-align:middle; margin-right:3px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>Buka Portal daftar-hitam.inaproc.id &raquo;
+                  </button>
+                </div>
+              </div>
+
+              <!-- 2. PANEL INTEGRASI OTOMATIS GOOGLE NEWS RIIL (AUTO-SCREENING) -->
+              <div id="googleNewsIntegratedCard" style="background:#ffffff; border:1.5px solid ${proj.negativeNews === 'negative' ? '#fca5a5' : '#cbd5e1'}; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.04); overflow:hidden; margin-bottom:0.45rem;">
+                <!-- Header Bar Google News -->
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:0.5rem 0.65rem; border-bottom:1px solid #e2e8f0; background:#ffffff; gap:0.35rem; flex-wrap:wrap;">
+                  <div style="display:flex; align-items:center; gap:0.4rem;">
+                    <svg width="22" height="18" viewBox="0 0 36 30" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
+                      <rect x="6" y="1" width="24" height="19" rx="2.5" fill="#0F9D58"/>
+                      <rect x="11" y="5" width="24" height="19" rx="2.5" fill="#EA4335"/>
+                      <rect x="1" y="6" width="24" height="19" rx="2.5" fill="#FBBC04"/>
+                      <rect x="4" y="9" width="22" height="18" rx="2.5" fill="#4285F4"/>
+                      <text x="7.5" y="21" fill="#ffffff" font-family="Arial, sans-serif" font-weight="bold" font-size="9.5">G=</text>
+                    </svg>
+                    <span style="font-size:0.8rem; font-weight:700; color:#5f6368; letter-spacing:-0.1px;">Google News</span>
+                  </div>
+                  <button type="button" id="btnUpdateGoogleNews" onclick="fetchGoogleNewsForProject(true)" style="background:#ffffff; color:#1e293b; border:1px solid #cbd5e1; border-radius:5px; padding:3px 9px; font-size:0.65rem; font-weight:600; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.03);">
+                    ${isFetchingGoogleNews ? 'Memuat Berita...' : 'Klik - Update Berita'}
                   </button>
                 </div>
 
-                <button class="five-c-portal-btn" style="background:#fff; color:#475569; border-color:#cbd5e1; font-size:0.63rem; justify-content:center;" onclick="openInaprocPortal('${safeCompName}')" title="Buka website resmi https://daftar-hitam.inaproc.id/?search=...">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block; vertical-align:middle; margin-right:3px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>Buka Portal daftar-hitam.inaproc.id &raquo;
-                </button>
+                <!-- Body Content Google News -->
+                <div style="padding:0.55rem 0.65rem;">
+                  <div style="font-size:0.65rem; color:#475569; margin-bottom:0.45rem; line-height:1.4;">
+                    <div>
+                      Perusahaan: <strong style="color:#1e293b;">${cleanCompName}</strong>
+                      &nbsp;&nbsp;Diakses: <span style="color:#475569;">${accessedAt}</span>
+                    </div>
+                    <div style="margin-top:3px; display:inline-block; font-size:0.62rem; font-weight:700; padding:1px 7px; border-radius:999px; ${proj.negativeNews === 'negative' ? 'background:#fee2e2; color:#dc2626; border:1px solid #fca5a5;' : 'background:#dcfce7; color:#166534; border:1px solid #86efac;'}">
+                      ${proj.negativeNews === 'negative'
+                        ? '&#9888; Terdeteksi Berita Negatif (0 / 20 Poin)'
+                        : '&#10003; Nihil Berita Negatif (20 / 20 Poin)'}
+                    </div>
+                  </div>
+
+                  <div style="display:flex; flex-direction:column; gap:0.45rem;">
+                    ${newsItems.length === 0 ? `
+                      <div style="border:1px solid #86efac; border-radius:6px; padding:0.55rem 0.65rem; background:#f0fdf4; color:#166534; font-size:0.65rem; line-height:1.45;">
+                        <div style="font-weight:700; margin-bottom:2px;">
+                          ${isFetchingGoogleNews
+                            ? '&#8987; Sedang Memindai Berita Riil di Google News...'
+                            : '&#10003; Tidak Ditemukan Pemberitaan di Google News (0 Berita)'}
+                        </div>
+                        <div>
+                          ${isFetchingGoogleNews
+                            ? `Mencari pemberitaan publik terkait <strong>"${cleanCompName}"</strong> secara langsung dari Google News...`
+                            : `Hasil pencarian berita riil untuk <strong>"${cleanCompName}"</strong> nihil. Perusahaan ini tidak memiliki pemberitaan / citra negatif di media publik (Skor Media Karakter: <strong>20 / 20 Poin Penuh</strong>).`}
+                        </div>
+                      </div>
+                    ` : newsItems.map((item, idx) => {
+                      const st = item.status || 'unmarked';
+                      const isNeg = st === 'negative';
+                      const isClean = st === 'clean';
+                      let badgeHtml = `<span style="background:#f1f5f9; color:#475569; font-size:0.6rem; font-weight:600; padding:2px 7px; border-radius:999px; white-space:nowrap; flex-shrink:0;">Belum Ditandai</span>`;
+                      if (isNeg) {
+                        badgeHtml = `<span style="background:#fee2e2; color:#dc2626; font-size:0.6rem; font-weight:700; padding:2px 7px; border-radius:999px; white-space:nowrap; flex-shrink:0;">Ditandai Negatif</span>`;
+                      } else if (isClean) {
+                        badgeHtml = `<span style="background:#dcfce7; color:#166534; font-size:0.6rem; font-weight:700; padding:2px 7px; border-radius:999px; white-space:nowrap; flex-shrink:0;">Bukan Negatif</span>`;
+                      }
+
+                      return `
+                        <div style="border:1px solid ${isNeg ? '#fca5a5' : (isClean ? '#86efac' : '#e2e8f0')}; border-radius:6px; padding:0.5rem 0.6rem; background:${isNeg ? '#fffafa' : '#ffffff'};">
+                          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:0.4rem;">
+                            <a href="${item.link || '#'}" target="_blank" rel="noopener noreferrer" style="font-size:0.7rem; font-weight:600; color:#1e293b; text-decoration:none; line-height:1.35;" onmouseover="this.style.color='#0284c7'; this.style.textDecoration='underline';" onmouseout="this.style.color='#1e293b'; this.style.textDecoration='none';" title="Klik untuk membuka artikel berita di tab baru">
+                              ${item.title}
+                            </a>
+                            ${badgeHtml}
+                          </div>
+                          <div style="font-size:0.62rem; color:#64748b; margin:3px 0 6px;">
+                            ${item.source || 'Google News'} &nbsp;-&nbsp; ${item.pubDate || accessedAt}
+                          </div>
+                          <div style="display:flex; align-items:center; gap:0.35rem;">
+                            <button type="button" onclick="markGoogleNewsItem(${idx}, 'negative')" style="background:${isNeg ? '#dc2626' : '#fff5f5'}; color:${isNeg ? '#ffffff' : '#dc2626'}; border:1px solid ${isNeg ? '#dc2626' : '#fca5a5'}; border-radius:4px; padding:2px 8px; font-size:0.63rem; font-weight:600; cursor:pointer;">
+                              Tandai Negatif
+                            </button>
+                            <button type="button" onclick="markGoogleNewsItem(${idx}, 'clean')" style="background:${isClean ? '#166534' : '#f0fdf4'}; color:${isClean ? '#ffffff' : '#166534'}; border:1px solid ${isClean ? '#166534' : '#86efac'}; border-radius:4px; padding:2px 8px; font-size:0.63rem; font-weight:600; cursor:pointer;">
+                              Bukan Negatif
+                            </button>
+                          </div>
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                </div>
+              </div>
+
+              <!-- 3. KONEKSI OTOMATIS SIPP PENGADILAN NEGERI (AUTO-SCREENING) -->
+              ${(() => {
+                const sippInfo = getSippPnInfo(proj.city || 'Kab. Sukoharjo', cleanCompName);
+                const isClean = (!proj.sippStatus || proj.sippStatus === 'clean');
+                const isDisputed = proj.sippStatus === 'disputed';
+                const isBankrupt = proj.sippStatus === 'bankrupt';
+                const cardBorder = isBankrupt ? '#ef4444' : (isDisputed ? '#f59e0b' : '#0284c7');
+                const cardBg = isBankrupt ? '#fef2f2' : (isDisputed ? '#fffbeb' : '#f0f9ff');
+                const headerColor = isBankrupt ? '#b91c1c' : (isDisputed ? '#b45309' : '#0369a1');
+
+                return `
+                  <div id="sippIntegratedCard" style="background:${cardBg}; border:1.5px solid ${cardBorder}; border-radius:8px; padding:0.55rem; margin-bottom:0.45rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem; gap:4px; flex-wrap:wrap;">
+                      <span style="font-size:0.68rem; font-weight:800; color:${headerColor}; text-transform:uppercase; letter-spacing:0.2px;">
+                        🏛️ Auto-Screening SIPP PN &amp; Legal Perkara
+                      </span>
+                      <span style="font-size:0.6rem; font-weight:700; background:#ffffff; color:#334155; padding:2px 6px; border-radius:4px; border:1px solid #cbd5e1;">
+                        Wilayah: ${sippInfo.city}
+                      </span>
+                    </div>
+
+                    <div style="font-size:0.65rem; color:#334155; margin:0 0 0.35rem; line-height:1.4; background:#fff; padding:5px 7px; border-radius:5px; border:1px solid ${cardBorder};">
+                      <div>Perusahaan: <strong>${cleanCompName}</strong></div>
+                      <div>Yurisdiksi PN: <strong>${sippInfo.pnName}</strong></div>
+                      <div style="font-size:0.61rem; color:#0369a1; margin-top:1px;">Web Utama: <strong>${sippInfo.baseUrl}</strong></div>
+                      <div style="margin-top:2px; font-size:0.63rem; font-weight:700; color:${isClean ? '#15803d' : (isDisputed ? '#b45309' : '#dc2626')};">
+                        ${isClean ? '✓ Nihil Gugatan / Perkara Hukum Aktif (10/10 Poin)' : (isDisputed ? '⚠ Ada Catatan Gugatan / Perdata (5/10 Poin)' : '⛔ Terdeteksi Menghadapi Permohonan PKPU/Pailit (0/10 Poin)')}
+                      </div>
+                    </div>
+
+                    <div style="display:flex; flex-direction:column; gap:4px;">
+                      <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:3px;">
+                        <button type="button" class="five-c-portal-btn" style="background:${isClean ? '#15803d' : '#f0fdf4'}; color:${isClean ? '#ffffff' : '#15803d'}; border-color:${isClean ? '#15803d' : '#86efac'}; font-weight:700; font-size:0.61rem; padding:3px 2px; justify-content:center; text-align:center;" onclick="setSippResult('clean', '${safeCompName}')" title="Tetapkan status Nihil Perkara (10 Poin Penuh)">
+                          ✓ Nihil (10 Pt)
+                        </button>
+                        <button type="button" class="five-c-portal-btn" style="background:${isDisputed ? '#d97706' : '#fffbeb'}; color:${isDisputed ? '#ffffff' : '#b45309'}; border-color:${isDisputed ? '#d97706' : '#fde68a'}; font-weight:700; font-size:0.61rem; padding:3px 2px; justify-content:center; text-align:center;" onclick="setSippResult('disputed', '${safeCompName}')" title="Tetapkan status Ada Sengketa Perdata (5 Poin)">
+                          ⚠ Sengketa (5 Pt)
+                        </button>
+                        <button type="button" class="five-c-portal-btn" style="background:${isBankrupt ? '#dc2626' : '#fef2f2'}; color:${isBankrupt ? '#ffffff' : '#b91c1c'}; border-color:${isBankrupt ? '#dc2626' : '#fca5a5'}; font-weight:700; font-size:0.61rem; padding:3px 2px; justify-content:center; text-align:center;" onclick="setSippResult('bankrupt', '${safeCompName}')" title="Tetapkan status PKPU / Pailit (0 Poin)">
+                          ⛔ Pailit (0 Pt)
+                        </button>
+                      </div>
+
+                      <div style="display:grid; grid-template-columns: 1.25fr 1fr; gap:4px; margin-top:2px;">
+                        <button type="button" class="five-c-portal-btn" style="background:#0284c7; color:#ffffff; border-color:#0284c7; font-size:0.63rem; font-weight:700; justify-content:center;" onclick="openSippPortal('${safeCompName}', '${(proj.city || '').replace(/'/g, "\\'")}')" title="Buka web utama ${sippInfo.baseUrl} (nama perusahaan otomatis disalin ke clipboard)">
+                          🏛️ Buka SIPP ${sippInfo.pnName.replace('Pengadilan Negeri', 'PN')} &raquo;
+                        </button>
+                        <button type="button" class="five-c-portal-btn" style="background:#ffffff; color:#475569; border-color:#cbd5e1; font-size:0.62rem; justify-content:center;" onclick="openDirectPutusanMAPortal('${safeCompName}')" title="Buka Direktori Putusan Mahkamah Agung RI (Nasional)">
+                          🌐 Putusan MA RI &raquo;
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                `;
+              })()}
+
+              <!-- PARAMETER MANUAL DATA BANK (WANPRESTASI & SLIK OJK) -->
+              <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; padding:0.45rem; margin-top:0.35rem;">
+                <div style="font-size:0.66rem; font-weight:800; color:var(--askrindo-navy); margin-bottom:0.35rem; text-transform:uppercase; letter-spacing:0.2px;">
+                  📋 Verifikasi Data Bank Mitra (SLIK &amp; Riwayat Kredit)
+                </div>
+
+                <!-- Parameter Wanprestasi -->
+                <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:5px; padding:0.35rem 0.45rem; margin-bottom:0.35rem;">
+                  <label style="font-size:0.65rem; font-weight:700; color:var(--askrindo-navy); display:block; margin-bottom:2px;">
+                    Riwayat Wanprestasi / Gagal Bayar (Maks 30 Poin bersama SLIK):
+                  </label>
+                  <select class="form-control" style="font-size:0.66rem; padding:2px 4px; height:auto;" onchange="updateCharacterParam('defaultHistory', this.value)">
+                    <option value="clean" ${proj.defaultHistory !== 'defaulted' ? 'selected' : ''}>&#10003; Belum Pernah (Lancar Kol 1 - Poin Penuh 30)</option>
+                    <option value="defaulted" ${proj.defaultHistory === 'defaulted' ? 'selected' : ''}>&#9888; Pernah Wanprestasi / NPL (0 Poin)</option>
+                  </select>
+                </div>
+
+                <!-- Parameter Rekam Jejak SLIK OJK -->
+                <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:5px; padding:0.35rem 0.45rem;">
+                  <label style="font-size:0.65rem; font-weight:700; color:var(--askrindo-navy); display:block; margin-bottom:2px;">
+                    Status Rekam Jejak SLIK OJK (Maks 30 Poin):
+                  </label>
+                  <select class="form-control" style="font-size:0.66rem; padding:2px 4px; height:auto;" onchange="updateCharacterParam('slikStatus', this.value)">
+                    <option value="kol1" ${(!proj.slikStatus || proj.slikStatus === 'kol1') ? 'selected' : ''}>&#10003; Kolektibilitas 1 - Lancar (Poin Penuh 30)</option>
+                    <option value="kol2" ${proj.slikStatus === 'kol2' ? 'selected' : ''}>&#9888; Kolektibilitas 2 - DPK (15 Poin)</option>
+                    <option value="kol3_5" ${proj.slikStatus === 'kol3_5' ? 'selected' : ''}>&#9888; Kolektibilitas 3-5 - Macet/NPL (0 Poin)</option>
+                  </select>
+                </div>
               </div>
             </div>
-
-            <!-- PANEL INTEGRASI OTOMATIS GOOGLE NEWS RIIL (SATU KOLOM DENGAN CHARACTER) -->
-            <div id="googleNewsIntegratedCard" style="background:#ffffff; border:1.5px solid ${proj.negativeNews === 'negative' ? '#fca5a5' : '#cbd5e1'}; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.04); overflow:hidden; margin-top:0.45rem;">
-              <!-- Header Bar Google News -->
-              <div style="display:flex; justify-content:space-between; align-items:center; padding:0.5rem 0.65rem; border-bottom:1px solid #e2e8f0; background:#ffffff; gap:0.35rem; flex-wrap:wrap;">
-                <div style="display:flex; align-items:center; gap:0.4rem;">
-                  <svg width="22" height="18" viewBox="0 0 36 30" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
-                    <rect x="6" y="1" width="24" height="19" rx="2.5" fill="#0F9D58"/>
-                    <rect x="11" y="5" width="24" height="19" rx="2.5" fill="#EA4335"/>
-                    <rect x="1" y="6" width="24" height="19" rx="2.5" fill="#FBBC04"/>
-                    <rect x="4" y="9" width="22" height="18" rx="2.5" fill="#4285F4"/>
-                    <text x="7.5" y="21" fill="#ffffff" font-family="Arial, sans-serif" font-weight="bold" font-size="9.5">G=</text>
-                  </svg>
-                  <span style="font-size:0.8rem; font-weight:700; color:#5f6368; letter-spacing:-0.1px;">Google News</span>
-                </div>
-                <button type="button" id="btnUpdateGoogleNews" onclick="fetchGoogleNewsForProject(true)" style="background:#ffffff; color:#1e293b; border:1px solid #cbd5e1; border-radius:5px; padding:3px 9px; font-size:0.65rem; font-weight:600; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.03);">
-                  ${isFetchingGoogleNews ? 'Memuat Berita...' : 'Klik - Update Berita'}
-                </button>
-              </div>
-
-              <!-- Body Content Google News -->
-              <div style="padding:0.55rem 0.65rem;">
-                <div style="font-size:0.65rem; color:#475569; margin-bottom:0.45rem; line-height:1.4;">
-                  <div>
-                    Perusahaan: <strong style="color:#1e293b;">${cleanCompName}</strong>
-                    &nbsp;&nbsp;Diakses: <span style="color:#475569;">${accessedAt}</span>
-                  </div>
-                  <div style="margin-top:3px; display:inline-block; font-size:0.62rem; font-weight:700; padding:1px 7px; border-radius:999px; ${proj.negativeNews === 'negative' ? 'background:#fee2e2; color:#dc2626; border:1px solid #fca5a5;' : 'background:#dcfce7; color:#166534; border:1px solid #86efac;'}">
-                    ${proj.negativeNews === 'negative'
-                      ? '&#9888; Terdeteksi Berita Negatif (0 / 20 Poin)'
-                      : '&#10003; Nihil Berita Negatif (20 / 20 Poin)'}
-                  </div>
-                </div>
-
-                <div style="display:flex; flex-direction:column; gap:0.45rem;">
-                  ${newsItems.length === 0 ? `
-                    <div style="border:1px solid #86efac; border-radius:6px; padding:0.55rem 0.65rem; background:#f0fdf4; color:#166534; font-size:0.65rem; line-height:1.45;">
-                      <div style="font-weight:700; margin-bottom:2px;">
-                        ${isFetchingGoogleNews
-                          ? '&#8987; Sedang Memindai Berita Riil di Google News...'
-                          : '&#10003; Tidak Ditemukan Pemberitaan di Google News (0 Berita)'}
-                      </div>
-                      <div>
-                        ${isFetchingGoogleNews
-                          ? `Mencari pemberitaan publik terkait <strong>"${cleanCompName}"</strong> secara langsung dari Google News...`
-                          : `Hasil pencarian berita riil untuk <strong>"${cleanCompName}"</strong> nihil. Perusahaan ini tidak memiliki pemberitaan / citra negatif di media publik (Skor Media Karakter: <strong>20 / 20 Poin Penuh</strong>).`}
-                      </div>
-                    </div>
-                  ` : newsItems.map((item, idx) => {
-                    const st = item.status || 'unmarked';
-                    const isNeg = st === 'negative';
-                    const isClean = st === 'clean';
-                    let badgeHtml = `<span style="background:#f1f5f9; color:#475569; font-size:0.6rem; font-weight:600; padding:2px 7px; border-radius:999px; white-space:nowrap; flex-shrink:0;">Belum Ditandai</span>`;
-                    if (isNeg) {
-                      badgeHtml = `<span style="background:#fee2e2; color:#dc2626; font-size:0.6rem; font-weight:700; padding:2px 7px; border-radius:999px; white-space:nowrap; flex-shrink:0;">Ditandai Negatif</span>`;
-                    } else if (isClean) {
-                      badgeHtml = `<span style="background:#dcfce7; color:#166534; font-size:0.6rem; font-weight:700; padding:2px 7px; border-radius:999px; white-space:nowrap; flex-shrink:0;">Bukan Negatif</span>`;
-                    }
-
-                    return `
-                      <div style="border:1px solid ${isNeg ? '#fca5a5' : (isClean ? '#86efac' : '#e2e8f0')}; border-radius:6px; padding:0.5rem 0.6rem; background:${isNeg ? '#fffafa' : '#ffffff'};">
-                        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:0.4rem;">
-                          <a href="${item.link || '#'}" target="_blank" rel="noopener noreferrer" style="font-size:0.7rem; font-weight:600; color:#1e293b; text-decoration:none; line-height:1.35;" onmouseover="this.style.color='#0284c7'; this.style.textDecoration='underline';" onmouseout="this.style.color='#1e293b'; this.style.textDecoration='none';" title="Klik untuk membuka artikel berita di tab baru">
-                            ${item.title}
-                          </a>
-                          ${badgeHtml}
-                        </div>
-                        <div style="font-size:0.62rem; color:#64748b; margin:3px 0 6px;">
-                          ${item.source || 'Google News'} &nbsp;-&nbsp; ${item.pubDate || accessedAt}
-                        </div>
-                        <div style="display:flex; align-items:center; gap:0.35rem;">
-                          <button type="button" onclick="markGoogleNewsItem(${idx}, 'negative')" style="background:${isNeg ? '#dc2626' : '#fff5f5'}; color:${isNeg ? '#ffffff' : '#dc2626'}; border:1px solid ${isNeg ? '#dc2626' : '#fca5a5'}; border-radius:4px; padding:2px 8px; font-size:0.63rem; font-weight:600; cursor:pointer;">
-                            Tandai Negatif
-                          </button>
-                          <button type="button" onclick="markGoogleNewsItem(${idx}, 'clean')" style="background:${isClean ? '#166534' : '#f0fdf4'}; color:${isClean ? '#ffffff' : '#166534'}; border:1px solid ${isClean ? '#166534' : '#86efac'}; border-radius:4px; padding:2px 8px; font-size:0.63rem; font-weight:600; cursor:pointer;">
-                            Bukan Negatif
-                          </button>
-                        </div>
-                      </div>
-                    `;
-                  }).join('')}
-                </div>
-              </div>
-            </div>
-
-            <!-- KONEKSI OTOMATIS SIPP PENGADILAN NEGERI (BERDASARKAN KABUPATEN/KOTA) -->
-            ${(() => {
-              const sippInfo = getSippPnInfo(proj.city || 'Kab. Sukoharjo', cleanCompName);
-              const isClean = (!proj.sippStatus || proj.sippStatus === 'clean');
-              const isDisputed = proj.sippStatus === 'disputed';
-              const isBankrupt = proj.sippStatus === 'bankrupt';
-              const cardBorder = isBankrupt ? '#ef4444' : (isDisputed ? '#f59e0b' : '#0284c7');
-              const cardBg = isBankrupt ? '#fef2f2' : (isDisputed ? '#fffbeb' : '#f0f9ff');
-              const headerColor = isBankrupt ? '#b91c1c' : (isDisputed ? '#b45309' : '#0369a1');
-
-              return `
-                <div id="sippIntegratedCard" style="background:${cardBg}; border:1.5px solid ${cardBorder}; border-radius:8px; padding:0.55rem; margin-top:0.45rem;">
-                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem; gap:4px; flex-wrap:wrap;">
-                    <span style="font-size:0.68rem; font-weight:800; color:${headerColor}; text-transform:uppercase; letter-spacing:0.2px;">
-                      🏛️ Auto-Screening SIPP PN &amp; Legal Perkara
-                    </span>
-                    <span style="font-size:0.6rem; font-weight:700; background:#ffffff; color:#334155; padding:2px 6px; border-radius:4px; border:1px solid #cbd5e1;">
-                      Wilayah: ${sippInfo.city}
-                    </span>
-                  </div>
-
-                  <div style="font-size:0.65rem; color:#334155; margin:0 0 0.35rem; line-height:1.4; background:#fff; padding:5px 7px; border-radius:5px; border:1px solid ${cardBorder};">
-                    <div>Perusahaan: <strong>${cleanCompName}</strong></div>
-                    <div>Yurisdiksi PN: <strong>${sippInfo.pnName}</strong></div>
-                    <div style="font-size:0.61rem; color:#0369a1; margin-top:1px;">Web Utama: <strong>${sippInfo.baseUrl}</strong></div>
-                    <div style="margin-top:2px; font-size:0.63rem; font-weight:700; color:${isClean ? '#15803d' : (isDisputed ? '#b45309' : '#dc2626')};">
-                      ${isClean ? '✓ Nihil Gugatan / Perkara Hukum Aktif (10/10 Poin)' : (isDisputed ? '⚠ Ada Catatan Gugatan / Perdata (5/10 Poin)' : '⛔ Terdeteksi Menghadapi Permohonan PKPU/Pailit (0/10 Poin)')}
-                    </div>
-                  </div>
-
-                  <div style="display:flex; flex-direction:column; gap:4px;">
-                    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:3px;">
-                      <button type="button" class="five-c-portal-btn" style="background:${isClean ? '#15803d' : '#f0fdf4'}; color:${isClean ? '#ffffff' : '#15803d'}; border-color:${isClean ? '#15803d' : '#86efac'}; font-weight:700; font-size:0.61rem; padding:3px 2px; justify-content:center; text-align:center;" onclick="setSippResult('clean', '${safeCompName}')" title="Tetapkan status Nihil Perkara (10 Poin Penuh)">
-                        ✓ Nihil (10 Pt)
-                      </button>
-                      <button type="button" class="five-c-portal-btn" style="background:${isDisputed ? '#d97706' : '#fffbeb'}; color:${isDisputed ? '#ffffff' : '#b45309'}; border-color:${isDisputed ? '#d97706' : '#fde68a'}; font-weight:700; font-size:0.61rem; padding:3px 2px; justify-content:center; text-align:center;" onclick="setSippResult('disputed', '${safeCompName}')" title="Tetapkan status Ada Sengketa Perdata (5 Poin)">
-                        ⚠ Sengketa (5 Pt)
-                      </button>
-                      <button type="button" class="five-c-portal-btn" style="background:${isBankrupt ? '#dc2626' : '#fef2f2'}; color:${isBankrupt ? '#ffffff' : '#b91c1c'}; border-color:${isBankrupt ? '#dc2626' : '#fca5a5'}; font-weight:700; font-size:0.61rem; padding:3px 2px; justify-content:center; text-align:center;" onclick="setSippResult('bankrupt', '${safeCompName}')" title="Tetapkan status PKPU / Pailit (0 Poin)">
-                        ⛔ Pailit (0 Pt)
-                      </button>
-                    </div>
-
-                    <div style="display:grid; grid-template-columns: 1.25fr 1fr; gap:4px; margin-top:2px;">
-                      <button type="button" class="five-c-portal-btn" style="background:#0284c7; color:#ffffff; border-color:#0284c7; font-size:0.63rem; font-weight:700; justify-content:center;" onclick="openSippPortal('${safeCompName}', '${(proj.city || '').replace(/'/g, "\\'")}')" title="Buka web utama ${sippInfo.baseUrl} (nama perusahaan otomatis disalin ke clipboard)">
-                        🏛️ Buka SIPP ${sippInfo.pnName.replace('Pengadilan Negeri', 'PN')} &raquo;
-                      </button>
-                      <button type="button" class="five-c-portal-btn" style="background:#ffffff; color:#475569; border-color:#cbd5e1; font-size:0.62rem; justify-content:center;" onclick="openDirectPutusanMAPortal('${safeCompName}')" title="Buka Direktori Putusan Mahkamah Agung RI (Nasional)">
-                        🌐 Putusan MA RI &raquo;
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              `;
-            })()}
           </div>
 
           <!-- 2. Capacity Card -->

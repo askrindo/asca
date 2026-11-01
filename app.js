@@ -134,6 +134,7 @@ function getDefaultProjects() {
       customNotes: 'Kasus pengajuan Trade Financing dari Bank Dana: evaluasi NWC Burn-Rate membuktikan bahwa jika terjadi penundaan bayar pembeli, kas debitur habis dalam waktu kurang dari 1 bulan.',
       businessDesc:
         'Pembelian bahan baku komoditas kedelai impor dari negara tetangga untuk dijual sebagai kedelai siap jual ke perajin tempe, tahu, kecap serta diolah di pabrik sendiri menjadi bahan baku pakan ternak. Fasilitas gabungan USD 1.000.000 (Kurs Tengah Rp16.689) terdiri dari SCF A/P (tenor 180 hari), Forex Line (Hedging), dan KMK Khusus (tenor 90 hari sejak SCF A/P jatuh tempo untuk mem-backup saat terjadi default atas SCF A/P & Forex Line).',
+      procurementMethod: 'import_sea',
       claimedDOR: 60,
       claimedDOI: 185,
       claimedDOP: 70,
@@ -204,6 +205,7 @@ function getDefaultProjects() {
       customNotes: 'Simulasi Turnaround: Penurunan DOI membebaskan kas Rp 131 Miliar, meningkatkan Cash Runway menjadi 4,5 bulan dan meniadakan defisit NWC.',
       businessDesc:
         'Skema hasil inovasi analisa DCC-SWCM: Fasilitas dipangkas ke USD 600.000 (tranche maksimal USD 200.000 - 300.000 per pengapalan), KMK Khusus Backup Default dihapus untuk mencegah moral hazard, pencairan wajib berbasis Purchase Order (PO) mengikat dari pabrik tahu/tempe/kecap & pakan ternak sehingga DOI kedelai dikunci maksimal 115 hari dan Gross Margin terkunci minimal +10,5%.',
+      procurementMethod: 'import_sea',
       claimedDOR: 55,
       claimedDOI: 115,
       claimedDOP: 65,
@@ -274,6 +276,7 @@ function getDefaultProjects() {
       customNotes: 'Debitur likuid dengan Cash Runway 5,2 bulan dan surplus modal kerja bersih yang memadai.',
       businessDesc:
         'Distribusi bahan pangan pokok ke jaringan ritel modern dan grosir. Perputaran persediaan cepat (DOI 42 hari) dan tagihan ritel terkendali (DOR 48 hari).',
+      procurementMethod: 'domestic',
       claimedDOR: 45,
       claimedDOI: 40,
       claimedDOP: 35,
@@ -485,6 +488,7 @@ function loadProjectsFromStorage() {
             overrideReason: p.overrideReason || '',
             burnStressOpexGrowth: p.burnStressOpexGrowth || 0,
             burnStressCollectionFreeze: !!p.burnStressCollectionFreeze,
+            procurementMethod: p.procurementMethod || (isMaritimeOrImportRisk(p) ? 'import_sea' : 'none'),
             ...p
           }));
           activeProjectId = projects[0].id;
@@ -517,6 +521,7 @@ function loadProjectsFromStorage() {
               overrideReason: p.overrideReason || '',
               burnStressOpexGrowth: p.burnStressOpexGrowth || 0,
               burnStressCollectionFreeze: !!p.burnStressCollectionFreeze,
+              procurementMethod: p.procurementMethod || (isMaritimeOrImportRisk(p) ? 'import_sea' : 'none'),
               ...p
             }));
             activeProjectId = projects[0].id;
@@ -1982,6 +1987,16 @@ function buildDynamicCaseInsights(proj, m) {
     mitigations.push({
       title: `Asuransi Pengangkutan Darat Askrindo (Inland Transit All Risks)`,
       detail: `Disyaratkan penutupan polis Asuransi Pengangkutan Darat (Inland Transit) PT Askrindo untuk melindungi nilai barang selama transit antar-gudang distributor dengan Banker's Clause kepada ${proj.bankName}.`
+    });
+  } else if (proj.procurementMethod === 'none') {
+    criticalPointsCredit.push({
+      severity: 'LOW',
+      title: `Aktivitas Bebas Risiko Logistik Kargo Fisik (Jasa / Konstruksi Non-Pengiriman)`,
+      detail: `Model bisnis debitur tidak melibatkan transit pengiriman komoditas/kargo laut maupun kargo darat. Risiko pengangkutan fisik nihil, pengawasan dialihkan pada penyelesaian kontrak jasa dan mutasi rekening.`
+    });
+    mitigations.push({
+      title: `Asuransi Perlindungan Aset Tempat Usaha (Property All Risks / Fire) & Escrow Giro`,
+      detail: `Tidak diwajibkan asuransi kargo pengiriman laut/darat. Pengalihan mitigasi difokuskan pada perlindungan fisik aset tetap/kantor operasional debitur (Property/PAR) serta kontrol escrow penampungan tagihan di ${proj.bankName}.`
     });
   }
 
@@ -4306,6 +4321,7 @@ function populateFormInputs(proj) {
   setVal('inp_businessDesc', proj.businessDesc);
 
   const procMethod = proj.procurementMethod || (isMaritimeOrImportRisk(proj) ? 'import_sea' : 'none');
+  proj.procurementMethod = procMethod;
   const rImport = document.getElementById('inp_proc_import');
   const rDomestic = document.getElementById('inp_proc_domestic');
   const rNone = document.getElementById('inp_proc_none');
@@ -4364,9 +4380,22 @@ function syncInputsToModel() {
   proj.underwriter = getStr('inp_underwriter');
   proj.businessDesc = getStr('inp_businessDesc');
 
-  const selectedProc = document.querySelector('input[name="inp_procurementMethod"]:checked');
-  if (selectedProc) {
-    proj.procurementMethod = selectedProc.value;
+  const rNone = document.getElementById('inp_proc_none');
+  const rDomestic = document.getElementById('inp_proc_domestic');
+  const rImport = document.getElementById('inp_proc_import');
+  if (rNone && rNone.checked) {
+    proj.procurementMethod = 'none';
+  } else if (rDomestic && rDomestic.checked) {
+    proj.procurementMethod = 'domestic';
+  } else if (rImport && rImport.checked) {
+    proj.procurementMethod = 'import_sea';
+  } else {
+    const selectedProc = document.querySelector('input[name="inp_procurementMethod"]:checked');
+    if (selectedProc) {
+      proj.procurementMethod = selectedProc.value;
+    } else if (!proj.procurementMethod) {
+      proj.procurementMethod = isMaritimeOrImportRisk(proj) ? 'import_sea' : 'none';
+    }
   }
 
   proj.claimedDOR = getFmtNum('inp_claimedDOR');
@@ -4408,11 +4437,53 @@ function syncInputsToModel() {
   renderPrintableReport(proj, m);
 }
 
+function setProcurementMethod(method) {
+  const proj = getActiveProject();
+  if (!proj) return;
+  proj.procurementMethod = method;
+
+  const rImport = document.getElementById('inp_proc_import');
+  const rDomestic = document.getElementById('inp_proc_domestic');
+  const rNone = document.getElementById('inp_proc_none');
+  if (rImport) rImport.checked = (method === 'import_sea');
+  if (rDomestic) rDomestic.checked = (method === 'domestic');
+  if (rNone) rNone.checked = (method === 'none');
+
+  saveProjectsToStorage();
+  const m = computeDCCSWCM(proj);
+  renderProjectList();
+  renderBanner(proj, m);
+  renderDashboardTab(proj, m);
+  renderDCCTab(proj, m);
+  renderBurnRateTab(proj, m);
+  runStressSimulation();
+  renderGradeRiskTab(proj, m);
+  render5CTab(proj, m);
+  renderScoreCalculationTab(proj, m);
+  renderCaseStudyQATab(proj, m);
+  renderRatiosTab(proj, m);
+  renderCashFlowTab(proj, m);
+  renderPrintableReport(proj, m);
+
+  const label = method === 'none' ? 'Tidak Ada Pengiriman Fisik' : (method === 'domestic' ? 'Domestik / Lokal' : 'Impor Luar Negeri / Jalur Laut');
+  showToast(`Metode logistik berhasil diset: "${label}" & analisa telah dihitung ulang.`);
+}
+
 function saveAllInputsAndRecalculate() {
   const proj = getActiveProject();
   if (!proj) {
     showToast('Pilih atau buat berkas proyek analisa terlebih dahulu.');
     return;
+  }
+  const rNone = document.getElementById('inp_proc_none');
+  const rDomestic = document.getElementById('inp_proc_domestic');
+  const rImport = document.getElementById('inp_proc_import');
+  if (rNone && rNone.checked) {
+    proj.procurementMethod = 'none';
+  } else if (rDomestic && rDomestic.checked) {
+    proj.procurementMethod = 'domestic';
+  } else if (rImport && rImport.checked) {
+    proj.procurementMethod = 'import_sea';
   }
   syncInputsToModel();
   saveProjectsToStorage();

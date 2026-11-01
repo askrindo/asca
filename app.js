@@ -7446,6 +7446,29 @@ async function checkAuthAndRoute() {
     if (adminLayoutContainer) adminLayoutContainer.style.display = 'flex';
     const adminUnameEl = document.getElementById('adminSessionUserName');
     if (adminUnameEl) adminUnameEl.textContent = session.username;
+
+    // Pastikan kolom pencarian user admin kosong & terlindungi dari autofill browser
+    const asi = document.getElementById('adminUserSearchInput');
+    if (asi) asi.value = '';
+    const arf = document.getElementById('adminUserRoleFilter');
+    if (arf) arf.value = 'ALL';
+    const btnClear = document.getElementById('btnAdminClearSearch');
+    if (btnClear) btnClear.style.display = 'none';
+
+    setupAdminUserSearchProtection();
+    [50, 150, 300, 600, 1200, 2000].forEach((delay) => {
+      setTimeout(() => {
+        const inputEl = document.getElementById('adminUserSearchInput');
+        const sess = getActiveSession();
+        if (inputEl && (inputEl.value.trim().toLowerCase() === 'admin' || inputEl.value.trim().toLowerCase() === '1922' || (sess && inputEl.value.trim().toLowerCase() === sess.username.toLowerCase()))) {
+          inputEl.value = '';
+          const bc = document.getElementById('btnAdminClearSearch');
+          if (bc) bc.style.display = 'none';
+          renderAdminUserManagement();
+        }
+      }, delay);
+    });
+
     await renderAdminUserManagement();
   } else {
     if (adminLayoutContainer) adminLayoutContainer.style.display = 'none';
@@ -7501,6 +7524,46 @@ function setupSearchProjectInputProtection() {
   si.addEventListener('click', cleanIfUsername);
   si.addEventListener('input', cleanIfUsername);
   si.addEventListener('change', cleanIfUsername);
+}
+
+let adminSearchManuallyTyped = false;
+
+function setupAdminUserSearchProtection() {
+  const asi = document.getElementById('adminUserSearchInput');
+  if (!asi) return;
+  adminSearchManuallyTyped = false;
+  if (asi.__protectionAttached) return;
+  asi.__protectionAttached = true;
+
+  asi.addEventListener('keydown', () => {
+    adminSearchManuallyTyped = true;
+  });
+
+  const cleanIfAutofill = () => {
+    if (adminSearchManuallyTyped) return;
+    const sess = getActiveSession();
+    const val = (asi.value || '').trim().toLowerCase();
+    if (val === 'admin' || val === '1922' || (sess && val === sess.username.toLowerCase())) {
+      asi.value = '';
+      const bc = document.getElementById('btnAdminClearSearch');
+      if (bc) bc.style.display = 'none';
+      renderAdminUserManagement();
+    }
+  };
+
+  asi.addEventListener('focus', cleanIfAutofill);
+  asi.addEventListener('click', cleanIfAutofill);
+  asi.addEventListener('change', cleanIfAutofill);
+}
+
+function clearAdminUserSearch() {
+  const asi = document.getElementById('adminUserSearchInput');
+  if (asi) {
+    asi.value = '';
+    const bc = document.getElementById('btnAdminClearSearch');
+    if (bc) bc.style.display = 'none';
+    renderAdminUserManagement();
+  }
 }
 
 // --- SESSION CONCURRENCY & LOCK HELPERS ---
@@ -7685,6 +7748,12 @@ async function handleLoginSubmit(event, isForce = false) {
     await checkAuthAndRoute();
     const finalSearchInput = document.getElementById('searchProjectInput');
     if (finalSearchInput) finalSearchInput.value = '';
+    const finalAdminSearch = document.getElementById('adminUserSearchInput');
+    if (finalAdminSearch) {
+      finalAdminSearch.value = '';
+      const bc = document.getElementById('btnAdminClearSearch');
+      if (bc) bc.style.display = 'none';
+    }
   } catch (err) {
     console.error('Login error:', err);
     if (alertBox) alertBox.style.display = 'flex';
@@ -7770,12 +7839,14 @@ function performActualLogout() {
   } catch (e) {}
 
   // 3. Reset form inputs di DOM agar tidak ada data input yang tersisa
-  const allInputs = document.querySelectorAll('#appLayoutContainer input, #appLayoutContainer select, #appLayoutContainer textarea');
+  const allInputs = document.querySelectorAll('#appLayoutContainer input, #appLayoutContainer select, #appLayoutContainer textarea, #adminLayoutContainer input, #adminLayoutContainer select, #adminLayoutContainer textarea');
   allInputs.forEach(inp => {
     if (inp.type !== 'file' && inp.type !== 'button' && inp.type !== 'submit') {
       inp.value = '';
     }
   });
+  const bc = document.getElementById('btnAdminClearSearch');
+  if (bc) bc.style.display = 'none';
 
   // 4. Reset Banner DOM
   const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
@@ -7896,6 +7967,11 @@ async function renderAdminUserManagement() {
 }
 
 function filterAdminUserTable() {
+  const asi = document.getElementById('adminUserSearchInput');
+  const bc = document.getElementById('btnAdminClearSearch');
+  if (bc && asi) {
+    bc.style.display = asi.value ? 'block' : 'none';
+  }
   renderAdminUserManagement();
 }
 

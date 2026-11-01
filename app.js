@@ -4904,7 +4904,7 @@ function renderCashFlowTab(proj, m) {
         <table class="data-table" style="font-size:0.73rem; width:100%; table-layout:fixed; border-collapse:collapse; text-align:right;">
           <thead>
             <tr style="background:#f1f5f9; border-bottom:2px solid #cbd5e1;">
-              <th style="width:4.5%; text-align:center; padding:6px 2px; font-size:0.72rem; color:#1e293b;" title="Periode Proyeksi Bulan ke-1 s/d ke-12">Bln</th>
+              <th style="width:5.5%; text-align:center; padding:6px 2px; font-size:0.72rem; color:#1e293b;" title="Periode Proyeksi Bulan ke-1 s/d ke-12">Bulan</th>
               <th class="num-col" style="width:8%; padding:6px 3px; font-size:0.72rem; color:#1e293b;" title="Saldo Kas di Awal Periode">Kas Awal</th>
               <th class="num-col" style="width:7.5%; padding:6px 3px; font-size:0.72rem; color:#0284c7;" title="Pencairan Kredit SCF AP oleh Bank untuk Pembelian Persediaan">+SCF</th>
               <th class="num-col" style="width:8%; padding:6px 3px; font-size:0.72rem; color:#0369a1;" title="Kas Masuk Hasil Penjualan Persediaan">+Inflow</th>
@@ -4916,13 +4916,13 @@ function renderCashFlowTab(proj, m) {
               <th class="num-col" style="width:8.5%; padding:6px 3px; font-size:0.72rem; color:#0f172a; font-weight:800;" title="Total Kewajiban Debt Service (Bunga + Pokok SCF)">Debt Svc</th>
               <th class="num-col" style="width:8.5%; padding:6px 3px; font-size:0.72rem; color:#0f172a; font-weight:800;" title="Saldo Kas Akhir Periode">Kas Akhir</th>
               <th class="num-col" style="width:6.5%; padding:6px 3px; font-size:0.72rem; color:#0f172a; font-weight:800;" title="Monthly Debt Service Coverage Ratio">DSCR</th>
-              <th style="width:8.5%; text-align:center; padding:6px 2px; font-size:0.72rem; color:#1e293b;" title="Status Likuiditas Kas Bulanan">Status</th>
+              <th style="width:7.5%; text-align:center; padding:6px 2px; font-size:0.72rem; color:#1e293b;" title="Status Likuiditas Kas Bulanan">Status</th>
             </tr>
           </thead>
           <tbody>
             ${cf.monthlyData.map((d) => `
               <tr style="${d.isDeficit ? 'background:#fef2f2;' : ''} border-bottom:1px solid #f1f5f9;">
-                <td style="text-align:center; font-weight:700; padding:5px 2px; font-size:0.72rem; white-space:nowrap;" title="Bulan ke-${d.month}">B${String(d.month).padStart(2, '0')}</td>
+                <td style="text-align:center; font-weight:700; padding:5px 2px; font-size:0.72rem; white-space:nowrap;" title="Bulan ke-${d.month}">ke-${d.month}</td>
                 <td class="num-col" style="padding:5px 3px; font-size:0.72rem; white-space:nowrap;" title="Kas Awal Bulan ${d.month}: ${fmtRp(d.begCash)}">${fmtRp(d.begCash, true)}</td>
                 <td class="num-col" style="padding:5px 3px; font-size:0.72rem; white-space:nowrap; color:${d.scfDrawdown > 0 ? '#0284c7' : '#94a3b8'}; font-weight:700;" title="Pencairan SCF: ${fmtRp(d.scfDrawdown)}">${d.scfDrawdown > 0 ? `+${fmtRp(d.scfDrawdown, true)}` : '-'}</td>
                 <td class="num-col" style="padding:5px 3px; font-size:0.72rem; white-space:nowrap; color:#0369a1; font-weight:600;" title="Inflow Kas: ${fmtRp(d.cashInflow)}">+${fmtRp(d.cashInflow, true)}</td>

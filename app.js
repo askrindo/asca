@@ -1171,19 +1171,19 @@ function normalizeNewsSearchQuery(rawName) {
 }
 
 let isFetchingGoogleNews = false;
+let currentNewsAbortController = null;
+let currentNewsFetchSeq = 0;
 const fetchedGoogleNewsCache = new Set();
 
 function runAutoGoogleNewsCheckSync(proj, notifyToast = false) {
   if (!proj) return;
   const cleanName = normalizeNewsSearchQuery(proj.companyName || 'Perusahaan');
-  if (proj.googleNewsCompany !== cleanName) {
-    proj.googleNewsCompany = cleanName;
-    proj.googleNewsAccessedAt = formatGoogleNewsAccessedDate(new Date());
-    proj.googleNewsItems = [];
-    proj.googleNewsFetchedCompany = null;
-    proj.googleNewsLiveVersion = 'REAL_LIVE_V2';
-    proj.negativeNews = 'clean'; // Jika belum/tidak ditemukan berita negatif, perusahaan bersih (20/20 Poin)
-  }
+  proj.googleNewsCompany = cleanName;
+  proj.googleNewsAccessedAt = formatGoogleNewsAccessedDate(new Date());
+  proj.googleNewsItems = [];
+  proj.googleNewsFetchedCompany = null;
+  proj.googleNewsLiveVersion = 'REAL_LIVE_V2';
+  proj.negativeNews = 'clean'; // Jika belum/tidak ditemukan berita negatif, perusahaan bersih (20/20 Poin)
   if (notifyToast) {
     showToast(`📰 Memindai berita riil Google News untuk "${cleanName}"...`);
   }
@@ -1215,27 +1215,23 @@ async function fetchGoogleNewsForProject(isManualClick = false, isAutoInputTrigg
   if (!cleanName || cleanName.length < 3) return;
 
   const cacheKey = `${proj.id || 'default'}::${cleanName.toLowerCase()}`;
+  const isForceRefresh = isManualClick || isAutoInputTrigger;
 
-  // Cegah pencarian berulang otomatis untuk nama perusahaan yang sama (kecuali user klik tombol Update Berita secara manual)
-  if (!isManualClick && (proj.googleNewsFetchedCompany === cleanName || fetchedGoogleNewsCache.has(cacheKey))) {
+  // Cegah pencarian berulang otomatis jika bukan dari klik Simpan / ganti nama / klik tombol Update Berita
+  if (!isForceRefresh && (proj.googleNewsFetchedCompany === cleanName || fetchedGoogleNewsCache.has(cacheKey))) {
     return;
   }
-  if (isFetchingGoogleNews) return;
 
-  isFetchingGoogleNews = true;
-  // Tandai langsung di awal agar tidak pernah terpanggil berulang (zero loop)
-  proj.googleNewsFetchedCompany = cleanName;
-  proj.googleNewsCompany = cleanName;
-  proj.googleNewsLiveVersion = 'REAL_LIVE_V2';
-  fetchedGoogleNewsCache.add(cacheKey);
-
-  const btn = document.getElementById('btnUpdateGoogleNews');
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = 'Memuat Berita...';
+  // Batalkan request sebelumnya yang masih berjalan agar pencarian baru langsung dieksekusi tanpa terblokir
+  if (currentNewsAbortController) {
+    try {
+      currentNewsAbortController.abort();
+    } catch (_) {}
+    currentNewsAbortController = null;
   }
 
-  const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent('"' + cleanName + '"')}&hl=id&gl=ID&ceid=ID:id`;
+  const mySeq = ++currentNewsFetchSeq;
+  isFetchingGoogleNews = true;
 
   const oldMap = {};
   if (Array.isArray(proj.googleNewsItems) && proj.googleNewsCompany === cleanName) {
@@ -1244,21 +1240,44 @@ async function fetchGoogleNewsForProject(isManualClick = false, isAutoInputTrigg
     });
   }
 
+  // Reset daftar berita lama saat mencari baru agar UI langsung memperlihatkan proses pencarian baru
+  if (isForceRefresh || proj.googleNewsCompany !== cleanName) {
+    proj.googleNewsItems = [];
+    proj.negativeNews = 'clean';
+  }
+
+  proj.googleNewsFetchedCompany = cleanName;
+  proj.googleNewsCompany = cleanName;
+  proj.googleNewsAccessedAt = formatGoogleNewsAccessedDate(new Date());
+  proj.googleNewsLiveVersion = 'REAL_LIVE_V2';
+  fetchedGoogleNewsCache.add(cacheKey);
+
+  // Perbarui tampilan tombol & kartu berita menjadi status "Memuat Berita..."
+  const btn = document.getElementById('btnUpdateGoogleNews');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Memuat Berita...';
+  }
+  const mInit = computeDCCSWCM(proj);
+  render5CTab(proj, mInit);
+
+  const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(cleanName)}&hl=id&gl=ID&ceid=ID:id`;
   let parsedItems = [];
 
-  // 1. Ambil data berita riil melalui RSS2JSON API (Google News RSS)
+  // 1. Ambil data berita riil melalui RSS2JSON API (Google News RSS) + cache-buster saat refresh
   try {
-    const rss2JsonUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
     const controller1 = new AbortController();
-    const timer1 = setTimeout(() => controller1.abort(), 5000);
-    const res1 = await fetch(rss2JsonUrl, { signal: controller1.signal });
+    currentNewsAbortController = controller1;
+    const timer1 = setTimeout(() => controller1.abort(), 4500);
+    const rss2JsonUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
+    const res1 = await fetch(rss2JsonUrl, { signal: controller1.signal, cache: 'no-store' });
     clearTimeout(timer1);
     if (res1.ok) {
       const data1 = await res1.json();
       if (data1 && data1.status === 'ok' && Array.isArray(data1.items) && data1.items.length > 0) {
         parsedItems = data1.items.slice(0, 6).map((item) => {
           const title = (item.title || 'Berita Terkait Perusahaan').trim();
-          const link = item.link || `https://news.google.com/search?q=${encodeURIComponent('"' + cleanName + '"')}&hl=id&gl=ID&ceid=ID:id`;
+          const link = item.link || `https://news.google.com/search?q=${encodeURIComponent(cleanName)}&hl=id&gl=ID&ceid=ID:id`;
           const titleParts = title.split(' - ');
           const inferredSource = titleParts.length > 1 ? titleParts[titleParts.length - 1] : (item.author || 'Google News');
           const autoStatus = oldMap[title] || (detectNegativeNewsHeadline(title) ? 'negative' : 'unmarked');
@@ -1273,23 +1292,30 @@ async function fetchGoogleNewsForProject(isManualClick = false, isAutoInputTrigg
       }
     }
   } catch (e1) {
-    // Lanjut ke AllOrigins XML fallback jika rss2json gagal koneksi
-    try {
-      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(rssUrl)}`;
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 5000);
-      const res = await fetch(proxyUrl, { signal: controller.signal });
-      clearTimeout(timer);
+    if (mySeq !== currentNewsFetchSeq) return;
+  }
 
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.contents) {
+  if (mySeq !== currentNewsFetchSeq) return;
+
+  // 2. Fallback cepat ke CodeTabs XML Proxy jika rss2json gagal / terkena limit
+  if (parsedItems.length === 0) {
+    try {
+      const controller2 = new AbortController();
+      currentNewsAbortController = controller2;
+      const timer2 = setTimeout(() => controller2.abort(), 4000);
+      const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(rssUrl)}`;
+      const res2 = await fetch(proxyUrl, { signal: controller2.signal, cache: 'no-store' });
+      clearTimeout(timer2);
+
+      if (res2.ok) {
+        const xmlText = await res2.text();
+        if (xmlText && xmlText.includes('<item>')) {
           const parser = new DOMParser();
-          const xml = parser.parseFromString(data.contents, 'text/xml');
+          const xml = parser.parseFromString(xmlText, 'text/xml');
           const items = Array.from(xml.querySelectorAll('item')).slice(0, 6);
           parsedItems = items.map((item) => {
             const title = item.querySelector('title')?.textContent?.trim() || 'Berita Terkait Perusahaan';
-            const link = item.querySelector('link')?.textContent?.trim() || `https://news.google.com/search?q=${encodeURIComponent('"' + cleanName + '"')}&hl=id&gl=ID&ceid=ID:id`;
+            const link = item.querySelector('link')?.textContent?.trim() || `https://news.google.com/search?q=${encodeURIComponent(cleanName)}&hl=id&gl=ID&ceid=ID:id`;
             const pubDateRaw = item.querySelector('pubDate')?.textContent?.trim();
             const sourceEl = item.querySelector('source')?.textContent?.trim();
             const titleParts = title.split(' - ');
@@ -1306,9 +1332,11 @@ async function fetchGoogleNewsForProject(isManualClick = false, isAutoInputTrigg
         }
       }
     } catch (err) {
-      console.warn('Google News RSS live fetch warning:', err);
+      if (mySeq !== currentNewsFetchSeq) return;
     }
   }
+
+  if (mySeq !== currentNewsFetchSeq) return;
 
   // TANPA HARDCODE: Jika tidak ada berita di Google News (parsedItems.length === 0),
   // maka googleNewsItems tetap [] (kosong) dan negativeNews otomatis 'clean' (20/20 Poin).
@@ -1322,12 +1350,15 @@ async function fetchGoogleNewsForProject(isManualClick = false, isAutoInputTrigg
   proj.negativeNews = hasNeg ? 'negative' : 'clean';
 
   isFetchingGoogleNews = false;
+  currentNewsAbortController = null;
   saveProjectsToStorage();
   const m = computeDCCSWCM(proj);
+  renderProjectList();
   renderBanner(proj, m);
   render5CTab(proj, m);
   renderScoreCalculationTab(proj, m);
   renderGradeRiskTab(proj, m);
+  renderPrintableReport(proj, m);
 
   if (isAutoInputTrigger) {
     const inaprocTxt = proj.inaprocStatus === 'blacklisted' ? `BLACKLIST LKPP (SK: ${proj.inaprocAutoResult?.skNumber || '-'})` : 'INAPROC Bersih (15/15)';
@@ -5676,15 +5707,19 @@ function saveAllInputsAndRecalculate() {
   } else if (rImport && rImport.checked) {
     proj.procurementMethod = 'import_sea';
   }
-  if (inaprocAutoTriggerTimer) clearTimeout(inaprocAutoTriggerTimer);
   syncInputsToModel();
+  if (inaprocAutoTriggerTimer) {
+    clearTimeout(inaprocAutoTriggerTimer);
+    inaprocAutoTriggerTimer = null;
+  }
   runAutoInaprocCheckSync(proj, false);
+  runAutoGoogleNewsCheckSync(proj, false);
   saveProjectsToStorage();
   renderAll();
-  // Trigger pengecekan Daftar Hitam & Google News saat tombol Simpan diklik
+  showToast('Perubahan data input berhasil disimpan & memindai ulang Daftar Hitam + Berita Google News...');
+  // Langsung jalankan pencarian baru Daftar Hitam & Google News saat tombol Simpan diklik
   triggerLiveInaprocCheck(false);
   fetchGoogleNewsForProject(true, true);
-  showToast('Perubahan data input berhasil disimpan & seluruh tab analisa telah diperbarui.');
 }
 
 // ============================================================================

@@ -4892,70 +4892,70 @@ function renderCashFlowTab(proj, m) {
       </div>
 
       <!-- TABEL RINCIAN BULANAN 12 BULAN (1-VIEW FIT) -->
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:0.35rem; gap:0.5rem;">
-        <div style="font-weight:800; font-size:0.80rem; color:var(--askrindo-navy);">
+      <div style="max-width:1120px; margin:0 auto 0.35rem auto; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+        <div style="font-weight:800; font-size:0.84rem; color:var(--askrindo-navy);">
           Tabel Rincian Proyeksi Arus Kas Bulanan (12 Bulan) &amp; Siklus Konversi SCF AP (Persediaan &rarr; Kas)
         </div>
-        <div style="font-size:0.65rem; color:#64748b; font-style:italic;">
-          ✨ Tampilan 1-View Fit Screen (arahkan kursor pada angka untuk rincian nominal lengkap)
+        <div style="font-size:0.70rem; color:#64748b; font-style:italic;">
+          ✨ Tampilan Padat 1-View (arahkan kursor pada angka untuk rincian nominal lengkap)
         </div>
       </div>
-      <div style="width:100%; overflow-x:auto; margin-bottom:0.75rem; border:1px solid #cbd5e1; border-radius:6px; background:#fff;">
-        <table class="data-table" style="font-size:0.60rem; width:100%; table-layout:fixed; border-collapse:collapse; text-align:right;">
+      <div style="width:100%; max-width:1120px; margin:0 auto 0.75rem auto; overflow-x:auto; border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.04); background:#fff;">
+        <table class="data-table" style="font-size:0.73rem; width:100%; table-layout:fixed; border-collapse:collapse; text-align:right;">
           <thead>
-            <tr style="background:#f8fafc; border-bottom:1.5px solid #cbd5e1;">
-              <th style="width:4.5%; text-align:center; padding:4px 2px; white-space:normal; font-size:0.60rem;" title="Periode Proyeksi Bulan ke-1 s/d ke-12">Bln</th>
-              <th class="num-col" style="width:8%; padding:4px 2px; white-space:normal; font-size:0.60rem;" title="Saldo Kas di Awal Periode">Kas Awal</th>
-              <th class="num-col" style="width:7.5%; padding:4px 2px; white-space:normal; font-size:0.60rem; color:#0284c7;" title="Pencairan Kredit SCF AP oleh Bank untuk Pembelian Persediaan">+SCF</th>
-              <th class="num-col" style="width:8%; padding:4px 2px; white-space:normal; font-size:0.60rem; color:#0369a1;" title="Kas Masuk Hasil Penjualan Persediaan">+Inflow</th>
-              <th class="num-col" style="width:8%; padding:4px 2px; white-space:normal; font-size:0.60rem; color:#b91c1c;" title="Outflow Pembayaran HPP Persediaan">-HPP</th>
-              <th class="num-col" style="width:7.5%; padding:4px 2px; white-space:normal; font-size:0.60rem; color:#b91c1c;" title="Outflow Beban Operasional">-OPEX</th>
-              <th class="num-col" style="width:8%; padding:4px 2px; white-space:normal; font-size:0.60rem;" title="Net Operating Cash Flow (Arus Kas Operasi Bersih)">NOCF</th>
-              <th class="num-col" style="width:7%; padding:4px 2px; white-space:normal; font-size:0.60rem; color:#b45309;" title="Beban Bunga Fasilitas SCF AP">-Bunga</th>
-              <th class="num-col" style="width:7.5%; padding:4px 2px; white-space:normal; font-size:0.60rem; color:#b45309;" title="Pelunasan Pokok Fasilitas SCF AP">-Pokok</th>
-              <th class="num-col" style="width:8.5%; padding:4px 2px; white-space:normal; font-size:0.60rem; font-weight:800;" title="Total Kewajiban Debt Service (Bunga + Pokok SCF)">Debt Svc</th>
-              <th class="num-col" style="width:8.5%; padding:4px 2px; white-space:normal; font-size:0.60rem; font-weight:800;" title="Saldo Kas Akhir Periode">Kas Akhir</th>
-              <th class="num-col" style="width:6.5%; padding:4px 2px; white-space:normal; font-size:0.60rem; font-weight:800;" title="Monthly Debt Service Coverage Ratio">DSCR</th>
-              <th style="width:8.5%; text-align:center; padding:4px 2px; white-space:normal; font-size:0.60rem;" title="Status Likuiditas Kas Bulanan">Status</th>
+            <tr style="background:#f1f5f9; border-bottom:2px solid #cbd5e1;">
+              <th style="width:4.5%; text-align:center; padding:6px 2px; font-size:0.72rem; color:#1e293b;" title="Periode Proyeksi Bulan ke-1 s/d ke-12">Bln</th>
+              <th class="num-col" style="width:8%; padding:6px 3px; font-size:0.72rem; color:#1e293b;" title="Saldo Kas di Awal Periode">Kas Awal</th>
+              <th class="num-col" style="width:7.5%; padding:6px 3px; font-size:0.72rem; color:#0284c7;" title="Pencairan Kredit SCF AP oleh Bank untuk Pembelian Persediaan">+SCF</th>
+              <th class="num-col" style="width:8%; padding:6px 3px; font-size:0.72rem; color:#0369a1;" title="Kas Masuk Hasil Penjualan Persediaan">+Inflow</th>
+              <th class="num-col" style="width:8%; padding:6px 3px; font-size:0.72rem; color:#b91c1c;" title="Outflow Pembayaran HPP Persediaan">-HPP</th>
+              <th class="num-col" style="width:7.5%; padding:6px 3px; font-size:0.72rem; color:#b91c1c;" title="Outflow Beban Operasional">-OPEX</th>
+              <th class="num-col" style="width:8%; padding:6px 3px; font-size:0.72rem; color:#166534;" title="Net Operating Cash Flow (Arus Kas Operasi Bersih)">NOCF</th>
+              <th class="num-col" style="width:7%; padding:6px 3px; font-size:0.72rem; color:#b45309;" title="Beban Bunga Fasilitas SCF AP">-Bunga</th>
+              <th class="num-col" style="width:7.5%; padding:6px 3px; font-size:0.72rem; color:#b45309;" title="Pelunasan Pokok Fasilitas SCF AP">-Pokok</th>
+              <th class="num-col" style="width:8.5%; padding:6px 3px; font-size:0.72rem; color:#0f172a; font-weight:800;" title="Total Kewajiban Debt Service (Bunga + Pokok SCF)">Debt Svc</th>
+              <th class="num-col" style="width:8.5%; padding:6px 3px; font-size:0.72rem; color:#0f172a; font-weight:800;" title="Saldo Kas Akhir Periode">Kas Akhir</th>
+              <th class="num-col" style="width:6.5%; padding:6px 3px; font-size:0.72rem; color:#0f172a; font-weight:800;" title="Monthly Debt Service Coverage Ratio">DSCR</th>
+              <th style="width:8.5%; text-align:center; padding:6px 2px; font-size:0.72rem; color:#1e293b;" title="Status Likuiditas Kas Bulanan">Status</th>
             </tr>
           </thead>
           <tbody>
             ${cf.monthlyData.map((d) => `
               <tr style="${d.isDeficit ? 'background:#fef2f2;' : ''} border-bottom:1px solid #f1f5f9;">
-                <td style="text-align:center; font-weight:700; padding:3px 2px; white-space:nowrap;" title="Bulan ke-${d.month}">B${String(d.month).padStart(2, '0')}</td>
-                <td class="num-col" style="padding:3px 2px; white-space:nowrap;" title="Kas Awal Bulan ${d.month}: ${fmtRp(d.begCash)}">${fmtRp(d.begCash, true)}</td>
-                <td class="num-col" style="padding:3px 2px; white-space:nowrap; color:${d.scfDrawdown > 0 ? '#0284c7' : '#94a3b8'}; font-weight:700;" title="Pencairan SCF: ${fmtRp(d.scfDrawdown)}">${d.scfDrawdown > 0 ? `+${fmtRp(d.scfDrawdown, true)}` : '-'}</td>
-                <td class="num-col" style="padding:3px 2px; white-space:nowrap; color:#0369a1; font-weight:600;" title="Inflow Kas: ${fmtRp(d.cashInflow)}">+${fmtRp(d.cashInflow, true)}</td>
-                <td class="num-col" style="padding:3px 2px; white-space:nowrap; color:#b91c1c;" title="Outflow HPP: ${fmtRp(d.cogsPayment)}">-${fmtRp(d.cogsPayment, true)}</td>
-                <td class="num-col" style="padding:3px 2px; white-space:nowrap; color:#b91c1c;" title="Outflow OPEX: ${fmtRp(d.opexPayment)}">-${fmtRp(d.opexPayment, true)}</td>
-                <td class="num-col" style="padding:3px 2px; white-space:nowrap; font-weight:700; color:${d.nocf >= 0 ? '#166534' : '#dc2626'};" title="NOCF: ${fmtRp(d.nocf)}">${fmtRp(d.nocf, true)}</td>
-                <td class="num-col" style="padding:3px 2px; white-space:nowrap;" title="Bunga SCF: ${fmtRp(d.monthlyInterest)}">-${fmtRp(d.monthlyInterest, true)}</td>
-                <td class="num-col" style="padding:3px 2px; white-space:nowrap; font-weight:${d.principalRepayment > 0 ? '700' : '400'};" title="Pokok SCF: ${fmtRp(d.principalRepayment)}">${d.principalRepayment > 0 ? `-${fmtRp(d.principalRepayment, true)}` : '-'}</td>
-                <td class="num-col" style="padding:3px 2px; white-space:nowrap; font-weight:700; color:#b45309;" title="Debt Service: ${fmtRp(d.debtService)}">${fmtRp(d.debtService, true)}</td>
-                <td class="num-col" style="padding:3px 2px; white-space:nowrap; font-weight:800; color:${d.endingCash >= 0 ? '#166534' : '#dc2626'};" title="Kas Akhir: ${fmtRp(d.endingCash)}">${fmtRp(d.endingCash, true)}</td>
-                <td class="num-col" style="padding:3px 2px; white-space:nowrap; font-weight:700; color:${d.monthDSCR >= 1.2 ? '#166534' : (d.monthDSCR >= 1.0 ? '#b45309' : '#dc2626')};" title="DSCR Bulan ${d.month}: ${fmtNum(d.monthDSCR, 2)}x">${fmtNum(d.monthDSCR, 2)}x</td>
-                <td style="text-align:center; padding:3px 1px; white-space:nowrap;">
-                  <span style="font-size:0.56rem; padding:1px 4px; border-radius:3px; font-weight:700; display:inline-block; background:${d.isDeficit ? '#fee2e2; color:#991b1b;' : '#dcfce7; color:#15803d;'}">
+                <td style="text-align:center; font-weight:700; padding:5px 2px; font-size:0.72rem; white-space:nowrap;" title="Bulan ke-${d.month}">B${String(d.month).padStart(2, '0')}</td>
+                <td class="num-col" style="padding:5px 3px; font-size:0.72rem; white-space:nowrap;" title="Kas Awal Bulan ${d.month}: ${fmtRp(d.begCash)}">${fmtRp(d.begCash, true)}</td>
+                <td class="num-col" style="padding:5px 3px; font-size:0.72rem; white-space:nowrap; color:${d.scfDrawdown > 0 ? '#0284c7' : '#94a3b8'}; font-weight:700;" title="Pencairan SCF: ${fmtRp(d.scfDrawdown)}">${d.scfDrawdown > 0 ? `+${fmtRp(d.scfDrawdown, true)}` : '-'}</td>
+                <td class="num-col" style="padding:5px 3px; font-size:0.72rem; white-space:nowrap; color:#0369a1; font-weight:600;" title="Inflow Kas: ${fmtRp(d.cashInflow)}">+${fmtRp(d.cashInflow, true)}</td>
+                <td class="num-col" style="padding:5px 3px; font-size:0.72rem; white-space:nowrap; color:#b91c1c;" title="Outflow HPP: ${fmtRp(d.cogsPayment)}">-${fmtRp(d.cogsPayment, true)}</td>
+                <td class="num-col" style="padding:5px 3px; font-size:0.72rem; white-space:nowrap; color:#b91c1c;" title="Outflow OPEX: ${fmtRp(d.opexPayment)}">-${fmtRp(d.opexPayment, true)}</td>
+                <td class="num-col" style="padding:5px 3px; font-size:0.72rem; white-space:nowrap; font-weight:700; color:${d.nocf >= 0 ? '#166534' : '#dc2626'};" title="NOCF: ${fmtRp(d.nocf)}">${fmtRp(d.nocf, true)}</td>
+                <td class="num-col" style="padding:5px 3px; font-size:0.72rem; white-space:nowrap;" title="Bunga SCF: ${fmtRp(d.monthlyInterest)}">-${fmtRp(d.monthlyInterest, true)}</td>
+                <td class="num-col" style="padding:5px 3px; font-size:0.72rem; white-space:nowrap; font-weight:${d.principalRepayment > 0 ? '700' : '400'};" title="Pokok SCF: ${fmtRp(d.principalRepayment)}">${d.principalRepayment > 0 ? `-${fmtRp(d.principalRepayment, true)}` : '-'}</td>
+                <td class="num-col" style="padding:5px 3px; font-size:0.72rem; white-space:nowrap; font-weight:700; color:#b45309;" title="Debt Service: ${fmtRp(d.debtService)}">${fmtRp(d.debtService, true)}</td>
+                <td class="num-col" style="padding:5px 3px; font-size:0.72rem; white-space:nowrap; font-weight:800; color:${d.endingCash >= 0 ? '#166534' : '#dc2626'};" title="Kas Akhir: ${fmtRp(d.endingCash)}">${fmtRp(d.endingCash, true)}</td>
+                <td class="num-col" style="padding:5px 3px; font-size:0.72rem; white-space:nowrap; font-weight:700; color:${d.monthDSCR >= 1.2 ? '#166534' : (d.monthDSCR >= 1.0 ? '#b45309' : '#dc2626')};" title="DSCR Bulan ${d.month}: ${fmtNum(d.monthDSCR, 2)}x">${fmtNum(d.monthDSCR, 2)}x</td>
+                <td style="text-align:center; padding:5px 2px; white-space:nowrap;">
+                  <span style="font-size:0.65rem; padding:2px 5px; border-radius:3px; font-weight:700; display:inline-block; background:${d.isDeficit ? '#fee2e2; color:#991b1b;' : '#dcfce7; color:#15803d;'}">
                     ${d.isDeficit ? 'DEFISIT' : 'SURPLUS'}
                   </span>
                 </td>
               </tr>
             `).join('')}
-            <tr style="background:#f1f5f9; font-weight:800; border-top:2px solid #94a3b8;">
-              <td style="text-align:center; padding:4px 2px; font-size:0.58rem; white-space:nowrap;">TOTAL</td>
-              <td class="num-col" style="padding:4px 2px; white-space:nowrap;" title="Kas Awal Tahun: ${fmtRp(cf.initialCash)}">${fmtRp(cf.initialCash, true)}</td>
-              <td class="num-col" style="padding:4px 2px; white-space:nowrap; color:#0284c7;" title="Total Pencairan SCF: ${fmtRp(cf.totalSCFDrawdown)}">+${fmtRp(cf.totalSCFDrawdown, true)}</td>
-              <td class="num-col" style="padding:4px 2px; white-space:nowrap; color:#0369a1;" title="Total Inflow Penjualan: ${fmtRp(cf.totalInflow)}">+${fmtRp(cf.totalInflow, true)}</td>
-              <td class="num-col" style="padding:4px 2px; white-space:nowrap; color:#b91c1c;" title="Total Outflow HPP: ${fmtRp(cf.projectedAnnualCOGS)}">-${fmtRp(cf.projectedAnnualCOGS, true)}</td>
-              <td class="num-col" style="padding:4px 2px; white-space:nowrap; color:#b91c1c;" title="Total Outflow OPEX: ${fmtRp(cf.projectedAnnualOpex)}">-${fmtRp(cf.projectedAnnualOpex, true)}</td>
-              <td class="num-col" style="padding:4px 2px; white-space:nowrap; color:${cf.totalNOCF >= 0 ? '#166534' : '#dc2626'};" title="Total NOCF: ${fmtRp(cf.totalNOCF)}">${fmtRp(cf.totalNOCF, true)}</td>
-              <td class="num-col" style="padding:4px 2px; white-space:nowrap;" title="Total Beban Bunga: ${fmtRp(cf.totalDebtService - proj.requestedPlafond)}">-${fmtRp(cf.totalDebtService - proj.requestedPlafond, true)}</td>
-              <td class="num-col" style="padding:4px 2px; white-space:nowrap;" title="Total Pelunasan Pokok: ${fmtRp(proj.requestedPlafond)}">-${fmtRp(proj.requestedPlafond, true)}</td>
-              <td class="num-col" style="padding:4px 2px; white-space:nowrap; color:#b45309;" title="Total Debt Service: ${fmtRp(cf.totalDebtService)}">${fmtRp(cf.totalDebtService, true)}</td>
-              <td class="num-col" style="padding:4px 2px; white-space:nowrap; color:${cf.lowestCash >= 0 ? '#166534' : '#dc2626'};" title="Saldo Kas Akhir Bulan 12: ${fmtRp(cf.monthlyData[11].endingCash)}">${fmtRp(cf.monthlyData[11].endingCash, true)}</td>
-              <td class="num-col" style="padding:4px 2px; white-space:nowrap; color:${cf.annualDSCR >= 1.2 ? '#166534' : '#dc2626'};" title="DSCR Tahunan: ${fmtNum(cf.annualDSCR, 2)}x">${fmtNum(cf.annualDSCR, 2)}x</td>
-              <td style="text-align:center; padding:4px 1px; white-space:nowrap;">
-                <span style="font-size:0.56rem; padding:1px 4px; border-radius:3px; font-weight:800; display:inline-block; background:${cf.isHealthy ? '#dcfce7; color:#15803d;' : '#fee2e2; color:#991b1b;'}">
+            <tr style="background:#f1f5f9; font-weight:800; border-top:2px solid #94a3b8; font-size:0.73rem;">
+              <td style="text-align:center; padding:6px 2px; font-size:0.70rem; white-space:nowrap;">TOTAL</td>
+              <td class="num-col" style="padding:6px 3px; white-space:nowrap;" title="Kas Awal Tahun: ${fmtRp(cf.initialCash)}">${fmtRp(cf.initialCash, true)}</td>
+              <td class="num-col" style="padding:6px 3px; white-space:nowrap; color:#0284c7;" title="Total Pencairan SCF: ${fmtRp(cf.totalSCFDrawdown)}">+${fmtRp(cf.totalSCFDrawdown, true)}</td>
+              <td class="num-col" style="padding:6px 3px; white-space:nowrap; color:#0369a1;" title="Total Inflow Penjualan: ${fmtRp(cf.totalInflow)}">+${fmtRp(cf.totalInflow, true)}</td>
+              <td class="num-col" style="padding:6px 3px; white-space:nowrap; color:#b91c1c;" title="Total Outflow HPP: ${fmtRp(cf.projectedAnnualCOGS)}">-${fmtRp(cf.projectedAnnualCOGS, true)}</td>
+              <td class="num-col" style="padding:6px 3px; white-space:nowrap; color:#b91c1c;" title="Total Outflow OPEX: ${fmtRp(cf.projectedAnnualOpex)}">-${fmtRp(cf.projectedAnnualOpex, true)}</td>
+              <td class="num-col" style="padding:6px 3px; white-space:nowrap; color:${cf.totalNOCF >= 0 ? '#166534' : '#dc2626'};" title="Total NOCF: ${fmtRp(cf.totalNOCF)}">${fmtRp(cf.totalNOCF, true)}</td>
+              <td class="num-col" style="padding:6px 3px; white-space:nowrap;" title="Total Beban Bunga: ${fmtRp(cf.totalDebtService - proj.requestedPlafond)}">-${fmtRp(cf.totalDebtService - proj.requestedPlafond, true)}</td>
+              <td class="num-col" style="padding:6px 3px; white-space:nowrap;" title="Total Pelunasan Pokok: ${fmtRp(proj.requestedPlafond)}">-${fmtRp(proj.requestedPlafond, true)}</td>
+              <td class="num-col" style="padding:6px 3px; white-space:nowrap; color:#b45309;" title="Total Debt Service: ${fmtRp(cf.totalDebtService)}">${fmtRp(cf.totalDebtService, true)}</td>
+              <td class="num-col" style="padding:6px 3px; white-space:nowrap; color:${cf.lowestCash >= 0 ? '#166534' : '#dc2626'};" title="Saldo Kas Akhir Bulan 12: ${fmtRp(cf.monthlyData[11].endingCash)}">${fmtRp(cf.monthlyData[11].endingCash, true)}</td>
+              <td class="num-col" style="padding:6px 3px; white-space:nowrap; color:${cf.annualDSCR >= 1.2 ? '#166534' : '#dc2626'};" title="DSCR Tahunan: ${fmtNum(cf.annualDSCR, 2)}x">${fmtNum(cf.annualDSCR, 2)}x</td>
+              <td style="text-align:center; padding:6px 2px; white-space:nowrap;">
+                <span style="font-size:0.65rem; padding:2px 5px; border-radius:3px; font-weight:800; display:inline-block; background:${cf.isHealthy ? '#dcfce7; color:#15803d;' : '#fee2e2; color:#991b1b;'}">
                   ${cf.isHealthy ? 'LAYAK' : 'DEFISIT'}
                 </span>
               </td>

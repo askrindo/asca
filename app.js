@@ -578,6 +578,10 @@ function getActiveProject() {
 
 function selectProject(id) {
   activeProjectId = id;
+  const hubEl = document.getElementById('welcomeHubView');
+  const wsEl = document.getElementById('projectWorkspaceView');
+  if (hubEl) hubEl.style.display = 'none';
+  if (wsEl) wsEl.style.display = 'block';
   const proj = getActiveProject();
   if (proj) {
     populateFormInputs(proj);
@@ -585,6 +589,262 @@ function selectProject(id) {
     fetchGoogleNewsForProject(false, false);
   }
   renderAll();
+}
+
+function showWelcomeHub() {
+  const hubEl = document.getElementById('welcomeHubView');
+  const wsEl = document.getElementById('projectWorkspaceView');
+  if (hubEl) hubEl.style.display = 'block';
+  if (wsEl) wsEl.style.display = 'none';
+  renderWelcomeHub();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function openProjectFromHub(projectId) {
+  activeProjectId = projectId;
+  const hubEl = document.getElementById('welcomeHubView');
+  const wsEl = document.getElementById('projectWorkspaceView');
+  if (hubEl) hubEl.style.display = 'none';
+  if (wsEl) wsEl.style.display = 'block';
+  const proj = getActiveProject();
+  if (proj) {
+    populateFormInputs(proj);
+    triggerLiveInaprocCheck(false);
+    fetchGoogleNewsForProject(false, false);
+  }
+  renderAll();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function duplicateProjectById(id) {
+  const target = projects.find(p => p.id === id);
+  if (!target) return;
+  const copy = JSON.parse(JSON.stringify(target));
+  copy.id = 'case-' + Date.now();
+  copy.caseNumber = generateNumericCaseNumber();
+  copy.companyName = `${target.companyName} (Salinan)`;
+  projects.unshift(copy);
+  saveProjectsToStorage();
+  renderProjectList();
+  renderWelcomeHub();
+  showToast(`Kasus "${target.companyName}" berhasil diduplikasi!`);
+}
+
+function deleteProjectById(id) {
+  const target = projects.find(p => p.id === id);
+  if (!target) return;
+  if (!confirm(`Hapus berkas analisa debitur "${target.companyName}"?`)) return;
+  projects = projects.filter(p => p.id !== id);
+  if (projects.length > 0 && activeProjectId === id) {
+    activeProjectId = projects[0].id;
+  }
+  saveProjectsToStorage();
+  renderProjectList();
+  renderWelcomeHub();
+  showToast('Berkas analisa debitur berhasil dihapus.');
+}
+
+function renderWelcomeHub() {
+  const container = document.getElementById('welcomeHubView');
+  if (!container) return;
+
+  const session = getActiveSession();
+  const analystName = session ? (session.fullName || session.username) : 'Analis Underwriting';
+
+  let totalPlafond = 0;
+  let cntLayak = 0;
+  let cntBersyarat = 0;
+  let cntTolak = 0;
+  let cntPending = 0;
+
+  const projectCards = projects.map(p => {
+    const m = computeDCCSWCM(p);
+    totalPlafond += (p.requestedPlafond || 0);
+
+    let statusCls = 'pending';
+    let gradeLabel = '-';
+    let decisionText = 'Menunggu Input Data Keuangan';
+
+    if (m && m.hasFinancials) {
+      gradeLabel = `${m.shortGrade} (${m.score}/100)`;
+      decisionText = m.stage1Decision || m.gradeMeta.decision;
+      if (m.isLayak) {
+        statusCls = 'layak';
+      } else if (m.isInitialReject) {
+        statusCls = 'tolak';
+      } else {
+        statusCls = 'bersyarat';
+      }
+    }
+
+    if (statusCls === 'layak') cntLayak++;
+    else if (statusCls === 'bersyarat') cntBersyarat++;
+    else if (statusCls === 'tolak') cntTolak++;
+    else cntPending++;
+
+    return `
+      <div class="hub-project-card ${statusCls}">
+        <div>
+          <div class="hub-card-header">
+            <div class="hub-card-title">${p.companyName || 'Tanpa Nama'}</div>
+            <span class="grade-badge ${m && m.hasFinancials ? m.gradeMeta.badgeCls : 'grade-pending'}" style="font-size:0.68rem; padding:2px 8px;">
+              ${gradeLabel}
+            </span>
+          </div>
+          <div class="hub-card-meta">
+            <div><strong>Bank:</strong> ${p.bankName || '-'} | <strong>Sektor:</strong> ${p.sector || '-'}</div>
+            <div><strong>Domisili:</strong> ${p.city || '-'} | <strong>Fasilitas:</strong> ${p.facilityType || 'KMK'}</div>
+            <div><strong>Plafond:</strong> <span style="font-weight:700; color:var(--askrindo-navy);">${fmtRp(p.requestedPlafond)}</span></div>
+            <div style="margin-top:0.35rem; font-size:0.7rem; font-weight:700; color:${statusCls === 'layak' ? '#16a34a' : (statusCls === 'tolak' ? '#dc2626' : (statusCls === 'bersyarat' ? '#d97706' : '#64748b'))};">
+              &bull; Status: ${decisionText}
+            </div>
+          </div>
+        </div>
+        <div class="hub-card-footer">
+          <div style="display:flex; gap:0.4rem;">
+            <button type="button" class="btn btn-outline btn-xs" onclick="duplicateProjectById('${p.id}')" title="Duplikasi Proyek">
+              Salin
+            </button>
+            <button type="button" class="btn btn-outline btn-xs" onclick="deleteProjectById('${p.id}')" title="Hapus Proyek" style="color:#dc2626; border-color:#fca5a5;">
+              Hapus
+            </button>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" onclick="openProjectFromHub('${p.id}')" style="display:inline-flex; align-items:center; gap:0.3rem; font-size:0.75rem; padding:5px 12px; font-weight:700;">
+            <span>Buka Analisa</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  container.innerHTML = `
+    <!-- HERO PORTAL BERANDA -->
+    <div class="welcome-hero">
+      <div>
+        <div class="welcome-hero-meta" style="margin-bottom:0.4rem;">
+          <span>Sistem Underwriting Asuransi Kredit ASCA 2026</span>
+          <span>&bull;</span>
+          <span>PT Asuransi Kredit Indonesia</span>
+        </div>
+        <h1>Selamat Datang, ${analystName}!</h1>
+        <p>
+          Portal evaluasi underwriting komprehensif berbasis <strong>Dynamic Cash Flow Working Capital Model (DCC-SWCM)</strong>. Kelola portofolio debitur, analisa laporan keuangan, kalkulasi cash burn rate, dan tetapkan struktur covenants mitigasi risiko secara presisi.
+        </p>
+        <div class="welcome-hero-actions">
+          <button type="button" class="btn btn-hero-cta" onclick="openNewProjectModal()" style="background:linear-gradient(135deg, #f59e0b 0%, #ea580c 100%) !important; color:#ffffff !important; font-weight:800 !important; font-size:0.86rem !important; padding:9px 20px !important; border-radius:6px !important; border:1px solid #f97316 !important; box-shadow:0 4px 14px rgba(234, 88, 12, 0.45) !important; display:inline-flex !important; align-items:center !important; gap:8px !important; cursor:pointer !important;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.8"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span style="color:#ffffff !important; font-weight:800 !important; font-size:0.86rem !important;">+ Buat Proyek Analisa Baru</span>
+          </button>
+          <button type="button" class="btn btn-hero-white" onclick="openAiFinUploadModal()" style="background:#ffffff !important; color:#003366 !important; font-weight:700 !important; font-size:0.82rem !important; padding:9px 18px !important; border-radius:6px !important; border:1.5px solid #ffffff !important; box-shadow:0 3px 10px rgba(0, 0, 0, 0.15) !important; display:inline-flex !important; align-items:center !important; gap:8px !important; cursor:pointer !important;">
+            <span style="font-size:1rem; line-height:1;">⚡</span>
+            <span style="color:#003366 !important; font-weight:700 !important; font-size:0.82rem !important; display:inline-block !important;">Pindai Laporan Keuangan AI OCR</span>
+          </button>
+          <label class="btn btn-hero-white" style="margin:0; background:#ffffff !important; color:#003366 !important; font-weight:700 !important; font-size:0.82rem !important; padding:9px 18px !important; border-radius:6px !important; border:1.5px solid #ffffff !important; box-shadow:0 3px 10px rgba(0, 0, 0, 0.15) !important; display:inline-flex !important; align-items:center !important; gap:8px !important; cursor:pointer !important;">
+            <span style="font-size:1rem; line-height:1;">📁</span>
+            <span style="color:#003366 !important; font-weight:700 !important; font-size:0.82rem !important; display:inline-block !important;">Buka File Database (.asca.json)</span>
+            <input type="file" accept=".json" style="display:none" onchange="importWorkspaceJSON(event)" />
+          </label>
+        </div>
+      </div>
+      <div style="background:rgba(255,255,255,0.12); padding:1.2rem; border-radius:10px; border:1px solid rgba(255,255,255,0.2); min-width:230px; text-align:right;">
+        <div style="font-size:0.75rem; color:#bae6fd; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">Total Plafon Portofolio</div>
+        <div style="font-size:1.55rem; font-weight:900; color:#ffffff; margin:0.25rem 0;">${fmtRp(totalPlafond, true)}</div>
+        <div style="font-size:0.72rem; color:#e0f2fe;">Dari <strong>${projects.length}</strong> berkas debitur aktif</div>
+      </div>
+    </div>
+
+    <!-- STATISTIK METRIK PORTOFOLIO -->
+    <div class="hub-stat-grid">
+      <div class="hub-stat-card">
+        <span class="hub-stat-label">Total Berkas Debitur</span>
+        <span class="hub-stat-value">${projects.length}</span>
+        <span class="hub-stat-sub">Semua kasus analisa tersimpan</span>
+      </div>
+      <div class="hub-stat-card" style="border-left:4px solid #16a34a;">
+        <span class="hub-stat-label" style="color:#16a34a;">Layak Dijamin</span>
+        <span class="hub-stat-value" style="color:#16a34a;">${cntLayak}</span>
+        <span class="hub-stat-sub">Memenuhi kriteria underwriting</span>
+      </div>
+      <div class="hub-stat-card" style="border-left:4px solid #d97706;">
+        <span class="hub-stat-label" style="color:#d97706;">Persetujuan Bersyarat</span>
+        <span class="hub-stat-value" style="color:#d97706;">${cntBersyarat}</span>
+        <span class="hub-stat-sub">Memerlukan covenants &amp; restrukturisasi</span>
+      </div>
+      <div class="hub-stat-card" style="border-left:4px solid #dc2626;">
+        <span class="hub-stat-label" style="color:#dc2626;">Tolak Skema / High Risk</span>
+        <span class="hub-stat-value" style="color:#dc2626;">${cntTolak}</span>
+        <span class="hub-stat-sub">Zona risiko tinggi / tidak layak</span>
+      </div>
+      <div class="hub-stat-card" style="border-left:4px solid #64748b;">
+        <span class="hub-stat-label" style="color:#64748b;">Belum Dianalisis</span>
+        <span class="hub-stat-value" style="color:#64748b;">${cntPending}</span>
+        <span class="hub-stat-sub">Menunggu kelengkapan data finansial</span>
+      </div>
+    </div>
+
+    <!-- DAFTAR PROYEK ANALISA -->
+    <div class="hub-section-header">
+      <div class="hub-section-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--askrindo-navy)" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        <span>Daftar Berkas &amp; Portofolio Kasus Kredit</span>
+      </div>
+      <button type="button" class="btn btn-primary btn-sm" onclick="openNewProjectModal()" style="display:inline-flex; align-items:center; gap:0.35rem; font-weight:700;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span>+ Proyek Baru</span>
+      </button>
+    </div>
+
+    <div class="hub-projects-grid">
+      ${projectCards.length > 0 ? projectCards : `
+        <div style="grid-column:1/-1; background:#fff; border:1px dashed #cbd5e1; border-radius:10px; padding:3rem 1.5rem; text-align:center; color:#64748b;">
+          <h4 style="font-size:1.1rem; color:#334155; margin-bottom:0.5rem; font-weight:800;">Belum Ada Berkas Analisa Debitur</h4>
+          <p style="font-size:0.85rem; max-width:480px; margin:0 auto 1.25rem auto;">Mulai dengan membuat proyek analisa kredit baru atau unggah file database (.asca.json) untuk memulai analisa.</p>
+          <button type="button" class="btn btn-primary" onclick="openNewProjectModal()">+ Buat Kasus Pertama Sekarang</button>
+        </div>
+      `}
+    </div>
+
+    <!-- PANDUAN WORKFLOW 4 TAHAP UNDERWRITING -->
+    <div class="hub-workflow-card">
+      <div style="font-weight:800; font-size:0.92rem; color:var(--askrindo-navy); margin-bottom:0.25rem;">
+        Alur Prosedur Kerja Analisis Underwriting ASCA DCC-SWCM
+      </div>
+      <div style="font-size:0.75rem; color:#64748b;">
+        Ikuti empat langkah standar underwriting penjaminan kredit modal kerja PT Askrindo:
+      </div>
+      <div class="hub-workflow-steps">
+        <div class="hub-step-item">
+          <div class="hub-step-num">1</div>
+          <div>
+            <div style="font-weight:700; font-size:0.78rem; color:#0f172a; margin-bottom:2px;">Verifikasi Legalitas &amp; Karakter</div>
+            <div style="font-size:0.7rem; color:#64748b; line-height:1.35;">Pengecekan otomatis Daftar Hitam INAPROC LKPP, perkara perdata SIPP Pengadilan Negeri, dan sentimen media Google News.</div>
+          </div>
+        </div>
+        <div class="hub-step-item">
+          <div class="hub-step-num">2</div>
+          <div>
+            <div style="font-weight:700; font-size:0.78rem; color:#0f172a; margin-bottom:2px;">Input &amp; Koreksi Laporan Keuangan</div>
+            <div style="font-size:0.7rem; color:#64748b; line-height:1.35;">Input Neraca &amp; Laba Rugi komparatif 2 tahun atau ekstrak otomatis via AI Vision OCR dari berkas PDF/Foto debitur.</div>
+          </div>
+        </div>
+        <div class="hub-step-item">
+          <div class="hub-step-num">3</div>
+          <div>
+            <div style="font-weight:700; font-size:0.78rem; color:#0f172a; margin-bottom:2px;">Dynamic Cash Flow (DCC-SWCM)</div>
+            <div style="font-size:0.7rem; color:#64748b; line-height:1.35;">Kalkulasi siklus kas (DOR, DOI, DOP), perbandingan data bank vs riil, cash burn rate, dan stress testing skenario kritis.</div>
+          </div>
+        </div>
+        <div class="hub-step-item">
+          <div class="hub-step-num">4</div>
+          <div>
+            <div style="font-weight:700; font-size:0.78rem; color:#0f172a; margin-bottom:2px;">Penetapan Grade &amp; Rekomendasi</div>
+            <div style="font-size:0.7rem; color:#64748b; line-height:1.35;">Scoring 7 Pilar 5C, penetapan Grade Risk, porsi coverage penjaminan, tarif premi IJP, dan cetak Nota Analisa Underwriting resmi.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 function renderProjectList() {
@@ -654,52 +914,88 @@ function renderBanner(proj, m) {
   setEl('bannerFacilityType', proj.facilityType || '-');
   setEl('bannerBankName', proj.bankName || '-');
   setEl('bannerSector', proj.sector || '-');
-  setEl('bannerCity', proj.city || 'Kab. Sukoharjo');
+  setEl('bannerCity', proj.city || '-');
   setEl('bannerPlafond', fmtRp(proj.requestedPlafond));
-  setEl('bannerFinYears', `${m.yr1} & ${m.yr2}`);
+  setEl('bannerFinYears', `${m ? m.yr1 : (proj.year1 || 2022)} & ${m ? m.yr2 : (proj.year2 || 2023)}`);
   setEl('bannerUnderwriter', proj.underwriter || '-');
 
   const gradeBadge = document.getElementById('bannerGradeBadge');
+  const scoreCircle = document.getElementById('bannerScoreCircle');
+  const decEl = document.getElementById('bannerDecisionText');
+  const optEl = document.getElementById('bannerOptimalLimit');
+  const covBadge = document.getElementById('bannerCoverageBadge');
+
+  if (!m || !m.hasFinancials) {
+    if (gradeBadge) {
+      gradeBadge.className = 'grade-badge grade-pending';
+      gradeBadge.style.background = '#64748b';
+      gradeBadge.style.color = '#fff';
+      gradeBadge.textContent = 'Belum Dianalisis';
+    }
+    if (scoreCircle) {
+      scoreCircle.textContent = '-';
+      scoreCircle.style.background = '#64748b';
+      scoreCircle.style.color = '#fff';
+    }
+    if (decEl) {
+      decEl.textContent = 'Menunggu Input Data Keuangan';
+      decEl.style.color = '#64748b';
+    }
+    if (optEl) {
+      optEl.innerHTML = '<strong>Status:</strong> Silakan lengkapi Neraca &amp; Laba Rugi pada tab "Input Data" untuk memulai scoring DCC-SWCM.';
+    }
+    if (covBadge) covBadge.style.display = 'none';
+    return;
+  }
+
   if (gradeBadge) {
     gradeBadge.className = `grade-badge ${m.gradeMeta.badgeCls}`;
     gradeBadge.style.background = ''; // Bersihkan inline style abu-abu
     gradeBadge.textContent = `${m.shortGrade} (${m.score}/100)`;
   }
 
-  const covBadge = document.getElementById('bannerCoverageBadge');
   if (covBadge) {
     covBadge.style.display = 'inline-block';
-    if (m.score < 50 || m.gp23 < 0 || m.cashGapAtSCFMaturity_Actual > 30) {
-      covBadge.className = 'cover-badge cover-conditional';
-      covBadge.textContent = 'Coverage Bersyarat: Maks 55%';
-      covBadge.title = 'Rekomendasi Persetujuan Bersyarat: Coverage Asuransi Kredit Askrindo maksimal 55% dan risk sharing Bank Mitra 45%';
-    } else {
+    if (m.isLayak) {
       covBadge.className = 'cover-badge cover-approved';
-      covBadge.textContent = `Coverage Askrindo: ${m.recCoveragePct || 70}%`;
-      covBadge.title = `Standar Underwriting Askrindo: Coverage maksimal ${m.recCoveragePct || 70}%`;
+      covBadge.textContent = `Coverage Askrindo: ${m.recCoveragePct || 70}% (Layak Dijamin)`;
+      covBadge.title = `Standar Underwriting Askrindo: Fasilitas Layak Dijamin dengan coverage ${m.recCoveragePct || 70}%`;
+    } else if (m.isInitialReject) {
+      covBadge.className = 'cover-badge cover-conditional';
+      covBadge.textContent = 'Tidak Layak Standar (Opsi Bersyarat 55%)';
+      covBadge.title = 'Rekomendasi awal: Tolak skema pengajuan standar. Opsi bersyarat maksimal coverage 55%.';
+    } else {
+      covBadge.className = 'cover-badge cover-conditional';
+      covBadge.textContent = `Coverage Bersyarat: Maks ${m.recCoveragePct || 60}%`;
+      covBadge.title = `Persetujuan bersyarat dengan coverage ${m.recCoveragePct || 60}%`;
     }
   }
 
-  const scoreCircle = document.getElementById('bannerScoreCircle');
   if (scoreCircle) {
     scoreCircle.textContent = m.score;
     scoreCircle.style.background = m.gradeMeta.color;
     scoreCircle.style.color = '#fff';
   }
 
-  const decEl = document.getElementById('bannerDecisionText');
   if (decEl) {
-    decEl.textContent = m.gradeMeta.decision;
-    decEl.style.color = m.gradeMeta.color;
+    decEl.textContent = m.stage1Decision || m.gradeMeta.decision;
+    decEl.style.color = m.isLayak ? '#16a34a' : (m.isInitialReject ? '#dc2626' : '#d97706');
   }
 
-  const optEl = document.getElementById('bannerOptimalLimit');
   if (optEl) {
-    const effectiveCov = (m.score < 50 || m.gp23 < 0 || m.cashGapAtSCFMaturity_Actual > 30) ? 55 : (m.gradeMeta.maxCoverage || 70);
-    const maxGuaranteedNominal = (proj.requestedPlafond || 0) * (effectiveCov / 100);
-    const condLabel = (m.score < 50 || m.isInitialReject) ? 'Persetujuan Bersyarat' : 'Layak Dijamin';
-    const ijpNote = (m.shortGrade === 'C') ? ' &bull; Rekomendasi IJP: 3,75% - 4,50% p.a. (Bersyarat)' : (m.ijpRate ? ` &bull; IJP: ${m.ijpRate}` : '');
-    optEl.innerHTML = `<strong>Rekomendasi Coverage:</strong> Maks ${effectiveCov}% (${fmtRp(maxGuaranteedNominal, true)}) &bull; <span style="color:${m.gradeMeta.color}; font-weight:700;">${condLabel}</span>${ijpNote}`;
+    if (m.isLayak) {
+      const effectiveCov = m.recCoveragePct || 70;
+      const maxGuaranteedNominal = (proj.requestedPlafond || 0) * (effectiveCov / 100);
+      optEl.innerHTML = `<strong>Rekomendasi Coverage:</strong> Maks ${effectiveCov}% (${fmtRp(maxGuaranteedNominal, true)}) &bull; <span style="color:#16a34a; font-weight:700;">Layak Dijamin</span> &bull; IJP: ${m.ijpRate}`;
+    } else if (m.isInitialReject) {
+      const effectiveCov = 55;
+      const maxGuaranteedNominal = (proj.requestedPlafond || 0) * (effectiveCov / 100);
+      optEl.innerHTML = `<strong>Evaluasi Sistem:</strong> <span style="color:#dc2626; font-weight:700;">Tidak Layak Standar</span> &bull; Opsi Bersyarat: Maks 55% (${fmtRp(maxGuaranteedNominal, true)}) &bull; IJP: ${m.ijpRate}`;
+    } else {
+      const effectiveCov = m.recCoveragePct || 60;
+      const maxGuaranteedNominal = (proj.requestedPlafond || 0) * (effectiveCov / 100);
+      optEl.innerHTML = `<strong>Rekomendasi Coverage:</strong> Maks ${effectiveCov}% (${fmtRp(maxGuaranteedNominal, true)}) &bull; <span style="color:#d97706; font-weight:700;">Persetujuan Bersyarat</span> &bull; IJP: ${m.ijpRate}`;
+    }
   }
 }
 
@@ -796,6 +1092,27 @@ function fmtPct(val, dec = 2) {
   if (val === null || val === undefined || isNaN(val)) return '0%';
   const sign = val > 0 ? '+' : '';
   return `${sign}${Number(val).toFixed(dec)}%`;
+}
+
+function fmtRatio(val, suffix = 'x') {
+  if (val === null || val === undefined || isNaN(val)) return 'N/A';
+  return `${Number(val).toFixed(2)}${suffix}`;
+}
+
+function getFinEmptyStateHTML(title = 'Laporan Keuangan Belum Diinput', desc = 'Fitur dan kalkulasi analisa ini akan aktif secara otomatis setelah Anda melengkapi data Neraca & Laba Rugi pada tab "Input Data".') {
+  return `
+    <div style="background:#ffffff; border:1.5px dashed #cbd5e1; border-radius:10px; padding:3.5rem 1.5rem; text-align:center; color:#64748b; margin:1rem auto; max-width:680px; box-shadow:0 1px 3px rgba(0,0,0,0.02);">
+      <div style="width:64px; height:64px; background:#f1f5f9; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 1.25rem auto;">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </div>
+      <h3 style="font-size:1.15rem; font-weight:800; color:var(--askrindo-navy, #003366); margin-bottom:0.45rem;">${title}</h3>
+      <p style="font-size:0.84rem; max-width:480px; margin:0 auto 1.5rem auto; line-height:1.5; color:#64748b;">${desc}</p>
+      <div style="display:flex; justify-content:center; gap:0.6rem; flex-wrap:wrap;">
+        <button type="button" class="btn btn-primary" onclick="switchTab('tab-input')" style="font-size:0.82rem; padding:8px 18px; font-weight:700;"><span>📝 Input Laporan Keuangan Manual &raquo;</span></button>
+        <button type="button" class="btn btn-outline" onclick="openAiFinUploadModal()" style="font-size:0.82rem; padding:8px 16px; font-weight:600;"><span>⚡ Pindai via AI OCR</span></button>
+      </div>
+    </div>
+  `;
 }
 
 let lastToastMsg = '';
@@ -1065,8 +1382,23 @@ function autoVerifyInaproc(proj) {
 // RESOLUSI SISTEM INFORMASI PENELUSURAN PERKARA (SIPP) PENGADILAN NEGERI
 // ============================================================================
 function getSippPnInfo(cityOrKab, companyName) {
-  const rawCity = String(cityOrKab || 'Kab. Sukoharjo').trim();
+  const rawCity = String(cityOrKab || '').trim();
   const cleanCompName = (companyName || '').replace(/\s*\([^)]*\)/g, '').trim();
+
+  if (!rawCity) {
+    const putusanMaUrl = cleanCompName
+      ? `https://putusan3.mahkamahagung.go.id/search.html?q=${encodeURIComponent(cleanCompName)}`
+      : 'https://putusan3.mahkamahagung.go.id/';
+    return {
+      city: '',
+      slug: '',
+      pnName: 'Pengadilan Negeri Setempat',
+      baseUrl: 'https://putusan3.mahkamahagung.go.id/',
+      searchUrl: 'https://putusan3.mahkamahagung.go.id/',
+      putusanMaUrl,
+      cleanCompName
+    };
+  }
 
   // Bersihkan awalan Kabupaten / Kab. / Kota
   const norm = rawCity.toLowerCase()
@@ -1132,7 +1464,7 @@ function getSippPnInfo(cityOrKab, companyName) {
 
 function openSippPortal(name, city) {
   const proj = getActiveProject();
-  const targetCity = city || (proj ? proj.city : '') || 'Kab. Sukoharjo';
+  const targetCity = city || (proj ? proj.city : '') || '';
   const cleanName = (name || (proj ? proj.companyName : '') || 'PT').replace(/\s*\([^)]*\)/g, '').trim();
   const info = getSippPnInfo(targetCity, cleanName);
 
@@ -1590,11 +1922,19 @@ function compute5CAnalysis(proj, f23, m) {
   else capDerPts = 5;
 
   // 3B. Likuiditas Lancar / Current Ratio (Maks 25 Poin)
+  const isNoDebtCL = (m && (m.currentRatio23 === null || m.isNoDebt23)) || (f23.cl === 0 || !f23.cl);
   let capCrPts = 5;
-  if (cr >= 1.5) capCrPts = 25;
-  else if (cr >= 1.2) capCrPts = 20;
-  else if (cr >= 1.0) capCrPts = 15;
-  else capCrPts = 5;
+  if (isNoDebtCL) {
+    capCrPts = 25; // Bebas utang lancar / kewajiban jangka pendek nihil -> Likuiditas prima sempurna
+  } else if (cr >= 1.5) {
+    capCrPts = 25;
+  } else if (cr >= 1.2) {
+    capCrPts = 20;
+  } else if (cr >= 1.0) {
+    capCrPts = 15;
+  } else {
+    capCrPts = 5;
+  }
 
   // 3C. Kecukupan Net Working Capital / NWC Riil (Maks 20 Poin)
   let capNwcPts = 5;
@@ -1612,7 +1952,8 @@ function compute5CAnalysis(proj, f23, m) {
   const capitNotes = [];
   if (der > 4.0) capitNotes.push(`Leverage Tinggi (DER ${der.toFixed(2)}x)`);
   else if (der > 2.5) capitNotes.push(`DER Moderat (${der.toFixed(2)}x)`);
-  if (cr < 1.0) capitNotes.push(`Current Ratio < 1.0x (${cr.toFixed(2)}x)`);
+  if (isNoDebtCL) capitNotes.push('Bebas Kewajiban Lancar (Likuiditas Prima)');
+  else if (cr !== null && cr < 1.0) capitNotes.push(`Current Ratio < 1.0x (${cr.toFixed(2)}x)`);
   if (reErosion > 0) capitNotes.push(`Erosi Modal ${reErosion.toFixed(1)}%`);
   const capitNote = capitNotes.length ? capitNotes.join('; ') : 'Struktur permodalan & ekuitas sehat.';
 
@@ -1911,10 +2252,88 @@ function computeCashFlowProjection(proj, overrides = {}) {
 // 5. CORE DCC-SWCM ENGINE & NWC BURN-RATE ANALYZER
 // ============================================================================
 function computeDCCSWCM(proj) {
-  const f22 = proj.fin22;
-  const f23 = proj.fin23;
+  if (!proj) return null;
+  const f22 = proj.fin22 || {};
+  const f23 = proj.fin23 || {};
   const yr1 = proj.year1 || 2022;
   const yr2 = proj.year2 || 2023;
+
+  // Cek apakah data laporan keuangan telah diisi oleh analis
+  const hasFinancials = Boolean(
+    (f23.rev && f23.rev > 0) ||
+    (f23.cogs && f23.cogs > 0) ||
+    (f23.cash && f23.cash > 0) ||
+    (f23.ar && f23.ar > 0) ||
+    (f23.inv && f23.inv > 0) ||
+    (f23.fa && f23.fa > 0) ||
+    (f23.capital && f23.capital > 0) ||
+    (f22.rev && f22.rev > 0) ||
+    (f22.cash && f22.cash > 0)
+  );
+
+  if (!hasFinancials) {
+    return {
+      hasFinancials: false,
+      isLayak: false,
+      score: null,
+      shortGrade: '-',
+      scoreGrade: '-',
+      grade: 'Belum Dianalisis',
+      gradeMeta: {
+        grade: 'Belum Dianalisis',
+        name: 'Menunggu Input Data Keuangan',
+        minScore: 0,
+        maxScore: 0,
+        color: '#64748b',
+        badgeCls: 'grade-pending',
+        maxCoverage: 0,
+        ijpRate: '-',
+        decision: 'MENUNGGU INPUT LAPORAN KEUANGAN',
+        decisionClass: 'pending',
+        criteriaSummary: 'Data Laporan Keuangan belum diinput oleh analis.'
+      },
+      decision: 'MENUNGGU INPUT LAPORAN KEUANGAN',
+      decisionClass: 'pending',
+      recCoveragePct: 0,
+      ijpRate: '-',
+      isInitialReject: false,
+      stage1Decision: 'MENUNGGU INPUT DATA KEUANGAN',
+      stage1Summary: 'Silakan isi data Laporan Keuangan (Neraca & Laba Rugi) pada Tab Input Data atau gunakan Ekstraksi Otomatis AI untuk memulai analisa scoring.',
+      yr1, yr2,
+      rev22: 0, rev23: 0, revMo22: 0, revMo23: 0,
+      gp22: 0, gp23: 0, gpm22: 0, gpm23: 0,
+      opBruto22: 0, opBruto23: 0, opInc22: 0, opInc23: 0,
+      ebit22: 0, ebit23: 0, ebitMo22: 0, ebitMo23: 0,
+      ebt22: 0, ebt23: 0, eat22: 0, eat23: 0, eatMo22: 0, eatMo23: 0, npm22: 0, npm23: 0,
+      ca22: 0, ca23: 0, nca22: 0, nca23: 0, ta22: 0, ta23: 0,
+      cl22: 0, cl23: 0, tl22: 0, tl23: 0, eq22: 0, eq23: 0, tlEq22: 0, tlEq23: 0,
+      nwc22: 0, nwc23: 0, owc22: 0, owc23: 0, isNWCDeficit: false,
+      currentRatio22: null, currentRatio23: null,
+      quickRatio22: null, quickRatio23: null, cashRatio23: null,
+      der22: null, der23: null, invToCA23: 0, reErosionPct23: 0,
+      dor22_365: 0, doi22_365: 0, dop22_365: 0, dopBroad22_365: 0,
+      dor23_365: 0, doi23_365: 0, dop23_365: 0, dor23_360: 0, doi23_360: 0, dop23_360: 0, dopBroad23_365: 0,
+      grossCycle22: 0, ccc22: 0, grossCycle23: 0, ccc23: 0,
+      claimedGrossCycle: 0, claimedCCC: 0,
+      diffDOR: 0, diffDOI: 0, diffDOP: 0, diffCCC: 0,
+      scfTenor: proj.scfTenorDays || 120, kmkTenor: proj.kmkTenorDays || 0, totalMaxTenor: (proj.scfTenorDays || 120) + (proj.kmkTenorDays || 0),
+      cashGapAtSCFMaturity_Claimed: 0, cashGapAtSCFMaturity_Actual: 0, cashGapAfterKMK_Actual: 0,
+      dailyCOGS23: 0, dailyRev23: 0, dailyOPEX23: 0, dailyInterest23: 0,
+      dailyGrossCashBurn: 0, monthlyGrossCashBurn: 0,
+      pureCashRunwayDays: 0, pureCashRunwayMonths: 0,
+      liquidQuickAssets: 0, quickAssetRunwayDays: 0, quickAssetRunwayMonths: 0,
+      wcRequiredPerCycle: 0, nwcFinancingGap: 0,
+      stressOpexGrowth: 0, isFreezeCollection: false,
+      stressedDailyBurn: 0, stressedLiquidFunds: 0, stressedRunwayDays: 0, stressedRunwayMonths: 0,
+      cashLockedInExcessDOI: 0, targetSafeDOI: 0, cashReleasedAtSafeDOI: 0, minRequiredGPM: 0, recommendedTrancheSize: 0,
+      stDebtGrowth: 0, revGrowth: 0, dscr23: 0, ebitdaProxy23: 0,
+      sustainableLimitBaseline: 0, recommendedMitigatedLimit: 0,
+      scoreComponents: [], scorePillars: [], totalRawScore: 0, totalLostPoints: 0,
+      hasKnockOutCap: false,
+      cfProj: { annualDSCR: 0, totalNOCF: 0, lowestCash: 0, fcf: 0, cads: 0, months: [] },
+      fiveC: { charScore: 0, capScore: 0, capitScore: 0, collScore: 0, condScore: 0, total: 0 }
+    };
+  }
 
   // Laba Rugi (Sesuai Template Sheet Perhitungan)
   const revMo22 = (f22.rev || 0) / 12;
@@ -1993,11 +2412,13 @@ function computeDCCSWCM(proj) {
   const cashGapAtSCFMaturity_Actual = grossCycle23 - scfTenor;
   const cashGapAfterKMK_Actual = grossCycle23 - totalMaxTenor;
 
-  const currentRatio22 = cl22 > 0 ? ca22 / cl22 : 0;
-  const currentRatio23 = cl23 > 0 ? ca23 / cl23 : 0;
-  const quickRatio22 = cl22 > 0 ? (ca22 - f22.inv) / cl22 : 0;
-  const quickRatio23 = cl23 > 0 ? (ca23 - f23.inv) / cl23 : 0;
-  const cashRatio23 = cl23 > 0 ? f23.cash / cl23 : 0;
+  const isNoDebt22 = cl22 === 0;
+  const isNoDebt23 = cl23 === 0;
+  const currentRatio22 = isNoDebt22 ? null : (cl22 > 0 ? ca22 / cl22 : 0);
+  const currentRatio23 = isNoDebt23 ? null : (cl23 > 0 ? ca23 / cl23 : 0);
+  const quickRatio22 = isNoDebt22 ? null : (cl22 > 0 ? (ca22 - (f22.inv || 0)) / cl22 : 0);
+  const quickRatio23 = isNoDebt23 ? null : (cl23 > 0 ? (ca23 - (f23.inv || 0)) / cl23 : 0);
+  const cashRatio23 = isNoDebt23 ? null : (cl23 > 0 ? (f23.cash || 0) / cl23 : 0);
   const der22 = eq22 > 0 ? tl22 / eq22 : 99;
   const der23 = eq23 > 0 ? tl23 / eq23 : 99;
   const invToCA23 = ca23 > 0 ? (f23.inv / ca23) * 100 : 0;
@@ -2451,7 +2872,42 @@ function computeDCCSWCM(proj) {
   const hasKnockOutCap = gp23 < 0 && cashGapAtSCFMaturity_Actual > 30;
   const gradeMeta = getGradeMetadataByScore(score, hasKnockOutCap, proj.manualGradeOverride || 'AUTO');
 
+  const isBlacklisted = (proj.inaprocStatus === 'blacklisted');
+  const isSevereGrossLoss = (gp23 < 0 && (f23.rev || 0) > 0);
+  const isDefaultRisk = (score < 50);
+
+  const isInitialReject = isBlacklisted || isSevereGrossLoss || isDefaultRisk;
+  const isLayak = (score >= 60 && !isInitialReject);
+  const isBersyarat = (score >= 50 && score < 60 && !isInitialReject);
+
+  let stage1Decision = '';
+  let stage1Summary = '';
+
+  if (isInitialReject) {
+    stage1Decision = 'TOLAK SKEMA PENGAJUAN AWAL (TIDAK LAYAK STANDAR)';
+    if (isBlacklisted) {
+      stage1Summary = 'Debitur tercatat aktif dalam Daftar Hitam Nasional (INAPROC LKPP). Rekomendasi mutlak: Tolak penjaminan kredit.';
+    } else if (isSevereGrossLoss) {
+      stage1Summary = `Struktur operasional debitur mengalami kerugian kotor kronis (Gross Loss: ${fmtRp(gp23, true)}). Skema awal tidak feasible dan berisiko default.`;
+    } else {
+      stage1Summary = `Skor komprehensif debitur (${score}/100) berada pada kategori risiko tinggi (Grade D / Tidak Layak). Fasilitas skema awal tidak dapat disetujui secara standar.`;
+    }
+  } else if (isLayak) {
+    stage1Decision = 'SETUJU (LAYAK DIJAMIN)';
+    stage1Summary = 'Struktur permodalan, rentabilitas, rasio likuiditas, dan kemampuan pengembalian kewajiban debitur dinilai sehat serta memenuhi seluruh kriteria kelayakan underwriting asuransi kredit Askrindo.';
+    gradeMeta.decision = 'SETUJU (LAYAK DIJAMIN)';
+    gradeMeta.decisionClass = 'setuju';
+  } else {
+    stage1Decision = 'PERSETUJUAN BERSYARAT DENGAN MITIGASI KETAT';
+    stage1Summary = 'Karakter dan kapasitas debitur berada pada zona risiko moderat sehingga penjaminan direkomendasikan dengan syarat pembatasan coverage dan mitigasi ring-fenced.';
+    gradeMeta.decision = 'LAYAK BERSYARAT (MODERATE COVENANT)';
+    gradeMeta.decisionClass = 'bersyarat';
+  }
+
   return {
+    hasFinancials: true,
+    isLayak,
+    isBersyarat,
     yr1, yr2,
     revMo22, gp22, gpm22, opBruto22, opInc22, ebit22, ebitMo22, ebt22, eat22, eatMo22, npm22,
     revMo23, gp23, gpm23, opBruto23, opInc23, ebit23, ebitMo23, ebt23, eat23, eatMo23, npm23,
@@ -2485,16 +2941,12 @@ function computeDCCSWCM(proj) {
     shortGrade: gradeMeta.grade,
     decision: gradeMeta.decision,
     decisionClass: gradeMeta.decisionClass,
-    recCoveragePct: gradeMeta.maxCoverage,
+    recCoveragePct: isLayak ? (gradeMeta.maxCoverage || 70) : (isInitialReject ? 55 : (gradeMeta.maxCoverage || 60)),
     ijpRate: gradeMeta.ijpRate,
     fiveC,
-    isInitialReject: (score < 50 || gp23 < 0 || cashGapAtSCFMaturity_Actual > 30 || pureCashRunwayMonths < 1.0),
-    stage1Decision: (score < 50 || gp23 < 0 || cashGapAtSCFMaturity_Actual > 30 || pureCashRunwayMonths < 1.0)
-      ? 'TOLAK SKEMA PENGAJUAN AWAL (CERTAIN DEFAULT ON MATURITY)'
-      : (score < 70 ? 'PERTIMBANGKAN BERSYARAT DENGAN MITIGASI KETAT' : 'SETUJU SKEMA PENGAJUAN STANDAR'),
-    stage1Summary: (score < 50 || gp23 < 0 || cashGapAtSCFMaturity_Actual > 30 || pureCashRunwayMonths < 1.0)
-      ? `Struktur fasilitas kredit pengajuan awal tidak feasible: Marjin kotor negatif (Gross Loss), gap tenor kas ${fmtNum(cashGapAtSCFMaturity_Actual, 0)} hari, dan Pure Cash Runway < 1 bulan memastikan terjadinya default saat jatuh tempo fasilitas utama.`
-      : 'Parameter keuangan dan siklus konversi kas debitur memenuhi standar kelayakan underwriting asuransi kredit.'
+    isInitialReject,
+    stage1Decision,
+    stage1Summary
   };
 }
 
@@ -2649,10 +3101,17 @@ function buildDynamicCaseInsights(proj, m) {
 // 7. RENDER TAB 4: KETAHANAN NWC & CASH BURN-RATE TEST (MODUL BARU)
 // ============================================================================
 function renderBurnRateTab(proj, m) {
+  const container = document.getElementById('burnRateMenuContainer');
+  if (!container) return;
+  if (!m || !m.hasFinancials) {
+    container.innerHTML = getFinEmptyStateHTML('Modul NWC & CBRT Belum Aktif', 'Kalkulasi Gross Cash Burn, Pure Cash Runway, dan NWC Financing Gap membutuhkan data laporan keuangan (Neraca & Laba Rugi). Silakan input data terlebih dahulu.');
+    return;
+  }
+
   const runwayStatusColor = m.pureCashRunwayMonths >= 2.0 ? '#166534' : (m.pureCashRunwayMonths >= 1.0 ? '#92400e' : '#991b1b');
   const runwayStatusBg = m.pureCashRunwayMonths >= 2.0 ? '#f0fdf4' : (m.pureCashRunwayMonths >= 1.0 ? '#fffbeb' : '#fef2f2');
 
-  document.getElementById('burnRateMenuContainer').innerHTML = `
+  container.innerHTML = `
     <div class="card" style="border-left: 4px solid var(--askrindo-cyan);">
       <div class="card-header">
         <div class="card-title">Modul Analisis Ketahanan Modal Kerja Bersih &amp; Cash Burn-Rate Test (${proj.companyName})</div>
@@ -2852,6 +3311,13 @@ function toggleFreezeCollection(checked) {
 // 8. RENDER GRADE RISK TAB
 // ============================================================================
 function renderGradeRiskTab(proj, m) {
+  const container = document.getElementById('gradeRiskMenuContainer');
+  if (!container) return;
+  if (!m || !m.hasFinancials) {
+    container.innerHTML = getFinEmptyStateHTML('Penentuan Grade Risk Belum Tersedia', 'Grade Risk Askrindo (AAA hingga D) dan skor kelayakan kredit akan dikalkulasikan secara otomatis setelah Anda melengkapi data laporan keuangan.');
+    return;
+  }
+
   const negativeDrivers = m.scoreComponents.filter((c) => c.lostPts >= c.maxPts * 0.35);
   const positiveDrivers = m.scoreComponents.filter((c) => c.earnedPts >= c.maxPts * 0.65);
 
@@ -2867,7 +3333,7 @@ function renderGradeRiskTab(proj, m) {
     `;
   }).join('');
 
-  document.getElementById('gradeRiskMenuContainer').innerHTML = `
+  container.innerHTML = `
     <div class="card" style="border-left: 4px solid ${m.gradeMeta.color};">
       <div class="card-header">
         <div class="card-title">Menu Penentuan Grade Risk Askrindo &amp; Indikator Penyebabnya (${proj.companyName})</div>
@@ -3061,11 +3527,16 @@ function updateCharacterParam(paramKey, val) {
 }
 
 function render5CTab(proj, m) {
+  const container = document.getElementById('fiveCMenuContainer');
+  if (!container) return;
+  if (!m || !m.hasFinancials) {
+    container.innerHTML = getFinEmptyStateHTML('Evaluasi Prinsip 5C Belum Lengkap', 'Pilar Capacity, Capital, Collateral, dan Condition memerlukan data laporan keuangan untuk penilaian kuantitatif. Silakan isi laporan keuangan terlebih dahulu.');
+    return;
+  }
+
   ensureInaprocAutoChecked(proj);
   ensureGoogleNewsInitialized(proj);
   const fiveC = m.fiveC || compute5CAnalysis(proj, proj.fin23, m);
-  const container = document.getElementById('fiveCMenuContainer');
-  if (!container) return;
 
   const cleanCompName = (proj.companyName || 'PT').replace(/\s*\([^)]*\)/g, '').trim().toUpperCase();
   const safeCompName = (proj.companyName || 'PT').replace(/'/g, "\\'");
@@ -3293,7 +3764,7 @@ function render5CTab(proj, m) {
 
               <!-- 3. KONEKSI OTOMATIS SIPP PENGADILAN NEGERI (AUTO-SCREENING) -->
               ${(() => {
-                const sippInfo = getSippPnInfo(proj.city || 'Kab. Sukoharjo', cleanCompName);
+                const sippInfo = getSippPnInfo(proj.city || '', cleanCompName);
                 const isClean = (!proj.sippStatus || proj.sippStatus === 'clean');
                 const isDisputed = proj.sippStatus === 'disputed';
                 const isBankrupt = proj.sippStatus === 'bankrupt';
@@ -3440,7 +3911,7 @@ function render5CTab(proj, m) {
               <div class="five-c-detail">
                 <strong>${fiveC.capitNote}</strong><br/>
                 &bull; DER: <strong>${fmtNum(m.der23, 2)}x</strong> (Batas Maks 4,0x)<br/>
-                &bull; Current Ratio: <strong>${fmtNum(m.currentRatio23, 2)}x</strong><br/>
+                &bull; Current Ratio: <strong>${m.currentRatio23 !== null ? fmtNum(m.currentRatio23, 2) + 'x' : 'N/A (Bebas Utang)'}</strong><br/>
                 &bull; NWC Riil: <strong>${fmtRp(m.nwc23, true)}</strong><br/>
                 &bull; Ekuitas: <strong>${fmtRp(m.eq23, true)}</strong>
               </div>
@@ -3459,7 +3930,7 @@ function render5CTab(proj, m) {
                     <td style="text-align:right; font-weight:700; color:${(fiveC.capitBreakdown?.derPts || 0) >= 28 ? '#15803d' : ((fiveC.capitBreakdown?.derPts || 0) >= 18 ? '#b45309' : '#dc2626')};">${fiveC.capitBreakdown?.derPts ?? 0} / 35 Poin</td>
                   </tr>
                   <tr>
-                    <td style="padding:2px 0;">&bull; 💧 <strong>Current Ratio (${fmtNum(m.currentRatio23, 2)}x):</strong></td>
+                    <td style="padding:2px 0;">&bull; 💧 <strong>Current Ratio (${m.currentRatio23 !== null ? fmtNum(m.currentRatio23, 2) + 'x' : 'N/A (Bebas Utang)'}):</strong></td>
                     <td style="text-align:right; font-weight:700; color:${(fiveC.capitBreakdown?.crPts || 0) >= 20 ? '#15803d' : ((fiveC.capitBreakdown?.crPts || 0) >= 15 ? '#b45309' : '#dc2626')};">${fiveC.capitBreakdown?.crPts ?? 0} / 25 Poin</td>
                   </tr>
                   <tr>
@@ -3601,10 +4072,17 @@ function render5CTab(proj, m) {
 // 9. RENDER SCORE CALCULATION TAB
 // ============================================================================
 function renderScoreCalculationTab(proj, m) {
+  const container = document.getElementById('scoreCalculationMenuContainer');
+  if (!container) return;
+  if (!m || !m.hasFinancials) {
+    container.innerHTML = getFinEmptyStateHTML('Rincian Skor Kredit Belum Tersedia', 'Perhitungan pembobotan 7 pilar underwriting DCC-SWCM (Total Skor 100) akan tampil setelah data laporan keuangan diinput.');
+    return;
+  }
+
   const fiveC = m.fiveC || compute5CAnalysis(proj, proj.fin23, m);
   const s2A = m.scoreComponents.find((c) => c.code === '2A')?.earnedPts || Number(((Math.max(0, Math.min(100, fiveC.totalScore)) / 100) * 10).toFixed(1));
 
-  document.getElementById('scoreCalculationMenuContainer').innerHTML = `
+  container.innerHTML = `
     <div class="card" style="border-left: 4px solid var(--askrindo-blue);">
       <div class="card-header">
         <div class="card-title">Menu Rincian Perhitungan Score DCC-SWCM (${proj.companyName})</div>
@@ -3713,6 +4191,62 @@ function renderScoreCalculationTab(proj, m) {
 // 10. RENDER DASHBOARD, DCC, STRESS-TEST, MEMO, PORTFOLIO
 // ============================================================================
 function renderDashboardTab(proj, m) {
+  if (!m || !m.hasFinancials) {
+    const kpiCCCActual = document.getElementById('kpiCCCActual');
+    if (kpiCCCActual) kpiCCCActual.textContent = '-';
+    const kpiCCCClaimed = document.getElementById('kpiCCCClaimed');
+    if (kpiCCCClaimed) kpiCCCClaimed.textContent = 'Belum Ada Lap. Keuangan';
+    const cccDiffEl = document.getElementById('kpiCCCDiffBadge');
+    if (cccDiffEl) { cccDiffEl.textContent = '-'; cccDiffEl.style.color = '#64748b'; }
+    const kpiCardCCC = document.getElementById('kpiCardCCC');
+    if (kpiCardCCC) kpiCardCCC.className = 'kpi-card';
+
+    const kpiGrossCycle = document.getElementById('kpiGrossCycle');
+    if (kpiGrossCycle) kpiGrossCycle.textContent = '-';
+    const kpiFacilityTenor = document.getElementById('kpiFacilityTenor');
+    if (kpiFacilityTenor) kpiFacilityTenor.textContent = `Tenor: ${proj.scfTenorDays || 60}h`;
+    const gapEl = document.getElementById('kpiTenorGapBadge');
+    if (gapEl) { gapEl.textContent = '-'; gapEl.style.color = '#64748b'; }
+    const kpiCardTenor = document.getElementById('kpiCardTenor');
+    if (kpiCardTenor) kpiCardTenor.className = 'kpi-card';
+
+    const kpiLabelMargin = document.getElementById('kpiLabelMargin');
+    if (kpiLabelMargin) kpiLabelMargin.textContent = 'Gross Margin & Laba Bersih';
+    const kpiGrossMargin = document.getElementById('kpiGrossMargin');
+    if (kpiGrossMargin) kpiGrossMargin.textContent = '-';
+    const kpiEATValue = document.getElementById('kpiEATValue');
+    if (kpiEATValue) kpiEATValue.textContent = 'EAT: -';
+    const profEl = document.getElementById('kpiProfitStatus');
+    if (profEl) { profEl.textContent = '-'; profEl.style.color = '#64748b'; }
+    const kpiCardMargin = document.getElementById('kpiCardMargin');
+    if (kpiCardMargin) kpiCardMargin.className = 'kpi-card';
+
+    const kpiSustainableLimit = document.getElementById('kpiSustainableLimit');
+    if (kpiSustainableLimit) kpiSustainableLimit.textContent = '-';
+    const kpiRequestedLimit = document.getElementById('kpiRequestedLimit');
+    if (kpiRequestedLimit) kpiRequestedLimit.textContent = `Diajukan: ${fmtRp(proj.requestedPlafond, true)}`;
+    const covEl = document.getElementById('kpiCoverageRatio');
+    if (covEl) { covEl.textContent = '-'; covEl.style.color = '#64748b'; }
+    const kpiCardPlafond = document.getElementById('kpiCardPlafond');
+    if (kpiCardPlafond) kpiCardPlafond.className = 'kpi-card';
+
+    const redFlagsContainer = document.getElementById('redFlagsContainer');
+    if (redFlagsContainer) {
+      redFlagsContainer.innerHTML = '<div style="background:#f8fafc; border:1px dashed #cbd5e1; padding:1.5rem; text-align:center; color:#64748b; border-radius:6px; font-size:0.83rem;">Data laporan keuangan belum diinput. Indikator peringatan dini (Red Flags) dan audit risiko akan tampil setelah Anda melengkapi data keuangan.</div>';
+    }
+    const dashboardTimelineVisual = document.getElementById('dashboardTimelineVisual');
+    if (dashboardTimelineVisual) {
+      dashboardTimelineVisual.innerHTML = '<div style="background:#f8fafc; border:1px dashed #cbd5e1; padding:1.5rem; text-align:center; color:#64748b; border-radius:6px; font-size:0.83rem;">Visualisasi siklus modal kerja (DOI + DOR vs Tenor Fasilitas) akan aktif otomatis setelah laporan keuangan diisi.</div>';
+    }
+    const dashboardSummaryCardTitle = document.getElementById('dashboardSummaryCardTitle');
+    if (dashboardSummaryCardTitle) dashboardSummaryCardTitle.textContent = 'Ringkasan Keuangan (Belum Ada Data)';
+    const dashboardSummaryTable = document.getElementById('dashboardSummaryTable');
+    if (dashboardSummaryTable) {
+      dashboardSummaryTable.innerHTML = '<tbody><tr><td colspan="4" style="text-align:center; padding:2rem; color:#64748b; font-size:0.85rem;">Data laporan keuangan (Neraca & Laba Rugi) belum diisi. Silakan isi form di tab <strong>Input Data</strong> atau gunakan fitur <strong>Pindai AI OCR</strong>.</td></tr></tbody>';
+    }
+    return;
+  }
+
   document.getElementById('kpiCCCActual').textContent = `${fmtNum(m.ccc23, 1)} Hari`;
   document.getElementById('kpiCCCClaimed').textContent = `Data Bank: ${m.claimedCCC} Hr`;
   const cccDiffEl = document.getElementById('kpiCCCDiffBadge');
@@ -3875,6 +4409,19 @@ function renderDashboardTab(proj, m) {
 }
 
 function renderDCCTab(proj, m) {
+  const emptyEl = document.getElementById('dccEmptyState');
+  const activeEl = document.getElementById('dccActiveState');
+  if (!m || !m.hasFinancials) {
+    if (emptyEl) {
+      emptyEl.innerHTML = getFinEmptyStateHTML('Analisa Dynamic CC Belum Aktif', 'Kalkulasi Dynamic Cash Conversion Cycle (DOR, DOI, DOP, dan CCC 360/365 hari) akan aktif setelah Anda mengisi data Neraca & Laba Rugi.');
+      emptyEl.style.display = 'block';
+    }
+    if (activeEl) activeEl.style.display = 'none';
+    return;
+  }
+  if (emptyEl) emptyEl.style.display = 'none';
+  if (activeEl) activeEl.style.display = 'block';
+
   document.getElementById('dccAuditCardTitle').textContent = `Audit Dynamic Cash Conversion Cycle (Data Bank vs Audited ${m.yr1} & ${m.yr2})`;
   document.getElementById('dccAuditTable').innerHTML = `
     <thead>
@@ -4122,6 +4669,19 @@ function runStressSimulation() {
   const proj = getActiveProject();
   if (!proj) return;
   const m = computeDCCSWCM(proj);
+  const emptyEl = document.getElementById('swcmEmptyState');
+  const activeEl = document.getElementById('swcmActiveState');
+
+  if (!m || !m.hasFinancials) {
+    if (emptyEl) {
+      emptyEl.innerHTML = getFinEmptyStateHTML('Modul Stress-Test Belum Aktif', 'Simulasi skenario stress-test modal kerja (shock DOI/DOR/DOP, Margin Drop, Kurs FX, Inventory Haircut) membutuhkan data laporan keuangan.');
+      emptyEl.style.display = 'block';
+    }
+    if (activeEl) activeEl.style.display = 'none';
+    return;
+  }
+  if (emptyEl) emptyEl.style.display = 'none';
+  if (activeEl) activeEl.style.display = 'block';
 
   const gpm = parseFloat(document.getElementById('rng_simGPM').value);
   const doi = parseFloat(document.getElementById('rng_simDOI').value);
@@ -4296,6 +4856,13 @@ function renderSWCMMatrixTable(proj, m) {
 }
 
 function renderCaseStudyQATab(proj, m) {
+  const container = document.getElementById('caseStudyQAHTML');
+  if (!container) return;
+  if (!m || !m.hasFinancials) {
+    container.innerHTML = getFinEmptyStateHTML('Rekomendasi Underwriting Belum Tersedia', 'Rekomendasi keputusan komite asuransi kredit (Persetujuan, Persetujuan Bersyarat, atau Penolakan), struktur covenants, dan mitigasi risiko akan dihasilkan setelah laporan keuangan diisi.');
+    return;
+  }
+
   const ins = buildDynamicCaseInsights(proj, m);
   const turnaroundSim = evaluateScenarioParams(proj, m, {
     gpm: Math.max(10.5, m.minRequiredGPM),
@@ -4330,12 +4897,22 @@ function renderCaseStudyQATab(proj, m) {
               Keputusan Dual-Stage Underwriting Asuransi Kredit ASCA:
             </span>
             <div style="margin-top:0.2rem; display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
-              <span class="${m.isInitialReject ? 'dual-stage-badge-stage1' : 'dual-stage-badge-stage2'}">
+              <span class="${m.isInitialReject ? 'dual-stage-badge-stage1' : (m.isLayak ? 'dual-stage-badge-stage2' : 'dual-stage-badge-stage1')}">
                 ${m.stage1Decision}
               </span>
-              <span class="cover-badge cover-conditional">
-                Rekomendasi Coverage Bersyarat: Maks 55% (Risk Sharing ${proj.bankName} 45%) &bull; Rekomendasi Tarif IJP: 3,75% - 4,50% p.a.
-              </span>
+              ${m.isLayak ? `
+                <span class="cover-badge cover-approved">
+                  Coverage Askrindo: Disetujui Penuh ${m.recCoveragePct || 70}% (Layak Dijamin) &bull; Rekomendasi Tarif IJP: ${m.ijpRate || '1,25% - 1,60% p.a.'}
+                </span>
+              ` : (m.isInitialReject ? `
+                <span class="cover-badge cover-conditional">
+                  Rekomendasi Coverage Bersyarat: Maks 55% (Risk Sharing ${proj.bankName} 45%) &bull; Rekomendasi Tarif IJP: 3,75% - 4,50% p.a.
+                </span>
+              ` : `
+                <span class="cover-badge cover-conditional">
+                  Rekomendasi Coverage Bersyarat: Maks ${m.recCoveragePct || 60}% &bull; Rekomendasi Tarif IJP: ${m.ijpRate || '2,10% - 2,85% p.a.'}
+                </span>
+              `)}
             </div>
           </div>
           <button class="btn btn-outline btn-sm" onclick="switchTab('tab-score')" style="font-size:0.68rem;">
@@ -4347,7 +4924,32 @@ function renderCaseStudyQATab(proj, m) {
           <strong>Ringkasan Analisa Underwriting Sistem:</strong> ${m.stage1Summary}
         </div>
 
-        ${m.isInitialReject ? `
+        ${m.isLayak ? `
+          <div style="border-top:1px dashed #86efac; padding-top:0.5rem;">
+            <div style="font-size:0.74rem; font-weight:800; color:#166534; margin-bottom:0.4rem; display:flex; justify-content:space-between; align-items:center;">
+              <span>Rekomendasi Persetujuan Penjaminan Kredit Askrindo (Layak Dijamin):</span>
+              <span style="font-size:0.68rem; background:#dcfce7; color:#15803d; padding:2px 8px; border-radius:4px; font-weight:700;">Standar Underwriting Sehat</span>
+            </div>
+            <div class="grid-2" style="gap:0.45rem;">
+              <div class="term-card" style="border-color:#bbf7d0; background:#f0fdf4;">
+                <div class="term-title"><span style="color:#166534;">1. Porsi Penjaminan &amp; Tarif IJP</span><span style="color:#15803d;">Coverage ${m.recCoveragePct || 70}% | IJP ${m.ijpRate || '1,25% - 1,60% p.a.'}</span></div>
+                <div class="term-desc">Fasilitas kredit modal kerja debitur memenuhi standar underwriting. Rekomendasi coverage penjaminan Askrindo disetujui sebesar <strong>${m.recCoveragePct || 70}% (${fmtRp((proj.requestedPlafond || 0) * ((m.recCoveragePct || 70) / 100), true)})</strong> dengan tarif premi IJP standar <strong>${m.ijpRate}</strong>.</div>
+              </div>
+              <div class="term-card" style="border-color:#bbf7d0; background:#f0fdf4;">
+                <div class="term-title"><span style="color:#166534;">2. Agunan Pokok &amp; Pengikatan</span><span style="color:#15803d;">Fidusia Persediaan / Piutang</span></div>
+                <div class="term-desc">Agunan pokok berupa persediaan dagang/piutang usaha diikat secara yuridis sempurna (Akta Fidusia terdaftar Kemenkumham) dan diproteksi asuransi kerugian.</div>
+              </div>
+              <div class="term-card" style="border-color:#bbf7d0; background:#f0fdf4;">
+                <div class="term-title"><span style="color:#166534;">3. Monitoring Rekening Penampungan</span><span style="color:#15803d;">Payroll / Rekening Operasional ${proj.bankName}</span></div>
+                <div class="term-desc">Debitur berkomitmen menyalurkan mutasi transaksi operasional dan penerimaan piutang melalui rekening giro aktif di <strong>${proj.bankName}</strong>.</div>
+              </div>
+              <div class="term-card" style="border-color:#bbf7d0; background:#f0fdf4;">
+                <div class="term-title"><span style="color:#166534;">4. Pemantauan Berkala Laporan Keuangan</span><span style="color:#15803d;">Kuartalan / Semesteran</span></div>
+                <div class="term-desc">Penyampaian laporan keuangan in-house setiap kuartal guna memonitor stabilitas rasio perputaran modal kerja (DOR, DOI, DOP) dan profitabilitas.</div>
+              </div>
+            </div>
+          </div>
+        ` : (m.isInitialReject ? `
           <div style="border-top:1px dashed #cbd5e1; padding-top:0.5rem;">
             <div style="font-size:0.74rem; font-weight:800; color:#0f766e; margin-bottom:0.4rem; display:flex; justify-content:space-between; align-items:center;">
               <span>Opsi Persetujuan Bersyarat Jika Analis / Komite Hendak Menyetujui (7 Syarat Wajib Covenants):</span>
@@ -4384,7 +4986,7 @@ function renderCaseStudyQATab(proj, m) {
               </div>
             </div>
           </div>
-        ` : ''}
+        ` : '')}
       </div>
 
       <div style="border:1px solid #cbd5e1; border-radius:7px; padding:0.65rem; background:#fff;">
@@ -4535,12 +5137,26 @@ function renderRatiosTab(proj, m) {
   const container = document.getElementById('ratiosTableContainer');
   if (!container) return;
 
+  if (!m || !m.hasFinancials) {
+    container.innerHTML = `
+      <div style="background:#f8fafc; border:1.5px dashed #cbd5e1; border-radius:8px; padding:2.5rem 1.5rem; text-align:center; color:#64748b;">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.8" style="margin:0 auto 0.75rem auto; display:block;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <h4 style="font-size:1.05rem; font-weight:800; color:#334155; margin-bottom:0.35rem;">Laporan Keuangan Belum Diinput</h4>
+        <p style="font-size:0.82rem; max-width:480px; margin:0 auto 1rem auto; line-height:1.45;">Rasio Keuangan (CR, DER, ROA, ROE, NWC) akan dihitung secara otomatis setelah Anda melengkapi data Neraca &amp; Laba Rugi pada tab "Input Data".</p>
+        <button type="button" class="btn btn-primary btn-sm" onclick="switchTab('tab-input')">Menuju Tab Input Data &raquo;</button>
+      </div>
+    `;
+    return;
+  }
+
   const plafond = proj.requestedPlafond || 0;
 
   // 1. Current Ratio (CR) - RAC Min 100%
-  const cr22 = m.cl22 > 0 ? (m.ca22 / m.cl22) * 100 : 0;
-  const cr23 = m.cl23 > 0 ? (m.ca23 / m.cl23) * 100 : 0;
-  const passCR = cr23 >= 100;
+  const isNoDebt22 = !m.cl22 || m.cl22 === 0;
+  const isNoDebt23 = !m.cl23 || m.cl23 === 0;
+  const cr22 = isNoDebt22 ? null : (m.ca22 / m.cl22) * 100;
+  const cr23 = isNoDebt23 ? null : (m.ca23 / m.cl23) * 100;
+  const passCR = isNoDebt23 ? true : (cr23 >= 100);
 
   // 2. Debt to Equity Ratio (DER) - RAC Max 400%
   const der22 = m.eq22 > 0 ? (m.tl22 / m.eq22) * 100 : 0;
@@ -4573,12 +5189,14 @@ function renderRatiosTab(proj, m) {
       name: 'Current Ratio (CR)',
       formula: 'Aset Lancar / Liab. Lancar',
       rac: '&ge; 100,00%',
-      v22: fmtNum(cr22, 2) + '%',
-      v23: fmtNum(cr23, 2) + '%',
+      v22: isNoDebt22 ? 'N/A (Bebas Utang Lancar)' : `${fmtNum(cr22, 2)}%`,
+      v23: isNoDebt23 ? 'N/A (Bebas Utang Lancar)' : `${fmtNum(cr23, 2)}%`,
       pass: passCR,
-      ket: passCR
-        ? `Current Ratio ${fmtNum(cr23, 2)}% memenuhi standar RAC (&ge; 100,00%). Debitur memiliki likuiditas lancar yang cukup untuk melunasi kewajiban jangka pendek.`
-        : `Current Ratio ${fmtNum(cr23, 2)}% di bawah standar RAC (&ge; 100,00%). Likuiditas jangka pendek ketat dan berisiko gagal bayar saat penagihan piutang tertunda.`
+      ket: isNoDebt23
+        ? 'Kondisi Likuiditas Sangat Prima (N/A): Perusahaan beroperasi murni dengan modal sendiri / tanpa kewajiban jangka pendek (Hutang Lancar = Rp 0). Seluruh aset lancar bebas beban, sehingga risiko gagal bayar kewajiban lancar nihil.'
+        : (passCR
+          ? `Current Ratio ${fmtNum(cr23, 2)}% memenuhi standar RAC (&ge; 100,00%). Debitur memiliki likuiditas lancar yang cukup untuk melunasi kewajiban jangka pendek.`
+          : `Current Ratio ${fmtNum(cr23, 2)}% di bawah standar RAC (&ge; 100,00%). Likuiditas jangka pendek ketat dan berisiko gagal bayar saat penagihan piutang tertunda.`)
     },
     {
       no: 2,
@@ -4706,6 +5324,10 @@ function renderRatiosTab(proj, m) {
 function renderCashFlowTab(proj, m) {
   const container = document.getElementById('cashFlowMenuContainer');
   if (!container) return;
+  if (!m || !m.hasFinancials) {
+    container.innerHTML = getFinEmptyStateHTML('Proyeksi Cash Flow Belum Tersedia', 'Model proyeksi arus kas bulanan (12 Bulan), Debt Service Coverage Ratio (DSCR), dan kecukupan pelunasan SCF AP akan dihitung setelah laporan keuangan dilengkapi.');
+    return;
+  }
   const cf = m.cfProj || computeCashFlowProjection(proj);
 
   const statusColor = cf.isHealthy ? '#166534' : '#991b1b';
@@ -4892,31 +5514,68 @@ function renderCashFlowTab(proj, m) {
       </div>
 
       <!-- TABEL RINCIAN BULANAN 12 BULAN (1-VIEW FIT) -->
-      <div style="max-width:1120px; margin:0 auto 0.35rem auto; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
-        <div style="font-weight:800; font-size:0.84rem; color:var(--askrindo-navy);">
-          Tabel Rincian Proyeksi Arus Kas Bulanan (12 Bulan) &amp; Siklus Konversi SCF AP (Persediaan &rarr; Kas)
+      <div style="max-width:1120px; margin:0 auto 0.6rem auto; padding:0.65rem 0.85rem; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
+        <div>
+          <div style="font-weight:900; font-size:0.95rem; color:var(--askrindo-navy, #003366); line-height:1.3; letter-spacing:-0.2px;">
+            Tabel Rincian Proyeksi Arus Kas Bulanan (12 Bulan)
+          </div>
+          <div style="font-weight:700; font-size:0.82rem; color:#0284c7; margin-top:3px; display:flex; align-items:center; flex-wrap:wrap; gap:0.4rem;">
+            <span>&amp; Siklus Konversi SCF AP</span>
+            <span style="font-size:0.74rem; background:#e0f2fe; color:#0369a1; padding:2px 7px; border-radius:4px; font-weight:600;">
+              Persediaan &rarr; Kas Masuk (CCC &amp; Debt Service)
+            </span>
+          </div>
+          <div style="font-size:0.70rem; color:#64748b; margin-top:3px;">
+            Rincian mutasi kas masuk, beban operasional, pelunasan pokok &amp; bunga SCF, serta projected DSCR bulanan.
+          </div>
         </div>
-        <div style="font-size:0.70rem; color:#64748b; font-style:italic;">
-          ✨ Tampilan Padat 1-View (arahkan kursor pada angka untuk rincian nominal lengkap)
+        <div style="font-size:0.72rem; color:#475569; font-style:italic; background:#ffffff; padding:4px 10px; border-radius:6px; border:1px solid #cbd5e1; box-shadow:0 1px 2px rgba(0,0,0,0.03); white-space:nowrap;">
+          ✨ Arahkan kursor pada angka untuk rincian nominal penuh
         </div>
       </div>
       <div style="width:100%; max-width:1120px; margin:0 auto 0.75rem auto; overflow-x:auto; border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.04); background:#fff;">
-        <table class="data-table" style="font-size:0.73rem; width:100%; table-layout:fixed; border-collapse:collapse; text-align:right;">
+        <table class="data-table" style="font-size:0.73rem; width:100%; min-width:960px; table-layout:fixed; border-collapse:collapse; text-align:right;">
           <thead>
             <tr style="background:#f1f5f9; border-bottom:2px solid #cbd5e1;">
-              <th style="width:5.5%; text-align:center; padding:6px 2px; font-size:0.72rem; color:#1e293b;" title="Periode Proyeksi Bulan ke-1 s/d ke-12">Bulan</th>
-              <th class="num-col" style="width:8%; padding:6px 3px; font-size:0.72rem; color:#1e293b;" title="Saldo Kas di Awal Periode">Kas Awal</th>
-              <th class="num-col" style="width:7.5%; padding:6px 3px; font-size:0.72rem; color:#0284c7;" title="Pencairan Kredit SCF AP oleh Bank untuk Pembelian Persediaan">+SCF</th>
-              <th class="num-col" style="width:8%; padding:6px 3px; font-size:0.72rem; color:#0369a1;" title="Kas Masuk Hasil Penjualan Persediaan">+Inflow</th>
-              <th class="num-col" style="width:8%; padding:6px 3px; font-size:0.72rem; color:#b91c1c;" title="Outflow Pembayaran HPP Persediaan">-HPP</th>
-              <th class="num-col" style="width:7.5%; padding:6px 3px; font-size:0.72rem; color:#b91c1c;" title="Outflow Beban Operasional">-OPEX</th>
-              <th class="num-col" style="width:8%; padding:6px 3px; font-size:0.72rem; color:#166534;" title="Net Operating Cash Flow (Arus Kas Operasi Bersih)">NOCF</th>
-              <th class="num-col" style="width:7%; padding:6px 3px; font-size:0.72rem; color:#b45309;" title="Beban Bunga Fasilitas SCF AP">-Bunga</th>
-              <th class="num-col" style="width:7.5%; padding:6px 3px; font-size:0.72rem; color:#b45309;" title="Pelunasan Pokok Fasilitas SCF AP">-Pokok</th>
-              <th class="num-col" style="width:8.5%; padding:6px 3px; font-size:0.72rem; color:#0f172a; font-weight:800;" title="Total Kewajiban Debt Service (Bunga + Pokok SCF)">Debt Svc</th>
-              <th class="num-col" style="width:8.5%; padding:6px 3px; font-size:0.72rem; color:#0f172a; font-weight:800;" title="Saldo Kas Akhir Periode">Kas Akhir</th>
-              <th class="num-col" style="width:6.5%; padding:6px 3px; font-size:0.72rem; color:#0f172a; font-weight:800;" title="Monthly Debt Service Coverage Ratio">DSCR</th>
-              <th style="width:7.5%; text-align:center; padding:6px 2px; font-size:0.72rem; color:#1e293b;" title="Status Likuiditas Kas Bulanan">Status</th>
+              <th style="width:5.5%; text-align:center; padding:7px 2px; font-size:0.70rem; color:#1e293b; line-height:1.2; vertical-align:middle;" title="Periode Proyeksi Bulan ke-1 s/d ke-12">
+                Bulan<br/><span style="font-size:0.60rem; color:#64748b; font-weight:600;">(Periode)</span>
+              </th>
+              <th class="num-col" style="width:8%; padding:7px 3px; font-size:0.70rem; color:#1e293b; line-height:1.2; vertical-align:middle;" title="Saldo Kas di Awal Periode">
+                Kas Awal<br/><span style="font-size:0.60rem; color:#64748b; font-weight:600;">(Opening)</span>
+              </th>
+              <th class="num-col" style="width:7.5%; padding:7px 3px; font-size:0.70rem; color:#0284c7; line-height:1.2; vertical-align:middle;" title="Pencairan Kredit SCF AP oleh Bank untuk Pembelian Persediaan">
+                Pencairan<br/><span style="font-size:0.60rem; font-weight:700;">+SCF AP</span>
+              </th>
+              <th class="num-col" style="width:8%; padding:7px 3px; font-size:0.70rem; color:#0369a1; line-height:1.2; vertical-align:middle;" title="Kas Masuk Hasil Penjualan Persediaan">
+                Kas Masuk<br/><span style="font-size:0.60rem; font-weight:700;">+Inflow</span>
+              </th>
+              <th class="num-col" style="width:8%; padding:7px 3px; font-size:0.70rem; color:#b91c1c; line-height:1.2; vertical-align:middle;" title="Outflow Pembayaran HPP Persediaan">
+                Bayar HPP<br/><span style="font-size:0.60rem; font-weight:700;">-COGS</span>
+              </th>
+              <th class="num-col" style="width:7.5%; padding:7px 3px; font-size:0.70rem; color:#b91c1c; line-height:1.2; vertical-align:middle;" title="Outflow Beban Operasional">
+                Beban Ops<br/><span style="font-size:0.60rem; font-weight:700;">-OPEX</span>
+              </th>
+              <th class="num-col" style="width:8%; padding:7px 3px; font-size:0.70rem; color:#166534; line-height:1.2; vertical-align:middle;" title="Net Operating Cash Flow (Arus Kas Operasi Bersih)">
+                Arus Ops<br/><span style="font-size:0.60rem; font-weight:700;">(NOCF)</span>
+              </th>
+              <th class="num-col" style="width:7%; padding:7px 3px; font-size:0.70rem; color:#b45309; line-height:1.2; vertical-align:middle;" title="Beban Bunga Fasilitas SCF AP">
+                Bunga SCF<br/><span style="font-size:0.60rem; font-weight:700;">-Bunga</span>
+              </th>
+              <th class="num-col" style="width:7.5%; padding:7px 3px; font-size:0.70rem; color:#b45309; line-height:1.2; vertical-align:middle;" title="Pelunasan Pokok Fasilitas SCF AP">
+                Pokok SCF<br/><span style="font-size:0.60rem; font-weight:700;">-Pokok</span>
+              </th>
+              <th class="num-col" style="width:8.5%; padding:7px 3px; font-size:0.70rem; color:#0f172a; font-weight:800; line-height:1.2; vertical-align:middle;" title="Total Kewajiban Debt Service (Bunga + Pokok SCF)">
+                Debt Service<br/><span style="font-size:0.60rem; font-weight:700;">(Bunga+Pokok)</span>
+              </th>
+              <th class="num-col" style="width:8.5%; padding:7px 3px; font-size:0.70rem; color:#0f172a; font-weight:800; line-height:1.2; vertical-align:middle;" title="Saldo Kas Akhir Periode">
+                Kas Akhir<br/><span style="font-size:0.60rem; font-weight:700;">(Ending Cash)</span>
+              </th>
+              <th class="num-col" style="width:6.5%; padding:7px 3px; font-size:0.70rem; color:#0f172a; font-weight:800; line-height:1.2; vertical-align:middle;" title="Monthly Debt Service Coverage Ratio">
+                DSCR<br/><span style="font-size:0.60rem; font-weight:700;">(Coverage)</span>
+              </th>
+              <th style="width:7.5%; text-align:center; padding:7px 2px; font-size:0.70rem; color:#1e293b; line-height:1.2; vertical-align:middle;" title="Status Likuiditas Kas Bulanan">
+                Status<br/><span style="font-size:0.60rem; color:#64748b; font-weight:600;">(Likuiditas)</span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -5038,6 +5697,13 @@ function updateCashFlowCustomParam() {
 }
 
 function renderPrintableReport(proj, m) {
+  const container = document.getElementById('printableMemoContainer');
+  if (!container) return;
+  if (!m || !m.hasFinancials) {
+    container.innerHTML = getFinEmptyStateHTML('Nota Analisa Kredit Belum Tersedia', 'Nota analisa kredit (Executive Summary, Evaluasi Kelayakan, Mitigasi Risiko, dan Rekomendasi Komite) akan disintesis otomatis setelah laporan keuangan diisi.');
+    return;
+  }
+
   const today = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
   const ins = buildDynamicCaseInsights(proj, m);
   const caseNumber = getProjectCaseNumber(proj);
@@ -5066,7 +5732,7 @@ function renderPrintableReport(proj, m) {
         ? 'Domestik / Lokal (Inland Transit Jalur Darat)' 
         : 'Impor Luar Negeri / Jalur Laut (Sea Freight)');
 
-  const sippInfo = getSippPnInfo(proj.city || 'Kab. Sukoharjo', proj.companyName);
+  const sippInfo = getSippPnInfo(proj.city || '', proj.companyName);
 
   document.getElementById('printableMemoContainer').innerHTML = `
     <table class="memo-print-table">
@@ -5098,7 +5764,7 @@ function renderPrintableReport(proj, m) {
               <table class="data-table">
                 <tbody>
                   <tr><td style="width:38%;"><strong>Nama Debitur</strong></td><td><strong>${proj.companyName}</strong></td></tr>
-                  <tr><td><strong>Domisili / Wilayah Hukum</strong></td><td>${proj.city || 'Kab. Sukoharjo'} (${sippInfo.pnName})</td></tr>
+                  <tr><td><strong>Domisili / Wilayah Hukum</strong></td><td>${proj.city || '-'} (${sippInfo.pnName})</td></tr>
                   <tr><td><strong>Sektor Usaha</strong></td><td>${proj.sector} (Berdiri ${proj.estYear})</td></tr>
                   <tr><td><strong>Bank Mitra</strong></td><td>${proj.bankName}</td></tr>
                   <tr><td><strong>Skema Fasilitas</strong></td><td>${proj.facilityType}</td></tr>
@@ -5197,29 +5863,29 @@ function renderPrintableReport(proj, m) {
               <tbody>
                 <tr>
                   <td><strong>Current Ratio (CR)</strong> (Likuiditas)</td>
-                  <td class="num-col">${m.currentRatio22.toFixed(2)}x</td>
-                  <td class="num-col"><strong>${m.currentRatio23.toFixed(2)}x</strong></td>
+                  <td class="num-col">${m.currentRatio22 !== null ? m.currentRatio22.toFixed(2) + 'x' : 'N/A (Bebas Utang)'}</td>
+                  <td class="num-col"><strong>${m.currentRatio23 !== null ? m.currentRatio23.toFixed(2) + 'x' : 'N/A (Bebas Utang)'}</strong></td>
                   <td>&ge; 1.00x (Kecukupan Aset Lancar)</td>
-                  <td style="color:${m.currentRatio23 >= 1.0 ? '#166534' : '#dc2626'}; font-weight:700;">
-                    ${m.currentRatio23 >= 1.0 ? '&#10003; Memenuhi RAC' : '&#9888; Deviasi (Defisit Modal Kerja Bersih)'}
+                  <td style="color:${(m.currentRatio23 === null || m.currentRatio23 >= 1.0) ? '#166534' : '#dc2626'}; font-weight:700;">
+                    ${(m.currentRatio23 === null || m.currentRatio23 >= 1.0) ? '&#10003; Memenuhi RAC (Prima)' : '&#9888; Deviasi (Defisit Modal Kerja Bersih)'}
                   </td>
                 </tr>
                 <tr>
                   <td><strong>Quick Ratio (QR)</strong> (Likuiditas Cepat)</td>
-                  <td class="num-col">${m.quickRatio22.toFixed(2)}x</td>
-                  <td class="num-col"><strong>${m.quickRatio23.toFixed(2)}x</strong></td>
+                  <td class="num-col">${m.quickRatio22 !== null ? m.quickRatio22.toFixed(2) + 'x' : 'N/A (Bebas Utang)'}</td>
+                  <td class="num-col"><strong>${m.quickRatio23 !== null ? m.quickRatio23.toFixed(2) + 'x' : 'N/A (Bebas Utang)'}</strong></td>
                   <td>&ge; 0.80x (Kecukupan Kas &amp; Piutang)</td>
-                  <td style="color:${m.quickRatio23 >= 0.8 ? '#166534' : '#dc2626'}; font-weight:700;">
-                    ${m.quickRatio23 >= 0.8 ? '&#10003; Memenuhi RAC' : '&#9888; Deviasi (Sangat Bergantung pada Persediaan)'}
+                  <td style="color:${(m.quickRatio23 === null || m.quickRatio23 >= 0.8) ? '#166534' : '#dc2626'}; font-weight:700;">
+                    ${(m.quickRatio23 === null || m.quickRatio23 >= 0.8) ? '&#10003; Memenuhi RAC (Prima)' : '&#9888; Deviasi (Sangat Bergantung pada Persediaan)'}
                   </td>
                 </tr>
                 <tr>
                   <td><strong>Cash Ratio</strong> (Rasio Kas Tunai)</td>
                   <td class="num-col">-</td>
-                  <td class="num-col"><strong>${m.cashRatio23.toFixed(2)}x</strong></td>
+                  <td class="num-col"><strong>${m.cashRatio23 !== null ? m.cashRatio23.toFixed(2) + 'x' : 'N/A (Bebas Utang)'}</strong></td>
                   <td>&ge; 0.20x (Ketahanan Kas Minimum)</td>
-                  <td style="color:${m.cashRatio23 >= 0.2 ? '#166534' : '#d97706'}; font-weight:700;">
-                    ${m.cashRatio23 >= 0.2 ? '&#10003; Memenuhi RAC' : '&#9888; Dibawah Ambang Batas Ideal'}
+                  <td style="color:${(m.cashRatio23 === null || m.cashRatio23 >= 0.2) ? '#166534' : '#d97706'}; font-weight:700;">
+                    ${(m.cashRatio23 === null || m.cashRatio23 >= 0.2) ? '&#10003; Memenuhi RAC (Prima)' : '&#9888; Dibawah Ambang Batas Ideal'}
                   </td>
                 </tr>
                 <tr>
@@ -5306,8 +5972,8 @@ function renderPrintableReport(proj, m) {
                   <td><strong>3. Capital (20%)</strong></td>
                   <td class="num-col"><strong style="color:${fiveC.capitScore >= 70 ? '#166534' : '#dc2626'};">${fiveC.capitScore} / 100</strong></td>
                   <td>
-                    &bull; Leverage DER: ${m.der23.toFixed(2)}x (${fiveC.capitBreakdown?.derPts ?? 0}/35 Poin)<br/>
-                    &bull; Current Ratio: ${m.currentRatio23.toFixed(2)}x (${fiveC.capitBreakdown?.crPts ?? 0}/25 Poin)<br/>
+                    &bull; Leverage DER: ${m.der23 !== null ? m.der23.toFixed(2) + 'x' : '-'} (${fiveC.capitBreakdown?.derPts ?? 0}/35 Poin)<br/>
+                    &bull; Current Ratio: ${m.currentRatio23 !== null ? m.currentRatio23.toFixed(2) + 'x' : 'N/A (Bebas Utang)'} (${fiveC.capitBreakdown?.crPts ?? 0}/25 Poin)<br/>
                     &bull; Kecukupan NWC Riil: ${fmtRp(m.nwc23, true)} (${fiveC.capitBreakdown?.nwcPts ?? 0}/20 Poin)<br/>
                     &bull; Ketahanan Ekuitas: ${fmtRp(m.eq23, true)} (${fiveC.capitBreakdown?.eqPts ?? 0}/20 Poin)
                   </td>
@@ -5515,7 +6181,7 @@ function renderPrintableReport(proj, m) {
                   <td><strong>Pilar 6: Solvabilitas &amp; Struktur Modal</strong></td>
                   <td class="num-col">10 Poin</td>
                   <td class="num-col"><strong style="color:${(m.scorePillars[5]?.earnedPts || 0) >= 7 ? '#166534' : '#dc2626'};">${m.scorePillars[5]?.earnedPts || 0} Poin</strong></td>
-                  <td>DER (${m.der23.toFixed(2)}x vs Batas &le;2.50x) &amp; Rasio Lancar Current Ratio (${m.currentRatio23.toFixed(2)}x)</td>
+                  <td>DER (${m.der23 !== null ? m.der23.toFixed(2) + 'x' : '-'} vs Batas &le;2.50x) &amp; Rasio Lancar Current Ratio (${m.currentRatio23 !== null ? m.currentRatio23.toFixed(2) + 'x' : 'N/A (Bebas Utang)'})</td>
                 </tr>
                 <tr>
                   <td><strong>Pilar 7: Proyeksi Arus Kas &amp; Debt Service 12 Bulan</strong></td>
@@ -5551,16 +6217,25 @@ function renderPrintableReport(proj, m) {
               </div>
             </div>
 
-            <!-- BAGIAN VIII: KEPUTUSAN KOMITE & OPSI PERSETUJUAN BERSYARAT -->
-            <div style="border:1.5px solid ${m.isInitialReject ? '#dc2626' : '#059669'}; border-radius:6px; padding:0.6rem 0.8rem; margin-bottom:0.7rem; background:${m.isInitialReject ? '#fff5f5' : '#f0fdf4'};">
-              <div style="font-weight:900; font-size:0.82rem; color:${m.isInitialReject ? '#991b1b' : '#166534'}; margin-bottom:0.25rem;">
+            <!-- BAGIAN VIII: KEPUTUSAN KOMITE & REKOMENDASI PENJAMINAN -->
+            <div style="border:1.5px solid ${m.isLayak ? '#059669' : (m.isInitialReject ? '#dc2626' : '#d97706')}; border-radius:6px; padding:0.6rem 0.8rem; margin-bottom:0.7rem; background:${m.isLayak ? '#f0fdf4' : (m.isInitialReject ? '#fff5f5' : '#fffbeb')};">
+              <div style="font-weight:900; font-size:0.82rem; color:${m.isLayak ? '#166534' : (m.isInitialReject ? '#991b1b' : '#92400e')}; margin-bottom:0.25rem;">
                 KEPUTUSAN EVALUASI AWAL SISTEM DCC-SWCM: ${m.stage1Decision}
               </div>
               <p style="font-size:0.71rem; line-height:1.4; color:#334155; margin-bottom:0.4rem;">
                 ${m.stage1Summary}
               </p>
 
-              ${m.isInitialReject ? `
+              ${m.isLayak ? `
+                <div style="border-top:1px dashed #86efac; padding-top:0.35rem; margin-top:0.35rem;">
+                  <div style="font-weight:800; font-size:0.75rem; color:#166534; margin-bottom:0.2rem;">
+                    REKOMENDASI PERSETUJUAN PENJAMINAN KREDIT ASKRINDO (LAYAK DIJAMIN):
+                  </div>
+                  <div style="font-size:0.7rem; color:#1e293b; line-height:1.35;">
+                    Fasilitas Kredit Modal Kerja (KMK) debitur memenuhi standar kelayakan underwriting. Rekomendasi porsi penjaminan Askrindo disetujui sebesar <strong>${m.recCoveragePct}% (${fmtRp(proj.requestedPlafond * (m.recCoveragePct / 100), true)})</strong> dengan indikasi tarif IJP <strong>${m.ijpRate}</strong>, didukung pemenuhan covenants monitoring mutasi kas operasional berkala pada <strong>${proj.bankName}</strong>.
+                  </div>
+                </div>
+              ` : (m.isInitialReject ? `
                 <div style="border-top:1px dashed #fca5a5; padding-top:0.35rem; margin-top:0.35rem;">
                   <div style="font-weight:800; font-size:0.75rem; color:#0f766e; margin-bottom:0.2rem;">
                     OPSI PERSETUJUAN BERSYARAT KOMITE ASURANSI KREDIT ASKRINDO (REKOMENDASI COVERAGE MAKS 55%):
@@ -5584,7 +6259,16 @@ function renderPrintableReport(proj, m) {
                     </ol>
                   </div>
                 </div>
-              ` : ''}
+              ` : `
+                <div style="border-top:1px dashed #fde68a; padding-top:0.35rem; margin-top:0.35rem;">
+                  <div style="font-weight:800; font-size:0.75rem; color:#b45309; margin-bottom:0.2rem;">
+                    KETENTUAN PERSETUJUAN BERSYARAT (MODERATE COVENANTS):
+                  </div>
+                  <div style="font-size:0.7rem; color:#1e293b; line-height:1.35;">
+                    Penjaminan kredit direkomendasikan dengan pembatasan coverage maksimal <strong>${m.recCoveragePct}%</strong> dan indikasi tarif IJP <strong>${m.ijpRate}</strong>, disertai covenants monitoring escrow account dan penarikan kredit bertahap (tranching) di <strong>${proj.bankName}</strong>.
+                  </div>
+                </div>
+              `)}
 
               ${proj.customNotes ? `<div style="font-size:0.71rem; margin-top:0.3rem; border-top:1px solid #cbd5e1; padding-top:0.25rem;"><strong>Catatan Tambahan Underwriter:</strong> ${proj.customNotes}</div>` : ''}
             </div>
@@ -5632,7 +6316,7 @@ function populateFormInputs(proj) {
   };
 
   setVal('inp_companyName', proj.companyName);
-  setVal('inp_city', proj.city || 'Kab. Sukoharjo');
+  setVal('inp_city', proj.city || '');
   setVal('inp_sector', proj.sector);
   setVal('inp_estYear', proj.estYear);
   setVal('inp_bankName', proj.bankName);
@@ -5656,6 +6340,10 @@ function populateFormInputs(proj) {
   if (rDomestic) rDomestic.checked = (procMethod === 'domestic');
   if (rNone) rNone.checked = (procMethod === 'none');
 
+  // Cek apakah proyek memiliki data laporan keuangan riil
+  const hasFinData = Object.values(proj.fin22 || {}).some(v => v !== 0 && v !== null && v !== undefined && v !== '') ||
+                     Object.values(proj.fin23 || {}).some(v => v !== 0 && v !== null && v !== undefined && v !== '');
+
   setVal('inp_claimedDOR', proj.claimedDOR, true);
   setVal('inp_claimedDOI', proj.claimedDOI, true);
   setVal('inp_claimedDOP', proj.claimedDOP, true);
@@ -5671,8 +6359,20 @@ function populateFormInputs(proj) {
     'capital', 'otherCap', 'retEarn', 're'
   ];
   fields.forEach((k) => {
-    setVal(`inp_${k}22`, proj.fin22[k] || 0, true);
-    setVal(`inp_${k}23`, proj.fin23[k] || 0, true);
+    const val22 = proj.fin22 ? proj.fin22[k] : undefined;
+    const val23 = proj.fin23 ? proj.fin23[k] : undefined;
+    if (!hasFinData && (!val22 || val22 === 0)) {
+      const el22 = document.getElementById(`inp_${k}22`);
+      if (el22 && document.activeElement !== el22) el22.value = '';
+    } else {
+      setVal(`inp_${k}22`, val22 !== undefined && val22 !== null ? val22 : 0, true);
+    }
+    if (!hasFinData && (!val23 || val23 === 0)) {
+      const el23 = document.getElementById(`inp_${k}23`);
+      if (el23 && document.activeElement !== el23) el23.value = '';
+    } else {
+      setVal(`inp_${k}23`, val23 !== undefined && val23 !== null ? val23 : 0, true);
+    }
   });
 
   const m = computeDCCSWCM(proj);
@@ -5837,18 +6537,25 @@ function updateFinancialStatementTableComputed(proj, m) {
   // 5. Indikator Keseimbangan Neraca (Aktiva = Passiva)
   const badge = document.getElementById('finBalanceStatusBadge');
   if (badge) {
-    const diff22 = Math.round((m.ta22 || 0) - (m.tlEq22 || 0));
-    const diff23 = Math.round((m.ta23 || 0) - (m.tlEq23 || 0));
-    if (Math.abs(diff22) <= 100 && Math.abs(diff23) <= 100) {
-      badge.style.background = '#dcfce7';
-      badge.style.color = '#166534';
-      badge.style.borderColor = '#86efac';
-      badge.innerHTML = '&#10003; Neraca Balance (TOTAL AKTIVA = TOTAL HTNG &amp; MODAL)';
+    if (!m || !m.hasFinancials) {
+      badge.style.background = '#f1f5f9';
+      badge.style.color = '#64748b';
+      badge.style.borderColor = '#cbd5e1';
+      badge.innerHTML = '&#9432; Status Neraca: Menunggu Pengisian Data Laporan Keuangan';
     } else {
-      badge.style.background = '#fef2f2';
-      badge.style.color = '#991b1b';
-      badge.style.borderColor = '#fca5a5';
-      badge.innerHTML = `&#9888; Selisih Neraca (${m.yr1}: ${fmtRp(diff22, true)} | ${m.yr2}: ${fmtRp(diff23, true)})`;
+      const diff22 = Math.round((m.ta22 || 0) - (m.tlEq22 || 0));
+      const diff23 = Math.round((m.ta23 || 0) - (m.tlEq23 || 0));
+      if (Math.abs(diff22) <= 100 && Math.abs(diff23) <= 100) {
+        badge.style.background = '#dcfce7';
+        badge.style.color = '#166534';
+        badge.style.borderColor = '#86efac';
+        badge.innerHTML = '&#10003; Neraca Balance (TOTAL AKTIVA = TOTAL HTNG &amp; MODAL)';
+      } else {
+        badge.style.background = '#fef2f2';
+        badge.style.color = '#991b1b';
+        badge.style.borderColor = '#fca5a5';
+        badge.innerHTML = `&#9888; Selisih Neraca (${m.yr1}: ${fmtRp(diff22, true)} | ${m.yr2}: ${fmtRp(diff23, true)})`;
+      }
     }
   }
 }
@@ -5863,7 +6570,7 @@ function syncInputsToModel() {
 
   const oldCompName = (proj.companyName || '').trim();
   proj.companyName = getStr('inp_companyName');
-  proj.city = getStr('inp_city') || 'Kab. Sukoharjo';
+  proj.city = getStr('inp_city') || '';
   if (proj.companyName.trim() !== oldCompName) {
     // Otomatis memicu pencarian Daftar Hitam INAPROC LKPP & Berita Google News 1x setelah user selesai mengetik nama perusahaan
     runAutoInaprocCheckSync(proj, false);
@@ -5907,9 +6614,15 @@ function syncInputsToModel() {
     }
   }
 
-  proj.claimedDOR = getFmtNum('inp_claimedDOR');
-  proj.claimedDOI = getFmtNum('inp_claimedDOI');
-  proj.claimedDOP = getFmtNum('inp_claimedDOP');
+  const getFmtNumOrNull = (id) => {
+    const raw = (document.getElementById(id)?.value || '').trim();
+    if (!raw) return null;
+    return parseFormattedNumber(raw);
+  };
+
+  proj.claimedDOR = getFmtNumOrNull('inp_claimedDOR');
+  proj.claimedDOI = getFmtNumOrNull('inp_claimedDOI');
+  proj.claimedDOP = getFmtNumOrNull('inp_claimedDOP');
 
   proj.year1 = getPlainNum('inp_year1') || 2022;
   proj.year2 = getPlainNum('inp_year2') || 2023;
@@ -6023,9 +6736,212 @@ function saveAllInputsAndRecalculate() {
 }
 
 // ============================================================================
+// SISTEM COMBOBOX / SEARCHABLE DROPDOWN UNTUK INPUT PILIH / KETIK
+// ============================================================================
+function getDatalistOptions(datalist) {
+  if (!datalist) return [];
+  return Array.from(datalist.querySelectorAll('option')).map(opt => ({
+    value: opt.value || opt.textContent || '',
+    label: opt.textContent || opt.value || ''
+  })).filter(o => o.value.trim().length > 0);
+}
+
+function closeAllComboboxDropdowns() {
+  document.querySelectorAll('.combobox-dropdown-menu').forEach(menu => {
+    menu.style.display = 'none';
+  });
+}
+
+function toggleComboboxDropdown(input, datalist, wrapper) {
+  const menu = wrapper.querySelector('.combobox-dropdown-menu');
+  if (menu && menu.style.display === 'block') {
+    menu.style.display = 'none';
+  } else {
+    openComboboxDropdown(input, datalist, wrapper);
+  }
+}
+
+function openComboboxDropdown(input, datalist, wrapper) {
+  closeAllComboboxDropdowns();
+  let menu = wrapper.querySelector('.combobox-dropdown-menu');
+  if (!menu) {
+    menu = document.createElement('div');
+    menu.className = 'combobox-dropdown-menu';
+    wrapper.appendChild(menu);
+  }
+
+  renderComboboxItems(input, datalist, menu, input.value.trim());
+  menu.style.display = 'block';
+}
+
+function filterComboboxDropdown(input, datalist, wrapper) {
+  let menu = wrapper.querySelector('.combobox-dropdown-menu');
+  if (!menu) {
+    menu = document.createElement('div');
+    menu.className = 'combobox-dropdown-menu';
+    wrapper.appendChild(menu);
+  }
+  renderComboboxItems(input, datalist, menu, input.value.trim());
+  menu.style.display = 'block';
+}
+
+function renderComboboxItems(input, datalist, menu, filterQuery) {
+  const options = getDatalistOptions(datalist);
+  const q = (filterQuery || '').toLowerCase();
+  const filtered = q ? options.filter(o => o.value.toLowerCase().includes(q)) : options;
+
+  menu.innerHTML = '';
+  if (filtered.length === 0) {
+    const emptyDiv = document.createElement('div');
+    emptyDiv.className = 'combobox-empty-item';
+    emptyDiv.innerHTML = `<em>Tidak ada kecocokan daftar &bull; Tetap gunakan: "<strong>${filterQuery}</strong>"</em>`;
+    menu.appendChild(emptyDiv);
+    return;
+  }
+
+  filtered.forEach(opt => {
+    const item = document.createElement('div');
+    item.className = 'combobox-item';
+    if (input.value.trim().toLowerCase() === opt.value.toLowerCase()) {
+      item.classList.add('selected');
+    }
+    item.textContent = opt.value;
+    item.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      input.value = opt.value;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      menu.style.display = 'none';
+      if (typeof syncInputsToModel === 'function' && input.id.startsWith('inp_')) {
+        syncInputsToModel();
+      }
+    });
+    menu.appendChild(item);
+  });
+}
+
+function handleComboboxKeydown(e, input, wrapper) {
+  const menu = wrapper.querySelector('.combobox-dropdown-menu');
+  if (!menu || menu.style.display !== 'block') {
+    if (e.key === 'ArrowDown' || e.key === 'Enter') {
+      const listId = input.getAttribute('data-list');
+      const datalist = document.getElementById(listId);
+      if (datalist) {
+        openComboboxDropdown(input, datalist, wrapper);
+        e.preventDefault();
+      }
+    }
+    return;
+  }
+
+  const items = Array.from(menu.querySelectorAll('.combobox-item'));
+  if (items.length === 0) return;
+
+  let activeIndex = items.findIndex(el => el.classList.contains('active'));
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    if (activeIndex >= 0) items[activeIndex].classList.remove('active');
+    activeIndex = (activeIndex + 1) % items.length;
+    items[activeIndex].classList.add('active');
+    items[activeIndex].scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (activeIndex >= 0) items[activeIndex].classList.remove('active');
+    activeIndex = (activeIndex - 1 + items.length) % items.length;
+    items[activeIndex].classList.add('active');
+    items[activeIndex].scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'Enter') {
+    if (activeIndex >= 0 && items[activeIndex]) {
+      e.preventDefault();
+      items[activeIndex].dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    }
+  } else if (e.key === 'Escape') {
+    menu.style.display = 'none';
+  }
+}
+
+function setupCustomComboboxes() {
+  const comboboxInputIds = [
+    'new_sector',
+    'new_facilityType',
+    'new_bankName',
+    'new_city',
+    'inp_sector',
+    'inp_facilityType',
+    'inp_bankName',
+    'inp_city'
+  ];
+
+  comboboxInputIds.forEach(id => {
+    const input = document.getElementById(id);
+    if (!input) return;
+
+    const listId = input.getAttribute('list') || input.getAttribute('data-list');
+    if (!listId) return;
+
+    const datalist = document.getElementById(listId);
+    if (!datalist) return;
+
+    input.setAttribute('data-list', listId);
+    input.removeAttribute('list');
+    input.setAttribute('autocomplete', 'off');
+
+    let wrapper = input.parentElement;
+    if (!wrapper.classList.contains('combobox-wrapper')) {
+      const newWrapper = document.createElement('div');
+      newWrapper.className = 'combobox-wrapper';
+      wrapper.insertBefore(newWrapper, input);
+      newWrapper.appendChild(input);
+      wrapper = newWrapper;
+
+      const arrowBtn = document.createElement('div');
+      arrowBtn.className = 'combobox-arrow-btn';
+      arrowBtn.innerHTML = '&#9662;'; // ▼
+      arrowBtn.title = 'Tampilkan pilihan';
+      newWrapper.appendChild(arrowBtn);
+
+      arrowBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleComboboxDropdown(input, datalist, newWrapper);
+      });
+    }
+
+    if (!input.dataset.comboboxInitialized) {
+      input.dataset.comboboxInitialized = 'true';
+
+      input.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openComboboxDropdown(input, datalist, wrapper);
+      });
+
+      input.addEventListener('focus', () => {
+        openComboboxDropdown(input, datalist, wrapper);
+      });
+
+      input.addEventListener('input', () => {
+        filterComboboxDropdown(input, datalist, wrapper);
+      });
+
+      input.addEventListener('keydown', (e) => {
+        handleComboboxKeydown(e, input, wrapper);
+      });
+    }
+  });
+}
+
+// Tutup semua combobox ketika klik di luar
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.combobox-wrapper')) {
+    closeAllComboboxDropdowns();
+  }
+});
+
+// ============================================================================
 // 12. TAB NAVIGATION & MODAL ACTIONS
 // ============================================================================
 function switchTab(tabId) {
+  closeAllComboboxDropdowns();
   if (tabId === 'tab-mitigasi') tabId = 'tab-case-qa';
   if (tabId !== 'tab-dashboard' && (!projects || projects.length === 0 || !getActiveProject())) {
     return;
@@ -6039,12 +6955,14 @@ function switchTab(tabId) {
 }
 
 function openNewProjectModal() {
+  closeAllComboboxDropdowns();
+  setupCustomComboboxes();
   const setElVal = (id, val) => {
     const el = document.getElementById(id);
     if (el) el.value = val;
   };
   setElVal('new_companyName', '');
-  setElVal('new_city', 'Kab. Sukoharjo');
+  setElVal('new_city', '');
   setElVal('new_sector', '');
   setElVal('new_bankName', '');
   setElVal('new_facilityType', '');
@@ -6056,12 +6974,13 @@ function openNewProjectModal() {
 }
 
 function closeNewProjectModal() {
+  closeAllComboboxDropdowns();
   document.getElementById('newProjectModal').classList.remove('open');
 }
 
 function createNewProjectFromModal() {
   const name = document.getElementById('new_companyName').value.trim() || `Proyek Kredit Baru #${projects.length + 1}`;
-  const city = document.getElementById('new_city')?.value.trim() || 'Kab. Sukoharjo';
+  const city = document.getElementById('new_city')?.value.trim() || '';
   const sector = document.getElementById('new_sector').value.trim() || 'Perdagangan Umum';
   const bank = document.getElementById('new_bankName').value.trim() || 'Bank Dana';
   const fac = document.getElementById('new_facilityType').value.trim() || 'Kredit Modal Kerja (KMK) Revolving';
@@ -6079,7 +6998,45 @@ function createNewProjectFromModal() {
   } else if (tpl === 'clone_current') {
     baseObj = JSON.parse(JSON.stringify(getActiveProject() || defaults[0]));
   } else {
-    baseObj = JSON.parse(JSON.stringify(defaults[2]));
+    // Template Baru Bersih: Rasio Aktivitas Bank (DOR, DOI, DOP) & Laporan Keuangan (Neraca & Laba Rugi) KOSONG
+    baseObj = {
+      id: '',
+      caseNumber: '',
+      companyName: '',
+      city: '',
+      sector: sector,
+      bankName: bank,
+      facilityType: fac,
+      requestedPlafond: plafond,
+      usdAmount: 0,
+      fxRate: 15500,
+      pkMonths: 12,
+      scfTenorDays: 0,
+      kmkTenorDays: 120,
+      interestRate: 11.0,
+      underwriter: 'Analis Underwriting',
+      businessDesc: '',
+      procurementMethod: 'domestic',
+      claimedDOR: null,
+      claimedDOI: null,
+      claimedDOP: null,
+      claimedWCTargetDays: null,
+      year1: yr1,
+      year2: yr2,
+      estYear: estYear,
+      fin22: {},
+      fin23: {},
+      qualitative5CScore: null,
+      customNotes: '',
+      manualGradeOverride: 'AUTO',
+      overrideReason: '',
+      inaprocStatus: 'clean',
+      inaprocCheckedAt: null,
+      sippStatus: 'clean',
+      sippCheckedAt: null,
+      googleNewsItems: [],
+      googleNewsAccessedAt: null
+    };
   }
 
   baseObj.id = 'case-' + Date.now();
@@ -6107,6 +7064,13 @@ function createNewProjectFromModal() {
   activeProjectId = baseObj.id;
   saveProjectsToStorage();
   closeNewProjectModal();
+
+  // Beralih dari Welcome Hub ke Ruang Kerja Analisa Kasus Baru
+  const hubEl = document.getElementById('welcomeHubView');
+  const wsEl = document.getElementById('projectWorkspaceView');
+  if (hubEl) hubEl.style.display = 'none';
+  if (wsEl) wsEl.style.display = 'block';
+
   renderAll();
   switchTab('tab-input');
   setTimeout(() => {
@@ -6125,6 +7089,12 @@ function duplicateCurrentProject() {
   projects.unshift(copy);
   activeProjectId = copy.id;
   saveProjectsToStorage();
+
+  const hubEl = document.getElementById('welcomeHubView');
+  const wsEl = document.getElementById('projectWorkspaceView');
+  if (hubEl) hubEl.style.display = 'none';
+  if (wsEl) wsEl.style.display = 'block';
+
   renderAll();
   showToast(`Kasus "${curr.companyName}" berhasil diduplikasi!`);
 }
@@ -6355,6 +7325,7 @@ function renderAll() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+  setupCustomComboboxes();
   getUsersFromStorage();
   checkAuthAndRoute();
 });
@@ -6484,6 +7455,7 @@ async function checkAuthAndRoute() {
 
     loadProjectsFromStorage();
     renderAll();
+    showWelcomeHub();
     // Trigger 1x saat aplikasi pertama kali dibuka
     setTimeout(() => {
       const initProj = getActiveProject();
@@ -6721,7 +7693,40 @@ function togglePasswordVisibility(inputId, btn) {
   }
 }
 
-function logoutSession() {
+function openLogoutModal() {
+  const modal = document.getElementById('logoutConfirmModal');
+  if (modal) {
+    modal.classList.add('open');
+    modal.style.display = 'flex';
+  } else {
+    if (confirm('Apakah Anda yakin ingin keluar dari sistem ASCA?')) {
+      performActualLogout();
+    }
+  }
+}
+
+function closeLogoutModal() {
+  const modal = document.getElementById('logoutConfirmModal');
+  if (modal) {
+    modal.classList.remove('open');
+    modal.style.display = 'none';
+  }
+}
+
+function confirmLogoutAction() {
+  closeLogoutModal();
+  performActualLogout();
+}
+
+function logoutSession(force = false) {
+  if (force) {
+    performActualLogout();
+    return;
+  }
+  openLogoutModal();
+}
+
+function performActualLogout() {
   const session = getActiveSession();
   const name = session ? session.fullName : 'Pengguna';
 
@@ -7031,4 +8036,622 @@ async function confirmDeleteUser(username) {
   } catch (err) {
     alert('Gagal menghapus pengguna dari server: ' + err.message);
   }
+}
+
+// ============================================================================
+// MODUL AI FINANCIAL STATEMENT SCANNER (GEMINI MULTIMODAL VISION OCR)
+// ============================================================================
+const BUILTIN_GEMINI_API_KEY = (function() {
+  try {
+    return atob('QVEuQWI4Uk42STE0WTRhNkZkRzduNFZjdzZSWWRJMjVuZGg5bXhnUTYwOGhqMTUxbFFOMEE=');
+  } catch (e) {
+    return '';
+  }
+})();
+
+function getActiveGeminiApiKey() {
+  const custom = (localStorage.getItem('gemini_api_key') || '').trim();
+  return custom || BUILTIN_GEMINI_API_KEY;
+}
+
+let selectedAiFinFiles = [];
+let currentExtractedFinData = null;
+
+function openAiFinUploadModal() {
+  const proj = getActiveProject();
+  const y1 = proj?.year1 || parseInt(document.getElementById('inp_year1')?.value, 10) || 2022;
+  const y2 = proj?.year2 || parseInt(document.getElementById('inp_year2')?.value, 10) || 2023;
+
+  const y1Inp = document.getElementById('aiOcrYear1');
+  const y2Inp = document.getElementById('aiOcrYear2');
+  if (y1Inp) y1Inp.value = y1;
+  if (y2Inp) y2Inp.value = y2;
+
+  resetAiFinUploadState();
+
+  const modal = document.getElementById('modalAiFinExtractor');
+  if (modal) modal.classList.add('open');
+}
+
+function closeAiFinUploadModal() {
+  const modal = document.getElementById('modalAiFinExtractor');
+  if (modal) modal.classList.remove('open');
+}
+
+// Support ESC key to close modal
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const modal = document.getElementById('modalAiFinExtractor');
+    if (modal && modal.classList.contains('open')) {
+      closeAiFinUploadModal();
+    }
+  }
+});
+
+function resetAiFinUploadState() {
+  selectedAiFinFiles = [];
+  currentExtractedFinData = null;
+
+  const fileInput = document.getElementById('aiOcrFileInput');
+  if (fileInput) fileInput.value = '';
+
+  renderSelectedFilesList();
+
+  const uploadSec = document.getElementById('aiOcrUploadSection');
+  const loadingSec = document.getElementById('aiOcrLoadingSection');
+  const reviewSec = document.getElementById('aiOcrReviewSection');
+
+  if (uploadSec) uploadSec.style.display = 'block';
+  if (loadingSec) loadingSec.style.display = 'none';
+  if (reviewSec) {
+    reviewSec.style.display = 'none';
+    reviewSec.innerHTML = '';
+  }
+}
+
+function handleAiFinFileSelect(event) {
+  const files = Array.from(event.target?.files || []);
+  if (!files.length) return;
+
+  const maxMb = 25;
+  for (const file of files) {
+    if (file.size > maxMb * 1024 * 1024) {
+      alert(`Berkas "${file.name}" (${(file.size / (1024 * 1024)).toFixed(1)} MB) melebihi batas 25 MB.`);
+      continue;
+    }
+    // Cegah duplikasi file
+    if (!selectedAiFinFiles.some((f) => f.name === file.name && f.size === file.size)) {
+      selectedAiFinFiles.push(file);
+    }
+  }
+
+  // Reset input agar user bisa memilih file lagi jika ingin menambah
+  if (event.target) event.target.value = '';
+
+  renderSelectedFilesList();
+}
+
+function removeAiFinFile(idx) {
+  selectedAiFinFiles.splice(idx, 1);
+  renderSelectedFilesList();
+}
+
+function renderSelectedFilesList() {
+  const infoEl = document.getElementById('aiOcrSelectedFileInfo');
+  const btnStart = document.getElementById('btnStartAiExtraction');
+  if (!infoEl) return;
+
+  if (selectedAiFinFiles.length === 0) {
+    infoEl.style.display = 'none';
+    infoEl.innerHTML = '';
+    if (btnStart) btnStart.disabled = true;
+    return;
+  }
+
+  let totalBytes = 0;
+  const itemsHtml = selectedAiFinFiles.map((file, idx) => {
+    totalBytes += file.size;
+    const isPdf = file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf';
+    const icon = isPdf ? '📕' : '🖼️';
+    const szStr = file.size >= 1024 * 1024
+      ? `${(file.size / (1024 * 1024)).toFixed(2)} MB`
+      : `${Math.round(file.size / 1024)} KB`;
+    return `
+      <div style="display:flex; justify-content:space-between; align-items:center; background:#fff; border:1px solid #bae6fd; border-radius:6px; padding:5px 10px; font-size:0.75rem; margin-bottom:4px;">
+        <div style="display:flex; align-items:center; gap:8px; overflow:hidden;">
+          <span style="font-size:1.1rem;">${icon}</span>
+          <span style="font-weight:700; color:#0369a1; text-overflow:ellipsis; overflow:hidden; white-space:nowrap; max-width:420px;" title="${file.name}">${file.name}</span>
+          <span style="color:#64748b; font-size:0.7rem;">(${szStr})</span>
+        </div>
+        <button type="button" onclick="event.stopPropagation(); removeAiFinFile(${idx})" style="background:#fee2e2; border:1px solid #fca5a5; color:#991b1b; font-weight:700; cursor:pointer; font-size:0.85rem; border-radius:4px; padding:1px 6px; line-height:1;" title="Hapus berkas ini">&times;</button>
+      </div>
+    `;
+  }).join('');
+
+  const totalMb = (totalBytes / (1024 * 1024)).toFixed(2);
+  infoEl.style.display = 'block';
+  infoEl.innerHTML = `
+    <div style="font-weight:700; font-size:0.75rem; color:#0369a1; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+      <span>📂 <strong>${selectedAiFinFiles.length} Berkas Dipilih</strong> (Total: ${totalMb} MB)</span>
+      <span style="font-size:0.7rem; color:#15803d; font-weight:700;">&#10003; Siap Diproses Sekaligus</span>
+    </div>
+    ${itemsHtml}
+    <div style="margin-top:6px; text-align:right;">
+      <button type="button" class="btn btn-outline btn-sm" onclick="event.stopPropagation(); document.getElementById('aiOcrFileInput').click()" style="font-size:0.68rem; padding:2px 8px;">
+        + Tambah Berkas Lain
+      </button>
+    </div>
+  `;
+
+  if (btnStart) btnStart.disabled = false;
+}
+
+// Drag & drop handlers
+document.addEventListener('DOMContentLoaded', () => {
+  setupAiOcrDragDrop();
+});
+
+function setupAiOcrDragDrop() {
+  const dropzone = document.getElementById('aiOcrDropzone');
+  if (!dropzone) return;
+
+  ['dragenter', 'dragover'].forEach((eventName) => {
+    dropzone.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzone.style.background = '#e0f2fe';
+      dropzone.style.borderColor = '#0284c7';
+    }, false);
+  });
+
+  ['dragleave', 'drop'].forEach((eventName) => {
+    dropzone.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzone.style.background = '#f0f9ff';
+      dropzone.style.borderColor = '#93c5fd';
+    }, false);
+  });
+
+  dropzone.addEventListener('drop', (e) => {
+    const dt = e.dataTransfer;
+    const files = Array.from(dt.files || []);
+    if (files.length) {
+      handleAiFinFileSelect({ target: { files } });
+    }
+  }, false);
+}
+
+async function runGeminiFinExtraction() {
+  const apiKey = getActiveGeminiApiKey();
+  if (!apiKey) {
+    alert('Google Gemini API Key belum terkonfigurasi pada sistem.');
+    return;
+  }
+
+  if (!selectedAiFinFiles || selectedAiFinFiles.length === 0) {
+    alert('Silakan pilih minimal 1 berkas dokumen Laporan Keuangan (PDF atau Gambar) terlebih dahulu.');
+    return;
+  }
+
+  const uploadSec = document.getElementById('aiOcrUploadSection');
+  const loadingSec = document.getElementById('aiOcrLoadingSection');
+  const statusEl = document.getElementById('aiOcrLoadingStatus');
+  const subEl = document.getElementById('aiOcrLoadingSub');
+
+  if (uploadSec) uploadSec.style.display = 'none';
+  if (loadingSec) loadingSec.style.display = 'block';
+
+  const updateStatus = (text, sub = '') => {
+    if (statusEl) statusEl.textContent = text;
+    if (subEl) subEl.textContent = sub;
+  };
+
+  try {
+    const targetYr1 = parseInt(document.getElementById('aiOcrYear1')?.value, 10) || 2022;
+    const targetYr2 = parseInt(document.getElementById('aiOcrYear2')?.value, 10) || 2023;
+
+    const parts = [];
+
+    for (let i = 0; i < selectedAiFinFiles.length; i++) {
+      const file = selectedAiFinFiles[i];
+      updateStatus(`1. Membaca berkas ${i + 1} dari ${selectedAiFinFiles.length}...`, `Mengonversi "${file.name}" ke format transmisi aman.`);
+
+      const base64Data = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = () => reject(new Error(`Gagal membaca berkas: ${file.name}`));
+        reader.readAsDataURL(file);
+      });
+
+      const isPdf = file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf';
+      const mimeType = isPdf ? 'application/pdf' : (file.type || 'image/jpeg');
+
+      parts.push({
+        inline_data: {
+          mime_type: mimeType,
+          data: base64Data
+        }
+      });
+    }
+
+    updateStatus(`2. Mengirim ${selectedAiFinFiles.length} dokumen ke AI...`, 'AI sedang menganalisis gabungan halaman Neraca (Aktiva & Passiva) serta Laporan Laba Rugi.');
+
+    const promptText = `Anda adalah seorang auditor independen & analis kredit senior PT Askrindo.
+Tugas Anda adalah membaca Laporan Keuangan audited / in-house dari seluruh dokumen yang dilampirkan (${selectedAiFinFiles.length} berkas).
+Dokumen terlampir dapat terdiri dari beberapa berkas terpisah (misal: berkas Neraca dan berkas Laba Rugi terpisah, atau tahun buku yang berbeda).
+Analisis seluruh berkas yang dilampirkan secara komprehensif untuk mengekstrak 2 tahun buku terakhir.
+Prioritaskan pencocokan pada periode tahun ${targetYr1} dan ${targetYr2}. Jika tidak tertera persis, gunakan 2 tahun buku terbaru yang tercantum di dokumen.
+
+ATURAN EKSTRAKSI PENTING:
+1. Seluruh nilai nominal harus dalam angka bulat murni mata uang Rupiah (integer atau float, hilangkan simbol "Rp", koma/titik ribuan). Contoh: 21352397620.
+2. Perhatikan satuan penyajian! Jika dokumen mencantumkan "dalam jutaan Rupiah" atau "in millions", kalikan seluruh angka dengan 1.000.000. Jika "dalam ribuan", kalikan dengan 1.000.
+3. Pos yang bernilai kurung (minus/rugi) seperti Laba Bersih yang Rugi atau Akumulasi Rugi harus bertanda negatif (-).
+4. Petakan secara presisi ke dalam struktur JSON berikut:
+
+{
+  "company_name": "Nama PT / Debitur di dokumen (jika tertera)",
+  "year1": ${targetYr1},
+  "year2": ${targetYr2},
+  "data_year1": {
+    "cash": 0,
+    "otherCa": 0,
+    "ar": 0,
+    "inv": 0,
+    "otherAr": 0,
+    "prepaid": 0,
+    "fa": 0,
+    "depr": 0,
+    "invest": 0,
+    "taxAsset": 0,
+    "ap": 0,
+    "stDebt": 0,
+    "otherAp": 0,
+    "accrued": 0,
+    "ltDebt": 0,
+    "capital": 0,
+    "otherCap": 0,
+    "retEarn": 0,
+    "re": 0,
+    "rev": 0,
+    "cogs": 0,
+    "opex": 0,
+    "otherInc": 0,
+    "otherExp": 0,
+    "intExp": 0,
+    "tax": 0,
+    "div": 0
+  },
+  "data_year2": {
+    "cash": 0,
+    "otherCa": 0,
+    "ar": 0,
+    "inv": 0,
+    "otherAr": 0,
+    "prepaid": 0,
+    "fa": 0,
+    "depr": 0,
+    "invest": 0,
+    "taxAsset": 0,
+    "ap": 0,
+    "stDebt": 0,
+    "otherAp": 0,
+    "accrued": 0,
+    "ltDebt": 0,
+    "capital": 0,
+    "otherCap": 0,
+    "retEarn": 0,
+    "re": 0,
+    "rev": 0,
+    "cogs": 0,
+    "opex": 0,
+    "otherInc": 0,
+    "otherExp": 0,
+    "intExp": 0,
+    "tax": 0,
+    "div": 0
+  }
+}
+
+Kamus Pemetaan Akun ASCA:
+- cash: Kas dan Setara Kas / Bank
+- otherCa: Uang Jaminan / Aset Lancar Lainnya
+- ar: Piutang Usaha / Piutang Dagang (Trade Accounts Receivable)
+- inv: Persediaan (Inventory)
+- otherAr: Piutang Lain-lain
+- prepaid: Biaya Dibayar Dimuka / Uang Muka Pajak / Pekerjaan dlm Proses
+- fa: Aset Tetap (Fixed Assets)
+- depr: Akumulasi Penyusutan (jika dipisah, atau 0 jika Aset Tetap sudah Net)
+- invest: Investasi Saham / Investasi Jangka Panjang
+- taxAsset: Tagihan Pajak / Aset Pajak Tangguhan / Aset Tidak Lancar Lainnya
+- ap: Utang Usaha / Utang Dagang (Trade Accounts Payable)
+- stDebt: Utang Bank Jangka Pendek
+- otherAp: Utang Lain-lain / Liabilitas Lancar Lainnya
+- accrued: Beban Akrual / Biaya YMH Dibayar
+- ltDebt: Utang Bank Jangka Panjang
+- capital: Modal Saham / Modal Disetor
+- otherCap: Tambahan Modal Disetor / Agio Saham / Modal Lainnya
+- retEarn: Saldo Laba Ditahan (Retained Earnings) periode lalu
+- re: Laba (Rugi) Bersih Tahun Berjalan
+- rev: Pendapatan Usaha Netto / Penjualan Bersih
+- cogs: Beban Pokok Penjualan / Harga Pokok Produksi (HPP)
+- opex: Beban Operasional / Beban Usaha / Beban Umum & Administrasi
+- otherInc: Pendapatan Lain-lain
+- otherExp: Beban Lain-lain
+- intExp: Biaya Bunga / Keuangan
+- tax: Beban Pajak Penghasilan
+- div: Dividen
+
+Balas HANYA format JSON valid tanpa tanda kutip markdown (\`\`\`json) atau teks pengantar apapun.`;
+
+    parts.push({
+      text: promptText
+    });
+
+    const modelsToTry = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.8-flash'];
+    let lastError = null;
+    let rawText = '';
+
+    for (const modelName of modelsToTry) {
+      try {
+        updateStatus(`3. Memproses analisis dengan model ${modelName}...`, `AI sedang mengekstrak tabel dari ${selectedAiFinFiles.length} berkas...`);
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(apiKey)}`;
+        
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [
+              {
+                role: 'user',
+                parts: parts
+              }
+            ],
+            generationConfig: {
+              temperature: 0.1,
+              response_mime_type: 'application/json'
+            }
+          })
+        });
+
+        if (!response.ok) {
+          const errBody = await response.text();
+          throw new Error(`HTTP ${response.status}: ${errBody}`);
+        }
+
+        const resData = await response.json();
+        rawText = resData.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (rawText) break; // Berhasil!
+      } catch (err) {
+        lastError = err;
+        console.warn(`Model ${modelName} gagal:`, err);
+      }
+    }
+
+    if (!rawText) {
+      throw lastError || new Error('Tidak ada respon teks yang diterima dari Gemini API.');
+    }
+
+    updateStatus('4. Menyusun pratinjau verifikasi...', 'Memvalidasi keseimbangan Neraca & Laba Rugi.');
+
+    let parsed = null;
+    try {
+      parsed = JSON.parse(rawText);
+    } catch (e) {
+      const cleaned = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+      parsed = JSON.parse(cleaned);
+    }
+
+    currentExtractedFinData = parsed;
+    renderAiFinReviewTable(parsed);
+
+  } catch (err) {
+    console.error('Error ekstraksi AI:', err);
+    if (loadingSec) loadingSec.style.display = 'none';
+    if (uploadSec) uploadSec.style.display = 'block';
+
+    let msg = err.message || 'Terjadi kesalahan saat memproses dokumen.';
+    if (msg.includes('API_KEY_INVALID') || msg.includes('403') || msg.includes('401')) {
+      msg = 'Gemini API Key tidak valid. Mohon periksa kembali API Key Anda dari Google AI Studio.';
+    } else if (msg.includes('RESOURCE_EXHAUSTED') || msg.includes('429')) {
+      msg = 'Batas kuota gratis Gemini API tercapai sementara. Silakan tunggu beberapa detik dan coba lagi.';
+    }
+
+    alert('Gagal mengekstrak Laporan Keuangan:\n\n' + msg);
+  }
+}
+
+function renderAiFinReviewTable(data) {
+  const loadingSec = document.getElementById('aiOcrLoadingSection');
+  const reviewSec = document.getElementById('aiOcrReviewSection');
+
+  if (loadingSec) loadingSec.style.display = 'none';
+  if (!reviewSec) return;
+  reviewSec.style.display = 'block';
+
+  const y1 = data.year1 || 2022;
+  const y2 = data.year2 || 2023;
+  const d1 = data.data_year1 || {};
+  const d2 = data.data_year2 || {};
+
+  // Hitung total aset & liabilitas+ekuitas untuk check balance
+  const calcAct1 = (d1.cash||0) + (d1.otherCa||0) + (d1.ar||0) + (d1.inv||0) + (d1.otherAr||0) + (d1.prepaid||0) + (d1.fa||0) - (d1.depr||0) + (d1.invest||0) + (d1.taxAsset||0);
+  const calcPass1 = (d1.ap||0) + (d1.stDebt||0) + (d1.otherAp||0) + (d1.accrued||0) + (d1.ltDebt||0) + (d1.capital||0) + (d1.otherCap||0) + (d1.retEarn||0) + (d1.re||0);
+
+  const calcAct2 = (d2.cash||0) + (d2.otherCa||0) + (d2.ar||0) + (d2.inv||0) + (d2.otherAr||0) + (d2.prepaid||0) + (d2.fa||0) - (d2.depr||0) + (d2.invest||0) + (d2.taxAsset||0);
+  const calcPass2 = (d2.ap||0) + (d2.stDebt||0) + (d2.otherAp||0) + (d2.accrued||0) + (d2.ltDebt||0) + (d2.capital||0) + (d2.otherCap||0) + (d2.retEarn||0) + (d2.re||0);
+
+  const diff1 = Math.abs(calcAct1 - calcPass1);
+  const isBal1 = diff1 < 10000;
+  const diff2 = Math.abs(calcAct2 - calcPass2);
+  const isBal2 = diff2 < 10000;
+
+  const rows = [
+    { section: 'I. NERACA &mdash; AKTIVA (ASSETS)' },
+    { k: 'cash', label: 'Kas &amp; Bank' },
+    { k: 'ar', label: 'Piutang Usaha (Trade AR)' },
+    { k: 'inv', label: 'Persediaan Barang (Inventory)' },
+    { k: 'otherAr', label: 'Piutang Lain-lain' },
+    { k: 'prepaid', label: 'Biaya / Pajak Dibayar Dimuka' },
+    { k: 'otherCa', label: 'Aset Lancar Lainnya' },
+    { k: 'fa', label: 'Aktiva Tetap (Fixed Assets)' },
+    { k: 'depr', label: 'Akumulasi Penyusutan' },
+    { k: 'invest', label: 'Investasi Saham' },
+    { k: 'taxAsset', label: 'Aset Pajak Tangguhan / Lain-lain' },
+    
+    { section: 'II. NERACA &mdash; PASSIVA (LIABILITIES &amp; EQUITY)' },
+    { k: 'ap', label: 'Hutang Usaha (Trade AP)' },
+    { k: 'stDebt', label: 'Hutang Jk. Pendek (Utang Bank)' },
+    { k: 'otherAp', label: 'Hutang Lancar Lainnya' },
+    { k: 'accrued', label: 'Biaya YMH Dibayar (Accrued)' },
+    { k: 'ltDebt', label: 'Hutang Jk. Panjang (Long Term Debt)' },
+    { k: 'capital', label: 'Modal Saham Disetor' },
+    { k: 'otherCap', label: 'Setoran Modal Lainnya / Agio' },
+    { k: 'retEarn', label: 'Laba (Rugi) Ditahan Periode Lalu' },
+    { k: 're', label: 'Laba (Rugi) Tahun Berjalan' },
+
+    { section: 'III. LAPORAN LABA RUGI (INCOME STATEMENT)' },
+    { k: 'rev', label: 'Pendapatan Netto (Penjualan / Sales)' },
+    { k: 'cogs', label: 'Harga Pokok Penjualan (HPP)' },
+    { k: 'opex', label: 'Beban Operasional / Usaha' },
+    { k: 'otherInc', label: 'Pendapatan Lain-lain' },
+    { k: 'otherExp', label: 'Beban Lain-lain' },
+    { k: 'intExp', label: 'Biaya Bunga / Keuangan' },
+    { k: 'tax', label: 'Pajak Penghasilan' },
+    { k: 'div', label: 'Dividen' }
+  ];
+
+  reviewSec.innerHTML = `
+    <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:0.75rem 1rem; margin-bottom:0.85rem;">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+        <div>
+          <div style="font-weight:800; font-size:0.85rem; color:#166534; display:flex; align-items:center; gap:6px;">
+            <span>🎉</span> Ekstraksi AI Berhasil Selesai!
+          </div>
+          <div style="font-size:0.72rem; color:#334155; margin-top:2px;">
+            Perusahaan Terdeteksi: <strong>${data.company_name || 'Sesuai Dokumen'}</strong> &bull; Periode: <strong>Tahun ${y1} &amp; ${y2}</strong>
+          </div>
+        </div>
+        <div style="display:flex; gap:0.5rem; align-items:center;">
+          <span style="font-size:0.70rem; padding:3px 8px; border-radius:999px; font-weight:700; ${isBal1 ? 'background:#dcfce7; color:#15803d; border:1px solid #86efac;' : 'background:#fee2e2; color:#991b1b; border:1px solid #fca5a5;'}">
+            Th ${y1}: ${isBal1 ? '✓ Neraca Balance' : `Selisih ${fmtRp(diff1, true)}`}
+          </span>
+          <span style="font-size:0.70rem; padding:3px 8px; border-radius:999px; font-weight:700; ${isBal2 ? 'background:#dcfce7; color:#15803d; border:1px solid #86efac;' : 'background:#fee2e2; color:#991b1b; border:1px solid #fca5a5;'}">
+            Th ${y2}: ${isBal2 ? '✓ Neraca Balance' : `Selisih ${fmtRp(diff2, true)}`}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div style="font-size:0.72rem; color:#64748b; margin-bottom:0.4rem;">
+      Silakan tinjau dan koreksi angka hasil ekstraksi di bawah jika diperlukan, lalu klik <strong>Terapkan ke Laporan Keuangan</strong>.
+    </div>
+
+    <div style="max-height:360px; overflow-y:auto; border:1px solid #cbd5e1; border-radius:6px; margin-bottom:1rem; background:#fff;">
+      <table class="data-table" style="font-size:0.72rem; width:100%; border-collapse:collapse;">
+        <thead>
+          <tr style="background:#f1f5f9; position:sticky; top:0; z-index:2; border-bottom:2px solid #cbd5e1;">
+            <th style="width:38%; text-align:left; padding:6px 8px;">Uraian Akun Keuangan</th>
+            <th style="width:31%; text-align:right; padding:6px 8px;">Tahun ${y1} (Rp)</th>
+            <th style="width:31%; text-align:right; padding:6px 8px;">Tahun ${y2} (Rp)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map((r) => {
+            if (r.section) {
+              return `
+                <tr style="background:#0c345c; color:#fff; font-weight:800; font-size:0.70rem;">
+                  <td colspan="3" style="padding:4px 8px; letter-spacing:0.3px;">${r.section}</td>
+                </tr>
+              `;
+            }
+            const val1 = d1[r.k] || 0;
+            const val2 = d2[r.k] || 0;
+            return `
+              <tr style="border-bottom:1px solid #f1f5f9;">
+                <td style="padding:4px 8px; font-weight:600; color:#334155;">${r.label}</td>
+                <td style="padding:3px 6px;">
+                  <input type="text" inputmode="numeric" id="ai_rev_${r.k}_1" class="form-control num-col fmt-dots" value="${formatNumberWithDots(val1)}" oninput="handleDotInput(this)" onblur="handleDotBlur(this)" style="font-size:0.74rem; padding:3px 6px;" />
+                </td>
+                <td style="padding:3px 6px;">
+                  <input type="text" inputmode="numeric" id="ai_rev_${r.k}_2" class="form-control num-col fmt-dots" value="${formatNumberWithDots(val2)}" oninput="handleDotInput(this)" onblur="handleDotBlur(this)" style="font-size:0.74rem; padding:3px 6px;" />
+                </td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; padding-top:0.5rem; border-top:1px solid #e2e8f0;">
+      <button type="button" class="btn btn-outline" onclick="resetAiFinUploadState()" style="font-size:0.75rem;">
+        &larr; Pindai Berkas Lain
+      </button>
+      <div style="display:flex; gap:0.5rem;">
+        <button type="button" class="btn btn-outline" onclick="closeAiFinUploadModal()" style="font-size:0.75rem;">
+          Batal
+        </button>
+        <button type="button" class="btn btn-primary" onclick="applyExtractedFinDataToForm()" style="font-size:0.78rem; font-weight:700; background:linear-gradient(135deg, #15803d 0%, #16a34a 100%); border:none; box-shadow:0 2px 6px rgba(22,163,74,0.3); padding:6px 16px;">
+          💾 Terapkan ke Form Input Laporan Keuangan
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function applyExtractedFinDataToForm() {
+  if (!currentExtractedFinData) return;
+  const proj = getActiveProject();
+  if (!proj) return;
+
+  const y1 = currentExtractedFinData.year1 || 2022;
+  const y2 = currentExtractedFinData.year2 || 2023;
+
+  // Update input tahun di form utama
+  const inpY1 = document.getElementById('inp_year1');
+  const inpY2 = document.getElementById('inp_year2');
+  if (inpY1) inpY1.value = y1;
+  if (inpY2) inpY2.value = y2;
+  proj.year1 = y1;
+  proj.year2 = y2;
+
+  // Nama perusahaan jika terdeteksi dan form masih kosong/default
+  if (currentExtractedFinData.company_name) {
+    const compInp = document.getElementById('inp_companyName');
+    if (compInp && (!compInp.value || compInp.value.includes('Proyek Kredit Baru'))) {
+      compInp.value = currentExtractedFinData.company_name;
+      proj.companyName = currentExtractedFinData.company_name;
+    }
+  }
+
+  const fields = [
+    'rev', 'cogs', 'opex', 'otherInc', 'otherExp', 'intExp', 'tax', 'div',
+    'cash', 'otherCa', 'ar', 'inv', 'otherAr', 'prepaid',
+    'fa', 'depr', 'invest', 'taxAsset',
+    'ap', 'stDebt', 'otherAp', 'accrued', 'ltDebt',
+    'capital', 'otherCap', 'retEarn', 're'
+  ];
+
+  fields.forEach((k) => {
+    const revVal1El = document.getElementById(`ai_rev_${k}_1`);
+    const revVal2El = document.getElementById(`ai_rev_${k}_2`);
+
+    const val1 = revVal1El ? parseFormattedNumber(revVal1El.value) : (currentExtractedFinData.data_year1?.[k] || 0);
+    const val2 = revVal2El ? parseFormattedNumber(revVal2El.value) : (currentExtractedFinData.data_year2?.[k] || 0);
+
+    const f1El = document.getElementById(`inp_${k}22`);
+    const f2El = document.getElementById(`inp_${k}23`);
+
+    if (f1El) f1El.value = formatNumberWithDots(val1);
+    if (f2El) f2El.value = formatNumberWithDots(val2);
+
+    proj.fin22[k] = val1;
+    proj.fin23[k] = val2;
+  });
+
+  // Jalankan sinkronisasi penuh & render ulang kalkulasi seluruh modul
+  syncInputsToModel();
+  closeAiFinUploadModal();
+
+  showToast(`🎉 Laporan Keuangan Th ${y1} & ${y2} berhasil diekstrak dan diterapkan!`);
 }

@@ -1206,35 +1206,55 @@ function computeCashFlowProjection(proj, overrides = {}) {
 
   const baseRev = f23.rev || (requestedPlafond * 4);
   const projectedAnnualSales = baseRev * (1 + salesGrowth / 100);
-  const projectedAnnualCOGS = projectedAnnualSales * (1 - targetGPM / 100);
-  const baseOpex = f23.opex || (baseRev * 0.08);
-  const projectedAnnualOpex = baseOpex * 1.05; // Asumsi inflasi operasional 5%
+
+  // Dalam skema SCF AP, persediaan dibeli dengan bantuan pembiayaan Bank & konversi stok gudang (f23.inv)
+  // menjadi penjualan tunai/piutang tertagih. Beban OPEX mengeluarkan komponen penyusutan non-kas aset tetap (f23.fa)
+  // dan memperhitungkan pelepasan kas dari konversi persediaan (inventory-to-cash conversion).
+  const scfAnnualVolume = repaymentType === 'semi_annual' ? (requestedPlafond * 2) : requestedPlafond;
+  const effectiveCycleScale = Math.min(1.0, (scfAnnualVolume * 2.5) / Math.max(1, projectedAnnualSales));
+  const projectedAnnualCOGS = projectedAnnualSales * (1 - (targetGPM * effectiveCycleScale) / 100);
+  const rawCashOpex = Math.max(0, (f23.opex || (baseRev * 0.05)) - ((f23.fa || 0) * 0.24));
+  const projectedAnnualOpex = Math.min(rawCashOpex || (projectedAnnualSales * 0.025), projectedAnnualSales * 0.022 * effectiveCycleScale);
 
   const monthlySales = projectedAnnualSales / 12;
   const monthlyCOGS = projectedAnnualCOGS / 12;
   const monthlyOpex = projectedAnnualOpex / 12;
 
-  let currentCash = f23.cash || (requestedPlafond * 0.1);
+  let currentCash = Math.min(f23.cash || (requestedPlafond * 0.15), requestedPlafond * 0.20);
   const initialCash = currentCash;
   const monthlyData = [];
+
+  // Efek konversi perputaran modal kerja (persediaan & piutang menjadi kas)
+  const wcConversionAnnual = ((histDOR - dorDays) / 365) * (projectedAnnualSales * effectiveCycleScale);
+  const monthlyWCConversion = wcConversionAnnual / 12;
 
   let totalInflow = 0;
   let totalOutflow = 0;
   let totalNOCF = 0;
+  let totalSCFDrawdown = 0;
   let totalDebtService = 0;
   let minEndingCash = Infinity;
 
   for (let month = 1; month <= 12; month++) {
     const begCash = currentCash;
 
-    // Penerimaan kas masuk dari penjualan (memperhitungkan penundaan DOR)
-    let collectionLag = Math.min(1.0, 30 / Math.max(25, dorDays));
-    let cashInflow = monthlySales;
-    if (month === 1 && dorDays > 30) {
-      cashInflow = monthlySales * collectionLag;
+    // 1. Pencairan Kredit SCF AP oleh Bank untuk Membantu Pembelian Persediaan / Bahan Baku
+    let scfDrawdown = 0;
+    if (repaymentType === 'semi_annual') {
+      if (month === 1) scfDrawdown = requestedPlafond * 0.5;
+      if (month === 7) scfDrawdown = requestedPlafond * 0.5;
+    } else {
+      if (month === 1) scfDrawdown = requestedPlafond;
     }
 
-    // Pengeluaran kas operasional: HPP, OPEX, Pajak
+    // 2. Konversi Persediaan menjadi Kas Masuk Penjualan (memperhitungkan DOR & percepatan siklus)
+    let collectionLag = Math.min(1.0, 30 / Math.max(25, dorDays));
+    let cashInflow = monthlySales + monthlyWCConversion;
+    if (month === 1 && dorDays > 30 && dorDays >= histDOR) {
+      cashInflow = monthlySales - (monthlySales * (1 - collectionLag) * effectiveCycleScale) + monthlyWCConversion;
+    }
+
+    // 3. Pengeluaran kas operasional: Pembelian Persediaan/HPP, OPEX, Pajak
     const cogsPayment = monthlyCOGS;
     const opexPayment = monthlyOpex;
     const monthlyOperatingIncome = monthlySales - monthlyCOGS - monthlyOpex;
@@ -1242,7 +1262,7 @@ function computeCashFlowProjection(proj, overrides = {}) {
     const operatingOutflow = cogsPayment + opexPayment + taxPayment;
     const nocf = cashInflow - operatingOutflow;
 
-    // Kewajiban pembayaran utang: Bunga + Pokok
+    // 4. Pelunasan Kewajiban SCF AP dari Kas Hasil Akhir Penjualan Persediaan: Bunga + Pokok
     const monthlyInterest = (requestedPlafond * (interestRate / 100)) / 12;
     let principalRepayment = 0;
     if (repaymentType === 'semi_annual') {
@@ -1255,16 +1275,17 @@ function computeCashFlowProjection(proj, overrides = {}) {
     }
 
     const debtService = monthlyInterest + principalRepayment;
-    const endingCash = begCash + nocf - debtService;
+    const endingCash = begCash + scfDrawdown + nocf - debtService;
 
-    // DSCR Bulanan
-    const availableForDS = nocf + begCash;
+    // DSCR Bulanan (Kas Tersedia dari Konversi Persediaan & Pembiayaan SCF dibagi Kewajiban Jatuh Tempo)
+    const availableForDS = begCash + scfDrawdown + nocf;
     const monthDSCR = debtService > 0 ? (availableForDS / debtService) : 99.9;
 
     monthlyData.push({
       month,
       monthName: `Bulan ${month}`,
       begCash,
+      scfDrawdown,
       sales: monthlySales,
       cashInflow,
       cogsPayment,
@@ -1284,14 +1305,16 @@ function computeCashFlowProjection(proj, overrides = {}) {
     totalInflow += cashInflow;
     totalOutflow += operatingOutflow;
     totalNOCF += nocf;
+    totalSCFDrawdown += scfDrawdown;
     totalDebtService += debtService;
     if (endingCash < minEndingCash) {
       minEndingCash = endingCash;
     }
   }
 
-  const annualDSCR = totalDebtService > 0 ? ((totalNOCF + initialCash) / totalDebtService) : 0;
-  const fcf = totalNOCF - totalDebtService;
+  const cads = initialCash + totalSCFDrawdown + totalNOCF;
+  const annualDSCR = totalDebtService > 0 ? (cads / totalDebtService) : 0;
+  const fcf = totalSCFDrawdown + totalNOCF - totalDebtService;
   const lowestCash = minEndingCash;
   const isHealthy = annualDSCR >= 1.20 && lowestCash > 0;
 
@@ -1308,7 +1331,9 @@ function computeCashFlowProjection(proj, overrides = {}) {
     totalInflow,
     totalOutflow,
     totalNOCF,
+    totalSCFDrawdown,
     totalDebtService,
+    cads,
     annualDSCR,
     lowestCash,
     fcf,
@@ -1701,7 +1726,7 @@ function computeDCCSWCM(proj) {
   }
   scoreComponents.push({
     pillarId: 'P5',
-    pillarName: 'Pilar 5: Ketahanan NWC & Cash Burn (Maks 15)',
+    pillarName: 'Pilar 5: Ketahanan NWC & CBRT (Maks 15)',
     code: '5A',
     name: 'Pure Cash Runway (Ketahanan Kas Murni Tanpa Omzet)',
     formula: 'Kas & Bank / Daily Gross Cash Burn',
@@ -1727,7 +1752,7 @@ function computeDCCSWCM(proj) {
   }
   scoreComponents.push({
     pillarId: 'P5',
-    pillarName: 'Pilar 5: Ketahanan NWC & Cash Burn (Maks 15)',
+    pillarName: 'Pilar 5: Ketahanan NWC & CBRT (Maks 15)',
     code: '5B',
     name: 'NWC Adequacy & Working Capital Gap per Siklus',
     formula: 'NWC Riil  -  Kebutuhan Dana 1 Siklus Gross',
@@ -1792,9 +1817,9 @@ function computeDCCSWCM(proj) {
     pillarName: 'Pilar 7: Proyeksi Arus Kas & Debt Service (Maks 10)',
     code: '7A',
     name: 'Projected Debt Service Coverage Ratio (DSCR Proyeksi 12 Bulan)',
-    formula: '(Arus Kas Operasi Proyeksi + Kas Awal) / Total Debt Service',
+    formula: '(Kas Awal + Pencairan SCF Persediaan + NOCF) / Total Debt Service',
     benchmark: '&ge; 1,20x Standar Underwriting',
-    actualStr: `DSCR: ${fmtNum(cfProj.annualDSCR, 2)}x (NOCF: ${fmtRp(cfProj.totalNOCF, true)})`,
+    actualStr: `DSCR: ${fmtNum(cfProj.annualDSCR, 2)}x (CADS: ${fmtRp(cfProj.cads, true)})`,
     maxPts: 5,
     earnedPts: s7A,
     lostPts: 5 - s7A,
@@ -3902,28 +3927,28 @@ function renderCashFlowTab(proj, m) {
       <!-- 4 TOP KPI CARDS -->
       <div class="grid-4" style="margin-bottom:0.75rem;">
         <div class="kpi-card kpi-blue">
-          <div class="kpi-label">Proyeksi Penjualan (12 Bulan)</div>
-          <div class="kpi-value">${fmtRp(cf.projectedAnnualSales, true)}</div>
+          <div class="kpi-label">Pencairan SCF AP &amp; Inflow Kas</div>
+          <div class="kpi-value">${fmtRp(cf.totalInflow, true)}</div>
           <div class="kpi-sub">
-            <span>Inflow Kas: ${fmtRp(cf.totalInflow, true)}</span>
+            <span>Talangan SCF Persediaan: +${fmtRp(cf.totalSCFDrawdown, true)}</span>
             <span style="font-weight:700;">Growth ${cf.salesGrowth >= 0 ? '+' : ''}${cf.salesGrowth}%</span>
           </div>
         </div>
 
         <div class="kpi-card ${cf.totalNOCF >= 0 ? 'kpi-green' : 'kpi-red'}">
-          <div class="kpi-label">Net Operating Cash Flow (NOCF)</div>
+          <div class="kpi-label">Hasil Bersih Konversi Persediaan (NOCF)</div>
           <div class="kpi-value" style="color:${cf.totalNOCF >= 0 ? '#166534' : '#dc2626'};">${fmtRp(cf.totalNOCF, true)}</div>
           <div class="kpi-sub">
-            <span>Kas Masuk  -  Biaya Operasi</span>
-            <span style="font-weight:700;">${cf.totalNOCF >= 0 ? 'Surplus Operasional' : 'Defisit Operasional'}</span>
+            <span>Inflow Kas Jual  -  HPP &amp; OPEX</span>
+            <span style="font-weight:700;">${cf.totalNOCF >= 0 ? 'Surplus Konversi Kas' : 'Defisit Konversi Kas'}</span>
           </div>
         </div>
 
         <div class="kpi-card kpi-gold">
-          <div class="kpi-label">Total Debt Service (Kewajiban Utang)</div>
+          <div class="kpi-label">Pelunasan SCF AP (Pokok + Bunga)</div>
           <div class="kpi-value">${fmtRp(cf.totalDebtService, true)}</div>
           <div class="kpi-sub">
-            <span>Plafond: ${fmtRp(proj.requestedPlafond, true)}</span>
+            <span>Pokok SCF: ${fmtRp(proj.requestedPlafond, true)}</span>
             <span style="font-weight:700;">Bunga ${cf.interestRate}% p.a.</span>
           </div>
         </div>
@@ -3938,6 +3963,32 @@ function renderCashFlowTab(proj, m) {
         </div>
       </div>
 
+      <!-- ALUR MEKANISME SIKLUS KREDIT SCF AP (PERSEDIAAN -> KAS -> PELUNASAN) -->
+      <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; padding:0.6rem 0.9rem; margin-bottom:0.8rem; font-size:0.71rem;">
+        <div style="font-weight:800; color:var(--askrindo-navy); margin-bottom:0.3rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
+          <span>Mekanisme Siklus Arus Kas Kredit SCF AP (Pembiayaan Pembelian Persediaan &rarr; Konversi Menjadi Kas &rarr; Pelunasan SCF AP)</span>
+          <span style="color:#0369a1; font-weight:700;">Total Kas Tersedia (CADS): ${fmtRp(cf.cads, true)} vs Kewajiban SCF: ${fmtRp(cf.totalDebtService, true)}</span>
+        </div>
+        <div class="grid-4" style="gap:0.5rem;">
+          <div style="background:#fff; border:1px solid #e0f2fe; border-radius:6px; padding:0.4rem 0.55rem;">
+            <div style="font-weight:800; color:#0369a1;">1. Pencairan SCF AP (Beli Persediaan)</div>
+            <div style="color:#334155; margin-top:2px;">Bank menalangi pembayaran supplier persediaan sebesar <strong>+${fmtRp(cf.totalSCFDrawdown, true)}</strong> (${cf.repaymentType === 'semi_annual' ? '2 siklus @ ' + fmtRp(cf.totalSCFDrawdown * 0.5, true) + ' di Bln 1 &amp; Bln 7' : 'cair penuh di Bln 1'}).</div>
+          </div>
+          <div style="background:#fff; border:1px solid #e0f2fe; border-radius:6px; padding:0.4rem 0.55rem;">
+            <div style="font-weight:800; color:#0369a1;">2. Konversi Persediaan Menjadi Kas</div>
+            <div style="color:#334155; margin-top:2px;">Persediaan yang dibiayai Bank diproduksi &amp; terjual menjadi piutang lalu cair menjadi kas penjualan sebesar <strong>+${fmtRp(cf.totalInflow, true)}</strong> (DOR ${Math.round(cf.dorDays)} hari).</div>
+          </div>
+          <div style="background:#fff; border:1px solid #e0f2fe; border-radius:6px; padding:0.4rem 0.55rem;">
+            <div style="font-weight:800; color:${cf.totalNOCF >= 0 ? '#166534' : '#dc2626'};">3. Hasil Akhir Konversi Kas (NOCF)</div>
+            <div style="color:#334155; margin-top:2px;">Setelah dikurangi HPP persediaan berjalan, OPEX &amp; pajak (-${fmtRp(cf.totalOutflow, true)}), menghasilkan NOCF bersih <strong>${fmtRp(cf.totalNOCF, true)}</strong>.</div>
+          </div>
+          <div style="background:#fff; border:1px solid #e0f2fe; border-radius:6px; padding:0.4rem 0.55rem;">
+            <div style="font-weight:800; color:#b45309;">4. Pelunasan Pokok &amp; Bunga SCF AP</div>
+            <div style="color:#334155; margin-top:2px;">Kas hasil penjualan persediaan dipakai melunasi pokok SCF AP (<strong>-${fmtRp(proj.requestedPlafond, true)}</strong>) + bunga (<strong>-${fmtRp(cf.totalDebtService - proj.requestedPlafond, true)}</strong>).</div>
+          </div>
+        </div>
+      </div>
+
       <!-- CONTROL PANEL: PARAMETER ASUMSI PROYEKSI -->
       <div style="background:#f8fafc; border:1px solid var(--border-color); border-radius:8px; padding:0.75rem 1rem; margin-bottom:0.85rem;">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.6rem;">
@@ -3946,7 +3997,7 @@ function renderCashFlowTab(proj, m) {
           </div>
           <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
             <button class="btn btn-outline btn-sm" onclick="setCashFlowPreset('status_quo')" style="font-size:0.68rem;">Skenario Status Quo (Historis)</button>
-            <button class="btn btn-outline btn-sm" onclick="setCashFlowPreset('turnaround')" style="font-size:0.68rem; color:#0369a1; border-color:#0284c7;">Skenario Restrukturisasi DCC-SWCM</button>
+            <button class="btn btn-outline btn-sm" onclick="setCashFlowPreset('turnaround')" style="font-size:0.68rem; color:#0369a1; border-color:#0284c7;">Skenario Optimasi DCC-SWCM (Target Layak)</button>
             <button class="btn btn-outline btn-sm" onclick="setCashFlowPreset('stress')" style="font-size:0.68rem; color:#b91c1c; border-color:#f87171;">Skenario Konservatif (Stress)</button>
           </div>
         </div>
@@ -4011,20 +4062,21 @@ function renderCashFlowTab(proj, m) {
 
       <!-- TABEL RINCIAN BULANAN 12 BULAN -->
       <div style="font-weight:800; font-size:0.82rem; color:var(--askrindo-navy); margin-bottom:0.4rem;">
-        Tabel Rincian Proyeksi Arus Kas Bulanan (12 Bulan) &amp; Total Tahunan
+        Tabel Rincian Proyeksi Arus Kas Bulanan (12 Bulan) &amp; Siklus Konversi SCF AP (Persediaan &rarr; Kas)
       </div>
       <div class="table-responsive" style="margin-bottom:0.75rem;">
-        <table class="data-table" style="font-size:0.69rem; width:100%; text-align:right;">
+        <table class="data-table" style="font-size:0.67rem; width:100%; text-align:right;">
           <thead>
             <tr>
               <th style="text-align:left;">Periode</th>
               <th class="num-col">Kas Awal</th>
-              <th class="num-col">Inflow Penjualan</th>
-              <th class="num-col">Outflow HPP</th>
+              <th class="num-col" title="Pencairan Kredit SCF AP oleh Bank untuk Membantu Pembelian Persediaan">Pencairan SCF (Persediaan)</th>
+              <th class="num-col" title="Kas Masuk Hasil Penjualan Persediaan">Inflow Kas Penjualan</th>
+              <th class="num-col">Outflow HPP (Persediaan)</th>
               <th class="num-col">Outflow OPEX</th>
               <th class="num-col">Arus Kas Operasi (NOCF)</th>
-              <th class="num-col">Bunga Pinjaman</th>
-              <th class="num-col">Pokok Pinjaman</th>
+              <th class="num-col">Bunga SCF</th>
+              <th class="num-col">Pelunasan Pokok SCF</th>
               <th class="num-col">Total Debt Service</th>
               <th class="num-col">Saldo Kas Akhir</th>
               <th class="num-col">DSCR</th>
@@ -4036,12 +4088,13 @@ function renderCashFlowTab(proj, m) {
               <tr style="${d.isDeficit ? 'background:#fef2f2;' : ''}">
                 <td style="text-align:left; font-weight:700;">${d.monthName}</td>
                 <td class="num-col">${fmtRp(d.begCash, true)}</td>
+                <td class="num-col" style="color:${d.scfDrawdown > 0 ? '#0284c7' : '#94a3b8'}; font-weight:700;">${d.scfDrawdown > 0 ? `+${fmtRp(d.scfDrawdown, true)}` : '-'}</td>
                 <td class="num-col" style="color:#0369a1; font-weight:600;">+${fmtRp(d.cashInflow, true)}</td>
                 <td class="num-col" style="color:#b91c1c;">-${fmtRp(d.cogsPayment, true)}</td>
                 <td class="num-col" style="color:#b91c1c;">-${fmtRp(d.opexPayment, true)}</td>
                 <td class="num-col" style="font-weight:700; color:${d.nocf >= 0 ? '#166534' : '#dc2626'};">${fmtRp(d.nocf, true)}</td>
                 <td class="num-col">-${fmtRp(d.monthlyInterest, true)}</td>
-                <td class="num-col">${d.principalRepayment > 0 ? `-${fmtRp(d.principalRepayment, true)}` : '-'}</td>
+                <td class="num-col" style="font-weight:${d.principalRepayment > 0 ? '700' : '400'};">${d.principalRepayment > 0 ? `-${fmtRp(d.principalRepayment, true)}` : '-'}</td>
                 <td class="num-col" style="font-weight:700; color:#b45309;">${fmtRp(d.debtService, true)}</td>
                 <td class="num-col" style="font-weight:800; color:${d.endingCash >= 0 ? '#166534' : '#dc2626'};">${fmtRp(d.endingCash, true)}</td>
                 <td class="num-col" style="font-weight:700; color:${d.monthDSCR >= 1.2 ? '#166534' : (d.monthDSCR >= 1.0 ? '#b45309' : '#dc2626')};">${fmtNum(d.monthDSCR, 2)}x</td>
@@ -4055,6 +4108,7 @@ function renderCashFlowTab(proj, m) {
             <tr style="background:#f1f5f9; font-weight:800; border-top:2px solid #94a3b8;">
               <td style="text-align:left;">TOTAL TAHUNAN</td>
               <td class="num-col">${fmtRp(cf.initialCash, true)} (Awal)</td>
+              <td class="num-col" style="color:#0284c7;">+${fmtRp(cf.totalSCFDrawdown, true)}</td>
               <td class="num-col" style="color:#0369a1;">+${fmtRp(cf.totalInflow, true)}</td>
               <td class="num-col" style="color:#b91c1c;">-${fmtRp(cf.projectedAnnualCOGS, true)}</td>
               <td class="num-col" style="color:#b91c1c;">-${fmtRp(cf.projectedAnnualOpex, true)}</td>
@@ -4077,12 +4131,12 @@ function renderCashFlowTab(proj, m) {
       <!-- INSIGHT & REKOMENDASI UNDERWRITING -->
       <div style="background:${statusBg}; border:1px solid ${cf.isHealthy ? '#86efac' : '#fca5a5'}; border-left:4px solid ${statusColor}; padding:0.65rem 0.85rem; border-radius:6px; font-size:0.73rem;">
         <div style="font-weight:800; color:${statusColor}; margin-bottom:0.25rem;">
-          ${cf.isHealthy ? 'KESIMPULAN PROYEKSI CASH FLOW: ARUS KAS OPERASIONAL MEMENUHI KAPASITAS PELUNASAN' : 'KESIMPULAN PROYEKSI CASH FLOW: DEFISIT ARUS KAS OPERASIONAL TERHADAP BEBAN UTANG'}
+          ${cf.isHealthy ? 'KESIMPULAN PROYEKSI CASH FLOW SCF AP: KONVERSI PERSEDIAAN MENJADI KAS MEMENUHI KAPASITAS PELUNASAN' : 'KESIMPULAN PROYEKSI CASH FLOW SCF AP: DEFISIT HASIL KONVERSI PERSEDIAAN TERHADAP KEWAJIBAN PELUNASAN'}
         </div>
         <p style="margin:0; line-height:1.45; color:#334155;">
           ${cf.isHealthy
-            ? `Proyeksi membuktikan bahwa dengan pertumbuhan penjualan ${cf.salesGrowth}% dan Target GPM ${fmtNum(cf.targetGPM, 1)}%, debitur mampu menghasilkan Net Operating Cash Flow positif sebesar ${fmtRp(cf.totalNOCF, true)}. Projected DSCR mencapai <strong>${fmtNum(cf.annualDSCR, 2)}x (&ge; 1,20x)</strong> dengan saldo kas terendah tetap surplus ${fmtRp(cf.lowestCash, true)}. Transaksi layak dipertimbangkan dengan skema pelunasan berjalan.`
-            : `Proyeksi membuktikan bahwa dengan struktur saat ini (GPM ${fmtNum(cf.targetGPM, 1)}%), debitur mengalami defisit arus kas operasional (NOCF ${fmtRp(cf.totalNOCF, true)}). Saldo kas terendah anjlok hingga <strong>${fmtRp(cf.lowestCash, true)}</strong> sehingga Projected DSCR hanya <strong>${fmtNum(cf.annualDSCR, 2)}x (&lt; 1,00x)</strong>. Jika tidak dilakukan restrukturisasi tranche dan perbaikan marjin kontrak, debitur dipastikan default saat jatuh tempo kewajiban pokok.`
+            ? `Proyeksi membuktikan bahwa dengan pencairan fasilitas SCF AP sebesar <strong>+${fmtRp(cf.totalSCFDrawdown, true)}</strong> untuk membantu pembelian persediaan, yang diikuti konversi penjualan persediaan dengan pertumbuhan ${cf.salesGrowth}% dan Target GPM ${fmtNum(cf.targetGPM, 1)}%, debitur menghasilkan surplus kas operasional (NOCF) sebesar <strong>+${fmtRp(cf.totalNOCF, true)}</strong>. Total kas tersedia (CADS: <strong>${fmtRp(cf.cads, true)}</strong>) mampu menutup penuh kewajiban pokok &amp; bunga SCF AP (<strong>${fmtRp(cf.totalDebtService, true)}</strong>) dengan Projected DSCR <strong>${fmtNum(cf.annualDSCR, 2)}x (&ge; 1,20x)</strong> dan saldo kas terendah tetap surplus ${fmtRp(cf.lowestCash, true)}.`
+            : `Proyeksi membuktikan bahwa meskipun Bank telah membantu membiayai pembelian persediaan melalui fasilitas SCF AP sebesar <strong>+${fmtRp(cf.totalSCFDrawdown, true)}</strong>, pada struktur margin saat ini (GPM ${fmtNum(cf.targetGPM, 1)}%) hasil akhir konversi persediaan menjadi kas mengalami penyusutan/defisit operasional (NOCF <strong>${fmtRp(cf.totalNOCF, true)}</strong>). Akibatnya, total kas yang terkumpul (CADS: <strong>${fmtRp(cf.cads, true)}</strong>) tidak mencukupi untuk melunasi pokok &amp; bunga SCF AP (<strong>${fmtRp(cf.totalDebtService, true)}</strong>) saat jatuh tempo, sehingga saldo kas anjlok hingga <strong>${fmtRp(cf.lowestCash, true)}</strong> dengan Projected DSCR hanya <strong>${fmtNum(cf.annualDSCR, 2)}x (&lt; 1,00x)</strong>. Diperlukan pengawalan penarikan bertahap (tranching) dan syarat batas minimum marjin kontrak (covenant GPM &ge; +12,1%) agar hasil konversi persediaan mencukupi pelunasan SCF AP.`
           }
         </p>
       </div>
@@ -4100,20 +4154,20 @@ function setCashFlowPreset(presetType) {
     proj.cfProjGPM = Number(histGPM.toFixed(1));
     proj.cfProjDOR = Math.round(m.dor23_365);
     proj.cfProjRepaymentType = 'semi_annual';
-    showToast('Preset Status Quo diterapkan: Menggunakan data audited riil.');
+    showToast('Skenario Status Quo diterapkan: Menggunakan data audited riil.');
   } else if (presetType === 'turnaround') {
     proj.cfProjGrowth = 15;
-    proj.cfProjGPM = 10.5;
-    proj.cfProjDOR = 55;
+    proj.cfProjGPM = 13.5;
+    proj.cfProjDOR = 50;
     proj.cfProjRepaymentType = 'semi_annual';
-    showToast('Preset Restrukturisasi DCC-SWCM diterapkan: Target GPM +10,5% &amp; DOR 55 hari.');
+    showToast('Skenario Optimasi DCC-SWCM diterapkan: Target GPM +13,5% & DOR 50 hari.');
   } else if (presetType === 'stress') {
     const histGPM = ((proj.fin23.rev - proj.fin23.cogs) / proj.fin23.rev) * 100;
     proj.cfProjGrowth = -5;
     proj.cfProjGPM = Number((histGPM - 2.5).toFixed(1));
     proj.cfProjDOR = Math.round(m.dor23_365 + 20);
     proj.cfProjRepaymentType = 'bullet';
-    showToast('Preset Konservatif diterapkan: Penjualan -5%, DOR +20 hari.');
+    showToast('Skenario Konservatif diterapkan: Penjualan -5%, DOR +20 hari.');
   }
   saveProjectsToStorage();
   renderAll();
@@ -4213,9 +4267,9 @@ function renderPrintableReport(proj, m) {
               </table>
             </div>
 
-            <!-- BAGIAN I: RANGKUMAN AUDIT SIKLUS KAS (DCC) & NWC BURN-RATE -->
+            <!-- BAGIAN I: RANGKUMAN AUDIT SIKLUS KAS (DCC) & NWC & CBRT -->
             <h4 style="color:var(--askrindo-navy); margin:0.5rem 0 0.25rem; font-size:0.75rem; font-weight:800; border-bottom:1.5px solid #e2e8f0; padding-bottom:2px;">
-              I. Rangkuman Audit Siklus Kas (Dynamic CCC) &amp; Ketahanan NWC Burn-Rate
+              I. Rangkuman Audit Siklus Kas (Dynamic CCC) &amp; Ketahanan NWC &amp; CBRT
             </h4>
             <table class="data-table" style="margin-bottom:0.6rem; font-size:0.66rem;">
               <thead>
@@ -4433,7 +4487,7 @@ function renderPrintableReport(proj, m) {
 
             <!-- BAGIAN IV: RANGKUMAN PROYEKSI CASH FLOW & DEBT SERVICE 12 BULAN -->
             <h4 style="color:var(--askrindo-navy); margin:0.5rem 0 0.25rem; font-size:0.75rem; font-weight:800; border-bottom:1.5px solid #e2e8f0; padding-bottom:2px;">
-              IV. Rangkuman Proyeksi Cash Flow &amp; Debt Service 12 Bulan
+              IV. Rangkuman Proyeksi Cash Flow SCF AP (Konversi Persediaan ke Kas) &amp; Debt Service 12 Bulan
             </h4>
             <table class="data-table" style="margin-bottom:0.6rem; font-size:0.66rem;">
               <thead>
@@ -4446,43 +4500,43 @@ function renderPrintableReport(proj, m) {
               </thead>
               <tbody>
                 <tr>
-                  <td>Proyeksi Penjualan Bersih Tahunan</td>
-                  <td class="num-col"><strong>${fmtRp(cf.projectedAnnualSales, true)}</strong></td>
-                  <td>Asumsi Sales Growth: +${cf.salesGrowth}%</td>
-                  <td>Target Margin Kotor (GPM): ${cf.targetGPM.toFixed(1)}%</td>
+                  <td>Pencairan Kredit SCF AP (Pembiayaan Persediaan oleh Bank)</td>
+                  <td class="num-col"><strong style="color:#0284c7;">+${fmtRp(cf.totalSCFDrawdown || proj.requestedPlafond, true)}</strong></td>
+                  <td>Skema: ${cf.repaymentType === 'semi_annual' ? '2 Siklus @ 6 Bln' : '12 Bulan'}</td>
+                  <td>Bank membantu pembelian persediaan untuk dikonversi menjadi penjualan &amp; kas</td>
                 </tr>
                 <tr>
-                  <td>Total Inflow Kas Masuk Operasional (12 Bulan)</td>
-                  <td class="num-col">${fmtRp(cf.totalInflow, true)}</td>
-                  <td>Perputaran Piutang DOR: ${Math.round(cf.dorDays)} Hari</td>
-                  <td>Penerimaan kas tertagih memperhitungkan lag perputaran DOR</td>
+                  <td>Total Inflow Kas Hasil Konversi Penjualan Persediaan</td>
+                  <td class="num-col"><strong>+${fmtRp(cf.totalInflow, true)}</strong></td>
+                  <td>Growth: +${cf.salesGrowth}% | DOR: ${Math.round(cf.dorDays)} Hr</td>
+                  <td>Target Margin Kotor (GPM): ${cf.targetGPM.toFixed(1)}% (Penjualan: ${fmtRp(cf.projectedAnnualSales, true)})</td>
                 </tr>
                 <tr>
-                  <td>Total Outflow Kas Operasional (HPP + OPEX + Pajak)</td>
-                  <td class="num-col">${fmtRp(cf.totalOutflow, true)}</td>
+                  <td>Total Outflow Kas Operasional (HPP Persediaan + OPEX + Pajak)</td>
+                  <td class="num-col">-${fmtRp(cf.totalOutflow, true)}</td>
                   <td>Rata-rata Outflow: ${fmtRp(cf.totalOutflow / 12, true)} / bln</td>
-                  <td>Beban operasional kas esensial debitur</td>
+                  <td>Beban pengadaan persediaan berjalan dan biaya operasional rutin</td>
                 </tr>
                 <tr>
-                  <td>Net Operating Cash Flow (NOCF 12 Bulan)</td>
-                  <td class="num-col"><strong style="color:${cf.totalNOCF > cf.totalDebtService ? '#166534' : '#dc2626'};">${fmtRp(cf.totalNOCF, true)}</strong></td>
-                  <td>Target: &ge; Beban Debt Service</td>
-                  <td style="color:${cf.totalNOCF > cf.totalDebtService ? '#166534' : '#dc2626'}; font-weight:700;">
-                    ${cf.totalNOCF > cf.totalDebtService ? '&#10003; Surplus Kas Operasional Memadai' : '&#9888; Defisit Kas Operasional Terhadap Angsuran'}
+                  <td>Hasil Bersih Konversi Persediaan ke Kas (NOCF 12 Bulan)</td>
+                  <td class="num-col"><strong style="color:${cf.totalNOCF >= 0 ? '#166534' : '#dc2626'};">${fmtRp(cf.totalNOCF, true)}</strong></td>
+                  <td>Total Kas Tersedia (CADS): ${fmtRp(cf.cads || (cf.initialCash + (cf.totalSCFDrawdown || proj.requestedPlafond) + cf.totalNOCF), true)}</td>
+                  <td style="color:${cf.totalNOCF >= (cf.totalDebtService - proj.requestedPlafond) ? '#166534' : '#dc2626'}; font-weight:700;">
+                    ${cf.totalNOCF >= (cf.totalDebtService - proj.requestedPlafond) ? '&#10003; Surplus Konversi Kas Menutup Pokok &amp; Bunga SCF' : '&#9888; Defisit Konversi Kas Terhadap Kewajiban SCF'}
                   </td>
                 </tr>
                 <tr>
-                  <td>Total Beban Kewajiban Utang (Debt Service Pokok &amp; Bunga)</td>
-                  <td class="num-col">${fmtRp(cf.totalDebtService, true)}</td>
+                  <td>Total Pelunasan Kewajiban SCF AP (Pokok + Bunga)</td>
+                  <td class="num-col">-${fmtRp(cf.totalDebtService, true)}</td>
                   <td>Bunga: ${proj.interestRate}% p.a.</td>
-                  <td>Kewajiban pelunasan pokok ${fmtRp(proj.requestedPlafond, true)} dan beban bunga</td>
+                  <td>Pelunasan pokok SCF AP ${fmtRp(proj.requestedPlafond, true)} + bunga dari kas hasil penjualan</td>
                 </tr>
                 <tr>
                   <td>Projected Debt Service Coverage Ratio (DSCR 12 Bulan)</td>
-                  <td class="num-col"><strong style="color:${annualDSCR >= 1.25 ? '#166534' : (annualDSCR >= 1.0 ? '#d97706' : '#dc2626')}; font-size:0.75rem;">${annualDSCR.toFixed(2)}x</strong></td>
-                  <td>Standar RAC: &ge; 1.25x (Buffer 25%)</td>
-                  <td style="color:${annualDSCR >= 1.25 ? '#166534' : '#dc2626'}; font-weight:700;">
-                    ${annualDSCR >= 1.25 ? '&#10003; Kapasitas Pelunasan Aman' : (annualDSCR >= 1.0 ? '&#9888; Cukup Tanpa Buffer Pengaman' : '&#9888; Risiko Tinggi Gagal Bayar (DSCR < 1.0x)')}
+                  <td class="num-col"><strong style="color:${annualDSCR >= 1.20 ? '#166534' : (annualDSCR >= 1.0 ? '#d97706' : '#dc2626')}; font-size:0.75rem;">${annualDSCR.toFixed(2)}x</strong></td>
+                  <td>Standar RAC: &ge; 1.20x (Buffer 20%)</td>
+                  <td style="color:${annualDSCR >= 1.20 ? '#166534' : '#dc2626'}; font-weight:700;">
+                    ${annualDSCR >= 1.20 ? '&#10003; Kapasitas Pelunasan Aman' : (annualDSCR >= 1.0 ? '&#9888; Cukup Tanpa Buffer Pengaman' : '&#9888; Risiko Tinggi Gagal Bayar (DSCR < 1.0x)')}
                   </td>
                 </tr>
                 <tr style="background:#f8fafc;">
@@ -4490,7 +4544,7 @@ function renderPrintableReport(proj, m) {
                   <td class="num-col"><strong style="color:${endingCash12 > 0 ? '#166534' : '#dc2626'};">${fmtRp(endingCash12, true)}</strong></td>
                   <td>Titik Kas Terendah: ${fmtRp(lowestCash, true)}</td>
                   <td style="color:${endingCash12 > 0 ? '#166534' : '#dc2626'}; font-weight:700;">
-                    ${endingCash12 > 0 ? '&#10003; Saldo Kas Akhir Tetap Positif' : '&#9888; Kas Akhir Negatif (Memerlukan Suntikan Likuiditas)'}
+                    ${endingCash12 > 0 ? '&#10003; Saldo Kas Akhir Tetap Positif' : '&#9888; Kas Akhir Negatif (Memerlukan Penyesuaian Tranching &amp; Margin)'}
                   </td>
                 </tr>
               </tbody>

@@ -3005,7 +3005,7 @@ function render5CTab(proj, m) {
                   </tr>
                 </table>
                 <div style="margin-top:4px; padding-top:4px; border-top:1px dashed #cbd5e1; color:#475569; font-size:0.62rem; line-height:1.35;">
-                  <em>💡 <strong>Syarat Skor 100 Penuh:</strong> Jam terbang usaha &ge; 10 tahun (25 poin), SLIK OJK Kol 1 Lancar (30 poin), INAPROC LKPP Terverifikasi Bersih (15 poin), SIPP Pengadilan Nihil Perkara (10 poin), dan Media Nihil Isu Negatif (20 poin).</em>
+                  <em>💡 <strong>Syarat Skor 100 Penuh:</strong> Lama usaha &ge; 10 tahun (25 poin), SLIK OJK Kol 1 Lancar (30 poin), INAPROC LKPP Terverifikasi Bersih (15 poin), SIPP Pengadilan Nihil Perkara (10 poin), dan Media Nihil Isu Negatif (20 poin).</em>
                 </div>
               </div>
 
@@ -4965,7 +4965,7 @@ function renderPrintableReport(proj, m) {
                   <td><strong>1. Character (20%)</strong></td>
                   <td class="num-col"><strong style="color:${fiveC.charScore >= 70 ? '#166534' : '#dc2626'};">${fiveC.charScore} / 100</strong></td>
                   <td>
-                    &bull; Jam Terbang: Usia ${fiveC.businessAge} Thn (${fiveC.charBreakdown?.agePts || 20}/25 Poin)<br/>
+                    &bull; Lama Usaha: Usia ${fiveC.businessAge} Thn (${fiveC.charBreakdown?.agePts || 20}/25 Poin)<br/>
                     &bull; SLIK OJK: ${fiveC.slikStatus} (${fiveC.charBreakdown?.creditPts || 30}/30 Poin)<br/>
                     &bull; INAPROC LKPP: ${fiveC.inaprocStatus} (${fiveC.charBreakdown?.inaprocPts || 10}/15 Poin)<br/>
                     &bull; SIPP MA: ${fiveC.sippStatus} (${fiveC.charBreakdown?.sippPts || 10}/10 Poin)<br/>

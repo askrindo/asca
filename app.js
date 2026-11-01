@@ -574,6 +574,8 @@ function selectProject(id) {
   const proj = getActiveProject();
   if (proj) {
     populateFormInputs(proj);
+    triggerLiveInaprocCheck(false);
+    fetchGoogleNewsForProject(false, false);
   }
   renderAll();
 }
@@ -1327,18 +1329,18 @@ async function fetchGoogleNewsForProject(isManualClick = false, isAutoInputTrigg
   renderScoreCalculationTab(proj, m);
   renderGradeRiskTab(proj, m);
 
-  if (isManualClick) {
-    if (proj.googleNewsItems.length === 0) {
-      showToast(`✓ Google News "${cleanName}": Tidak ditemukan berita (0 artikel) — Tidak memiliki citra negatif (20/20 Poin).`);
-    } else {
-      showToast(`📰 Google News "${cleanName}": Ditemukan ${proj.googleNewsItems.length} artikel berita riil.`);
-    }
-  } else if (isAutoInputTrigger) {
+  if (isAutoInputTrigger) {
     const inaprocTxt = proj.inaprocStatus === 'blacklisted' ? `BLACKLIST LKPP (SK: ${proj.inaprocAutoResult?.skNumber || '-'})` : 'INAPROC Bersih (15/15)';
     const newsTxt = proj.googleNewsItems.length === 0
       ? 'Nihil Berita di Google News (Citra Bersih 20/20)'
       : (proj.negativeNews === 'negative' ? `Terdeteksi Berita Negatif (0/20)` : `${proj.googleNewsItems.length} Berita Ditemukan (20/20)`);
     showToast(`🔍 Auto-Screening 5C "${cleanName}": ${inaprocTxt} | ${newsTxt}.`);
+  } else if (isManualClick) {
+    if (proj.googleNewsItems.length === 0) {
+      showToast(`✓ Google News "${cleanName}": Tidak ditemukan berita (0 artikel) — Tidak memiliki citra negatif (20/20 Poin).`);
+    } else {
+      showToast(`📰 Google News "${cleanName}": Ditemukan ${proj.googleNewsItems.length} artikel berita riil.`);
+    }
   }
 }
 
@@ -5674,9 +5676,14 @@ function saveAllInputsAndRecalculate() {
   } else if (rImport && rImport.checked) {
     proj.procurementMethod = 'import_sea';
   }
+  if (inaprocAutoTriggerTimer) clearTimeout(inaprocAutoTriggerTimer);
   syncInputsToModel();
+  runAutoInaprocCheckSync(proj, false);
   saveProjectsToStorage();
   renderAll();
+  // Trigger pengecekan Daftar Hitam & Google News saat tombol Simpan diklik
+  triggerLiveInaprocCheck(false);
+  fetchGoogleNewsForProject(true, true);
   showToast('Perubahan data input berhasil disimpan & seluruh tab analisa telah diperbarui.');
 }
 
@@ -5694,15 +5701,6 @@ function switchTab(tabId) {
   document.querySelectorAll('.tab-pane').forEach((pane) => {
     pane.classList.toggle('active', pane.id === tabId);
   });
-  if (tabId === 'tab-5c') {
-    const proj = getActiveProject();
-    if (proj) {
-      const cleanName = normalizeNewsSearchQuery(proj.companyName || 'Perusahaan');
-      if (proj.googleNewsFetchedCompany !== cleanName) {
-        fetchGoogleNewsForProject(false, false);
-      }
-    }
-  }
 }
 
 function openNewProjectModal() {
@@ -6148,6 +6146,14 @@ async function checkAuthAndRoute() {
 
     loadProjectsFromStorage();
     renderAll();
+    // Trigger 1x saat aplikasi pertama kali dibuka
+    setTimeout(() => {
+      const initProj = getActiveProject();
+      if (initProj) {
+        triggerLiveInaprocCheck(false);
+        fetchGoogleNewsForProject(false, false);
+      }
+    }, 300);
   }
 }
 

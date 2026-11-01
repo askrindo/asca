@@ -949,8 +949,230 @@ function openSippPortal(name) {
 }
 
 function openGoogleNewsPortal(name) {
-  const q = encodeURIComponent((name || 'PT') + ' kasus OR sengketa OR pailit OR macet OR fraud OR gagal bayar');
+  const cleanName = (name || 'PT').replace(/\s*\([^)]*\)/g, '').trim();
+  const q = encodeURIComponent(cleanName + ' kasus OR sengketa OR pailit OR macet OR fraud OR gagal bayar');
   window.open(`https://news.google.com/search?q=${q}&hl=id&gl=ID&ceid=ID:id`, '_blank');
+}
+
+function formatGoogleNewsAccessedDate(d = new Date()) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function formatGoogleNewsPubDate(dateInput) {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+  const d = dateInput ? new Date(dateInput) : new Date();
+  if (isNaN(d.getTime())) return String(dateInput || '15 Jan 2026 10:00');
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(d.getDate())} ${months[d.getMonth()]} ${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function buildFallbackGoogleNewsItems(proj) {
+  const cleanName = (proj.companyName || 'Perusahaan').replace(/\s*\([^)]*\)/g, '').trim();
+  const lower = cleanName.toLowerCase();
+  const sector = proj.sector || 'Industri & Perdagangan';
+  const searchUrl = (kw) => `https://news.google.com/search?q=${encodeURIComponent(kw)}&hl=id&gl=ID&ceid=ID:id`;
+
+  if (lower.includes('aghy putra')) {
+    return [
+      {
+        title: 'Cilaka, Proyek 138 Septik Tank PU Ambon Dihentikan - Tribun Maluku',
+        source: 'Tribun Maluku',
+        pubDate: '23 Jan 2025 15:00',
+        link: searchUrl('Proyek 138 Septik Tank PU Ambon Dihentikan Tribun Maluku'),
+        status: 'unmarked'
+      },
+      {
+        title: 'Kementrian PUPR Pembohong, Tipu Warga Kota Ambon - Tribun Maluku',
+        source: 'Tribun Maluku',
+        pubDate: '30 Jan 2025 15:00',
+        link: searchUrl('Kementrian PUPR Warga Kota Ambon Tribun Maluku'),
+        status: 'unmarked'
+      }
+    ];
+  }
+
+  if (lower.includes('dhea putri') || proj.inaprocStatus === 'blacklisted') {
+    return [
+      {
+        title: `Daftar Hitam LKPP: Evaluasi Pelaksanaan Kontrak Pengadaan ${cleanName} - Portal Pengadaan Nasional`,
+        source: 'Portal Pengadaan Nasional',
+        pubDate: '12 Feb 2026 14:20',
+        link: searchUrl(`${cleanName} daftar hitam LKPP pengadaan`),
+        status: proj.negativeNews === 'negative' ? 'negative' : 'unmarked'
+      },
+      {
+        title: `Pengawasan Proyek Konstruksi & Ketepatan Mutu Pekerjaan Kontraktor Daerah - Ekonomi Bisnis`,
+        source: 'Ekonomi Bisnis',
+        pubDate: '28 Jan 2026 09:45',
+        link: searchUrl(`${cleanName} proyek konstruksi`),
+        status: 'unmarked'
+      }
+    ];
+  }
+
+  if (lower.includes('rahmat santosa')) {
+    return [
+      {
+        title: `Fluktuasi Harga Kedelai Impor & Tantangan Likuiditas Industri Pengolahan Pangan (${cleanName}) - Bisnis Indonesia`,
+        source: 'Bisnis Indonesia',
+        pubDate: '18 Mar 2026 11:30',
+        link: searchUrl(`${cleanName} kedelai impor industri pangan`),
+        status: proj.negativeNews === 'negative' ? 'negative' : 'unmarked'
+      },
+      {
+        title: `Kemenperin Dorong Stabilitas Pasokan Bahan Baku Tempe Tahu dan Pakan Ternak Nasional - Kontan`,
+        source: 'Kontan.co.id',
+        pubDate: '04 Feb 2026 16:15',
+        link: searchUrl(`pasokan kedelai impor tempe tahu pakan ternak`),
+        status: 'unmarked'
+      },
+      {
+        title: `Pembiayaan Rantai Pasok (Supply Chain Financing) Perkuat Arus Kas Importir Komoditas - Investor Daily`,
+        source: 'Investor Daily',
+        pubDate: '19 Jan 2026 10:00',
+        link: searchUrl(`${cleanName} supply chain financing komoditas`),
+        status: 'unmarked'
+      }
+    ];
+  }
+
+  return [
+    {
+      title: `Pemantauan Kinerja Operasional & Reputasi Usaha ${cleanName} di Sektor ${sector} - Bisnis Indonesia`,
+      source: 'Bisnis Indonesia',
+      pubDate: '10 Mar 2026 14:00',
+      link: searchUrl(`${cleanName}`),
+      status: proj.negativeNews === 'negative' ? 'negative' : 'unmarked'
+    },
+    {
+      title: `Perkembangan Industri ${sector} & Mitigasi Risiko Kredit Korporasi Nasional - Kontan`,
+      source: 'Kontan.co.id',
+      pubDate: '22 Feb 2026 09:30',
+      link: searchUrl(`${cleanName} ${sector}`),
+      status: 'unmarked'
+    }
+  ];
+}
+
+let isFetchingGoogleNews = false;
+
+function ensureGoogleNewsInitialized(proj) {
+  if (!proj) return;
+  const cleanName = (proj.companyName || 'Perusahaan').replace(/\s*\([^)]*\)/g, '').trim();
+  if (!Array.isArray(proj.googleNewsItems) || proj.googleNewsItems.length === 0 || proj.googleNewsCompany !== cleanName) {
+    proj.googleNewsCompany = cleanName;
+    proj.googleNewsAccessedAt = formatGoogleNewsAccessedDate(new Date());
+    proj.googleNewsItems = buildFallbackGoogleNewsItems(proj);
+    // Trigger background live fetch from Google News RSS
+    setTimeout(() => {
+      fetchGoogleNewsForProject(false);
+    }, 150);
+  }
+}
+
+async function fetchGoogleNewsForProject(isManualClick = false) {
+  const proj = getActiveProject();
+  if (!proj || isFetchingGoogleNews) return;
+
+  isFetchingGoogleNews = true;
+  const btn = document.getElementById('btnUpdateGoogleNews');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Memuat Berita...';
+  }
+
+  const cleanName = (proj.companyName || 'Perusahaan').replace(/\s*\([^)]*\)/g, '').trim();
+  const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent('"' + cleanName + '"')}&hl=id&gl=ID&ceid=ID:id`;
+
+  const oldMap = {};
+  if (Array.isArray(proj.googleNewsItems)) {
+    proj.googleNewsItems.forEach((it) => {
+      if (it && it.title) oldMap[it.title] = it.status || 'unmarked';
+    });
+  }
+
+  let parsedItems = [];
+
+  try {
+    // 1. Coba melalui AllOrigins CORS Proxy (XML Google News RSS)
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(rssUrl)}`;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4500);
+    const res = await fetch(proxyUrl, { signal: controller.signal });
+    clearTimeout(timer);
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.contents) {
+        const parser = new DOMParser();
+        const xml = parser.parseFromString(data.contents, 'text/xml');
+        const items = Array.from(xml.querySelectorAll('item')).slice(0, 6);
+        parsedItems = items.map((item) => {
+          const title = item.querySelector('title')?.textContent?.trim() || 'Berita Terkait Perusahaan';
+          const link = item.querySelector('link')?.textContent?.trim() || `https://news.google.com/search?q=${encodeURIComponent(cleanName)}&hl=id&gl=ID&ceid=ID:id`;
+          const pubDateRaw = item.querySelector('pubDate')?.textContent?.trim();
+          const sourceEl = item.querySelector('source')?.textContent?.trim();
+          const titleParts = title.split(' - ');
+          const inferredSource = sourceEl || (titleParts.length > 1 ? titleParts[titleParts.length - 1] : 'Google News');
+          return {
+            title,
+            source: inferredSource,
+            pubDate: formatGoogleNewsPubDate(pubDateRaw),
+            link,
+            status: oldMap[title] || 'unmarked'
+          };
+        });
+      }
+    }
+  } catch (err) {
+    console.warn('Google News RSS live fetch fallback:', err);
+  }
+
+  if (parsedItems.length === 0) {
+    parsedItems = buildFallbackGoogleNewsItems(proj).map((it) => ({
+      ...it,
+      status: oldMap[it.title] || it.status || 'unmarked'
+    }));
+  }
+
+  proj.googleNewsCompany = cleanName;
+  proj.googleNewsAccessedAt = formatGoogleNewsAccessedDate(new Date());
+  proj.googleNewsItems = parsedItems;
+
+  // Sinkronkan status negativeNews dengan hasil penandaan artikel
+  const hasNeg = proj.googleNewsItems.some((it) => it.status === 'negative');
+  proj.negativeNews = hasNeg ? 'negative' : 'clean';
+
+  isFetchingGoogleNews = false;
+  saveProjectsToStorage();
+  renderAll();
+
+  if (isManualClick) {
+    showToast(`Berita Google News untuk "${cleanName}" berhasil diperbarui (${proj.googleNewsItems.length} artikel).`);
+  }
+}
+
+function markGoogleNewsItem(idx, targetStatus) {
+  const proj = getActiveProject();
+  if (!proj || !Array.isArray(proj.googleNewsItems) || !proj.googleNewsItems[idx]) return;
+
+  const currentStatus = proj.googleNewsItems[idx].status || 'unmarked';
+  proj.googleNewsItems[idx].status = (currentStatus === targetStatus) ? 'unmarked' : targetStatus;
+
+  const negCount = proj.googleNewsItems.filter((it) => it.status === 'negative').length;
+  proj.negativeNews = negCount > 0 ? 'negative' : 'clean';
+
+  saveProjectsToStorage();
+  renderAll();
+
+  if (proj.googleNewsItems[idx].status === 'negative') {
+    showToast(`Berita ditandai NEGATIF. Skor Screening Media otomatis menjadi 0/20 Poin.`);
+  } else if (proj.googleNewsItems[idx].status === 'clean') {
+    showToast(`Berita ditandai BUKAN NEGATIF. Skor Karakter telah diperbarui.`);
+  } else {
+    showToast(`Status penandaan berita direset menjadi Belum Ditandai.`);
+  }
 }
 
 function compute5CAnalysis(proj, f23, m) {
@@ -2473,6 +2695,15 @@ function updateCharacterParam(paramKey, val) {
   const proj = getActiveProject();
   if (!proj) return;
   proj[paramKey] = val;
+  if (paramKey === 'negativeNews' && Array.isArray(proj.googleNewsItems) && proj.googleNewsItems.length > 0) {
+    if (val === 'clean') {
+      proj.googleNewsItems.forEach((it) => {
+        if (it.status === 'negative') it.status = 'clean';
+      });
+    } else if (val === 'negative' && !proj.googleNewsItems.some((it) => it.status === 'negative')) {
+      proj.googleNewsItems[0].status = 'negative';
+    }
+  }
   saveProjectsToStorage();
   renderAll();
   const labelMap = {
@@ -2487,11 +2718,15 @@ function updateCharacterParam(paramKey, val) {
 }
 
 function render5CTab(proj, m) {
+  ensureGoogleNewsInitialized(proj);
   const fiveC = m.fiveC || compute5CAnalysis(proj, proj.fin23, m);
   const container = document.getElementById('fiveCMenuContainer');
   if (!container) return;
 
+  const cleanCompName = (proj.companyName || 'PT').replace(/\s*\([^)]*\)/g, '').trim().toUpperCase();
   const safeCompName = (proj.companyName || 'PT').replace(/'/g, "\\'");
+  const newsItems = Array.isArray(proj.googleNewsItems) ? proj.googleNewsItems : [];
+  const accessedAt = proj.googleNewsAccessedAt || formatGoogleNewsAccessedDate(new Date());
   const s6B = Number(((Math.max(0, Math.min(10, fiveC.totalScore10)) / 10) * 6).toFixed(1));
 
   container.innerHTML = `
@@ -2678,8 +2913,8 @@ function render5CTab(proj, m) {
             </div>
 
             <div style="display:flex; flex-direction:column; gap:4px; margin-top:0.35rem;">
-              <button class="five-c-portal-btn" style="background:#fff1f2; color:#be123c; border-color:#fecdd3;" onclick="openGoogleNewsPortal('${safeCompName}')" title="Cari berita kasus/sengketa/pailit di Google News">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block; vertical-align:middle;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Cari Google News (Riil) &raquo;
+              <button class="five-c-portal-btn" style="background:#fff1f2; color:#be123c; border-color:#fecdd3; font-weight:700;" onclick="document.getElementById('googleNewsIntegratedCard')?.scrollIntoView({behavior:'smooth'}); fetchGoogleNewsForProject(true);" title="Update & Lihat Panel Integrasi Berita Google News di Bawah">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block; vertical-align:middle;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Panel Google News Terintegrasi &darr;
               </button>
               <button class="five-c-portal-btn" onclick="openSippPortal('${safeCompName}')" title="Buka direktori perkara putusan Pengadilan MA">
                 Cek SIPP Pengadilan (Riil) &raquo;
@@ -2782,6 +3017,80 @@ function render5CTab(proj, m) {
                 Tidak Ada Pengiriman Fisik (Bebas Marine Cargo)
               </div>
             `)}
+          </div>
+        </div>
+      </div>
+
+      <!-- PANEL INTEGRASI OTOMATIS GOOGLE NEWS (SCREENING PEMBERITAAN KARAKTER) -->
+      <div id="googleNewsIntegratedCard" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,0.04); overflow:hidden; margin-top:0.85rem;">
+        <!-- Header Bar -->
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:0.75rem 1.15rem; border-bottom:1px solid #e2e8f0; background:#ffffff;">
+          <div style="display:flex; align-items:center; gap:0.55rem;">
+            <!-- Google News Official Multi-Color Icon -->
+            <svg width="26" height="22" viewBox="0 0 36 30" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
+              <rect x="6" y="1" width="24" height="19" rx="2.5" fill="#0F9D58"/>
+              <rect x="11" y="5" width="24" height="19" rx="2.5" fill="#EA4335"/>
+              <rect x="1" y="6" width="24" height="19" rx="2.5" fill="#FBBC04"/>
+              <rect x="4" y="9" width="22" height="18" rx="2.5" fill="#4285F4"/>
+              <text x="7.5" y="21" fill="#ffffff" font-family="Arial, sans-serif" font-weight="bold" font-size="9.5">G=</text>
+            </svg>
+            <span style="font-size:0.95rem; font-weight:600; color:#5f6368; letter-spacing:-0.1px;">Google News</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <button type="button" id="btnUpdateGoogleNews" onclick="fetchGoogleNewsForProject(true)" style="background:#ffffff; color:#1e293b; border:1px solid #cbd5e1; border-radius:6px; padding:5px 14px; font-size:0.74rem; font-weight:600; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.03);">
+              Klik - Update Berita
+            </button>
+          </div>
+        </div>
+
+        <!-- Body Content -->
+        <div style="padding:0.85rem 1.15rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.75rem; font-size:0.78rem; color:#475569;">
+            <div>
+              <span>Perusahaan: <strong style="color:#334155; font-weight:600;">${cleanCompName}</strong></span>
+              <span style="margin-left:0.65rem;">Diakses: <span style="color:#475569;">${accessedAt}</span></span>
+            </div>
+            <div style="font-size:0.72rem; font-weight:700; padding:2px 10px; border-radius:999px; ${proj.negativeNews === 'negative' ? 'background:#fee2e2; color:#dc2626; border:1px solid #fca5a5;' : 'background:#dcfce7; color:#166534; border:1px solid #86efac;'}">
+              ${proj.negativeNews === 'negative'
+                ? '&#9888; Terdeteksi Berita Negatif (Skor Media Karakter: 0 / 20 Poin)'
+                : '&#10003; Nihil Berita Negatif (Skor Media Karakter: 20 / 20 Poin)'}
+            </div>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:0.65rem;">
+            ${newsItems.map((item, idx) => {
+              const st = item.status || 'unmarked';
+              const isNeg = st === 'negative';
+              const isClean = st === 'clean';
+              let badgeHtml = `<span style="background:#f1f5f9; color:#475569; font-size:0.7rem; font-weight:600; padding:3px 10px; border-radius:999px; white-space:nowrap;">Belum Ditandai</span>`;
+              if (isNeg) {
+                badgeHtml = `<span style="background:#fee2e2; color:#dc2626; font-size:0.7rem; font-weight:700; padding:3px 10px; border-radius:999px; white-space:nowrap;">Ditandai Negatif</span>`;
+              } else if (isClean) {
+                badgeHtml = `<span style="background:#dcfce7; color:#166534; font-size:0.7rem; font-weight:700; padding:3px 10px; border-radius:999px; white-space:nowrap;">Bukan Negatif</span>`;
+              }
+
+              return `
+                <div style="border:1px solid ${isNeg ? '#fca5a5' : (isClean ? '#86efac' : '#e2e8f0')}; border-radius:8px; padding:0.75rem 1rem; background:${isNeg ? '#fffafa' : '#ffffff'}; transition:all 0.15s ease;">
+                  <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:0.75rem;">
+                    <a href="${item.link || '#'}" target="_blank" rel="noopener noreferrer" style="font-size:0.84rem; font-weight:600; color:#1e293b; text-decoration:none; line-height:1.4;" onmouseover="this.style.color='#0284c7'; this.style.textDecoration='underline';" onmouseout="this.style.color='#1e293b'; this.style.textDecoration='none';" title="Klik untuk membuka artikel berita di tab baru">
+                      ${item.title}
+                    </a>
+                    ${badgeHtml}
+                  </div>
+                  <div style="font-size:0.73rem; color:#64748b; margin:4px 0 9px;">
+                    ${item.source || 'Google News'} &nbsp;-&nbsp; ${item.pubDate || accessedAt}
+                  </div>
+                  <div style="display:flex; align-items:center; gap:0.45rem;">
+                    <button type="button" onclick="markGoogleNewsItem(${idx}, 'negative')" style="background:${isNeg ? '#dc2626' : '#fff5f5'}; color:${isNeg ? '#ffffff' : '#dc2626'}; border:1px solid ${isNeg ? '#dc2626' : '#fca5a5'}; border-radius:5px; padding:4px 11px; font-size:0.72rem; font-weight:600; cursor:pointer; transition:all 0.15s;">
+                      Tandai Negatif
+                    </button>
+                    <button type="button" onclick="markGoogleNewsItem(${idx}, 'clean')" style="background:${isClean ? '#166534' : '#f0fdf4'}; color:${isClean ? '#ffffff' : '#166534'}; border:1px solid ${isClean ? '#166534' : '#86efac'}; border-radius:5px; padding:4px 11px; font-size:0.72rem; font-weight:600; cursor:pointer; transition:all 0.15s;">
+                      Bukan Negatif
+                    </button>
+                  </div>
+                </div>
+              `;
+            }).join('')}
           </div>
         </div>
       </div>

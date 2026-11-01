@@ -1959,7 +1959,7 @@ function buildDynamicCaseInsights(proj, m) {
     criticalPointsCredit.push({
       severity: 'CRITICAL',
       title: `Pemanfaatan KMK Khusus (Backup Default +${proj.kmkTenorDays} Hari) sebagai Penyangga Relaksasi Likuiditas`,
-      detail: `Fasilitas KMK Khusus berjangka ${proj.kmkTenorDays} hari difungsikan sebagai <strong>buffer relaksasi likuiditas positif (liquidity cushion & default prevention)</strong> yang efektif mencegah debitur langsung jatuh ke jurang gagal bayar saat penagihan piutang tertunda. Namun guna mengendalikan potensi <em>moral hazard</em> (debitur merasa santai karena ada backup), penarikan fasilitas ini tidak boleh dilakukan di muka melainkan diatur bertahap per-tranche berbasis bukti invoice tagihan riil dengan pengawasan rekening Escrow.`
+      detail: `Fasilitas KMK Khusus berjangka ${proj.kmkTenorDays} hari difungsikan sebagai <strong>buffer relaksasi likuiditas positif (liquidity cushion &amp; default prevention)</strong> yang efektif mencegah debitur langsung mengalami wanprestasi saat penagihan piutang mengalami deviasi waktu. Namun guna mengendalikan potensi <em>moral hazard</em> (risiko penurunan kedisiplinan manajemen likuiditas dan penagihan piutang akibat ketersediaan fasilitas talangan siaga), penarikan fasilitas ini tidak diperkenankan dilakukan di muka, melainkan diatur secara bertahap (tranche drawdown) berbasis verifikasi dokumen invoice penagihan riil dengan pengawasan terpadu melalui rekening Escrow di ${proj.bankName}.`
     });
     mitigations.push({
       title: `Optimalisasi KMK Khusus sebagai Buffer Relaksasi Bertahap (Maks ${fmtRp(m.recommendedTrancheSize, true)} / Tranche)`,

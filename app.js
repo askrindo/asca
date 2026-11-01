@@ -1621,7 +1621,7 @@ function computeDCCSWCM(proj) {
   }
   scoreComponents.push({
     pillarId: 'P3',
-    pillarName: 'Pilar 3: Dynamic CCC & Kesesuaian Tenor (Maks 20)',
+    pillarName: 'Pilar 3: Dynamic CC & Kesesuaian Tenor (Maks 20)',
     code: '3A',
     name: 'Kesesuaian Siklus Gross vs Tenor Fasilitas',
     formula: '(DOI + DOR) &le; Tenor Kredit',
@@ -1650,7 +1650,7 @@ function computeDCCSWCM(proj) {
   }
   scoreComponents.push({
     pillarId: 'P3',
-    pillarName: 'Pilar 3: Dynamic CCC & Kesesuaian Tenor (Maks 20)',
+    pillarName: 'Pilar 3: Dynamic CC & Kesesuaian Tenor (Maks 20)',
     code: '3B',
     name: 'Kecepatan Perputaran Persediaan (DOI)',
     formula: '(Persediaan / HPP) &times; 365',
@@ -4283,7 +4283,7 @@ function renderPrintableReport(proj, m) {
 
             <!-- BAGIAN I: RANGKUMAN AUDIT SIKLUS KAS (DCC) & NWC & CBRT -->
             <h4 style="color:var(--askrindo-navy); margin:0.5rem 0 0.25rem; font-size:0.75rem; font-weight:800; border-bottom:1.5px solid #e2e8f0; padding-bottom:2px;">
-              I. Rangkuman Audit Siklus Kas (Dynamic CCC) &amp; Ketahanan NWC &amp; CBRT
+              I. Rangkuman Audit Siklus Kas (Dynamic CC) &amp; Ketahanan NWC &amp; CBRT
             </h4>
             <table class="data-table" style="margin-bottom:0.6rem; font-size:0.66rem;">
               <thead>

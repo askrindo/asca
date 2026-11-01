@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="favicon.png" />
   <link rel="shortcut icon" href="favicon.ico" />
   <link rel="apple-touch-icon" href="favicon.png" />
-  <link rel="stylesheet" href="styles.css?v=1793494000" />
+  <link rel="stylesheet" href="styles.css?v=1793495000" />
   <style id="login-critical-styles">
     /* Anti-Cache Guarantee for Enterprise Login Interface */
     .login-screen {
@@ -448,36 +448,44 @@
                 <label>Underwriter Pemeriksa</label>
                 <input type="text" id="inp_underwriter" class="form-control" oninput="syncInputsToModel()" />
               </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">B. Rantai Pasok, Logistik &amp; Rasio Aktivitas Data Bank</div>
+            </div>
+            <div class="form-grid">
               <div class="form-group full">
                 <label>Deskripsi Tujuan Penggunaan Fasilitas &amp; Rantai Pasok Bisnis</label>
-                <textarea id="inp_businessDesc" class="form-control" oninput="syncInputsToModel()"></textarea>
+                <textarea id="inp_businessDesc" class="form-control" style="min-height:74px;" oninput="syncInputsToModel()"></textarea>
               </div>
-              <div class="form-group full" style="background:#f0f9ff; border:1px solid #bae6fd; padding:0.6rem 0.75rem; border-radius:6px; margin-top:0.3rem;">
+              <div class="form-group full" style="background:#f0f9ff; border:1px solid #bae6fd; padding:0.6rem 0.75rem; border-radius:6px; margin-top:0.2rem;">
                 <label style="font-weight:700; color:var(--askrindo-navy); margin-bottom:0.25rem;">
                   Metode Pengadaan &amp; Jalur Logistik Pengiriman Bahan Baku / Barang Dagang:
                 </label>
-                <div style="display:flex; flex-wrap:wrap; gap:1.2rem; align-items:center; font-size:0.75rem;">
-                  <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;">
+                <div style="display:flex; flex-direction:column; gap:0.45rem; font-size:0.75rem; margin-top:0.35rem;">
+                  <label style="display:flex; align-items:center; gap:0.4rem; cursor:pointer;">
                     <input type="radio" name="inp_procurementMethod" id="inp_proc_import" value="import_sea" onchange="setProcurementMethod('import_sea')" />
                     <span><strong>Impor Luar Negeri / Jalur Laut (Sea Freight)</strong> &mdash; <em style="color:#0284c7;">Otomatis Wajib Asuransi Marine Cargo Askrindo</em></span>
                   </label>
-                  <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;">
+                  <label style="display:flex; align-items:center; gap:0.4rem; cursor:pointer;">
                     <input type="radio" name="inp_procurementMethod" id="inp_proc_domestic" value="domestic" onchange="setProcurementMethod('domestic')" />
                     <span><strong>Domestik / Lokal (Inland Transit)</strong> &mdash; <em>Jalur Darat / Antar Kota</em></span>
                   </label>
-                  <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;">
+                  <label style="display:flex; align-items:center; gap:0.4rem; cursor:pointer;">
                     <input type="radio" name="inp_procurementMethod" id="inp_proc_none" value="none" onchange="setProcurementMethod('none')" />
                     <span><strong>Tidak Ada Pengiriman Fisik</strong> &mdash; <em>Jasa / Konstruksi Non-Pengiriman</em></span>
                   </label>
                 </div>
-                <div style="font-size:0.68rem; color:#0369a1; margin-top:0.3rem;">
+                <div style="font-size:0.68rem; color:#0369a1; margin-top:0.35rem;">
                   &bull; Berdasarkan pilihan ini, sistem ASCA menentukan kewajiban penutupan <strong>Asuransi Marine Cargo (All Risks Warehouse to Warehouse)</strong> pada syarat mitigasi asuransi kredit.
                 </div>
               </div>
             </div>
 
-            <div style="margin-top:0.6rem; padding-top:0.5rem; border-top:1px solid var(--border-color);">
-              <div class="card-title" style="margin-bottom:0.35rem;">B. Rasio Aktivitas Data Bank (DOR, DOI, DOP)</div>
+            <div style="margin-top:0.65rem; padding-top:0.55rem; border-top:1px solid var(--border-color);">
+              <div class="card-title" style="margin-bottom:0.4rem;">Rasio Aktivitas Data Bank (DOR, DOI, DOP)</div>
               <div class="grid-3">
                 <div class="form-group">
                   <label>Data Bank DOR <span class="unit-hint">(Hari)</span></label>
@@ -494,138 +502,480 @@
               </div>
             </div>
           </div>
+        </div>
 
-          <div class="card">
-            <div class="card-header">
-              <div class="card-title">C. Data Laporan Keuangan Audited (Rp)</div>
-              <div style="display:flex; align-items:center; gap:0.35rem; font-size:0.7rem;">
-                <span style="color:var(--text-muted); font-weight:600;">Ubah Tahun:</span>
+        <!-- FULL-WIDTH CARD C: TEMPLATE NERACA & LABA RUGI SESUAI SHEET PERHITUNGAN -->
+        <div class="card" style="margin-top:0.85rem;">
+          <div class="card-header" style="flex-wrap:wrap; gap:0.5rem;">
+            <div>
+              <div class="card-title">C. Perhitungan Analisa Keuangan &mdash; Template Neraca &amp; Laba Rugi Audited (dalam Rupiah)</div>
+              <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;">
+                Template standar Neraca (Aktiva &amp; Passiva) serta Laporan Laba Rugi (R/L). Baris subtotal, total, persentase common-size (%), dan pertumbuhan (Growth %) dihitung otomatis secara real-time.
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap;">
+              <div id="finBalanceStatusBadge" style="font-size:0.7rem; font-weight:700; padding:3px 10px; border-radius:999px; background:#dcfce7; color:#166534; border:1px solid #86efac;">
+                &#10003; Neraca Balance (Aktiva = Passiva)
+              </div>
+              <div style="display:flex; align-items:center; gap:0.35rem; font-size:0.72rem; background:#f8fafc; padding:3px 8px; border-radius:6px; border:1px solid var(--border-color);">
+                <span style="color:var(--text-muted); font-weight:600;">Tahun Audited:</span>
                 <input type="number" id="inp_year1" class="form-control" style="width:68px; padding:2px 5px; font-weight:700; text-align:center;" oninput="syncInputsToModel()" title="Tahun Periode 1" />
                 <span>&amp;</span>
                 <input type="number" id="inp_year2" class="form-control" style="width:68px; padding:2px 5px; font-weight:700; text-align:center;" oninput="syncInputsToModel()" title="Tahun Periode 2" />
               </div>
             </div>
-            <div class="table-responsive">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th style="width:44%;">Pos Laporan Keuangan (Rp)</th>
-                    <th class="num-col" style="width:28%;">Tahun <span id="thLabelYear1">2022</span></th>
-                    <th class="num-col" style="width:28%;">Tahun <span id="thLabelYear2">2023</span></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td colspan="3" style="background:#e2e8f0; font-weight:700; font-size:0.68rem; padding:2px 6px;">1. LAPORAN LABA RUGI (INCOME STATEMENT)</td>
-                  </tr>
-                  <tr>
-                    <td>Penjualan (Revenue)</td>
-                    <td><input type="text" inputmode="numeric" id="inp_rev22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                    <td><input type="text" inputmode="numeric" id="inp_rev23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                  </tr>
-                  <tr>
-                    <td>Harga Pokok Penjualan (HPP)</td>
-                    <td><input type="text" inputmode="numeric" id="inp_cogs22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                    <td><input type="text" inputmode="numeric" id="inp_cogs23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                  </tr>
-                  <tr>
-                    <td>Beban Umum &amp; Administrasi</td>
-                    <td><input type="text" inputmode="numeric" id="inp_opex22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                    <td><input type="text" inputmode="numeric" id="inp_opex23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                  </tr>
-                  <tr>
-                    <td>Pajak Penghasilan (Tax)</td>
-                    <td><input type="text" inputmode="numeric" id="inp_tax22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                    <td><input type="text" inputmode="numeric" id="inp_tax23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                  </tr>
-                  <tr>
-                    <td colspan="3" style="background:#e2e8f0; font-weight:700; font-size:0.68rem; padding:2px 6px;">2. NERACA &mdash; ASET LANCAR (CURRENT ASSETS)</td>
-                  </tr>
-                  <tr>
-                    <td>Kas dan Bank</td>
-                    <td><input type="text" inputmode="numeric" id="inp_cash22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                    <td><input type="text" inputmode="numeric" id="inp_cash23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                  </tr>
-                  <tr>
-                    <td>Piutang Dagang (Trade AR)</td>
-                    <td><input type="text" inputmode="numeric" id="inp_ar22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                    <td><input type="text" inputmode="numeric" id="inp_ar23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                  </tr>
-                  <tr>
-                    <td>Piutang Lain-lain</td>
-                    <td><input type="text" inputmode="numeric" id="inp_otherAr22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                    <td><input type="text" inputmode="numeric" id="inp_otherAr23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                  </tr>
-                  <tr>
-                    <td>Persediaan (Inventory)</td>
-                    <td><input type="text" inputmode="numeric" id="inp_inv22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                    <td><input type="text" inputmode="numeric" id="inp_inv23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                  </tr>
-                  <tr>
-                    <td>Aset Lancar Lainnya</td>
-                    <td><input type="text" inputmode="numeric" id="inp_otherCa22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                    <td><input type="text" inputmode="numeric" id="inp_otherCa23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                  </tr>
-                  <tr>
-                    <td colspan="3" style="background:#e2e8f0; font-weight:700; font-size:0.68rem; padding:2px 6px;">3. NERACA &mdash; ASET TIDAK LANCAR (NON-CURRENT ASSETS)</td>
-                  </tr>
-                  <tr>
-                    <td>Aset Tetap (Fixed Assets)</td>
-                    <td><input type="text" inputmode="numeric" id="inp_fa22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                    <td><input type="text" inputmode="numeric" id="inp_fa23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                  </tr>
-                  <tr>
-                    <td>Tagihan &amp; Aset Pajak Tangguhan</td>
-                    <td><input type="text" inputmode="numeric" id="inp_taxAsset22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                    <td><input type="text" inputmode="numeric" id="inp_taxAsset23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                  </tr>
-                  <tr>
-                    <td colspan="3" style="background:#e2e8f0; font-weight:700; font-size:0.68rem; padding:2px 6px;">4. NERACA &mdash; LIABILITAS JANGKA PENDEK (CURRENT LIABILITIES)</td>
-                  </tr>
-                  <tr>
-                    <td>Utang Bank Jangka Pendek</td>
-                    <td><input type="text" inputmode="numeric" id="inp_stDebt22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                    <td><input type="text" inputmode="numeric" id="inp_stDebt23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                  </tr>
-                  <tr>
-                    <td>Utang Dagang (Trade AP)</td>
-                    <td><input type="text" inputmode="numeric" id="inp_ap22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                    <td><input type="text" inputmode="numeric" id="inp_ap23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                  </tr>
-                  <tr>
-                    <td>Utang Lain-lain</td>
-                    <td><input type="text" inputmode="numeric" id="inp_otherAp22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                    <td><input type="text" inputmode="numeric" id="inp_otherAp23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                  </tr>
-                  <tr>
-                    <td>Biaya YMH Dibayar (Accrued)</td>
-                    <td><input type="text" inputmode="numeric" id="inp_accrued22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                    <td><input type="text" inputmode="numeric" id="inp_accrued23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                  </tr>
-                  <tr>
-                    <td colspan="3" style="background:#e2e8f0; font-weight:700; font-size:0.68rem; padding:2px 6px;">5. NERACA &mdash; LIABILITAS JANGKA PANJANG (NON-CURRENT LIABILITIES)</td>
-                  </tr>
-                  <tr>
-                    <td>Utang Bank Jangka Panjang &amp; Liabilitas Lainnya</td>
-                    <td><input type="text" inputmode="numeric" id="inp_ltDebt22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                    <td><input type="text" inputmode="numeric" id="inp_ltDebt23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                  </tr>
-                  <tr>
-                    <td colspan="3" style="background:#e2e8f0; font-weight:700; font-size:0.68rem; padding:2px 6px;">6. NERACA &mdash; EKUITAS (EQUITY)</td>
-                  </tr>
-                  <tr>
-                    <td>Modal Dasar &amp; Disetor (Paid-up Capital)</td>
-                    <td><input type="text" inputmode="numeric" id="inp_capital22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                    <td><input type="text" inputmode="numeric" id="inp_capital23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                  </tr>
-                  <tr>
-                    <td>Saldo Laba / (Akumulasi Rugi)</td>
-                    <td><input type="text" inputmode="numeric" id="inp_re22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                    <td><input type="text" inputmode="numeric" id="inp_re23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table" id="finStatementInputTable">
+              <thead>
+                <tr>
+                  <th style="width:30%;">Uraian Neraca &amp; Laba Rugi</th>
+                  <th style="width:6%; text-align:center;">Kode</th>
+                  <th class="num-col" style="width:21%;">Tahun <span id="thLabelYear1">2022</span> Audited (Rp)</th>
+                  <th class="num-col" style="width:7%;">%</th>
+                  <th class="num-col" style="width:21%;">Tahun <span id="thLabelYear2">2023</span> Audited (Rp)</th>
+                  <th class="num-col" style="width:7%;">%</th>
+                  <th class="num-col" style="width:8%;">Growth (%)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- ===================================================== -->
+                <!-- BAGIAN I: URAIAN NERACA - AKTIVA -->
+                <!-- ===================================================== -->
+                <tr>
+                  <td colspan="7" style="background:#0c345c; color:#ffffff; font-weight:800; font-size:0.72rem; padding:5px 10px; letter-spacing:0.3px;">
+                    I. URAIAN NERACA &mdash; AKTIVA (ASSETS)
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="7" style="background:#e2e8f0; font-weight:700; font-size:0.68rem; padding:3px 8px; color:#1e293b;">
+                    A. AKTIVA LANCAR (CURRENT ASSETS)
+                  </td>
+                </tr>
+                <tr>
+                  <td>Kas &amp; Bank (Kas dan Setara Kas)</td>
+                  <td style="text-align:center; font-weight:700; color:#475569;">a</td>
+                  <td><input type="text" inputmode="numeric" id="inp_cash22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_cash22" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td><input type="text" inputmode="numeric" id="inp_cash23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_cash23" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td class="num-col" id="grw_cash" style="font-size:0.7rem; font-weight:600;">-</td>
+                </tr>
+                <tr>
+                  <td>Uang Jaminan / Aset Lancar Lainnya</td>
+                  <td style="text-align:center; font-weight:700; color:#475569;">a2</td>
+                  <td><input type="text" inputmode="numeric" id="inp_otherCa22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_otherCa22" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td><input type="text" inputmode="numeric" id="inp_otherCa23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_otherCa23" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td class="num-col" id="grw_otherCa" style="font-size:0.7rem; font-weight:600;">-</td>
+                </tr>
+                <tr>
+                  <td>Piutang Usaha (Trade Accounts Receivable)</td>
+                  <td style="text-align:center; font-weight:700; color:#475569;">b</td>
+                  <td><input type="text" inputmode="numeric" id="inp_ar22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_ar22" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td><input type="text" inputmode="numeric" id="inp_ar23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_ar23" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td class="num-col" id="grw_ar" style="font-size:0.7rem; font-weight:600;">-</td>
+                </tr>
+                <tr>
+                  <td>Persediaan Barang (Inventory)</td>
+                  <td style="text-align:center; font-weight:700; color:#475569;">c</td>
+                  <td><input type="text" inputmode="numeric" id="inp_inv22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_inv22" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td><input type="text" inputmode="numeric" id="inp_inv23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_inv23" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td class="num-col" id="grw_inv" style="font-size:0.7rem; font-weight:600;">-</td>
+                </tr>
+                <tr>
+                  <td>Piutang Lain-lain</td>
+                  <td style="text-align:center; font-weight:700; color:#475569;">d</td>
+                  <td><input type="text" inputmode="numeric" id="inp_otherAr22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_otherAr22" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td><input type="text" inputmode="numeric" id="inp_otherAr23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_otherAr23" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td class="num-col" id="grw_otherAr" style="font-size:0.7rem; font-weight:600;">-</td>
+                </tr>
+                <tr>
+                  <td>Biaya Dibayar Dimuka (Pekerjaan dlm Proses)</td>
+                  <td style="text-align:center; font-weight:700; color:#475569;">e</td>
+                  <td><input type="text" inputmode="numeric" id="inp_prepaid22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_prepaid22" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td><input type="text" inputmode="numeric" id="inp_prepaid23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_prepaid23" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td class="num-col" id="grw_prepaid" style="font-size:0.7rem; font-weight:600;">-</td>
+                </tr>
+                <tr style="background:#f1f5f9; font-weight:800;">
+                  <td style="color:var(--askrindo-navy);">TOTAL AKTIVA LANCAR</td>
+                  <td style="text-align:center; color:var(--askrindo-navy);">f</td>
+                  <td class="num-col" id="calc_ca22" style="color:var(--askrindo-navy); font-size:0.78rem;">0</td>
+                  <td class="num-col" id="pct_ca22" style="font-size:0.7rem;">-</td>
+                  <td class="num-col" id="calc_ca23" style="color:var(--askrindo-navy); font-size:0.78rem;">0</td>
+                  <td class="num-col" id="pct_ca23" style="font-size:0.7rem;">-</td>
+                  <td class="num-col" id="grw_ca" style="font-size:0.72rem;">-</td>
+                </tr>
+
+                <tr>
+                  <td colspan="7" style="background:#e2e8f0; font-weight:700; font-size:0.68rem; padding:3px 8px; color:#1e293b;">
+                    B. AKTIVA TETAP &amp; AKTIVA LAIN-LAIN (NON-CURRENT ASSETS)
+                  </td>
+                </tr>
+                <tr>
+                  <td>Aktiva Tetap (Fixed Assets)</td>
+                  <td style="text-align:center; font-weight:700; color:#475569;">h</td>
+                  <td><input type="text" inputmode="numeric" id="inp_fa22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_fa22" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td><input type="text" inputmode="numeric" id="inp_fa23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_fa23" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td class="num-col" id="grw_fa" style="font-size:0.7rem; font-weight:600;">-</td>
+                </tr>
+                <tr>
+                  <td>Penyusutan (Akumulasi Penyusutan)</td>
+                  <td style="text-align:center; font-weight:700; color:#475569;">i</td>
+                  <td><input type="text" inputmode="numeric" id="inp_depr22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_depr22" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td><input type="text" inputmode="numeric" id="inp_depr23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_depr23" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td class="num-col" id="grw_depr" style="font-size:0.7rem; font-weight:600;">-</td>
+                </tr>
+                <tr>
+                  <td>Investasi Saham / Piutang Nilai Perolehan</td>
+                  <td style="text-align:center; font-weight:700; color:#475569;">g</td>
+                  <td><input type="text" inputmode="numeric" id="inp_invest22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_invest22" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td><input type="text" inputmode="numeric" id="inp_invest23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_invest23" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td class="num-col" id="grw_invest" style="font-size:0.7rem; font-weight:600;">-</td>
+                </tr>
+                <tr>
+                  <td>Other Assets / Aktiva Lain-lain (Termasuk Tagihan &amp; Aset Pajak Tangguhan)</td>
+                  <td style="text-align:center; font-weight:700; color:#475569;">j</td>
+                  <td><input type="text" inputmode="numeric" id="inp_taxAsset22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_taxAsset22" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td><input type="text" inputmode="numeric" id="inp_taxAsset23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_taxAsset23" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td class="num-col" id="grw_taxAsset" style="font-size:0.7rem; font-weight:600;">-</td>
+                </tr>
+                <tr style="background:#f1f5f9; font-weight:800;">
+                  <td style="color:var(--askrindo-navy);">TOTAL AKTIVA TETAP &amp; LAINNYA</td>
+                  <td style="text-align:center; color:var(--askrindo-navy);">k</td>
+                  <td class="num-col" id="calc_nca22" style="color:var(--askrindo-navy); font-size:0.78rem;">0</td>
+                  <td class="num-col" id="pct_nca22" style="font-size:0.7rem;">-</td>
+                  <td class="num-col" id="calc_nca23" style="color:var(--askrindo-navy); font-size:0.78rem;">0</td>
+                  <td class="num-col" id="pct_nca23" style="font-size:0.7rem;">-</td>
+                  <td class="num-col" id="grw_nca" style="font-size:0.72rem;">-</td>
+                </tr>
+                <tr style="background:#dbeafe; font-weight:900; border-top:2px solid #93c5fd; border-bottom:2px solid #93c5fd;">
+                  <td style="color:#1e3a8a;">TOTAL AKTIVA</td>
+                  <td style="text-align:center; color:#1e3a8a;">l</td>
+                  <td class="num-col" id="calc_ta22" style="color:#1e3a8a; font-size:0.82rem;">0</td>
+                  <td class="num-col" style="font-size:0.72rem; color:#1e3a8a;">100,0%</td>
+                  <td class="num-col" id="calc_ta23" style="color:#1e3a8a; font-size:0.82rem;">0</td>
+                  <td class="num-col" style="font-size:0.72rem; color:#1e3a8a;">100,0%</td>
+                  <td class="num-col" id="grw_ta" style="font-size:0.74rem; color:#1e3a8a;">-</td>
+                </tr>
+
+                <!-- ===================================================== -->
+                <!-- BAGIAN II: URAIAN NERACA - PASSIVA -->
+                <!-- ===================================================== -->
+                <tr>
+                  <td colspan="7" style="background:#0c345c; color:#ffffff; font-weight:800; font-size:0.72rem; padding:5px 10px; letter-spacing:0.3px;">
+                    II. URAIAN NERACA &mdash; PASSIVA (LIABILITIES &amp; EQUITY)
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="7" style="background:#e2e8f0; font-weight:700; font-size:0.68rem; padding:3px 8px; color:#1e293b;">
+                    A. HUTANG LANCAR &amp; HUTANG JANGKA PANJANG (LIABILITIES)
+                  </td>
+                </tr>
+                <tr>
+                  <td>Hutang Usaha (Utang Dagang / Trade AP)</td>
+                  <td style="text-align:center; font-weight:700; color:#475569;">m1</td>
+                  <td><input type="text" inputmode="numeric" id="inp_ap22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_ap22" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td><input type="text" inputmode="numeric" id="inp_ap23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_ap23" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td class="num-col" id="grw_ap" style="font-size:0.7rem; font-weight:600;">-</td>
+                </tr>
+                <tr>
+                  <td>Hutang Jk. Pendek (Utang Bank Jangka Pendek)</td>
+                  <td style="text-align:center; font-weight:700; color:#475569;">m2</td>
+                  <td><input type="text" inputmode="numeric" id="inp_stDebt22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_stDebt22" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td><input type="text" inputmode="numeric" id="inp_stDebt23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_stDebt23" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td class="num-col" id="grw_stDebt" style="font-size:0.7rem; font-weight:600;">-</td>
+                </tr>
+                <tr>
+                  <td>Hutang Lancar Lainnya (Utang Lain-lain)</td>
+                  <td style="text-align:center; font-weight:700; color:#475569;">m3</td>
+                  <td><input type="text" inputmode="numeric" id="inp_otherAp22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_otherAp22" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td><input type="text" inputmode="numeric" id="inp_otherAp23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_otherAp23" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td class="num-col" id="grw_otherAp" style="font-size:0.7rem; font-weight:600;">-</td>
+                </tr>
+                <tr>
+                  <td>Biaya YMH Dibayar (Accrued Expenses)</td>
+                  <td style="text-align:center; font-weight:700; color:#475569;">m4</td>
+                  <td><input type="text" inputmode="numeric" id="inp_accrued22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_accrued22" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td><input type="text" inputmode="numeric" id="inp_accrued23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_accrued23" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td class="num-col" id="grw_accrued" style="font-size:0.7rem; font-weight:600;">-</td>
+                </tr>
+                <tr style="background:#f1f5f9; font-weight:800;">
+                  <td style="color:var(--askrindo-navy);">Hutang Lancar (TOTAL HUTANG LANCAR)</td>
+                  <td style="text-align:center; color:var(--askrindo-navy);">m</td>
+                  <td class="num-col" id="calc_cl22" style="color:var(--askrindo-navy); font-size:0.78rem;">0</td>
+                  <td class="num-col" id="pct_cl22" style="font-size:0.7rem;">-</td>
+                  <td class="num-col" id="calc_cl23" style="color:var(--askrindo-navy); font-size:0.78rem;">0</td>
+                  <td class="num-col" id="pct_cl23" style="font-size:0.7rem;">-</td>
+                  <td class="num-col" id="grw_cl" style="font-size:0.72rem;">-</td>
+                </tr>
+                <tr>
+                  <td>Hutang JK. Panjang (Long-Term Liabilities)</td>
+                  <td style="text-align:center; font-weight:700; color:#475569;">n</td>
+                  <td><input type="text" inputmode="numeric" id="inp_ltDebt22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_ltDebt22" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td><input type="text" inputmode="numeric" id="inp_ltDebt23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_ltDebt23" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td class="num-col" id="grw_ltDebt" style="font-size:0.7rem; font-weight:600;">-</td>
+                </tr>
+                <tr style="background:#f1f5f9; font-weight:800;">
+                  <td style="color:var(--askrindo-navy);">TOTAL HUTANG</td>
+                  <td style="text-align:center; color:var(--askrindo-navy);">o</td>
+                  <td class="num-col" id="calc_tl22" style="color:var(--askrindo-navy); font-size:0.78rem;">0</td>
+                  <td class="num-col" id="pct_tl22" style="font-size:0.7rem;">-</td>
+                  <td class="num-col" id="calc_tl23" style="color:var(--askrindo-navy); font-size:0.78rem;">0</td>
+                  <td class="num-col" id="pct_tl23" style="font-size:0.7rem;">-</td>
+                  <td class="num-col" id="grw_tl" style="font-size:0.72rem;">-</td>
+                </tr>
+
+                <tr>
+                  <td colspan="7" style="background:#e2e8f0; font-weight:700; font-size:0.68rem; padding:3px 8px; color:#1e293b;">
+                    B. MODAL / EKUITAS (EQUITY)
+                  </td>
+                </tr>
+                <tr>
+                  <td>Modal / Saham (Modal Disetor)</td>
+                  <td style="text-align:center; font-weight:700; color:#475569;">p</td>
+                  <td><input type="text" inputmode="numeric" id="inp_capital22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_capital22" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td><input type="text" inputmode="numeric" id="inp_capital23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_capital23" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td class="num-col" id="grw_capital" style="font-size:0.7rem; font-weight:600;">-</td>
+                </tr>
+                <tr>
+                  <td>Setoran Modal Lainnya</td>
+                  <td style="text-align:center; font-weight:700; color:#475569;">q</td>
+                  <td><input type="text" inputmode="numeric" id="inp_otherCap22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_otherCap22" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td><input type="text" inputmode="numeric" id="inp_otherCap23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_otherCap23" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td class="num-col" id="grw_otherCap" style="font-size:0.7rem; font-weight:600;">-</td>
+                </tr>
+                <tr>
+                  <td>Laba (Rugi) Ditahan</td>
+                  <td style="text-align:center; font-weight:700; color:#475569;">q1</td>
+                  <td><input type="text" inputmode="numeric" id="inp_retEarn22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_retEarn22" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td><input type="text" inputmode="numeric" id="inp_retEarn23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_retEarn23" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td class="num-col" id="grw_retEarn" style="font-size:0.7rem; font-weight:600;">-</td>
+                </tr>
+                <tr>
+                  <td>Laba (Rugi) Tahun Berjalan / Saldo Laba (Akumulasi Rugi)</td>
+                  <td style="text-align:center; font-weight:700; color:#475569;">q2</td>
+                  <td><input type="text" inputmode="numeric" id="inp_re22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_re22" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td><input type="text" inputmode="numeric" id="inp_re23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_re23" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td class="num-col" id="grw_re" style="font-size:0.7rem; font-weight:600;">-</td>
+                </tr>
+                <tr style="background:#f1f5f9; font-weight:800;">
+                  <td style="color:var(--askrindo-navy);">Modal Sendiri (Equity)</td>
+                  <td style="text-align:center; color:var(--askrindo-navy);">r</td>
+                  <td class="num-col" id="calc_eq22" style="color:var(--askrindo-navy); font-size:0.78rem;">0</td>
+                  <td class="num-col" id="pct_eq22" style="font-size:0.7rem;">-</td>
+                  <td class="num-col" id="calc_eq23" style="color:var(--askrindo-navy); font-size:0.78rem;">0</td>
+                  <td class="num-col" id="pct_eq23" style="font-size:0.7rem;">-</td>
+                  <td class="num-col" id="grw_eq" style="font-size:0.72rem;">-</td>
+                </tr>
+                <tr style="background:#dbeafe; font-weight:900; border-top:2px solid #93c5fd; border-bottom:2px solid #93c5fd;">
+                  <td style="color:#1e3a8a;">TOTAL HTNG &amp; MODAL (PASSIVA)</td>
+                  <td style="text-align:center; color:#1e3a8a;">s</td>
+                  <td class="num-col" id="calc_tlEq22" style="color:#1e3a8a; font-size:0.82rem;">0</td>
+                  <td class="num-col" id="pct_tlEq22" style="font-size:0.72rem; color:#1e3a8a;">100,0%</td>
+                  <td class="num-col" id="calc_tlEq23" style="color:#1e3a8a; font-size:0.82rem;">0</td>
+                  <td class="num-col" id="pct_tlEq23" style="font-size:0.72rem; color:#1e3a8a;">100,0%</td>
+                  <td class="num-col" id="grw_tlEq" style="font-size:0.74rem; color:#1e3a8a;">-</td>
+                </tr>
+
+                <!-- ===================================================== -->
+                <!-- BAGIAN III: LAPORAN LABA RUGI (R/L) -->
+                <!-- ===================================================== -->
+                <tr>
+                  <td colspan="7" style="background:#0c345c; color:#ffffff; font-weight:800; font-size:0.72rem; padding:5px 10px; letter-spacing:0.3px;">
+                    III. R/L &mdash; LAPORAN LABA RUGI (INCOME STATEMENT)
+                  </td>
+                </tr>
+                <tr>
+                  <td>Pendapatan Netto (Sales / Revenue)</td>
+                  <td style="text-align:center; font-weight:700; color:#475569;">t</td>
+                  <td><input type="text" inputmode="numeric" id="inp_rev22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" style="font-size:0.7rem; color:#475569;">100,0%</td>
+                  <td><input type="text" inputmode="numeric" id="inp_rev23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" style="font-size:0.7rem; color:#475569;">100,0%</td>
+                  <td class="num-col" id="grw_rev" style="font-size:0.7rem; font-weight:600;">-</td>
+                </tr>
+                <tr style="background:#f8fafc; font-style:italic; color:#475569;">
+                  <td>Pendapatan Rata-rata Perbulan</td>
+                  <td style="text-align:center; font-weight:600;">t/bln</td>
+                  <td class="num-col" id="calc_revMo22" style="font-size:0.74rem;">0</td>
+                  <td class="num-col" style="font-size:0.68rem;">8,3%</td>
+                  <td class="num-col" id="calc_revMo23" style="font-size:0.74rem;">0</td>
+                  <td class="num-col" style="font-size:0.68rem;">8,3%</td>
+                  <td class="num-col" id="grw_revMo" style="font-size:0.7rem;">-</td>
+                </tr>
+                <tr>
+                  <td>Harga Pokok Produksi / Penjualan (HPP)</td>
+                  <td style="text-align:center; font-weight:700; color:#475569;">u</td>
+                  <td><input type="text" inputmode="numeric" id="inp_cogs22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_cogs22" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td><input type="text" inputmode="numeric" id="inp_cogs23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_cogs23" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td class="num-col" id="grw_cogs" style="font-size:0.7rem; font-weight:600;">-</td>
+                </tr>
+                <tr style="background:#f1f5f9; font-weight:800;">
+                  <td style="color:var(--askrindo-navy);">Laba Kotor (Gross Profit)</td>
+                  <td style="text-align:center; color:var(--askrindo-navy);">w</td>
+                  <td class="num-col" id="calc_gp22" style="font-size:0.78rem;">0</td>
+                  <td class="num-col" id="pct_gp22" style="font-size:0.7rem;">-</td>
+                  <td class="num-col" id="calc_gp23" style="font-size:0.78rem;">0</td>
+                  <td class="num-col" id="pct_gp23" style="font-size:0.7rem;">-</td>
+                  <td class="num-col" id="grw_gp" style="font-size:0.72rem;">-</td>
+                </tr>
+                <tr>
+                  <td>Beban Usaha (Biaya Operasional Adm &amp; Umum)</td>
+                  <td style="text-align:center; font-weight:700; color:#475569;">v</td>
+                  <td><input type="text" inputmode="numeric" id="inp_opex22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_opex22" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td><input type="text" inputmode="numeric" id="inp_opex23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_opex23" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td class="num-col" id="grw_opex" style="font-size:0.7rem; font-weight:600;">-</td>
+                </tr>
+                <tr style="background:#f8fafc; font-weight:700;">
+                  <td>Laba (Rugi) Bruto Operasional</td>
+                  <td style="text-align:center;">v2</td>
+                  <td class="num-col" id="calc_opBruto22" style="font-size:0.76rem;">0</td>
+                  <td class="num-col" id="pct_opBruto22" style="font-size:0.7rem;">-</td>
+                  <td class="num-col" id="calc_opBruto23" style="font-size:0.76rem;">0</td>
+                  <td class="num-col" id="pct_opBruto23" style="font-size:0.7rem;">-</td>
+                  <td class="num-col" id="grw_opBruto" style="font-size:0.7rem;">-</td>
+                </tr>
+                <tr style="background:#f1f5f9; font-weight:800;">
+                  <td style="color:var(--askrindo-navy);">Laba (Rugi) Operasional</td>
+                  <td style="text-align:center; color:var(--askrindo-navy);">x3</td>
+                  <td class="num-col" id="calc_opInc22" style="font-size:0.78rem;">0</td>
+                  <td class="num-col" id="pct_opInc22" style="font-size:0.7rem;">-</td>
+                  <td class="num-col" id="calc_opInc23" style="font-size:0.78rem;">0</td>
+                  <td class="num-col" id="pct_opInc23" style="font-size:0.7rem;">-</td>
+                  <td class="num-col" id="grw_opInc" style="font-size:0.72rem;">-</td>
+                </tr>
+                <tr>
+                  <td>Pendapatan Lain-lain</td>
+                  <td style="text-align:center; font-weight:700; color:#475569;">x</td>
+                  <td><input type="text" inputmode="numeric" id="inp_otherInc22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_otherInc22" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td><input type="text" inputmode="numeric" id="inp_otherInc23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_otherInc23" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td class="num-col" id="grw_otherInc" style="font-size:0.7rem; font-weight:600;">-</td>
+                </tr>
+                <tr>
+                  <td>Beban Lain-lain</td>
+                  <td style="text-align:center; font-weight:700; color:#475569;">x2</td>
+                  <td><input type="text" inputmode="numeric" id="inp_otherExp22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_otherExp22" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td><input type="text" inputmode="numeric" id="inp_otherExp23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_otherExp23" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td class="num-col" id="grw_otherExp" style="font-size:0.7rem; font-weight:600;">-</td>
+                </tr>
+                <tr style="background:#f1f5f9; font-weight:800;">
+                  <td style="color:var(--askrindo-navy);">Laba (Rugi) Sblm Pjk &amp; Bunga (EBIT)</td>
+                  <td style="text-align:center; color:var(--askrindo-navy);">y1</td>
+                  <td class="num-col" id="calc_ebit22" style="font-size:0.78rem;">0</td>
+                  <td class="num-col" id="pct_ebit22" style="font-size:0.7rem;">-</td>
+                  <td class="num-col" id="calc_ebit23" style="font-size:0.78rem;">0</td>
+                  <td class="num-col" id="pct_ebit23" style="font-size:0.7rem;">-</td>
+                  <td class="num-col" id="grw_ebit" style="font-size:0.72rem;">-</td>
+                </tr>
+                <tr style="background:#f8fafc; font-style:italic; color:#475569;">
+                  <td>Laba Bersih Rata-rata / Bln Sblm Pajak</td>
+                  <td style="text-align:center; font-weight:600;">Y2</td>
+                  <td class="num-col" id="calc_ebitMo22" style="font-size:0.74rem;">0</td>
+                  <td class="num-col" id="pct_ebitMo22" style="font-size:0.68rem;">-</td>
+                  <td class="num-col" id="calc_ebitMo23" style="font-size:0.74rem;">0</td>
+                  <td class="num-col" id="pct_ebitMo23" style="font-size:0.68rem;">-</td>
+                  <td class="num-col" id="grw_ebitMo" style="font-size:0.7rem;">-</td>
+                </tr>
+                <tr>
+                  <td>Biaya Bunga (Interest Expense)</td>
+                  <td style="text-align:center; font-weight:700; color:#475569;">y3</td>
+                  <td><input type="text" inputmode="numeric" id="inp_intExp22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_intExp22" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td><input type="text" inputmode="numeric" id="inp_intExp23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_intExp23" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td class="num-col" id="grw_intExp" style="font-size:0.7rem; font-weight:600;">-</td>
+                </tr>
+                <tr style="background:#f1f5f9; font-weight:800;">
+                  <td style="color:var(--askrindo-navy);">Laba (Rugi) Sblm Pajak (EBT)</td>
+                  <td style="text-align:center; color:var(--askrindo-navy);">y</td>
+                  <td class="num-col" id="calc_ebt22" style="font-size:0.78rem;">0</td>
+                  <td class="num-col" id="pct_ebt22" style="font-size:0.7rem;">-</td>
+                  <td class="num-col" id="calc_ebt23" style="font-size:0.78rem;">0</td>
+                  <td class="num-col" id="pct_ebt23" style="font-size:0.7rem;">-</td>
+                  <td class="num-col" id="grw_ebt" style="font-size:0.72rem;">-</td>
+                </tr>
+                <tr>
+                  <td>Pajak Penghasilan (Tax)</td>
+                  <td style="text-align:center; font-weight:700; color:#475569;">z1</td>
+                  <td><input type="text" inputmode="numeric" id="inp_tax22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_tax22" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td><input type="text" inputmode="numeric" id="inp_tax23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_tax23" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td class="num-col" id="grw_tax" style="font-size:0.7rem; font-weight:600;">-</td>
+                </tr>
+                <tr>
+                  <td>Deviden</td>
+                  <td style="text-align:center; font-weight:700; color:#475569;">z2</td>
+                  <td><input type="text" inputmode="numeric" id="inp_div22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_div22" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td><input type="text" inputmode="numeric" id="inp_div23" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
+                  <td class="num-col" id="pct_div23" style="font-size:0.7rem; color:#475569;">-</td>
+                  <td class="num-col" id="grw_div" style="font-size:0.7rem; font-weight:600;">-</td>
+                </tr>
+                <tr style="background:#dbeafe; font-weight:900; border-top:2px solid #93c5fd; border-bottom:2px solid #93c5fd;">
+                  <td style="color:#1e3a8a;">EAT (Laba Bersih)</td>
+                  <td style="text-align:center; color:#1e3a8a;">z</td>
+                  <td class="num-col" id="calc_eat22" style="color:#1e3a8a; font-size:0.82rem;">0</td>
+                  <td class="num-col" id="pct_eat22" style="font-size:0.72rem; color:#1e3a8a;">-</td>
+                  <td class="num-col" id="calc_eat23" style="color:#1e3a8a; font-size:0.82rem;">0</td>
+                  <td class="num-col" id="pct_eat23" style="font-size:0.72rem; color:#1e3a8a;">-</td>
+                  <td class="num-col" id="grw_eat" style="font-size:0.74rem; color:#1e3a8a;">-</td>
+                </tr>
+                <tr style="background:#f8fafc; font-style:italic; font-weight:700; color:#334155;">
+                  <td>Laba Bersih Rata-rata Perbulan</td>
+                  <td style="text-align:center;">z/bln</td>
+                  <td class="num-col" id="calc_eatMo22" style="font-size:0.75rem;">0</td>
+                  <td class="num-col" id="pct_eatMo22" style="font-size:0.68rem;">-</td>
+                  <td class="num-col" id="calc_eatMo23" style="font-size:0.75rem;">0</td>
+                  <td class="num-col" id="pct_eatMo23" style="font-size:0.68rem;">-</td>
+                  <td class="num-col" id="grw_eatMo" style="font-size:0.7rem;">-</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -1150,6 +1500,6 @@
 
     <div class="toast-container" id="toastContainer"></div>
 
-  <script src="app.js?v=1793494000"></script>
+  <script src="app.js?v=1793495000"></script>
 </body>
 </html>

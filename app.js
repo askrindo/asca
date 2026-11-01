@@ -1351,33 +1351,47 @@ function computeDCCSWCM(proj) {
   const yr1 = proj.year1 || 2022;
   const yr2 = proj.year2 || 2023;
 
-  // Laba Rugi
-  const gp22 = f22.rev - f22.cogs;
+  // Laba Rugi (Sesuai Template Sheet Perhitungan)
+  const revMo22 = (f22.rev || 0) / 12;
+  const gp22 = (f22.rev || 0) - (f22.cogs || 0);
   const gpm22 = f22.rev > 0 ? (gp22 / f22.rev) * 100 : 0;
-  const ebt22 = gp22 - f22.opex;
-  const eat22 = ebt22 - f22.tax;
+  const opBruto22 = gp22 - (f22.opex || 0);
+  const opInc22 = opBruto22;
+  const ebit22 = opInc22 + (f22.otherInc || 0) - (f22.otherExp || 0);
+  const ebitMo22 = ebit22 / 12;
+  const ebt22 = ebit22 - (f22.intExp || 0);
+  const eat22 = ebt22 - (f22.tax || 0) - (f22.div || 0);
+  const eatMo22 = eat22 / 12;
   const npm22 = f22.rev > 0 ? (eat22 / f22.rev) * 100 : 0;
 
-  const gp23 = f23.rev - f23.cogs;
+  const revMo23 = (f23.rev || 0) / 12;
+  const gp23 = (f23.rev || 0) - (f23.cogs || 0);
   const gpm23 = f23.rev > 0 ? (gp23 / f23.rev) * 100 : 0;
-  const ebt23 = gp23 - f23.opex;
-  const eat23 = ebt23 - f23.tax;
+  const opBruto23 = gp23 - (f23.opex || 0);
+  const opInc23 = opBruto23;
+  const ebit23 = opInc23 + (f23.otherInc || 0) - (f23.otherExp || 0);
+  const ebitMo23 = ebit23 / 12;
+  const ebt23 = ebit23 - (f23.intExp || 0);
+  const eat23 = ebt23 - (f23.tax || 0) - (f23.div || 0);
+  const eatMo23 = eat23 / 12;
   const npm23 = f23.rev > 0 ? (eat23 / f23.rev) * 100 : 0;
 
-  // Neraca
-  const ca22 = f22.cash + f22.ar + f22.otherAr + f22.inv + f22.otherCa;
-  const nca22 = f22.fa + f22.taxAsset;
+  // Neraca (Sesuai Template Sheet Perhitungan)
+  const ca22 = (f22.cash || 0) + (f22.ar || 0) + (f22.otherAr || 0) + (f22.inv || 0) + (f22.otherCa || 0) + (f22.prepaid || 0);
+  const nca22 = (f22.fa || 0) - Math.abs(f22.depr || 0) + (f22.invest || 0) + (f22.taxAsset || 0);
   const ta22 = ca22 + nca22;
-  const cl22 = f22.stDebt + f22.ap + f22.otherAp + f22.accrued;
-  const tl22 = cl22 + f22.ltDebt;
-  const eq22 = f22.capital + f22.re;
+  const cl22 = (f22.stDebt || 0) + (f22.ap || 0) + (f22.otherAp || 0) + (f22.accrued || 0);
+  const tl22 = cl22 + (f22.ltDebt || 0);
+  const eq22 = (f22.capital || 0) + (f22.otherCap || 0) + (f22.retEarn || 0) + (f22.re || 0);
+  const tlEq22 = tl22 + eq22;
 
-  const ca23 = f23.cash + f23.ar + f23.otherAr + f23.inv + f23.otherCa;
-  const nca23 = f23.fa + f23.taxAsset;
+  const ca23 = (f23.cash || 0) + (f23.ar || 0) + (f23.otherAr || 0) + (f23.inv || 0) + (f23.otherCa || 0) + (f23.prepaid || 0);
+  const nca23 = (f23.fa || 0) - Math.abs(f23.depr || 0) + (f23.invest || 0) + (f23.taxAsset || 0);
   const ta23 = ca23 + nca23;
-  const cl23 = f23.stDebt + f23.ap + f23.otherAp + f23.accrued;
-  const tl23 = cl23 + f23.ltDebt;
-  const eq23 = f23.capital + f23.re;
+  const cl23 = (f23.stDebt || 0) + (f23.ap || 0) + (f23.otherAp || 0) + (f23.accrued || 0);
+  const tl23 = cl23 + (f23.ltDebt || 0);
+  const eq23 = (f23.capital || 0) + (f23.otherCap || 0) + (f23.retEarn || 0) + (f23.re || 0);
+  const tlEq23 = tl23 + eq23;
 
   // Rasio Aktivitas
   const dor22_365 = f22.rev > 0 ? (f22.ar / f22.rev) * 365 : 0;
@@ -1874,10 +1888,10 @@ function computeDCCSWCM(proj) {
 
   return {
     yr1, yr2,
-    gp22, gpm22, ebt22, eat22, npm22,
-    gp23, gpm23, ebt23, eat23, npm23,
-    ca22, nca22, ta22, cl22, tl22, eq22,
-    ca23, nca23, ta23, cl23, tl23, eq23,
+    revMo22, gp22, gpm22, opBruto22, opInc22, ebit22, ebitMo22, ebt22, eat22, eatMo22, npm22,
+    revMo23, gp23, gpm23, opBruto23, opInc23, ebit23, ebitMo23, ebt23, eat23, eatMo23, npm23,
+    ca22, nca22, ta22, cl22, tl22, eq22, tlEq22,
+    ca23, nca23, ta23, cl23, tl23, eq23, tlEq23,
     dor22_365, doi22_365, dop22_365, dopBroad22_365, grossCycle22, ccc22,
     dor23_365, doi23_365, dop23_365, dor23_360, doi23_360, dop23_360, dopBroad23_365,
     grossCycle23, ccc23,
@@ -4798,11 +4812,194 @@ function populateFormInputs(proj) {
   setVal('inp_year1', proj.year1 || 2022);
   setVal('inp_year2', proj.year2 || 2023);
 
-  const fields = ['rev', 'cogs', 'opex', 'tax', 'cash', 'ar', 'otherAr', 'inv', 'otherCa', 'fa', 'taxAsset', 'stDebt', 'ap', 'otherAp', 'accrued', 'ltDebt', 'capital', 're'];
+  const fields = [
+    'rev', 'cogs', 'opex', 'otherInc', 'otherExp', 'intExp', 'tax', 'div',
+    'cash', 'otherCa', 'ar', 'inv', 'otherAr', 'prepaid',
+    'fa', 'depr', 'invest', 'taxAsset',
+    'ap', 'stDebt', 'otherAp', 'accrued', 'ltDebt',
+    'capital', 'otherCap', 'retEarn', 're'
+  ];
   fields.forEach((k) => {
-    setVal(`inp_${k}22`, proj.fin22[k], true);
-    setVal(`inp_${k}23`, proj.fin23[k], true);
+    setVal(`inp_${k}22`, proj.fin22[k] || 0, true);
+    setVal(`inp_${k}23`, proj.fin23[k] || 0, true);
   });
+
+  const m = computeDCCSWCM(proj);
+  updateFinancialStatementTableComputed(proj, m);
+}
+
+function updateFinancialStatementTableComputed(proj, m) {
+  if (!proj || !m) return;
+  const f22 = proj.fin22 || {};
+  const f23 = proj.fin23 || {};
+
+  const setCalc = (id, val, highlightNeg = true) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const rounded = Math.round(val || 0);
+    el.textContent = formatNumberWithDots(rounded) || '0';
+    if (highlightNeg && rounded < 0) {
+      el.style.color = '#dc2626';
+    } else if (id.includes('ta') || id.includes('tlEq') || id.includes('eat2')) {
+      el.style.color = '#1e3a8a';
+    } else {
+      el.style.color = '';
+    }
+  };
+
+  const setPct = (id, val, base) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (!base || base === 0) {
+      el.textContent = '0,0%';
+      return;
+    }
+    const pct = ((val || 0) / base) * 100;
+    el.textContent = `${pct.toFixed(1).replace('.', ',')}%`;
+  };
+
+  const setGrw = (id, v22, v23, invertGood = false) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const n22 = v22 || 0;
+    const n23 = v23 || 0;
+    if (n22 === 0 && n23 === 0) {
+      el.textContent = '0,0%';
+      el.style.color = '#64748b';
+      return;
+    }
+    if (n22 === 0) {
+      el.textContent = 'N/A';
+      el.style.color = '#64748b';
+      return;
+    }
+    const g = ((n23 - n22) / Math.abs(n22)) * 100;
+    const sign = g > 0 ? '+' : '';
+    el.textContent = `${sign}${g.toFixed(1).replace('.', ',')}%`;
+    if (Math.abs(g) < 0.05) {
+      el.style.color = '#64748b';
+    } else if ((g > 0 && !invertGood) || (g < 0 && invertGood)) {
+      el.style.color = '#166534';
+    } else {
+      el.style.color = '#dc2626';
+    }
+  };
+
+  // 1. Subtotals & Totals Neraca
+  setCalc('calc_ca22', m.ca22);
+  setCalc('calc_ca23', m.ca23);
+  setCalc('calc_nca22', m.nca22);
+  setCalc('calc_nca23', m.nca23);
+  setCalc('calc_ta22', m.ta22);
+  setCalc('calc_ta23', m.ta23);
+
+  setCalc('calc_cl22', m.cl22);
+  setCalc('calc_cl23', m.cl23);
+  setCalc('calc_tl22', m.tl22);
+  setCalc('calc_tl23', m.tl23);
+  setCalc('calc_eq22', m.eq22);
+  setCalc('calc_eq23', m.eq23);
+  setCalc('calc_tlEq22', m.tlEq22);
+  setCalc('calc_tlEq23', m.tlEq23);
+
+  // 2. Subtotals & Totals Laba Rugi (R/L)
+  setCalc('calc_revMo22', m.revMo22);
+  setCalc('calc_revMo23', m.revMo23);
+  setCalc('calc_gp22', m.gp22);
+  setCalc('calc_gp23', m.gp23);
+  setCalc('calc_opBruto22', m.opBruto22);
+  setCalc('calc_opBruto23', m.opBruto23);
+  setCalc('calc_opInc22', m.opInc22);
+  setCalc('calc_opInc23', m.opInc23);
+  setCalc('calc_ebit22', m.ebit22);
+  setCalc('calc_ebit23', m.ebit23);
+  setCalc('calc_ebitMo22', m.ebitMo22);
+  setCalc('calc_ebitMo23', m.ebitMo23);
+  setCalc('calc_ebt22', m.ebt22);
+  setCalc('calc_ebt23', m.ebt23);
+  setCalc('calc_eat22', m.eat22);
+  setCalc('calc_eat23', m.eat23);
+  setCalc('calc_eatMo22', m.eatMo22);
+  setCalc('calc_eatMo23', m.eatMo23);
+
+  // 3. Common-size (%) & Growth (%) Aktiva
+  const bsItems = [
+    ['cash', f22.cash, f23.cash, false],
+    ['otherCa', f22.otherCa, f23.otherCa, false],
+    ['ar', f22.ar, f23.ar, false],
+    ['inv', f22.inv, f23.inv, false],
+    ['otherAr', f22.otherAr, f23.otherAr, false],
+    ['prepaid', f22.prepaid, f23.prepaid, false],
+    ['ca', m.ca22, m.ca23, false],
+    ['fa', f22.fa, f23.fa, false],
+    ['depr', f22.depr, f23.depr, false],
+    ['invest', f22.invest, f23.invest, false],
+    ['taxAsset', f22.taxAsset, f23.taxAsset, false],
+    ['nca', m.nca22, m.nca23, false],
+    ['ta', m.ta22, m.ta23, false],
+    ['ap', f22.ap, f23.ap, true],
+    ['stDebt', f22.stDebt, f23.stDebt, true],
+    ['otherAp', f22.otherAp, f23.otherAp, true],
+    ['accrued', f22.accrued, f23.accrued, true],
+    ['cl', m.cl22, m.cl23, true],
+    ['ltDebt', f22.ltDebt, f23.ltDebt, true],
+    ['tl', m.tl22, m.tl23, true],
+    ['capital', f22.capital, f23.capital, false],
+    ['otherCap', f22.otherCap, f23.otherCap, false],
+    ['retEarn', f22.retEarn, f23.retEarn, false],
+    ['re', f22.re, f23.re, false],
+    ['eq', m.eq22, m.eq23, false],
+    ['tlEq', m.tlEq22, m.tlEq23, false]
+  ];
+  bsItems.forEach(([key, v22, v23, invGood]) => {
+    setPct(`pct_${key}22`, v22, m.ta22);
+    setPct(`pct_${key}23`, v23, m.ta23);
+    setGrw(`grw_${key}`, v22, v23, invGood);
+  });
+
+  // 4. Common-size (%) & Growth (%) Laba Rugi
+  const isItems = [
+    ['rev', f22.rev, f23.rev, false],
+    ['revMo', m.revMo22, m.revMo23, false],
+    ['cogs', f22.cogs, f23.cogs, true],
+    ['gp', m.gp22, m.gp23, false],
+    ['opex', f22.opex, f23.opex, true],
+    ['opBruto', m.opBruto22, m.opBruto23, false],
+    ['opInc', m.opInc22, m.opInc23, false],
+    ['otherInc', f22.otherInc, f23.otherInc, false],
+    ['otherExp', f22.otherExp, f23.otherExp, true],
+    ['ebit', m.ebit22, m.ebit23, false],
+    ['ebitMo', m.ebitMo22, m.ebitMo23, false],
+    ['intExp', f22.intExp, f23.intExp, true],
+    ['ebt', m.ebt22, m.ebt23, false],
+    ['tax', f22.tax, f23.tax, true],
+    ['div', f22.div, f23.div, false],
+    ['eat', m.eat22, m.eat23, false],
+    ['eatMo', m.eatMo22, m.eatMo23, false]
+  ];
+  isItems.forEach(([key, v22, v23, invGood]) => {
+    setPct(`pct_${key}22`, v22, f22.rev);
+    setPct(`pct_${key}23`, v23, f23.rev);
+    setGrw(`grw_${key}`, v22, v23, invGood);
+  });
+
+  // 5. Indikator Keseimbangan Neraca (Aktiva = Passiva)
+  const badge = document.getElementById('finBalanceStatusBadge');
+  if (badge) {
+    const diff22 = Math.round((m.ta22 || 0) - (m.tlEq22 || 0));
+    const diff23 = Math.round((m.ta23 || 0) - (m.tlEq23 || 0));
+    if (Math.abs(diff22) <= 100 && Math.abs(diff23) <= 100) {
+      badge.style.background = '#dcfce7';
+      badge.style.color = '#166534';
+      badge.style.borderColor = '#86efac';
+      badge.innerHTML = '&#10003; Neraca Balance (TOTAL AKTIVA = TOTAL HTNG &amp; MODAL)';
+    } else {
+      badge.style.background = '#fef2f2';
+      badge.style.color = '#991b1b';
+      badge.style.borderColor = '#fca5a5';
+      badge.innerHTML = `&#9888; Selisih Neraca (${m.yr1}: ${fmtRp(diff22, true)} | ${m.yr2}: ${fmtRp(diff23, true)})`;
+    }
+  }
 }
 
 function syncInputsToModel() {
@@ -4867,7 +5064,13 @@ function syncInputsToModel() {
   proj.year1 = getPlainNum('inp_year1') || 2022;
   proj.year2 = getPlainNum('inp_year2') || 2023;
 
-  const fields = ['rev', 'cogs', 'opex', 'tax', 'cash', 'ar', 'otherAr', 'inv', 'otherCa', 'fa', 'taxAsset', 'stDebt', 'ap', 'otherAp', 'accrued', 'ltDebt', 'capital', 're'];
+  const fields = [
+    'rev', 'cogs', 'opex', 'otherInc', 'otherExp', 'intExp', 'tax', 'div',
+    'cash', 'otherCa', 'ar', 'inv', 'otherAr', 'prepaid',
+    'fa', 'depr', 'invest', 'taxAsset',
+    'ap', 'stDebt', 'otherAp', 'accrued', 'ltDebt',
+    'capital', 'otherCap', 'retEarn', 're'
+  ];
   fields.forEach((k) => {
     proj.fin22[k] = getFmtNum(`inp_${k}22`);
     proj.fin23[k] = getFmtNum(`inp_${k}23`);
@@ -4875,6 +5078,7 @@ function syncInputsToModel() {
 
   saveProjectsToStorage();
   const m = computeDCCSWCM(proj);
+  updateFinancialStatementTableComputed(proj, m);
 
   // Update dynamic year labels
   const y1El = document.getElementById('thLabelYear1');

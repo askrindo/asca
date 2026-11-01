@@ -4198,7 +4198,7 @@ function renderPrintableReport(proj, m) {
 
             <!-- BAGIAN I: RANGKUMAN AUDIT SIKLUS KAS (DCC) & NWC BURN-RATE -->
             <h4 style="color:var(--askrindo-navy); margin:0.5rem 0 0.25rem; font-size:0.75rem; font-weight:800; border-bottom:1.5px solid #e2e8f0; padding-bottom:2px;">
-              I. Rangkuman Audit Siklus Kas (DCC) &amp; Ketahanan NWC Burn-Rate (Tab DCC &amp; NWC Burn-Rate)
+              I. Rangkuman Audit Siklus Kas (Dynamic CCC) &amp; Ketahanan NWC Burn-Rate
             </h4>
             <table class="data-table" style="margin-bottom:0.6rem; font-size:0.66rem;">
               <thead>
@@ -4262,7 +4262,7 @@ function renderPrintableReport(proj, m) {
 
             <!-- BAGIAN II: RANGKUMAN RASIO KEUANGAN UTAMA & KEPATUHAN RAC -->
             <h4 style="color:var(--askrindo-navy); margin:0.5rem 0 0.25rem; font-size:0.75rem; font-weight:800; border-bottom:1.5px solid #e2e8f0; padding-bottom:2px;">
-              II. Rangkuman Rasio Keuangan Utama &amp; Kepatuhan RAC (Tab Rasio Keuangan)
+              II. Rangkuman Rasio Keuangan Utama &amp; Evaluasi Kepatuhan RAC
             </h4>
             <table class="data-table" style="margin-bottom:0.6rem; font-size:0.66rem;">
               <thead>
@@ -4343,7 +4343,7 @@ function renderPrintableReport(proj, m) {
 
             <!-- BAGIAN III: RANGKUMAN ANALISA KUALITATIF 5C UNDERWRITING -->
             <h4 style="color:var(--askrindo-navy); margin:0.5rem 0 0.25rem; font-size:0.75rem; font-weight:800; border-bottom:1.5px solid #e2e8f0; padding-bottom:2px;">
-              III. Rangkuman Analisa Kualitatif 5C Underwriting (Tab Analisa 5C)
+              III. Rangkuman Analisa Kualitatif 5C Underwriting
             </h4>
             <table class="data-table" style="margin-bottom:0.6rem; font-size:0.66rem;">
               <thead>
@@ -4416,7 +4416,7 @@ function renderPrintableReport(proj, m) {
 
             <!-- BAGIAN IV: RANGKUMAN PROYEKSI CASH FLOW & DEBT SERVICE 12 BULAN -->
             <h4 style="color:var(--askrindo-navy); margin:0.5rem 0 0.25rem; font-size:0.75rem; font-weight:800; border-bottom:1.5px solid #e2e8f0; padding-bottom:2px;">
-              IV. Rangkuman Proyeksi Cash Flow &amp; Debt Service 12 Bulan (Tab Proyeksi Cash Flow)
+              IV. Rangkuman Proyeksi Cash Flow &amp; Debt Service 12 Bulan
             </h4>
             <table class="data-table" style="margin-bottom:0.6rem; font-size:0.66rem;">
               <thead>
@@ -4481,7 +4481,7 @@ function renderPrintableReport(proj, m) {
 
             <!-- BAGIAN V: RANGKUMAN UJI KETAHANAN SENSITIVITAS (STRESS-TESTING) -->
             <h4 style="color:var(--askrindo-navy); margin:0.5rem 0 0.25rem; font-size:0.75rem; font-weight:800; border-bottom:1.5px solid #e2e8f0; padding-bottom:2px;">
-              V. Rangkuman Simulasi Uji Ketahanan Sensitivitas (Tab Stress-Testing)
+              V. Rangkuman Simulasi Uji Ketahanan Sensitivitas (Stress-Testing)
             </h4>
             <table class="data-table" style="margin-bottom:0.6rem; font-size:0.66rem;">
               <thead>
@@ -4534,7 +4534,7 @@ function renderPrintableReport(proj, m) {
 
             <!-- BAGIAN VI: RANGKUMAN SKOR 7 PILAR DCC-SWCM & GRADE RISK -->
             <h4 style="color:var(--askrindo-navy); margin:0.5rem 0 0.25rem; font-size:0.75rem; font-weight:800; border-bottom:1.5px solid #e2e8f0; padding-bottom:2px;">
-              VI. Rangkuman Skor Metode 7 Pilar DCC-SWCM &amp; Penetapan Grade Risk (Tab Skor &amp; Grade Risk)
+              VI. Rangkuman Skor Metode 7 Pilar DCC-SWCM &amp; Penetapan Grade Risk
             </h4>
             <table class="data-table" style="margin-bottom:0.6rem; font-size:0.66rem;">
               <thead>

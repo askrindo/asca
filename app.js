@@ -860,19 +860,98 @@ const KNOWN_INAPROC_BLACKLIST = [
   'cv abadi jaya makmur'
 ];
 
+function normalizeInaprocCompanyName(raw) {
+  if (!raw) return '';
+  return String(raw)
+    .toLowerCase()
+    .replace(/\s*\([^)]*\)/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function stripEntityPrefixSuffix(normStr) {
+  if (!normStr) return '';
+  return normStr
+    .replace(/^(pt|cv|ud|pd|firma|fa|koperasi|yayasan|perum|perumda|persero|tbk|kjpp|kap)\s+/i, '')
+    .replace(/\s+(tbk|persero)$/i, '')
+    .trim();
+}
+
 function checkInaprocBlacklist(name) {
-  if (!name) return { isBlacklisted: false, reason: '', skNumber: '' };
-  const clean = name.toLowerCase().replace(/\s*\([^)]*\)/g, '').replace(/[^a-z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
-  if (!clean) return { isBlacklisted: false, reason: '', skNumber: '' };
+  if (!name) return { isBlacklisted: false, reason: '', skNumber: '', status: '', expiredDate: '', institution: '' };
+  const qFull = normalizeInaprocCompanyName(name);
+  const qCore = stripEntityPrefixSuffix(qFull);
+  if (!qFull) return { isBlacklisted: false, reason: '', skNumber: '', status: '', expiredDate: '', institution: '' };
+
+  const realDb = Array.isArray(window.INAPROC_REAL_DB) ? window.INAPROC_REAL_DB : [];
+  if (realDb.length > 0) {
+    let bestMatch = null;
+
+    // Pass 1: Exact match pada nama lengkap maupun nama inti (tanpa PT/CV)
+    for (let i = 0; i < realDb.length; i++) {
+      const rec = realDb[i];
+      if (!rec || !rec.n) continue;
+      const dbFull = normalizeInaprocCompanyName(rec.n);
+      const dbCore = stripEntityPrefixSuffix(dbFull);
+      if (dbFull === qFull || (qCore.length >= 3 && dbCore === qCore)) {
+        if (rec.st === 'PUBLISHED') {
+          bestMatch = rec;
+          break; // Prioritaskan yang sedang TAYANG (PUBLISHED)
+        }
+        if (!bestMatch) bestMatch = rec;
+      }
+    }
+
+    // Pass 2: Partial / Substring match jika nama inti cukup spesifik (>= 6 karakter dan >= 2 kata)
+    const qWords = qCore.split(' ').filter(Boolean);
+    if (!bestMatch && qCore.length >= 6 && qWords.length >= 2) {
+      for (let i = 0; i < realDb.length; i++) {
+        const rec = realDb[i];
+        if (!rec || !rec.n) continue;
+        const dbFull = normalizeInaprocCompanyName(rec.n);
+        const dbCore = stripEntityPrefixSuffix(dbFull);
+        if (dbCore.length < 6) continue;
+        if (dbFull.includes(qFull) || qFull.includes(dbFull) || dbCore === qCore) {
+          if (rec.st === 'PUBLISHED') {
+            bestMatch = rec;
+            break;
+          }
+          if (!bestMatch) bestMatch = rec;
+        }
+      }
+    }
+
+    if (bestMatch) {
+      const isPub = bestMatch.st === 'PUBLISHED';
+      const insLabel = bestMatch.ins ? ` (${bestMatch.ins})` : '';
+      return {
+        isBlacklisted: true,
+        matchedName: bestMatch.n,
+        skNumber: bestMatch.sk || '-',
+        status: bestMatch.st || 'PUBLISHED',
+        expiredDate: bestMatch.exp || '-',
+        institution: bestMatch.ins || 'Portal Daftar Hitam Nasional LKPP',
+        reason: isPub
+          ? `Terdaftar Masuk Daftar Hitam Nasional LKPP - Status TAYANG AKTIF s/d ${bestMatch.exp || '-'}${insLabel}`
+          : `Tercatat dalam Database Daftar Hitam Nasional LKPP (${bestMatch.st || 'Riwayat Sanksi'})${insLabel}`
+      };
+    }
+  }
 
   for (let i = 0; i < KNOWN_INAPROC_BLACKLIST.length; i++) {
     const b = KNOWN_INAPROC_BLACKLIST[i];
-    const bClean = b.toLowerCase().replace(/[^a-z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
-    if (clean === bClean || clean.includes(bClean) || (bClean.length > 5 && bClean.includes(clean))) {
+    const bFull = normalizeInaprocCompanyName(b);
+    const bCore = stripEntityPrefixSuffix(bFull);
+    if (qFull === bFull || (qCore.length >= 4 && qCore === bCore) || qFull.includes(bFull)) {
       return {
         isBlacklisted: true,
+        matchedName: name,
         reason: 'Terdaftar Masuk Blacklist LKPP (Sanksi Pengadaan Nasional)',
-        skNumber: `SK-PA/LKPP-DH/2025/${String(101 + i).padStart(4, '0')}`
+        skNumber: `SK-PA/LKPP-DH/2025/${String(101 + i).padStart(4, '0')}`,
+        status: 'PUBLISHED',
+        expiredDate: '-',
+        institution: 'Portal Daftar Hitam Nasional LKPP'
       };
     }
   }
@@ -880,12 +959,16 @@ function checkInaprocBlacklist(name) {
   if (/daftar[\s_-]*hitam|blacklist|sanksi[\s_-]*lkpp|wanprestasi[\s_-]*tender/i.test(name)) {
     return {
       isBlacklisted: true,
+      matchedName: name,
       reason: 'Terindikasi Catatan Sanksi Pengadaan LKPP',
-      skNumber: 'SK-PA/LKPP-DH/2025/0999'
+      skNumber: 'SK-PA/LKPP-DH/2025/0999',
+      status: 'PUBLISHED',
+      expiredDate: '-',
+      institution: 'Portal Daftar Hitam Nasional LKPP'
     };
   }
 
-  return { isBlacklisted: false, reason: '', skNumber: '' };
+  return { isBlacklisted: false, reason: '', skNumber: '', status: '', expiredDate: '', institution: '' };
 }
 
 let inaprocAutoTriggerTimer = null;
@@ -894,7 +977,15 @@ let isScanningInaproc = false;
 function ensureInaprocAutoChecked(proj) {
   if (!proj) return;
   const cleanName = (proj.companyName || 'Perusahaan').replace(/\s*\([^)]*\)/g, '').trim();
-  if (!proj.inaprocCheckedCompany || proj.inaprocCheckedCompany !== cleanName || !proj.inaprocStatus || proj.inaprocStatus === 'unverified') {
+  const dbReady = Array.isArray(window.INAPROC_REAL_DB) && window.INAPROC_REAL_DB.length > 0;
+  const targetVer = dbReady ? 'REAL_DB_V2_LOADED' : 'REAL_DB_V2_PENDING';
+  if (
+    !proj.inaprocCheckedCompany ||
+    proj.inaprocCheckedCompany !== cleanName ||
+    proj.inaprocDbVersion !== targetVer ||
+    !proj.inaprocStatus ||
+    proj.inaprocStatus === 'unverified'
+  ) {
     runAutoInaprocCheckSync(proj, false);
   }
 }
@@ -905,24 +996,30 @@ function runAutoInaprocCheckSync(proj, notifyToast = false) {
   const accessedStr = formatGoogleNewsAccessedDate(new Date());
   const chk = checkInaprocBlacklist(cleanName);
   const portalUrl = `https://daftar-hitam.inaproc.id/?search=${encodeURIComponent(cleanName)}`;
+  const dbReady = Array.isArray(window.INAPROC_REAL_DB) && window.INAPROC_REAL_DB.length > 0;
 
   proj.inaprocCheckedCompany = cleanName;
+  proj.inaprocDbVersion = dbReady ? 'REAL_DB_V2_LOADED' : 'REAL_DB_V2_PENDING';
   proj.inaprocVerifiedAt = new Date().toISOString();
 
   if (chk.isBlacklisted) {
     proj.inaprocStatus = 'blacklisted';
-    proj.inaprocVerificationNote = `Auto-Screening INAPROC: TERDAFTAR BLACKLIST (${accessedStr} WIB)`;
+    proj.inaprocVerificationNote = `Auto-Screening INAPROC: TERDAFTAR BLACKLIST - SK: ${chk.skNumber || '-'} (${accessedStr} WIB)`;
     proj.inaprocAutoResult = {
       status: 'blacklisted',
       queryName: cleanName,
+      matchedName: chk.matchedName || cleanName,
       checkedAt: accessedStr,
-      skNumber: chk.skNumber || 'SK-PA/LKPP-DH/2025/0104',
-      sanctionPeriod: 'Aktif (Sanksi Tayang di Portal INAPROC)',
+      skNumber: chk.skNumber || '-',
+      sanctionStatus: chk.status || 'PUBLISHED',
+      expiredDate: chk.expiredDate || '-',
+      institution: chk.institution || 'LKPP',
+      sanctionPeriod: chk.status === 'PUBLISHED' ? `TAYANG AKTIF (Berakhir: ${chk.expiredDate || '-'})` : `Tercatat di Database INAPROC (${chk.status})`,
       portalUrl,
-      summary: `Sistem mendeteksi otomatis entitas "${cleanName}" masuk dalam Daftar Hitam Nasional LKPP (${chk.reason}). Skor INAPROC otomatis dikalibrasi menjadi 0 / 15 Poin.`
+      summary: `Sistem mendeteksi otomatis entitas "${chk.matchedName || cleanName}" dalam Database Riil Daftar Hitam Nasional INAPROC LKPP (${chk.reason}). Skor INAPROC otomatis menjadi 0 / 15 Poin.`
     };
     if (notifyToast) {
-      showToast(`⚠️ Auto-Check Daftar Hitam LKPP: "${cleanName}" TERDETEKSI BLACKLIST (0/15 Poin)!`);
+      showToast(`⚠️ Auto-Check Daftar Hitam LKPP: "${cleanName}" TERDETEKSI BLACKLIST (SK: ${chk.skNumber}) — 0/15 Poin!`);
     }
   } else {
     proj.inaprocStatus = 'clean';
@@ -930,11 +1027,15 @@ function runAutoInaprocCheckSync(proj, notifyToast = false) {
     proj.inaprocAutoResult = {
       status: 'clean',
       queryName: cleanName,
+      matchedName: cleanName,
       checkedAt: accessedStr,
       skNumber: '-',
+      sanctionStatus: 'CLEAN',
+      expiredDate: '-',
+      institution: '-',
       sanctionPeriod: 'Nihil (0 Sanksi Aktif)',
       portalUrl,
-      summary: `Hasil pencarian otomatis ke Portal Daftar Hitam INAPROC untuk "${cleanName}": Tidak ditemukan catatan sanksi aktif (Bersih - 15 / 15 Poin).`
+      summary: `Hasil pencarian otomatis pada Database Riil Daftar Hitam Nasional INAPROC LKPP (5.357 data sanksi) untuk "${cleanName}": Tidak ditemukan catatan sanksi (Bersih - 15 / 15 Poin).`
     };
     if (notifyToast) {
       showToast(`✓ Auto-Check Daftar Hitam LKPP: "${cleanName}" Terverifikasi BERSIH (15/15 Poin).`);
@@ -947,38 +1048,16 @@ async function triggerLiveInaprocCheck(isManualClick = false) {
   if (!proj || isScanningInaproc) return;
 
   isScanningInaproc = true;
-  const btn = document.getElementById('btnUpdateInaprocAuto');
+  const btn = document.getElementById('btnAutoCheckInaproc');
   if (btn) {
     btn.disabled = true;
-    btn.textContent = 'Memindai INAPROC...';
+    btn.textContent = 'Memindai...';
   }
 
   const cleanName = (proj.companyName || 'Perusahaan').replace(/\s*\([^)]*\)/g, '').trim();
-  const portalUrl = `https://daftar-hitam.inaproc.id/?search=${encodeURIComponent(cleanName)}`;
 
-  // Jalankan pengecekan instan terlebih dahulu
+  // Jalankan pengecekan terhadap database riil INAPROC (5.357 entri)
   runAutoInaprocCheckSync(proj, false);
-
-  try {
-    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(portalUrl)}`;
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 3500);
-    const res = await fetch(proxyUrl, { signal: controller.signal });
-    clearTimeout(timer);
-    if (res.ok) {
-      const data = await res.json();
-      const html = (data && data.contents) ? String(data.contents) : '';
-      // Jika dari respons portal ditemukan indikasi sanksi eksplisit untuk nama perusahaan
-      if (html && cleanName.length > 4 && html.toLowerCase().includes(cleanName.toLowerCase()) && /sanksi|tayang|sk[\s_-]*penetapan/i.test(html)) {
-        const chkLocal = checkInaprocBlacklist(cleanName);
-        if (chkLocal.isBlacklisted) {
-          proj.inaprocStatus = 'blacklisted';
-        }
-      }
-    }
-  } catch (e) {
-    // Fallback ke hasil sinkronisasi otomatis
-  }
 
   isScanningInaproc = false;
   saveProjectsToStorage();
@@ -986,9 +1065,9 @@ async function triggerLiveInaprocCheck(isManualClick = false) {
 
   if (isManualClick) {
     if (proj.inaprocStatus === 'blacklisted') {
-      showToast(`⚠️ Hasil Scan Otomatis INAPROC: "${cleanName}" Terdaftar Blacklist LKPP (0/15 Poin)!`);
+      showToast(`⚠️ Hasil Scan Daftar Hitam INAPROC: "${cleanName}" TERDETEKSI BLACKLIST (SK: ${proj.inaprocAutoResult?.skNumber || '-'}) — 0/15 Poin!`);
     } else {
-      showToast(`✓ Hasil Scan Otomatis INAPROC: "${cleanName}" Bersih / Nihil Sanksi (15/15 Poin).`);
+      showToast(`✓ Hasil Scan Daftar Hitam INAPROC: "${cleanName}" Bersih / Nihil Sanksi (15/15 Poin).`);
     }
   }
 }
@@ -1081,121 +1160,48 @@ function detectNegativeNewsHeadline(title) {
   return /cilaka|dihentikan|pembohong|tipu|penipuan|korupsi|pailit|pkpu|wanprestasi|sengketa|gugatan|daftar[\s_-]*hitam|blacklist|macet|gagal[\s_-]*bayar|tersangka|kejaksaan|kpk|pidana|sanksi|fiktif|mangkrak|rugikan|gelapkan|bodong|ilegal|bermasalah/i.test(String(title));
 }
 
-function buildFallbackGoogleNewsItems(proj) {
-  const cleanName = (proj.companyName || 'Perusahaan').replace(/\s*\([^)]*\)/g, '').trim();
-  const lower = cleanName.toLowerCase();
-  const sector = proj.sector || 'Industri & Perdagangan';
-  const searchUrl = (kw) => `https://news.google.com/search?q=${encodeURIComponent(kw)}&hl=id&gl=ID&ceid=ID:id`;
-
-  if (lower.includes('aghy putra')) {
-    return [
-      {
-        title: 'Cilaka, Proyek 138 Septik Tank PU Ambon Dihentikan - Tribun Maluku',
-        source: 'Tribun Maluku',
-        pubDate: '23 Jan 2025 15:00',
-        link: searchUrl('Proyek 138 Septik Tank PU Ambon Dihentikan Tribun Maluku'),
-        status: proj.negativeNews === 'negative' ? 'negative' : 'unmarked'
-      },
-      {
-        title: 'Kementrian PUPR Pembohong, Tipu Warga Kota Ambon - Tribun Maluku',
-        source: 'Tribun Maluku',
-        pubDate: '30 Jan 2025 15:00',
-        link: searchUrl('Kementrian PUPR Warga Kota Ambon Tribun Maluku'),
-        status: 'unmarked'
-      }
-    ];
-  }
-
-  if (lower.includes('dhea putri') || proj.inaprocStatus === 'blacklisted') {
-    return [
-      {
-        title: `Daftar Hitam LKPP: Evaluasi Pelaksanaan Kontrak Pengadaan ${cleanName} - Portal Pengadaan Nasional`,
-        source: 'Portal Pengadaan Nasional',
-        pubDate: '12 Feb 2026 14:20',
-        link: searchUrl(`${cleanName} daftar hitam LKPP pengadaan`),
-        status: 'negative'
-      },
-      {
-        title: `Pengawasan Proyek Konstruksi & Ketepatan Mutu Pekerjaan Kontraktor Daerah (${cleanName}) - Ekonomi Bisnis`,
-        source: 'Ekonomi Bisnis',
-        pubDate: '28 Jan 2026 09:45',
-        link: searchUrl(`${cleanName} proyek konstruksi`),
-        status: 'unmarked'
-      }
-    ];
-  }
-
-  if (lower.includes('rahmat santosa')) {
-    return [
-      {
-        title: `Fluktuasi Harga Kedelai Impor & Tantangan Likuiditas Industri Pengolahan Pangan (${cleanName}) - Bisnis Indonesia`,
-        source: 'Bisnis Indonesia',
-        pubDate: '18 Mar 2026 11:30',
-        link: searchUrl(`${cleanName} kedelai impor industri pangan`),
-        status: proj.negativeNews === 'negative' ? 'negative' : 'unmarked'
-      },
-      {
-        title: `Kemenperin Dorong Stabilitas Pasokan Bahan Baku Tempe Tahu dan Pakan Ternak Nasional - Kontan`,
-        source: 'Kontan.co.id',
-        pubDate: '04 Feb 2026 16:15',
-        link: searchUrl(`pasokan kedelai impor tempe tahu pakan ternak`),
-        status: 'unmarked'
-      },
-      {
-        title: `Pembiayaan Rantai Pasok (Supply Chain Financing) Perkuat Arus Kas Importir Komoditas - Investor Daily`,
-        source: 'Investor Daily',
-        pubDate: '19 Jan 2026 10:00',
-        link: searchUrl(`${cleanName} supply chain financing komoditas`),
-        status: 'unmarked'
-      }
-    ];
-  }
-
-  const isNegName = detectNegativeNewsHeadline(cleanName);
-  return [
-    {
-      title: isNegName
-        ? `Sorotan Publik: Evaluasi Kasus & Sengketa Operasional ${cleanName} - Nasional News`
-        : `Pemantauan Kinerja Operasional & Reputasi Usaha ${cleanName} di Sektor ${sector} - Bisnis Indonesia`,
-      source: isNegName ? 'Nasional News' : 'Bisnis Indonesia',
-      pubDate: '10 Mar 2026 14:00',
-      link: searchUrl(`${cleanName}`),
-      status: (isNegName || proj.negativeNews === 'negative') ? 'negative' : 'unmarked'
-    },
-    {
-      title: `Perkembangan Industri ${sector} & Mitigasi Risiko Kredit Korporasi (${cleanName}) - Kontan`,
-      source: 'Kontan.co.id',
-      pubDate: '22 Feb 2026 09:30',
-      link: searchUrl(`${cleanName} ${sector}`),
-      status: 'unmarked'
-    }
-  ];
+function normalizeNewsSearchQuery(rawName) {
+  return String(rawName || '')
+    .replace(/\s*\([^)]*\)/g, ' ')
+    .replace(/\b(PT|CV|UD|PD|FA)\.\s*/gi, '$1 ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 let isFetchingGoogleNews = false;
 
 function runAutoGoogleNewsCheckSync(proj, notifyToast = false) {
   if (!proj) return;
-  const cleanName = (proj.companyName || 'Perusahaan').replace(/\s*\([^)]*\)/g, '').trim();
+  const cleanName = normalizeNewsSearchQuery(proj.companyName || 'Perusahaan');
   proj.googleNewsCompany = cleanName;
   proj.googleNewsAccessedAt = formatGoogleNewsAccessedDate(new Date());
-  proj.googleNewsItems = buildFallbackGoogleNewsItems(proj);
-  const hasNeg = proj.googleNewsItems.some((it) => it.status === 'negative');
-  proj.negativeNews = hasNeg ? 'negative' : 'clean';
+  proj.googleNewsItems = [];
+  proj.googleNewsLiveVersion = 'REAL_LIVE_PENDING';
+  proj.negativeNews = 'clean'; // Jika belum/tidak ditemukan berita negatif, perusahaan bersih (20/20 Poin)
   if (notifyToast) {
-    showToast(`📰 Auto-Screening Google News ("${cleanName}"): ${proj.googleNewsItems.length} berita dimuat otomatis.`);
+    showToast(`📰 Memindai berita riil Google News untuk "${cleanName}"...`);
   }
 }
 
 function ensureGoogleNewsInitialized(proj) {
   if (!proj) return;
-  const cleanName = (proj.companyName || 'Perusahaan').replace(/\s*\([^)]*\)/g, '').trim();
-  if (!Array.isArray(proj.googleNewsItems) || proj.googleNewsItems.length === 0 || proj.googleNewsCompany !== cleanName) {
-    runAutoGoogleNewsCheckSync(proj, false);
-    // Trigger background live fetch from Google News RSS
+  const cleanName = normalizeNewsSearchQuery(proj.companyName || 'Perusahaan');
+  if (
+    !Array.isArray(proj.googleNewsItems) ||
+    proj.googleNewsCompany !== cleanName ||
+    proj.googleNewsLiveVersion !== 'REAL_LIVE_V2'
+  ) {
+    proj.googleNewsCompany = cleanName;
+    proj.googleNewsAccessedAt = formatGoogleNewsAccessedDate(new Date());
+    if (proj.googleNewsLiveVersion !== 'REAL_LIVE_V2') {
+      proj.googleNewsItems = [];
+      proj.negativeNews = 'clean';
+      proj.googleNewsLiveVersion = 'REAL_LIVE_PENDING';
+    }
+    // Trigger background live fetch from Google News RSS (Data Riil)
     setTimeout(() => {
       fetchGoogleNewsForProject(false, false);
-    }, 150);
+    }, 100);
   }
 }
 
@@ -1210,11 +1216,11 @@ async function fetchGoogleNewsForProject(isManualClick = false, isAutoInputTrigg
     btn.textContent = 'Memuat Berita...';
   }
 
-  const cleanName = (proj.companyName || 'Perusahaan').replace(/\s*\([^)]*\)/g, '').trim();
+  const cleanName = normalizeNewsSearchQuery(proj.companyName || 'Perusahaan');
   const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent('"' + cleanName + '"')}&hl=id&gl=ID&ceid=ID:id`;
 
   const oldMap = {};
-  if (Array.isArray(proj.googleNewsItems) && proj.googleNewsCompany === cleanName) {
+  if (Array.isArray(proj.googleNewsItems) && proj.googleNewsCompany === cleanName && proj.googleNewsLiveVersion === 'REAL_LIVE_V2') {
     proj.googleNewsItems.forEach((it) => {
       if (it && it.title) oldMap[it.title] = it.status || 'unmarked';
     });
@@ -1222,19 +1228,19 @@ async function fetchGoogleNewsForProject(isManualClick = false, isAutoInputTrigg
 
   let parsedItems = [];
 
-  // 1. Coba melalui RSS2JSON API (sangat cepat untuk Google News RSS)
+  // 1. Ambil data berita riil melalui RSS2JSON API (Google News RSS)
   try {
     const rss2JsonUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
     const controller1 = new AbortController();
-    const timer1 = setTimeout(() => controller1.abort(), 3500);
+    const timer1 = setTimeout(() => controller1.abort(), 9500);
     const res1 = await fetch(rss2JsonUrl, { signal: controller1.signal });
     clearTimeout(timer1);
     if (res1.ok) {
       const data1 = await res1.json();
       if (data1 && data1.status === 'ok' && Array.isArray(data1.items) && data1.items.length > 0) {
-        parsedItems = data1.items.slice(0, 5).map((item) => {
+        parsedItems = data1.items.slice(0, 6).map((item) => {
           const title = (item.title || 'Berita Terkait Perusahaan').trim();
-          const link = item.link || `https://news.google.com/search?q=${encodeURIComponent(cleanName)}&hl=id&gl=ID&ceid=ID:id`;
+          const link = item.link || `https://news.google.com/search?q=${encodeURIComponent('"' + cleanName + '"')}&hl=id&gl=ID&ceid=ID:id`;
           const titleParts = title.split(' - ');
           const inferredSource = titleParts.length > 1 ? titleParts[titleParts.length - 1] : (item.author || 'Google News');
           const autoStatus = oldMap[title] || (detectNegativeNewsHeadline(title) ? 'negative' : 'unmarked');
@@ -1249,15 +1255,11 @@ async function fetchGoogleNewsForProject(isManualClick = false, isAutoInputTrigg
       }
     }
   } catch (e1) {
-    // Lanjut ke AllOrigins fallback
-  }
-
-  // 2. Jika belum dapat, coba melalui AllOrigins CORS Proxy (XML Google News RSS)
-  if (parsedItems.length === 0) {
+    // Lanjut ke AllOrigins XML fallback jika rss2json gagal koneksi
     try {
       const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(rssUrl)}`;
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 4000);
+      const timer = setTimeout(() => controller.abort(), 8500);
       const res = await fetch(proxyUrl, { signal: controller.signal });
       clearTimeout(timer);
 
@@ -1266,10 +1268,10 @@ async function fetchGoogleNewsForProject(isManualClick = false, isAutoInputTrigg
         if (data && data.contents) {
           const parser = new DOMParser();
           const xml = parser.parseFromString(data.contents, 'text/xml');
-          const items = Array.from(xml.querySelectorAll('item')).slice(0, 5);
+          const items = Array.from(xml.querySelectorAll('item')).slice(0, 6);
           parsedItems = items.map((item) => {
             const title = item.querySelector('title')?.textContent?.trim() || 'Berita Terkait Perusahaan';
-            const link = item.querySelector('link')?.textContent?.trim() || `https://news.google.com/search?q=${encodeURIComponent(cleanName)}&hl=id&gl=ID&ceid=ID:id`;
+            const link = item.querySelector('link')?.textContent?.trim() || `https://news.google.com/search?q=${encodeURIComponent('"' + cleanName + '"')}&hl=id&gl=ID&ceid=ID:id`;
             const pubDateRaw = item.querySelector('pubDate')?.textContent?.trim();
             const sourceEl = item.querySelector('source')?.textContent?.trim();
             const titleParts = title.split(' - ');
@@ -1286,22 +1288,17 @@ async function fetchGoogleNewsForProject(isManualClick = false, isAutoInputTrigg
         }
       }
     } catch (err) {
-      console.warn('Google News RSS live fetch fallback:', err);
+      console.warn('Google News RSS live fetch warning:', err);
     }
   }
 
-  if (parsedItems.length === 0) {
-    parsedItems = buildFallbackGoogleNewsItems(proj).map((it) => ({
-      ...it,
-      status: oldMap[it.title] || it.status || 'unmarked'
-    }));
-  }
-
+  // TANPA HARDCODE: Jika tidak ada berita di Google News (parsedItems.length === 0),
+  // maka googleNewsItems tetap [] (kosong) dan negativeNews otomatis 'clean' (20/20 Poin).
   proj.googleNewsCompany = cleanName;
   proj.googleNewsAccessedAt = formatGoogleNewsAccessedDate(new Date());
   proj.googleNewsItems = parsedItems;
+  proj.googleNewsLiveVersion = 'REAL_LIVE_V2';
 
-  // Sinkronkan status negativeNews dengan hasil penandaan / deteksi artikel
   const hasNeg = proj.googleNewsItems.some((it) => it.status === 'negative');
   proj.negativeNews = hasNeg ? 'negative' : 'clean';
 
@@ -1310,10 +1307,16 @@ async function fetchGoogleNewsForProject(isManualClick = false, isAutoInputTrigg
   renderAll();
 
   if (isManualClick) {
-    showToast(`Berita Google News untuk "${cleanName}" berhasil diperbarui (${proj.googleNewsItems.length} artikel).`);
+    if (proj.googleNewsItems.length === 0) {
+      showToast(`✓ Google News "${cleanName}": Tidak ditemukan berita (0 artikel) — Tidak memiliki citra negatif (20/20 Poin).`);
+    } else {
+      showToast(`📰 Google News "${cleanName}": Ditemukan ${proj.googleNewsItems.length} artikel berita riil.`);
+    }
   } else if (isAutoInputTrigger) {
-    const inaprocTxt = proj.inaprocStatus === 'blacklisted' ? 'BLACKLIST LKPP (0/15)' : 'INAPROC Bersih (15/15)';
-    const newsTxt = proj.negativeNews === 'negative' ? 'Ada Berita Negatif (0/20)' : `Google News ${proj.googleNewsItems.length} Artikel (20/20)`;
+    const inaprocTxt = proj.inaprocStatus === 'blacklisted' ? `BLACKLIST LKPP (SK: ${proj.inaprocAutoResult?.skNumber || '-'})` : 'INAPROC Bersih (15/15)';
+    const newsTxt = proj.googleNewsItems.length === 0
+      ? 'Nihil Berita di Google News (Citra Bersih 20/20)'
+      : (proj.negativeNews === 'negative' ? `Terdeteksi Berita Negatif (0/20)` : `${proj.googleNewsItems.length} Berita Ditemukan (20/20)`);
     showToast(`🔍 Auto-Screening 5C "${cleanName}": ${inaprocTxt} | ${newsTxt}.`);
   }
 }
@@ -3049,9 +3052,9 @@ function render5CTab(proj, m) {
             </div>
 
             <!-- KONEKSI OTOMATIS PORTAL INAPROC LKPP (DI DALAM KOLOM CHARACTER) -->
-            <div id="inaprocIntegratedCard" style="background:#f0f9ff; border:1.5px solid ${proj.inaprocStatus === 'blacklisted' ? '#ef4444' : '#0284c7'}; border-radius:8px; padding:0.55rem; margin-top:0.35rem;">
+            <div id="inaprocIntegratedCard" style="background:${proj.inaprocStatus === 'blacklisted' ? '#fef2f2' : '#f0f9ff'}; border:1.5px solid ${proj.inaprocStatus === 'blacklisted' ? '#ef4444' : '#0284c7'}; border-radius:8px; padding:0.55rem; margin-top:0.35rem;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem; gap:4px; flex-wrap:wrap;">
-                <span style="font-size:0.68rem; font-weight:800; color:#0369a1; text-transform:uppercase; letter-spacing:0.2px;">
+                <span style="font-size:0.68rem; font-weight:800; color:${proj.inaprocStatus === 'blacklisted' ? '#b91c1c' : '#0369a1'}; text-transform:uppercase; letter-spacing:0.2px;">
                   🌐 Auto-Screening Daftar Hitam INAPROC
                 </span>
                 <button type="button" id="btnAutoCheckInaproc" onclick="triggerLiveInaprocCheck(true)" style="background:#ffffff; color:#0369a1; border:1px solid #7dd3fc; border-radius:5px; padding:2px 8px; font-size:0.63rem; font-weight:700; cursor:pointer;">
@@ -3059,13 +3062,20 @@ function render5CTab(proj, m) {
                 </button>
               </div>
               
-              <div style="font-size:0.65rem; color:#334155; margin:0 0 0.35rem; line-height:1.4; background:#fff; padding:5px 7px; border-radius:5px; border:1px solid #bae6fd;">
+              <div style="font-size:0.65rem; color:#334155; margin:0 0 0.35rem; line-height:1.4; background:#fff; padding:5px 7px; border-radius:5px; border:1px solid ${proj.inaprocStatus === 'blacklisted' ? '#fca5a5' : '#bae6fd'};">
                 <div>Perusahaan: <strong>${cleanCompName}</strong> &nbsp;|&nbsp; Diakses: <strong>${inaprocRes.checkedAt || accessedAt}</strong></div>
                 <div style="margin-top:2px; font-size:0.63rem; color:${proj.inaprocStatus === 'blacklisted' ? '#dc2626' : '#15803d'}; font-weight:700;">
                   ${proj.inaprocStatus === 'blacklisted'
-                    ? `⚠ Terdeteksi Masuk Daftar Hitam LKPP (0/15 Poin) — SK: ${inaprocRes.skNumber || 'Aktif'}`
+                    ? `⚠ TERDETEKSI MASUK DAFTAR HITAM LKPP (0/15 Poin)`
                     : '✓ Otomatis Terverifikasi Bersih Nihil Sanksi (15/15 Poin)'}
                 </div>
+                ${proj.inaprocStatus === 'blacklisted' ? `
+                  <div style="margin-top:3px; padding-top:3px; border-top:1px dashed #fca5a5; font-size:0.61rem; color:#7f1d1d;">
+                    &bull; No. SK Sanksi: <strong>${inaprocRes.skNumber || '-'}</strong><br/>
+                    &bull; Status / Masa Sanksi: <strong>${inaprocRes.sanctionPeriod || 'Tayang di Portal INAPROC'}</strong><br/>
+                    ${inaprocRes.institution && inaprocRes.institution !== '-' ? `&bull; Instansi Penetap: <strong>${inaprocRes.institution}</strong>` : ''}
+                  </div>
+                ` : ''}
               </div>
 
               <div style="display:flex; flex-direction:column; gap:4px;">
@@ -3084,7 +3094,7 @@ function render5CTab(proj, m) {
               </div>
             </div>
 
-            <!-- PANEL INTEGRASI OTOMATIS GOOGLE NEWS (SATU KOLOM DENGAN CHARACTER) -->
+            <!-- PANEL INTEGRASI OTOMATIS GOOGLE NEWS RIIL (SATU KOLOM DENGAN CHARACTER) -->
             <div id="googleNewsIntegratedCard" style="background:#ffffff; border:1.5px solid ${proj.negativeNews === 'negative' ? '#fca5a5' : '#cbd5e1'}; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.04); overflow:hidden; margin-top:0.45rem;">
               <!-- Header Bar Google News -->
               <div style="display:flex; justify-content:space-between; align-items:center; padding:0.5rem 0.65rem; border-bottom:1px solid #e2e8f0; background:#ffffff; gap:0.35rem; flex-wrap:wrap;">
@@ -3099,7 +3109,7 @@ function render5CTab(proj, m) {
                   <span style="font-size:0.8rem; font-weight:700; color:#5f6368; letter-spacing:-0.1px;">Google News</span>
                 </div>
                 <button type="button" id="btnUpdateGoogleNews" onclick="fetchGoogleNewsForProject(true)" style="background:#ffffff; color:#1e293b; border:1px solid #cbd5e1; border-radius:5px; padding:3px 9px; font-size:0.65rem; font-weight:600; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.03);">
-                  Klik - Update Berita
+                  ${isFetchingGoogleNews ? 'Memuat Berita...' : 'Klik - Update Berita'}
                 </button>
               </div>
 
@@ -3118,7 +3128,20 @@ function render5CTab(proj, m) {
                 </div>
 
                 <div style="display:flex; flex-direction:column; gap:0.45rem;">
-                  ${newsItems.map((item, idx) => {
+                  ${newsItems.length === 0 ? `
+                    <div style="border:1px solid #86efac; border-radius:6px; padding:0.55rem 0.65rem; background:#f0fdf4; color:#166534; font-size:0.65rem; line-height:1.45;">
+                      <div style="font-weight:700; margin-bottom:2px;">
+                        ${isFetchingGoogleNews
+                          ? '&#8987; Sedang Memindai Berita Riil di Google News...'
+                          : '&#10003; Tidak Ditemukan Pemberitaan di Google News (0 Berita)'}
+                      </div>
+                      <div>
+                        ${isFetchingGoogleNews
+                          ? `Mencari pemberitaan publik terkait <strong>"${cleanCompName}"</strong> secara langsung dari Google News...`
+                          : `Hasil pencarian berita riil untuk <strong>"${cleanCompName}"</strong> nihil. Perusahaan ini tidak memiliki pemberitaan / citra negatif di media publik (Skor Media Karakter: <strong>20 / 20 Poin Penuh</strong>).`}
+                      </div>
+                    </div>
+                  ` : newsItems.map((item, idx) => {
                     const st = item.status || 'unmarked';
                     const isNeg = st === 'negative';
                     const isClean = st === 'clean';

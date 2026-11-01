@@ -1115,9 +1115,6 @@ function getSippPnInfo(cityOrKab, companyName) {
   }
 
   const baseUrl = `https://sipp.pn-${slug}.go.id/`;
-  const searchUrl = cleanCompName
-    ? `https://sipp.pn-${slug}.go.id/search?q=${encodeURIComponent(cleanCompName)}`
-    : baseUrl;
   const putusanMaUrl = cleanCompName
     ? `https://putusan3.mahkamahagung.go.id/search.html?q=${encodeURIComponent(cleanCompName)}`
     : 'https://putusan3.mahkamahagung.go.id/';
@@ -1127,7 +1124,7 @@ function getSippPnInfo(cityOrKab, companyName) {
     slug,
     pnName,
     baseUrl,
-    searchUrl,
+    searchUrl: baseUrl,
     putusanMaUrl,
     cleanCompName
   };
@@ -1138,7 +1135,15 @@ function openSippPortal(name, city) {
   const targetCity = city || (proj ? proj.city : '') || 'Kab. Sukoharjo';
   const cleanName = (name || (proj ? proj.companyName : '') || 'PT').replace(/\s*\([^)]*\)/g, '').trim();
   const info = getSippPnInfo(targetCity, cleanName);
-  window.open(info.searchUrl, '_blank');
+
+  // Otomatis salin nama perusahaan ke clipboard agar user tinggal paste di web SIPP PN
+  if (cleanName && navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(cleanName).catch(() => {});
+  }
+
+  // Buka LANGSUNG WEB UTAMA (tanpa subdirektori pencarian yang memicu 404 / turnstile bot-block)
+  window.open(info.baseUrl, '_blank');
+  showToast(`🏛️ Membuka web utama ${info.baseUrl}. Nama "${cleanName}" telah disalin ke clipboard untuk ditempel di portal SIPP.`);
 }
 
 function openDirectPutusanMAPortal(name) {
@@ -3369,6 +3374,7 @@ function render5CTab(proj, m) {
                   <div style="font-size:0.65rem; color:#334155; margin:0 0 0.35rem; line-height:1.4; background:#fff; padding:5px 7px; border-radius:5px; border:1px solid ${cardBorder};">
                     <div>Perusahaan: <strong>${cleanCompName}</strong></div>
                     <div>Yurisdiksi PN: <strong>${sippInfo.pnName}</strong></div>
+                    <div style="font-size:0.61rem; color:#0369a1; margin-top:1px;">Web Utama: <strong>${sippInfo.baseUrl}</strong></div>
                     <div style="margin-top:2px; font-size:0.63rem; font-weight:700; color:${isClean ? '#15803d' : (isDisputed ? '#b45309' : '#dc2626')};">
                       ${isClean ? '✓ Nihil Gugatan / Perkara Hukum Aktif (10/10 Poin)' : (isDisputed ? '⚠ Ada Catatan Gugatan / Perdata (5/10 Poin)' : '⛔ Terdeteksi Menghadapi Permohonan PKPU/Pailit (0/10 Poin)')}
                     </div>
@@ -3387,9 +3393,9 @@ function render5CTab(proj, m) {
                       </button>
                     </div>
 
-                    <div style="display:grid; grid-template-columns: 1.2fr 1fr; gap:4px; margin-top:2px;">
-                      <button type="button" class="five-c-portal-btn" style="background:#0284c7; color:#ffffff; border-color:#0284c7; font-size:0.63rem; font-weight:700; justify-content:center;" onclick="openSippPortal('${safeCompName}', '${(proj.city || '').replace(/'/g, "\\'")}')" title="Buka website pencarian perkara di ${sippInfo.pnName}">
-                        🔍 Cari di SIPP ${sippInfo.pnName.replace('Pengadilan Negeri', 'PN')} &raquo;
+                    <div style="display:grid; grid-template-columns: 1.25fr 1fr; gap:4px; margin-top:2px;">
+                      <button type="button" class="five-c-portal-btn" style="background:#0284c7; color:#ffffff; border-color:#0284c7; font-size:0.63rem; font-weight:700; justify-content:center;" onclick="openSippPortal('${safeCompName}', '${(proj.city || '').replace(/'/g, "\\'")}')" title="Buka web utama ${sippInfo.baseUrl} (nama perusahaan otomatis disalin ke clipboard)">
+                        🏛️ Buka SIPP ${sippInfo.pnName.replace('Pengadilan Negeri', 'PN')} &raquo;
                       </button>
                       <button type="button" class="five-c-portal-btn" style="background:#ffffff; color:#475569; border-color:#cbd5e1; font-size:0.62rem; justify-content:center;" onclick="openDirectPutusanMAPortal('${safeCompName}')" title="Buka Direktori Putusan Mahkamah Agung RI (Nasional)">
                         🌐 Putusan MA RI &raquo;

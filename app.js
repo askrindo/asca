@@ -4124,6 +4124,30 @@ function renderPrintableReport(proj, m) {
   const today = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
   const ins = buildDynamicCaseInsights(proj, m);
   const caseNumber = getProjectCaseNumber(proj);
+  const fiveC = m.fiveC || compute5CAnalysis(proj, proj.fin23, m);
+  const cf = m.cfProj || computeCashFlowProjection(proj);
+  const annualDSCR = typeof cf.annualDSCR === 'number' ? cf.annualDSCR : 0;
+  const lowestCash = typeof cf.lowestCash === 'number' ? cf.lowestCash : 0;
+  const endingCash12 = (cf.monthlyData && cf.monthlyData[11]) ? cf.monthlyData[11].endingCash : 0;
+
+  // Evaluasi 3 Skenario Stress-Testing untuk Rangkuman Tabel
+  const params1 = { revGrowth: 0, gpm: m.gpm23, opexCut: 0, doi: Math.round(m.doi23_365), dor: Math.round(m.dor23_365), dop: Math.round(m.dop23_365), fxShock: 0, invHaircut: 0 };
+  const params2 = { revGrowth: -10, gpm: m.gpm23 - 3.5, opexCut: 0, doi: Math.min(350, Math.round(m.doi23_365 + 20)), dor: Math.min(150, Math.round(m.dor23_365 + 20)), dop: Math.max(10, Math.round(m.dop23_365 - 5)), fxShock: 10, invHaircut: 10 };
+  const params3 = { revGrowth: -20, gpm: m.gpm23 - 7.0, opexCut: -5, doi: Math.min(360, Math.round(m.doi23_365 + 45)), dor: Math.min(150, Math.round(m.dor23_365 + 40)), dop: Math.max(10, Math.round(m.dop23_365 - 10)), fxShock: 15, invHaircut: 20 };
+  const stress1 = evaluateScenarioParams(proj, m, params1);
+  const stress2 = evaluateScenarioParams(proj, m, params2);
+  const stress3 = evaluateScenarioParams(proj, m, params3);
+
+  const opm22 = proj.fin22.rev > 0 ? ((proj.fin22.rev - proj.fin22.cogs - proj.fin22.opex) / proj.fin22.rev) * 100 : 0;
+  const opm23 = proj.fin23.rev > 0 ? ((proj.fin23.rev - proj.fin23.cogs - proj.fin23.opex) / proj.fin23.rev) * 100 : 0;
+  const dar22 = m.ta22 > 0 ? (m.tl22 / m.ta22) : 0;
+  const dar23 = m.ta23 > 0 ? (m.tl23 / m.ta23) : 0;
+
+  const procMethodLabel = proj.procurementMethod === 'none' 
+    ? 'Tidak Ada Pengiriman Fisik (Jasa / Non-Pengiriman)' 
+    : (proj.procurementMethod === 'domestic' 
+        ? 'Domestik / Lokal (Inland Transit Jalur Darat)' 
+        : 'Impor Luar Negeri / Jalur Laut (Sea Freight)');
 
   document.getElementById('printableMemoContainer').innerHTML = `
     <table class="memo-print-table">
@@ -4150,83 +4174,449 @@ function renderPrintableReport(proj, m) {
       <tbody>
         <tr>
           <td>
+            <!-- PROFIL DEBITUR & FASILITAS KREDIT -->
             <div class="grid-2" style="margin-bottom:0.65rem;">
               <table class="data-table">
                 <tbody>
-                  <tr><td><strong>Nama Debitur</strong></td><td><strong>${proj.companyName}</strong></td></tr>
+                  <tr><td style="width:38%;"><strong>Nama Debitur</strong></td><td><strong>${proj.companyName}</strong></td></tr>
                   <tr><td><strong>Sektor Usaha</strong></td><td>${proj.sector} (Berdiri ${proj.estYear})</td></tr>
                   <tr><td><strong>Bank Mitra</strong></td><td>${proj.bankName}</td></tr>
                   <tr><td><strong>Skema Fasilitas</strong></td><td>${proj.facilityType}</td></tr>
+                  <tr><td><strong>Metode Pengadaan</strong></td><td>${procMethodLabel}</td></tr>
                 </tbody>
               </table>
               <table class="data-table">
                 <tbody>
-                  <tr><td><strong>Plafond Diajukan</strong></td><td><strong>${fmtRp(proj.requestedPlafond)}</strong> ${proj.usdAmount > 0 ? `(USD ${proj.usdAmount.toLocaleString('id-ID')} @ Rp${proj.fxRate.toLocaleString('id-ID')})` : ''}</td></tr>
+                  <tr><td style="width:38%;"><strong>Plafond Diajukan</strong></td><td><strong>${fmtRp(proj.requestedPlafond)}</strong> ${proj.usdAmount > 0 ? `(USD ${proj.usdAmount.toLocaleString('id-ID')} @ Rp${proj.fxRate.toLocaleString('id-ID')})` : ''}</td></tr>
                   <tr><td><strong>Tenor Fasilitas</strong></td><td>PK ${proj.pkMonths} Bln | Tenor Utama: ${proj.scfTenorDays} Hr | KMK Backup: ${proj.kmkTenorDays} Hr</td></tr>
+                  <tr><td><strong>Suku Bunga Kredit</strong></td><td>${proj.interestRate}% p.a. Efektif</td></tr>
                   <tr><td><strong>Skor &amp; Risk Grade</strong></td><td><strong>${m.score} / 100  -  Grade ${m.riskGrade}</strong> (IJP: ${m.ijpRate})</td></tr>
-                  <tr><td><strong>Keputusan</strong></td><td><strong style="color:${m.gradeMeta.color};">${m.decision}</strong></td></tr>
+                  <tr><td><strong>Keputusan Pokok</strong></td><td><strong style="color:${m.gradeMeta.color};">${m.decision}</strong></td></tr>
                 </tbody>
               </table>
             </div>
 
-            <h4 style="color:var(--askrindo-navy); margin:0.4rem 0 0.2rem; font-size:0.76rem;">I. Audit Siklus Kas &amp; Ketahanan NWC Burn Rate</h4>
-            <table class="data-table" style="margin-bottom:0.6rem;">
+            <!-- BAGIAN I: RANGKUMAN AUDIT SIKLUS KAS (DCC) & NWC BURN-RATE -->
+            <h4 style="color:var(--askrindo-navy); margin:0.5rem 0 0.25rem; font-size:0.75rem; font-weight:800; border-bottom:1.5px solid #e2e8f0; padding-bottom:2px;">
+              I. Rangkuman Audit Siklus Kas (DCC) &amp; Ketahanan NWC Burn-Rate (Tab DCC &amp; NWC Burn-Rate)
+            </h4>
+            <table class="data-table" style="margin-bottom:0.6rem; font-size:0.66rem;">
               <thead>
                 <tr>
-                  <th>Indikator</th>
-                  <th class="num-col">Data Bank</th>
+                  <th>Indikator Perputaran Modal Kerja</th>
+                  <th class="num-col">Klaim Data Bank</th>
                   <th class="num-col">Audited ${m.yr1}</th>
                   <th class="num-col">Audited ${m.yr2}</th>
-                  <th class="num-col">Deviasi / Evaluasi</th>
+                  <th>Deviasi &amp; Analisa Underwriting</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td>DOR (Days of Receivables)</td>
+                  <td>Days of Receivables (DOR)</td>
                   <td class="num-col">${proj.claimedDOR} Hari</td>
                   <td class="num-col">${fmtNum(m.dor22_365, 1)} Hari</td>
-                  <td class="num-col">${fmtNum(m.dor23_365, 1)} Hari</td>
-                  <td class="num-col">${m.diffDOR >= 0 ? '+' : ''}${fmtNum(m.diffDOR, 1)} Hari</td>
+                  <td class="num-col"><strong>${fmtNum(m.dor23_365, 1)} Hari</strong></td>
+                  <td>${m.diffDOR >= 0 ? `Melambat +${fmtNum(m.diffDOR, 1)} Hari` : `Lebih cepat ${fmtNum(Math.abs(m.diffDOR), 1)} Hari`}</td>
                 </tr>
                 <tr>
-                  <td>DOI (Days of Inventory)</td>
+                  <td>Days of Inventory (DOI)</td>
                   <td class="num-col">${proj.claimedDOI} Hari</td>
                   <td class="num-col">${fmtNum(m.doi22_365, 1)} Hari</td>
-                  <td class="num-col"><strong>${fmtNum(m.doi23_365, 1)} Hari</strong></td>
-                  <td class="num-col" style="color:#dc2626; font-weight:700;">${m.diffDOI >= 0 ? '+' : ''}${fmtNum(m.diffDOI, 1)} Hari</td>
+                  <td class="num-col"><strong style="color:${m.diffDOI > 10 ? '#dc2626' : 'inherit'};">${fmtNum(m.doi23_365, 1)} Hari</strong></td>
+                  <td style="color:${m.diffDOI > 0 ? '#dc2626' : '#166534'}; font-weight:700;">
+                    ${m.diffDOI > 0 ? `Overstocked +${fmtNum(m.diffDOI, 1)} Hari (Kas Terkunci ${fmtRp(m.cashLockedInExcessDOI, true)})` : 'Perputaran Persediaan Efisien'}
+                  </td>
                 </tr>
                 <tr>
-                  <td>Siklus Operasi Gross (DOI+DOR)</td>
+                  <td>Days of Payables (DOP Murni)</td>
+                  <td class="num-col">${proj.claimedDOP} Hari</td>
+                  <td class="num-col">${fmtNum(m.dop22_365, 1)} Hari</td>
+                  <td class="num-col"><strong>${fmtNum(m.dop23_365, 1)} Hari</strong></td>
+                  <td>Dukungan kredit supplier dagang murni: ${fmtNum(m.dop23_365, 1)} hari</td>
+                </tr>
+                <tr>
+                  <td>Cash Conversion Cycle (CCC)</td>
+                  <td class="num-col"><strong>${m.claimedCCC} Hari</strong></td>
+                  <td class="num-col">${fmtNum(m.ccc22, 1)} Hari</td>
+                  <td class="num-col"><strong>${fmtNum(m.ccc23, 1)} Hari</strong></td>
+                  <td>Siklus konversi kas riil berjarak ${fmtNum(Math.abs(m.diffCCC), 1)} hari dari data bank</td>
+                </tr>
+                <tr>
+                  <td>Siklus Operasi Gross (DOI + DOR)</td>
                   <td class="num-col"><strong>${m.claimedGrossCycle} Hari</strong></td>
                   <td class="num-col">${fmtNum(m.grossCycle22, 1)} Hari</td>
-                  <td class="num-col"><strong>${fmtNum(m.grossCycle23, 1)} Hari</strong></td>
-                  <td class="num-col">Tenor: ${m.scfTenor} Hr (${m.cashGapAtSCFMaturity_Actual > 0 ? `Defisit ${fmtNum(m.cashGapAtSCFMaturity_Actual, 1)} Hr` : 'Aman'})</td>
+                  <td class="num-col"><strong style="color:${m.cashGapAtSCFMaturity_Actual > 0 ? '#dc2626' : '#166534'};">${fmtNum(m.grossCycle23, 1)} Hari</strong></td>
+                  <td style="color:${m.cashGapAtSCFMaturity_Actual > 0 ? '#dc2626' : '#166534'}; font-weight:700;">
+                    Tenor SCF: ${m.scfTenor} Hr &rarr; ${m.cashGapAtSCFMaturity_Actual > 0 ? `Defisit Tenor ${Math.round(m.cashGapAtSCFMaturity_Actual)} Hari saat Jatuh Tempo` : 'Tenor Sinkron & Aman'}
+                  </td>
                 </tr>
-                <tr>
+                <tr style="background:#f8fafc;">
                   <td>Daily Gross Cash Burn &amp; Runway</td>
-                  <td colspan="2">Burn: <strong>${fmtRp(m.dailyGrossCashBurn)} / hari</strong></td>
-                  <td colspan="2" class="num-col" style="color:${m.pureCashRunwayMonths < 1.5 ? '#dc2626' : '#166534'}; font-weight:700;">
-                    Pure Cash Runway: ${fmtNum(m.pureCashRunwayMonths, 1)} Bulan (${fmtNum(m.pureCashRunwayDays, 0)} Hari)
+                  <td colspan="2">Burn-Rate: <strong>${fmtRp(m.dailyGrossCashBurn)} / hari</strong></td>
+                  <td colspan="2" style="color:${m.pureCashRunwayMonths < 1.5 ? '#dc2626' : '#166534'}; font-weight:700;">
+                    Pure Cash Runway: ${fmtNum(m.pureCashRunwayMonths, 1)} Bulan (${fmtNum(m.pureCashRunwayDays, 0)} Hari) | NWC: ${fmtRp(m.nwc23, true)}
                   </td>
                 </tr>
               </tbody>
             </table>
 
-            <div class="grid-2" style="margin-bottom:0.6rem; font-size:0.7rem;">
+            <!-- BAGIAN II: RANGKUMAN RASIO KEUANGAN UTAMA & KEPATUHAN RAC -->
+            <h4 style="color:var(--askrindo-navy); margin:0.5rem 0 0.25rem; font-size:0.75rem; font-weight:800; border-bottom:1.5px solid #e2e8f0; padding-bottom:2px;">
+              II. Rangkuman Rasio Keuangan Utama &amp; Kepatuhan RAC (Tab Rasio Keuangan)
+            </h4>
+            <table class="data-table" style="margin-bottom:0.6rem; font-size:0.66rem;">
+              <thead>
+                <tr>
+                  <th>Indikator Rasio Finansial</th>
+                  <th class="num-col">Audited ${m.yr1}</th>
+                  <th class="num-col">Audited ${m.yr2}</th>
+                  <th>Threshold RAC Askrindo</th>
+                  <th>Evaluasi Kepatuhan Underwriting</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Current Ratio (CR)</strong> (Likuiditas)</td>
+                  <td class="num-col">${m.currentRatio22.toFixed(2)}x</td>
+                  <td class="num-col"><strong>${m.currentRatio23.toFixed(2)}x</strong></td>
+                  <td>&ge; 1.00x (Kecukupan Aset Lancar)</td>
+                  <td style="color:${m.currentRatio23 >= 1.0 ? '#166534' : '#dc2626'}; font-weight:700;">
+                    ${m.currentRatio23 >= 1.0 ? '&#10003; Memenuhi RAC' : '&#9888; Deviasi (Defisit Modal Kerja Bersih)'}
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>Quick Ratio (QR)</strong> (Likuiditas Cepat)</td>
+                  <td class="num-col">${m.quickRatio22.toFixed(2)}x</td>
+                  <td class="num-col"><strong>${m.quickRatio23.toFixed(2)}x</strong></td>
+                  <td>&ge; 0.80x (Kecukupan Kas &amp; Piutang)</td>
+                  <td style="color:${m.quickRatio23 >= 0.8 ? '#166534' : '#dc2626'}; font-weight:700;">
+                    ${m.quickRatio23 >= 0.8 ? '&#10003; Memenuhi RAC' : '&#9888; Deviasi (Sangat Bergantung pada Persediaan)'}
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>Cash Ratio</strong> (Rasio Kas Tunai)</td>
+                  <td class="num-col">-</td>
+                  <td class="num-col"><strong>${m.cashRatio23.toFixed(2)}x</strong></td>
+                  <td>&ge; 0.20x (Ketahanan Kas Minimum)</td>
+                  <td style="color:${m.cashRatio23 >= 0.2 ? '#166534' : '#d97706'}; font-weight:700;">
+                    ${m.cashRatio23 >= 0.2 ? '&#10003; Memenuhi RAC' : '&#9888; Dibawah Ambang Batas Ideal'}
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>Gross Profit Margin (GPM)</strong></td>
+                  <td class="num-col">${m.gpm22.toFixed(2)}%</td>
+                  <td class="num-col"><strong style="color:${m.gpm23 < 0 ? '#dc2626' : 'inherit'};">${m.gpm23.toFixed(2)}%</strong></td>
+                  <td>&ge; 10.00% (Batas Keamanan HPP)</td>
+                  <td style="color:${m.gpm23 >= 10.0 ? '#166534' : '#dc2626'}; font-weight:700;">
+                    ${m.gpm23 >= 10.0 ? '&#10003; Memenuhi RAC' : (m.gpm23 < 0 ? '&#9888; Kritis (Jual Rugi di HPP / Negative Gross)' : '&#9888; Deviasi (Margin Kotor Tipis <10%)')}
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>Net Profit Margin (NPM)</strong></td>
+                  <td class="num-col">${m.npm22.toFixed(2)}%</td>
+                  <td class="num-col"><strong>${m.npm23.toFixed(2)}%</strong></td>
+                  <td>&ge; 3.00% (Rentabilitas Bersih)</td>
+                  <td style="color:${m.npm23 >= 3.0 ? '#166534' : '#dc2626'}; font-weight:700;">
+                    ${m.npm23 >= 3.0 ? '&#10003; Memenuhi RAC' : '&#9888; Deviasi (Profitabilitas Bersih Tertekan)'}
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>Debt to Equity Ratio (DER)</strong></td>
+                  <td class="num-col">${m.der22.toFixed(2)}x</td>
+                  <td class="num-col"><strong>${m.der23.toFixed(2)}x</strong></td>
+                  <td>&le; 2.50x (Batas Solvabilitas Sehat)</td>
+                  <td style="color:${m.der23 <= 2.5 ? '#166534' : '#dc2626'}; font-weight:700;">
+                    ${m.der23 <= 2.5 ? '&#10003; Memenuhi RAC' : '&#9888; Deviasi (Leverage Berlebih / Utang Tinggi)'}
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>Debt Service Coverage Ratio (DSCR)</strong></td>
+                  <td class="num-col">-</td>
+                  <td class="num-col"><strong>${m.dscr23.toFixed(2)}x</strong></td>
+                  <td>&ge; 1.25x (Ketahanan Pelunasan Utang)</td>
+                  <td style="color:${m.dscr23 >= 1.25 ? '#166534' : '#dc2626'}; font-weight:700;">
+                    ${m.dscr23 >= 1.25 ? '&#10003; Memenuhi RAC' : '&#9888; Deviasi (Kapasitas Angsuran Tertekan)'}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- BAGIAN III: RANGKUMAN ANALISA KUALITATIF 5C UNDERWRITING -->
+            <h4 style="color:var(--askrindo-navy); margin:0.5rem 0 0.25rem; font-size:0.75rem; font-weight:800; border-bottom:1.5px solid #e2e8f0; padding-bottom:2px;">
+              III. Rangkuman Analisa Kualitatif 5C Underwriting (Tab Analisa 5C)
+            </h4>
+            <table class="data-table" style="margin-bottom:0.6rem; font-size:0.66rem;">
+              <thead>
+                <tr>
+                  <th>Pilar 5C Underwriting</th>
+                  <th class="num-col">Skor Pilar</th>
+                  <th>Komponen Penilaian &amp; Hasil Verifikasi Sistem</th>
+                  <th>Kesimpulan Kualitatif</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>1. Character (20%)</strong></td>
+                  <td class="num-col"><strong style="color:${fiveC.charScore >= 70 ? '#166534' : '#dc2626'};">${fiveC.charScore} / 100</strong></td>
+                  <td>
+                    &bull; Jam Terbang: Usia ${fiveC.businessAge} Thn (${fiveC.charBreakdown?.agePts || 20}/25 Poin)<br/>
+                    &bull; SLIK OJK: ${fiveC.slikStatus} (${fiveC.charBreakdown?.creditPts || 30}/30 Poin)<br/>
+                    &bull; INAPROC LKPP: ${fiveC.inaprocStatus} (${fiveC.charBreakdown?.inaprocPts || 10}/15 Poin)<br/>
+                    &bull; SIPP MA: ${fiveC.sippStatus} (${fiveC.charBreakdown?.sippPts || 10}/10 Poin)<br/>
+                    &bull; Google News: Nihil Berita Negatif (${fiveC.charBreakdown?.newsPts || 20}/20 Poin)
+                  </td>
+                  <td style="color:${fiveC.charScore >= 80 ? '#166534' : '#d97706'}; font-weight:700;">
+                    ${fiveC.charScore >= 90 ? 'Sangat Baik (Reputasi Mapan)' : (fiveC.charScore >= 70 ? 'Baik / Standar' : 'Perhatian Khusus')}
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>2. Capacity (25%)</strong></td>
+                  <td class="num-col"><strong style="color:${fiveC.capScore >= 70 ? '#166534' : '#dc2626'};">${fiveC.capScore} / 100</strong></td>
+                  <td>${fiveC.capNote} | GPM: ${m.gpm23.toFixed(2)}%, Tenor Mismatch: ${Math.round(m.cashGapAtSCFMaturity_Actual)} Hari, Cash Runway: ${fmtNum(m.pureCashRunwayMonths, 1)} Bln</td>
+                  <td style="color:${fiveC.capScore >= 70 ? '#166534' : '#dc2626'}; font-weight:700;">
+                    ${fiveC.capScore >= 70 ? 'Kapasitas Memadai' : 'Kapasitas Tertekan (Cash Gap)'}
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>3. Capital (20%)</strong></td>
+                  <td class="num-col"><strong style="color:${fiveC.capitScore >= 70 ? '#166534' : '#dc2626'};">${fiveC.capitScore} / 100</strong></td>
+                  <td>${fiveC.capitNote} | DER: ${m.der23.toFixed(2)}x, Current Ratio: ${m.currentRatio23.toFixed(2)}x, Ekuitas Bersih: ${fmtRp(m.eq23, true)}</td>
+                  <td style="color:${fiveC.capitScore >= 70 ? '#166534' : '#dc2626'}; font-weight:700;">
+                    ${fiveC.capitScore >= 70 ? 'Permodalan Sehat' : 'Struktur Modal Agresif'}
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>4. Collateral (20%)</strong></td>
+                  <td class="num-col"><strong style="color:${fiveC.collScore >= 70 ? '#166534' : '#dc2626'};">${fiveC.collScore} / 100</strong></td>
+                  <td>
+                    &bull; Agunan Pokok Persediaan: ${fmtRp(fiveC.invVal, true)} (${fiveC.invRatio.toFixed(0)}% plafond) via Fidusia/CMA<br/>
+                    &bull; Jaminan Tambahan Fixed Assets: ${fmtRp(fiveC.faVal, true)} (${fiveC.faRatio.toFixed(0)}% plafond, Standar HT &ge; 120%)
+                  </td>
+                  <td style="color:${fiveC.collScore >= 70 ? '#166534' : '#d97706'}; font-weight:700;">
+                    ${fiveC.collScore >= 80 ? 'Sangat Memadai (HT &ge; 120%)' : (fiveC.collScore >= 60 ? 'Cukup / Standar' : 'Agunan Kurang')}
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>5. Condition (15%)</strong></td>
+                  <td class="num-col"><strong style="color:${fiveC.condScore >= 70 ? '#166534' : '#dc2626'};">${fiveC.condScore} / 100</strong></td>
+                  <td>${fiveC.condNote} | Metode Logistik: ${procMethodLabel}</td>
+                  <td style="color:${fiveC.condScore >= 75 ? '#166534' : '#d97706'}; font-weight:700;">
+                    ${fiveC.condScore >= 75 ? 'Risiko Terkendali' : 'Sensitif terhadap Fluktuasi Eksternal'}
+                  </td>
+                </tr>
+                <tr style="background:#f8fafc; font-weight:800;">
+                  <td>Skor Terpadu 5C Underwriting</td>
+                  <td class="num-col" style="color:var(--askrindo-navy); font-size:0.75rem;">${fiveC.totalScore} / 100</td>
+                  <td colspan="2">
+                    Skor Kualitatif Terpadu 5C memberikan kontribusi pada <strong>Pilar 2: ${fiveC.totalScore10} / 10 Poin</strong> dalam penilaian komprehensif DCC-SWCM.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- BAGIAN IV: RANGKUMAN PROYEKSI CASH FLOW & DEBT SERVICE 12 BULAN -->
+            <h4 style="color:var(--askrindo-navy); margin:0.5rem 0 0.25rem; font-size:0.75rem; font-weight:800; border-bottom:1.5px solid #e2e8f0; padding-bottom:2px;">
+              IV. Rangkuman Proyeksi Cash Flow &amp; Debt Service 12 Bulan (Tab Proyeksi Cash Flow)
+            </h4>
+            <table class="data-table" style="margin-bottom:0.6rem; font-size:0.66rem;">
+              <thead>
+                <tr>
+                  <th>Metrik Proyeksi Arus Kas (Forward-Looking 12 Bulan)</th>
+                  <th class="num-col">Nilai Proyeksi</th>
+                  <th>Ambang Batas Underwriting</th>
+                  <th>Analisa Kelayakan Pelunasan Utang</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Proyeksi Penjualan Bersih Tahunan</td>
+                  <td class="num-col"><strong>${fmtRp(cf.projectedAnnualSales, true)}</strong></td>
+                  <td>Asumsi Sales Growth: +${cf.salesGrowth}%</td>
+                  <td>Target Margin Kotor (GPM): ${cf.targetGPM.toFixed(1)}%</td>
+                </tr>
+                <tr>
+                  <td>Total Inflow Kas Masuk Operasional (12 Bulan)</td>
+                  <td class="num-col">${fmtRp(cf.totalInflow, true)}</td>
+                  <td>Perputaran Piutang DOR: ${Math.round(cf.dorDays)} Hari</td>
+                  <td>Penerimaan kas tertagih memperhitungkan lag perputaran DOR</td>
+                </tr>
+                <tr>
+                  <td>Total Outflow Kas Operasional (HPP + OPEX + Pajak)</td>
+                  <td class="num-col">${fmtRp(cf.totalOutflow, true)}</td>
+                  <td>Rata-rata Outflow: ${fmtRp(cf.totalOutflow / 12, true)} / bln</td>
+                  <td>Beban operasional kas esensial debitur</td>
+                </tr>
+                <tr>
+                  <td>Net Operating Cash Flow (NOCF 12 Bulan)</td>
+                  <td class="num-col"><strong style="color:${cf.totalNOCF > cf.totalDebtService ? '#166534' : '#dc2626'};">${fmtRp(cf.totalNOCF, true)}</strong></td>
+                  <td>Target: &ge; Beban Debt Service</td>
+                  <td style="color:${cf.totalNOCF > cf.totalDebtService ? '#166534' : '#dc2626'}; font-weight:700;">
+                    ${cf.totalNOCF > cf.totalDebtService ? '&#10003; Surplus Kas Operasional Memadai' : '&#9888; Defisit Kas Operasional Terhadap Angsuran'}
+                  </td>
+                </tr>
+                <tr>
+                  <td>Total Beban Kewajiban Utang (Debt Service Pokok &amp; Bunga)</td>
+                  <td class="num-col">${fmtRp(cf.totalDebtService, true)}</td>
+                  <td>Bunga: ${proj.interestRate}% p.a.</td>
+                  <td>Kewajiban pelunasan pokok ${fmtRp(proj.requestedPlafond, true)} dan beban bunga</td>
+                </tr>
+                <tr>
+                  <td>Projected Debt Service Coverage Ratio (DSCR 12 Bulan)</td>
+                  <td class="num-col"><strong style="color:${annualDSCR >= 1.25 ? '#166534' : (annualDSCR >= 1.0 ? '#d97706' : '#dc2626')}; font-size:0.75rem;">${annualDSCR.toFixed(2)}x</strong></td>
+                  <td>Standar RAC: &ge; 1.25x (Buffer 25%)</td>
+                  <td style="color:${annualDSCR >= 1.25 ? '#166534' : '#dc2626'}; font-weight:700;">
+                    ${annualDSCR >= 1.25 ? '&#10003; Kapasitas Pelunasan Aman' : (annualDSCR >= 1.0 ? '&#9888; Cukup Tanpa Buffer Pengaman' : '&#9888; Risiko Tinggi Gagal Bayar (DSCR < 1.0x)')}
+                  </td>
+                </tr>
+                <tr style="background:#f8fafc;">
+                  <td>Proyeksi Saldo Kas Akhir (Bulan ke-12)</td>
+                  <td class="num-col"><strong style="color:${endingCash12 > 0 ? '#166534' : '#dc2626'};">${fmtRp(endingCash12, true)}</strong></td>
+                  <td>Titik Kas Terendah: ${fmtRp(lowestCash, true)}</td>
+                  <td style="color:${endingCash12 > 0 ? '#166534' : '#dc2626'}; font-weight:700;">
+                    ${endingCash12 > 0 ? '&#10003; Saldo Kas Akhir Tetap Positif' : '&#9888; Kas Akhir Negatif (Memerlukan Suntikan Likuiditas)'}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- BAGIAN V: RANGKUMAN UJI KETAHANAN SENSITIVITAS (STRESS-TESTING) -->
+            <h4 style="color:var(--askrindo-navy); margin:0.5rem 0 0.25rem; font-size:0.75rem; font-weight:800; border-bottom:1.5px solid #e2e8f0; padding-bottom:2px;">
+              V. Rangkuman Simulasi Uji Ketahanan Sensitivitas (Tab Stress-Testing)
+            </h4>
+            <table class="data-table" style="margin-bottom:0.6rem; font-size:0.66rem;">
+              <thead>
+                <tr>
+                  <th>Parameter &amp; Hasil Uji Ketahanan</th>
+                  <th class="num-col">Skenario 1 (Baseline Audited)</th>
+                  <th class="num-col">Skenario 2 (Shock Kurs &amp; Komoditas)</th>
+                  <th class="num-col">Skenario 3 (Severe Stagflasi)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Gross Profit Margin (GPM)</td>
+                  <td class="num-col">${fmtNum(m.gpm23, 1)}%</td>
+                  <td class="num-col">${params2.gpm.toFixed(1)}%</td>
+                  <td class="num-col" style="color:#dc2626; font-weight:700;">${params3.gpm.toFixed(1)}%</td>
+                </tr>
+                <tr>
+                  <td>Masa Simpan Persediaan (DOI)</td>
+                  <td class="num-col">${Math.round(m.doi23_365)} Hari</td>
+                  <td class="num-col">${params2.doi} Hari (+20 Hr)</td>
+                  <td class="num-col" style="color:#dc2626; font-weight:700;">${params3.doi} Hari (+45 Hr)</td>
+                </tr>
+                <tr>
+                  <td>Siklus Operasi Gross (DOI + DOR)</td>
+                  <td class="num-col">${Math.round(m.grossCycle23)} Hari</td>
+                  <td class="num-col">${stress2.simGrossCycle} Hari</td>
+                  <td class="num-col" style="color:#dc2626; font-weight:700;">${stress3.simGrossCycle} Hari</td>
+                </tr>
+                <tr>
+                  <td>Operating Cash Flow</td>
+                  <td class="num-col">${fmtRp(stress1.operatingCashFlow, true)}</td>
+                  <td class="num-col">${fmtRp(stress2.operatingCashFlow, true)}</td>
+                  <td class="num-col" style="color:#dc2626; font-weight:700;">${fmtRp(stress3.operatingCashFlow, true)}</td>
+                </tr>
+                <tr>
+                  <td>Projected DSCR</td>
+                  <td class="num-col">${stress1.simDSCR.toFixed(2)}x</td>
+                  <td class="num-col">${stress2.simDSCR.toFixed(2)}x</td>
+                  <td class="num-col" style="color:#dc2626; font-weight:700;">${stress3.simDSCR.toFixed(2)}x</td>
+                </tr>
+                <tr style="background:#f8fafc;">
+                  <td>Kesimpulan Kelayakan Skema</td>
+                  <td class="num-col" style="color:${stress1.isViable ? '#166534' : '#dc2626'}; font-weight:700;">${stress1.isViable ? 'Layak' : 'Defisit Likuiditas'}</td>
+                  <td class="num-col" style="color:${stress2.isViable ? '#166534' : '#dc2626'}; font-weight:700;">${stress2.isViable ? 'Layak Bersyarat' : 'Severe Risk'}</td>
+                  <td class="num-col" style="color:${stress3.isViable ? '#166534' : '#dc2626'}; font-weight:700;">${stress3.isViable ? 'Tolerable' : 'Pasti Default (Bangkrut)'}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- BAGIAN VI: RANGKUMAN SKOR 7 PILAR DCC-SWCM & GRADE RISK -->
+            <h4 style="color:var(--askrindo-navy); margin:0.5rem 0 0.25rem; font-size:0.75rem; font-weight:800; border-bottom:1.5px solid #e2e8f0; padding-bottom:2px;">
+              VI. Rangkuman Skor Metode 7 Pilar DCC-SWCM &amp; Penetapan Grade Risk (Tab Skor &amp; Grade Risk)
+            </h4>
+            <table class="data-table" style="margin-bottom:0.6rem; font-size:0.66rem;">
+              <thead>
+                <tr>
+                  <th>Pilar Evaluasi DCC-SWCM</th>
+                  <th class="num-col">Bobot Maksimal</th>
+                  <th class="num-col">Nilai Diperoleh</th>
+                  <th>Indikator Evaluasi &amp; Temuan Kunci</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Pilar 1: Ketepatan Perputaran Kas &amp; Siklus CCC</strong></td>
+                  <td class="num-col">20 Poin</td>
+                  <td class="num-col"><strong style="color:${(m.scorePillars[0]?.earnedPts || 0) >= 14 ? '#166534' : '#dc2626'};">${m.scorePillars[0]?.earnedPts || 0} Poin</strong></td>
+                  <td>Deviasi DOR (${m.diffDOR >= 0 ? '+' : ''}${fmtNum(m.diffDOR, 1)} hr), DOI (${m.diffDOI >= 0 ? '+' : ''}${fmtNum(m.diffDOI, 1)} hr), Tenor Mismatch (${Math.round(m.cashGapAtSCFMaturity_Actual)} hr)</td>
+                </tr>
+                <tr>
+                  <td><strong>Pilar 2: Evaluasi Kualitatif 5C Underwriting</strong></td>
+                  <td class="num-col">10 Poin</td>
+                  <td class="num-col"><strong style="color:${(m.scorePillars[1]?.earnedPts || 0) >= 7 ? '#166534' : '#dc2626'};">${m.scorePillars[1]?.earnedPts || 0} Poin</strong></td>
+                  <td>Skor 5C Terpadu: ${fiveC.totalScore}/100 (Character, Capacity, Capital, Collateral, Condition)</td>
+                </tr>
+                <tr>
+                  <td><strong>Pilar 3: Sensitivitas NWC Burn-Rate &amp; Runway</strong></td>
+                  <td class="num-col">20 Poin</td>
+                  <td class="num-col"><strong style="color:${(m.scorePillars[2]?.earnedPts || 0) >= 14 ? '#166534' : '#dc2626'};">${m.scorePillars[2]?.earnedPts || 0} Poin</strong></td>
+                  <td>Pure Cash Runway (${fmtNum(m.pureCashRunwayMonths, 1)} bln) &amp; Defisit Kas saat jatuh tempo SCF</td>
+                </tr>
+                <tr>
+                  <td><strong>Pilar 4: Profitabilitas Operasional &amp; Margin HPP</strong></td>
+                  <td class="num-col">15 Poin</td>
+                  <td class="num-col"><strong style="color:${(m.scorePillars[3]?.earnedPts || 0) >= 10 ? '#166534' : '#dc2626'};">${m.scorePillars[3]?.earnedPts || 0} Poin</strong></td>
+                  <td>GPM Audited (${m.gpm23.toFixed(2)}% vs Standar Sehat &ge;10%) &amp; EBT Operasional</td>
+                </tr>
+                <tr>
+                  <td><strong>Pilar 5: Kecukupan Agunan Pokok &amp; Jaminan Tambahan</strong></td>
+                  <td class="num-col">15 Poin</td>
+                  <td class="num-col"><strong style="color:${(m.scorePillars[4]?.earnedPts || 0) >= 10 ? '#166534' : '#dc2626'};">${m.scorePillars[4]?.earnedPts || 0} Poin</strong></td>
+                  <td>Agunan Pokok Persediaan (${fiveC.invRatio.toFixed(0)}%) &amp; Jaminan Tambahan Fixed Assets (${fiveC.faRatio.toFixed(0)}% vs HT &ge;120%)</td>
+                </tr>
+                <tr>
+                  <td><strong>Pilar 6: Solvabilitas &amp; Struktur Modal</strong></td>
+                  <td class="num-col">10 Poin</td>
+                  <td class="num-col"><strong style="color:${(m.scorePillars[5]?.earnedPts || 0) >= 7 ? '#166534' : '#dc2626'};">${m.scorePillars[5]?.earnedPts || 0} Poin</strong></td>
+                  <td>DER (${m.der23.toFixed(2)}x vs Batas &le;2.50x) &amp; Rasio Lancar Current Ratio (${m.currentRatio23.toFixed(2)}x)</td>
+                </tr>
+                <tr>
+                  <td><strong>Pilar 7: Proyeksi Arus Kas &amp; Debt Service 12 Bulan</strong></td>
+                  <td class="num-col">10 Poin</td>
+                  <td class="num-col"><strong style="color:${(m.scorePillars[6]?.earnedPts || 0) >= 7 ? '#166534' : '#dc2626'};">${m.scorePillars[6]?.earnedPts || 0} Poin</strong></td>
+                  <td>Projected DSCR 12 Bulan (${annualDSCR.toFixed(2)}x vs Target &ge;1.25x) &amp; Ketahanan Saldo Kas Akhir</td>
+                </tr>
+                <tr style="background:#f1f5f9; font-weight:800;">
+                  <td>TOTAL SKOR AKHIR DCC-SWCM</td>
+                  <td class="num-col" style="font-size:0.75rem;">100 Poin</td>
+                  <td class="num-col" style="font-size:0.78rem; color:${m.gradeMeta.color};">${m.score} / 100</td>
+                  <td>
+                    <strong>PENETAPAN GRADE RISIKO: <span class="grade-badge ${m.gradeMeta.badgeCls}">${m.shortGrade}</span> (${m.gradeMeta.name})</strong><br/>
+                    Maksimal Coverage Askrindo: <strong>${m.recCoveragePct}%</strong> | Indikasi Tarif IJP: <strong>${m.ijpRate}</strong>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- BAGIAN VII: CRITICAL POINTS & MITIGASI RISIKO KREDIT -->
+            <div class="grid-2" style="margin-bottom:0.6rem; font-size:0.68rem;">
               <div style="border:1px solid var(--border-color); border-radius:6px; padding:0.45rem;">
-                <div style="font-weight:700; color:#991b1b; margin-bottom:0.18rem;">II. Ringkasan Critical Points:</div>
-                <ul style="padding-left:1.1rem;">
+                <div style="font-weight:700; color:#991b1b; margin-bottom:0.18rem;">VII. Ringkasan Critical Points (Temuan Kritis):</div>
+                <ul style="padding-left:1.1rem; margin:0;">
                   ${[...ins.criticalPointsFin, ...ins.criticalPointsCredit].map((c) => `<li><strong>${c.title}</strong></li>`).join('')}
                 </ul>
               </div>
               <div style="border:1px solid var(--border-color); border-radius:6px; padding:0.45rem;">
-                <div style="font-weight:700; color:#166534; margin-bottom:0.18rem;">III. Syarat &amp; Mitigasi Asuransi Kredit (Covenants):</div>
-                <ul style="padding-left:1.1rem;">
+                <div style="font-weight:700; color:#166534; margin-bottom:0.18rem;">Syarat &amp; Mitigasi Asuransi Kredit (Covenants):</div>
+                <ul style="padding-left:1.1rem; margin:0;">
                   ${ins.mitigations.map((mit) => `<li><strong>${mit.title}</strong></li>`).join('')}
                 </ul>
               </div>
             </div>
 
+            <!-- BAGIAN VIII: KEPUTUSAN KOMITE & OPSI PERSETUJUAN BERSYARAT -->
             <div style="border:1.5px solid ${m.isInitialReject ? '#dc2626' : '#059669'}; border-radius:6px; padding:0.6rem 0.8rem; margin-bottom:0.7rem; background:${m.isInitialReject ? '#fff5f5' : '#f0fdf4'};">
               <div style="font-weight:900; font-size:0.82rem; color:${m.isInitialReject ? '#991b1b' : '#166534'}; margin-bottom:0.25rem;">
                 KEPUTUSAN EVALUASI AWAL SISTEM DCC-SWCM: ${m.stage1Decision}
@@ -4249,7 +4639,7 @@ function renderPrintableReport(proj, m) {
                       ` : (proj.procurementMethod === 'domestic' ? `
                         <li><strong>Wajib Asuransi Pengangkutan Darat (Inland Transit Askrindo)</strong> untuk proteksi distribusi logistik barang dengan Banker\'s Clause ${proj.bankName}.</li>
                       ` : `
-                        <li><strong>Tidak Diwajibkan Asuransi Marine Cargo</strong> (aktivitas debitur non-pengiriman laut; mitigasi difokuskan pada asuransi tempat usaha/PAR &amp; escrow rekening giro di ${proj.bankName}).</li>
+                        <li><strong>Tidak Diwajibkan Asuransi Marine Cargo</strong> (aktivitas debitur non-pengiriman fisik; mitigasi difokuskan pada asuransi tempat usaha/PAR &amp; escrow rekening giro di ${proj.bankName}).</li>
                       `)}
                       <li><strong>Jaminan Tambahan Fixed Asset Hak Tanggungan Peringkat I &ge; 120%</strong> (${fmtRp(proj.requestedPlafond * 1.2, true)}) guna melengkapi Agunan Pokok Persediaan Barang (${fmtRp(proj.fin23.inv, true)}) yang diikat Fidusia/CMA.</li>
                       <li><strong>Optimalisasi KMK Backup sebagai Buffer Relaksasi Likuiditas Positif</strong> (penarikan bertahap per tranche maks ${fmtRp(m.recommendedTrancheSize, true)} berbasis bukti invoice riil).</li>
@@ -4264,6 +4654,7 @@ function renderPrintableReport(proj, m) {
               ${proj.customNotes ? `<div style="font-size:0.71rem; margin-top:0.3rem; border-top:1px solid #cbd5e1; padding-top:0.25rem;"><strong>Catatan Tambahan Underwriter:</strong> ${proj.customNotes}</div>` : ''}
             </div>
 
+            <!-- LEMBAR TANDA TANGAN -->
             <div class="memo-signature-grid">
               <div>
                 <div>Disusun Oleh,</div>

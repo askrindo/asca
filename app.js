@@ -788,15 +788,32 @@ function fmtPct(val, dec = 2) {
   return `${sign}${Number(val).toFixed(dec)}%`;
 }
 
+let lastToastMsg = '';
+let lastToastTime = 0;
 function showToast(msg) {
+  const now = Date.now();
+  if (msg === lastToastMsg && (now - lastToastTime) < 1200) {
+    return; // Cegah notifikasi duplikat / tumpuk
+  }
+  lastToastMsg = msg;
+  lastToastTime = now;
+
   const container = document.getElementById('toastContainer');
   if (!container) return;
+
+  // Bersihkan toast yang identik agar tidak menumpuk di pojok layar
+  Array.from(container.children).forEach((child) => {
+    if (child.textContent.includes(msg)) {
+      child.remove();
+    }
+  });
+
   const t = document.createElement('div');
   t.className = 'toast';
   t.innerHTML = "<span>&#10003;</span> <span>" + msg + "</span>";
   container.appendChild(t);
   setTimeout(() => {
-    t.remove();
+    if (t.parentNode) t.remove();
   }, 3000);
 }
 
@@ -4828,9 +4845,15 @@ function syncInputsToModel() {
   renderPrintableReport(proj, m);
 }
 
+let isProcurementMethodUpdating = false;
 function setProcurementMethod(method) {
   const proj = getActiveProject();
   if (!proj) return;
+  if (isProcurementMethodUpdating) return;
+  
+  isProcurementMethodUpdating = true;
+  setTimeout(() => { isProcurementMethodUpdating = false; }, 300);
+
   proj.procurementMethod = method;
 
   const rImport = document.getElementById('inp_proc_import');

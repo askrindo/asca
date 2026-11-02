@@ -5800,21 +5800,21 @@ function renderPrintableReport(proj, m) {
       <thead>
         <tr>
           <td>
-            <table class="memo-header-table" style="width:100%; border-collapse:collapse; border:none; margin:0 0 0.75rem 0; border-bottom:2.5px solid var(--askrindo-navy);">
+            <table class="memo-header-table" style="width:100%; border-collapse:collapse; border:none; margin:0 0 0.85rem 0;">
               <tbody>
                 <tr>
-                  <td style="vertical-align:middle; text-align:left; border:none; padding:0 0 0.65rem 0; background:transparent;">
-                    <div style="display:flex; align-items:center; gap:0.75rem;">
-                      <img src="logo-asca.png" alt="ASCA - Askrindo Smart Credit Analysis" style="height:38px; width:auto; object-fit:contain;" />
+                  <td style="vertical-align:middle; text-align:left; border:none; border-bottom:2.5px solid #07192e; padding:0 0 0.65rem 0; background:transparent;">
+                    <div style="display:flex; align-items:center; gap:0.85rem;">
+                      <img src="logo-asca.png" alt="ASCA - Askrindo Smart Credit Analysis" style="height:46px; width:auto; object-fit:contain;" />
                       <div>
-                        <h2 style="font-size:0.95rem; color:var(--askrindo-navy); margin:0 0 2px 0; font-weight:800; line-height:1.2;">NOTA ANALISA UNDERWRITING ASURANSI KREDIT (ASCA)</h2>
-                        <p style="font-size:0.68rem; color:var(--text-muted); margin:0; line-height:1.2;">Metode: Dynamic Cash Conversion &amp; Stress-Tested Working Capital Model (DCC-SWCM)</p>
+                        <h2 style="font-size:1.12rem; color:#07192e; margin:0 0 3px 0; font-weight:800; line-height:1.2; letter-spacing:0.1px;">NOTA ANALISA UNDERWRITING ASURANSI KREDIT (ASCA)</h2>
+                        <p style="font-size:0.82rem; color:#475569; margin:0; line-height:1.25; font-weight:600;">Metode: Dynamic Cash Conversion &amp; Stress-Tested Working Capital Model (DCC-SWCM)</p>
                       </div>
                     </div>
                   </td>
-                  <td style="vertical-align:middle; text-align:right; border:none; padding:0 0 0.65rem 0; background:transparent; white-space:nowrap; font-size:0.68rem; line-height:1.45;">
+                  <td style="vertical-align:middle; text-align:right; border:none; border-bottom:2.5px solid #07192e; padding:0 0 0.65rem 0; background:transparent; white-space:nowrap; font-size:0.82rem; line-height:1.55; color:#1e293b;">
                     <div><strong>Tanggal:</strong> ${today}</div>
-                    <div><strong>ID Kasus:</strong> ${caseNumber}</div>
+                    <div><strong>ID Kasus:</strong> <span style="font-family:monospace; font-weight:800; font-size:0.86rem; color:#004274;">${caseNumber}</span></div>
                     <div><strong>Underwriter:</strong> ${proj.underwriter}</div>
                   </td>
                 </tr>

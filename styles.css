@@ -1419,10 +1419,12 @@ input[type="range"] {
   width: 100%;
   border-collapse: collapse;
   border: none;
+  margin-bottom: 0.85rem;
 }
 .memo-header-table td {
-  padding: 0;
+  padding: 0 0 0.65rem 0;
   border: none;
+  border-bottom: 2.5px solid #07192e !important;
   background: transparent;
 }
 .memo-header-wrap {
@@ -1503,12 +1505,14 @@ input[type="range"] {
     width: 100% !important;
     border-collapse: collapse !important;
     border: none !important;
+    margin-bottom: 0.85rem !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
   .memo-header-table td {
-    padding: 0 !important;
+    padding: 0 0 0.65rem 0 !important;
     border: none !important;
+    border-bottom: 2.5px solid #07192e !important;
     background: transparent !important;
   }
   .memo-header-wrap {

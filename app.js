@@ -8,6 +8,7 @@ const STORAGE_KEY = 'ASKRINDO_ASCA_PROJECTS_V1';
 const USERS_STORAGE_KEY = 'ASCA_USERS_DATABASE_V1';
 const AUTH_SESSION_KEY = 'ASCA_AUTH_SESSION_V1';
 const USER_PROJECTS_KEY_PREFIX = 'ASCA_PROJECTS_USER_';
+const ASCA_APP_VERSION = 'Versi 1.0';
 
 // ============================================================================
 // SUPABASE CLOUD DATABASE CONFIGURATION
@@ -903,16 +904,17 @@ function renderWelcomeHub() {
         </div>
         <div class="hub-card-footer" style="display:flex; justify-content:space-between; align-items:center; gap:0.4rem; flex-wrap:wrap;">
           <div style="display:flex; gap:0.35rem; align-items:center; flex-wrap:wrap;">
-            <button type="button" class="btn btn-outline btn-xs" onclick="duplicateProjectById('${p.id}')" title="Duplikasi Analisa Debitur" style="display:inline-flex; align-items:center; gap:3px; padding:3px 8px; font-weight:700;">
+            <button type="button" class="btn btn-outline btn-xs" onclick="duplicateProjectById('${p.id}')" title="Duplikasi Analisa Debitur" style="display:inline-flex; align-items:center; justify-content:center; gap:4px; padding:3px 9px; font-weight:700; font-size:0.72rem; min-width:76px;">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
               <span>Duplikasi</span>
             </button>
-            <button type="button" class="btn btn-outline btn-xs" onclick="exportSingleProjectJSON('${p.id}')" title="Export berkas analisa ini (.json)" style="display:inline-flex; align-items:center; gap:3px; padding:3px 8px; font-weight:700;">
+            <button type="button" class="btn btn-outline btn-xs" onclick="exportSingleProjectJSON('${p.id}')" title="Export berkas analisa ini (.json)" style="display:inline-flex; align-items:center; justify-content:center; gap:4px; padding:3px 9px; font-weight:700; font-size:0.72rem; min-width:76px;">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
               <span>Export</span>
             </button>
-            <button type="button" class="btn btn-outline btn-xs" onclick="deleteProjectById('${p.id}')" title="Hapus Berkas Analisa" style="color:#dc2626; border-color:#fca5a5; padding:3px 8px; font-weight:700;">
-              Hapus
+            <button type="button" class="btn btn-outline btn-xs" onclick="deleteProjectById('${p.id}')" title="Hapus Berkas Analisa" style="color:#dc2626; border-color:#fca5a5; padding:3px 9px; font-weight:700; font-size:0.72rem; display:inline-flex; align-items:center; justify-content:center; gap:4px; min-width:76px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              <span>Hapus</span>
             </button>
           </div>
           <button type="button" class="btn btn-primary btn-sm" onclick="openProjectFromHub('${p.id}')" style="display:inline-flex; align-items:center; gap:0.3rem; font-size:0.75rem; padding:5px 12px; font-weight:700;">
@@ -1132,17 +1134,18 @@ function renderProjectList() {
           <div class="project-meta">
             <span>${p.bankName}</span> &bull; <span>${fmtRp(p.requestedPlafond, true)}</span> &bull; <span style="font-weight:600;">Score: ${m.score}</span>
           </div>
-          <div class="project-item-actions" style="display:flex; gap:0.3rem; margin-top:0.35rem; padding-top:0.3rem; border-top:1px dashed #e2e8f0; justify-content:flex-end; align-items:center;">
-            <button type="button" class="btn btn-outline btn-xs" onclick="event.stopPropagation(); duplicateProjectById('${p.id}')" title="Duplikasi Analisa Debitur" style="display:inline-flex; align-items:center; gap:3px; font-weight:700; font-size:0.68rem; padding:2px 7px;">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          <div class="project-item-actions">
+            <button type="button" class="btn btn-outline btn-xs btn-action-item" onclick="event.stopPropagation(); duplicateProjectById('${p.id}')" title="Duplikasi Analisa Debitur">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
               <span>Duplikasi</span>
             </button>
-            <button type="button" class="btn btn-outline btn-xs" onclick="event.stopPropagation(); exportSingleProjectJSON('${p.id}')" title="Export berkas analisa (.json)" style="display:inline-flex; align-items:center; gap:3px; font-weight:700; font-size:0.68rem; padding:2px 7px;">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            <button type="button" class="btn btn-outline btn-xs btn-action-item" onclick="event.stopPropagation(); exportSingleProjectJSON('${p.id}')" title="Export berkas analisa (.json)">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
               <span>Export</span>
             </button>
-            <button type="button" class="btn btn-outline btn-xs" onclick="event.stopPropagation(); deleteProjectById('${p.id}')" title="Hapus Analisa" style="color:#dc2626; border-color:#fca5a5; padding:2px 5px; font-size:0.68rem; font-weight:700; display:inline-flex; align-items:center;">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            <button type="button" class="btn btn-outline btn-xs btn-action-item btn-action-delete" onclick="event.stopPropagation(); deleteProjectById('${p.id}')" title="Hapus Berkas Analisa">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              <span>Hapus</span>
             </button>
           </div>
         </div>
@@ -1164,6 +1167,8 @@ function renderBanner(proj, m) {
   setEl('bannerPlafond', fmtRp(proj.requestedPlafond));
   setEl('bannerFinYears', `${m ? m.yr1 : (proj.year1 || 2022)} & ${m ? m.yr2 : (proj.year2 || 2023)}`);
   setEl('bannerUnderwriter', proj.underwriter || '-');
+  const curSess = getActiveSession();
+  setEl('bannerUnit', getCleanUnit(curSess?.unit) || 'Divisi Underwriting Komersial');
 
   const gradeBadge = document.getElementById('bannerGradeBadge');
   const scoreCircle = document.getElementById('bannerScoreCircle');
@@ -1185,7 +1190,8 @@ function renderBanner(proj, m) {
     }
     if (decEl) {
       decEl.textContent = 'Menunggu Input Data Keuangan';
-      decEl.style.color = '#64748b';
+      decEl.className = 'case-decision-pill decision-pending';
+      decEl.style.color = '';
     }
     if (optEl) {
       optEl.innerHTML = '<strong>Status:</strong> Silakan lengkapi Neraca &amp; Laba Rugi pada tab "Input Data" untuk memulai scoring DCC-SWCM.';
@@ -1201,20 +1207,20 @@ function renderBanner(proj, m) {
   }
 
   if (covBadge) {
-    covBadge.style.display = 'inline-block';
+    covBadge.style.display = 'inline-flex';
     if (m.isLayak) {
       covBadge.className = 'cover-badge cover-approved';
-      covBadge.textContent = `Coverage Askrindo: ${m.recCoveragePct || 70}% (Layak Dijamin)`;
+      covBadge.textContent = `Layak Dijamin (Coverage ${m.recCoveragePct || 70}%)`;
       covBadge.title = `Standar Underwriting Askrindo: Fasilitas Layak Dijamin dengan coverage ${m.recCoveragePct || 70}%`;
     } else if (m.isInitialReject) {
       const condCov = m.recCoveragePct || (m.gradeMeta && m.gradeMeta.maxCoverage) || 55;
-      covBadge.className = 'cover-badge cover-conditional';
-      covBadge.textContent = `Tidak Layak (Apabila Disetujui Maksimal Coverage ${condCov}%)`;
-      covBadge.title = `Rekomendasi awal: Tolak skema pengajuan awal (Tidak Layak). Apabila disetujui, rekomendasi maksimal coverage ${condCov}%.`;
+      covBadge.className = 'cover-badge cover-danger';
+      covBadge.textContent = `Tidak Layak (Opsi Maks ${condCov}%)`;
+      covBadge.title = `Rekomendasi awal: Tolak skema pengajuan awal (Tidak Layak). Apabila disetujui komite, rekomendasi maksimal coverage ${condCov}%.`;
     } else {
       const condCov = m.recCoveragePct || (m.gradeMeta && m.gradeMeta.maxCoverage) || 60;
       covBadge.className = 'cover-badge cover-conditional';
-      covBadge.textContent = `Coverage Bersyarat: Maks ${condCov}%`;
+      covBadge.textContent = `Bersyarat (Maks Coverage ${condCov}%)`;
       covBadge.title = `Persetujuan bersyarat dengan coverage ${condCov}%`;
     }
   }
@@ -1226,23 +1232,31 @@ function renderBanner(proj, m) {
   }
 
   if (decEl) {
-    decEl.textContent = m.stage1Decision || m.gradeMeta.decision;
-    decEl.style.color = m.isLayak ? '#16a34a' : (m.isInitialReject ? '#dc2626' : '#d97706');
+    const rawDecision = m.stage1Decision || m.gradeMeta.decision || '-';
+    decEl.textContent = rawDecision;
+    decEl.style.color = '';
+    if (m.isLayak) {
+      decEl.className = 'case-decision-pill decision-approved';
+    } else if (m.isInitialReject) {
+      decEl.className = 'case-decision-pill decision-rejected';
+    } else {
+      decEl.className = 'case-decision-pill decision-conditional';
+    }
   }
 
   if (optEl) {
     if (m.isLayak) {
       const effectiveCov = m.recCoveragePct || 70;
       const maxGuaranteedNominal = (proj.requestedPlafond || 0) * (effectiveCov / 100);
-      optEl.innerHTML = `<strong>Rekomendasi Coverage:</strong> Maks ${effectiveCov}% (${fmtRp(maxGuaranteedNominal, true)}) &bull; <span style="color:#16a34a; font-weight:700;">Layak Dijamin</span> &bull; IJP: ${m.ijpRate}`;
+      optEl.innerHTML = `<strong>Rekomendasi:</strong> Maks ${effectiveCov}% (${fmtRp(maxGuaranteedNominal, true)}) &bull; <span style="color:#16a34a; font-weight:700;">Layak Dijamin</span> &bull; IJP: ${m.ijpRate}`;
     } else if (m.isInitialReject) {
       const effectiveCov = m.recCoveragePct || (m.gradeMeta && m.gradeMeta.maxCoverage) || 55;
       const maxGuaranteedNominal = (proj.requestedPlafond || 0) * (effectiveCov / 100);
-      optEl.innerHTML = `<strong>Evaluasi Sistem:</strong> <span style="color:#dc2626; font-weight:700;">Tidak Layak</span> &bull; Apabila Disetujui Maksimal Coverage ${effectiveCov}% (${fmtRp(maxGuaranteedNominal, true)}) &bull; IJP: ${m.ijpRate}`;
+      optEl.innerHTML = `<strong>Evaluasi:</strong> <span style="color:#dc2626; font-weight:700;">Tidak Layak</span> &bull; Opsi Maks ${effectiveCov}% (${fmtRp(maxGuaranteedNominal, true)}) &bull; IJP: ${m.ijpRate}`;
     } else {
       const effectiveCov = m.recCoveragePct || (m.gradeMeta && m.gradeMeta.maxCoverage) || 60;
       const maxGuaranteedNominal = (proj.requestedPlafond || 0) * (effectiveCov / 100);
-      optEl.innerHTML = `<strong>Rekomendasi Coverage:</strong> Maks ${effectiveCov}% (${fmtRp(maxGuaranteedNominal, true)}) &bull; <span style="color:#d97706; font-weight:700;">Persetujuan Bersyarat</span> &bull; IJP: ${m.ijpRate}`;
+      optEl.innerHTML = `<strong>Rekomendasi:</strong> Maks ${effectiveCov}% (${fmtRp(maxGuaranteedNominal, true)}) &bull; <span style="color:#d97706; font-weight:700;">Bersyarat</span> &bull; IJP: ${m.ijpRate}`;
     }
   }
 }
@@ -1367,7 +1381,7 @@ let lastToastMsg = '';
 let lastToastTime = 0;
 function showToast(msg) {
   const now = Date.now();
-  if (msg === lastToastMsg && (now - lastToastTime) < 1200) {
+  if (msg === lastToastMsg && (now - lastToastTime) < 800) {
     return; // Cegah notifikasi duplikat / tumpuk
   }
   lastToastMsg = msg;
@@ -1376,20 +1390,28 @@ function showToast(msg) {
   const container = document.getElementById('toastContainer');
   if (!container) return;
 
-  // Bersihkan toast yang identik agar tidak menumpuk di pojok layar
-  Array.from(container.children).forEach((child) => {
-    if (child.textContent.includes(msg)) {
-      child.remove();
-    }
-  });
+  // Pastikan hanya 1 notifikasi yang aktif di layar (tidak menumpuk 2 pcs)
+  container.innerHTML = '';
+
+  // Bersihkan jika ada tanda centang di awal teks agar tidak terjadi centang ganda (✓ ✓)
+  let cleanMsg = String(msg || '').trim();
+  cleanMsg = cleanMsg.replace(/^[✓✔\u2713\u2714\s]+/, '').trim();
+
+  // Tentukan ikon: jika pesan diawali emoji tertentu (⚠️, 📰, 🔍, dll), gunakan emoji itu saja.
+  // Jika tidak, sematkan 1 buah tanda centang tunggal (✓).
+  let iconHtml = '<span>&#10003;</span>';
+  const hasLeadingEmoji = /^([\uD800-\uDBFF][\uDC00-\uDFFF]|[\u2600-\u27BF]|\uFE0F)/.test(cleanMsg);
+  if (hasLeadingEmoji) {
+    iconHtml = '';
+  }
 
   const t = document.createElement('div');
   t.className = 'toast';
-  t.innerHTML = "<span>&#10003;</span> <span>" + msg + "</span>";
+  t.innerHTML = iconHtml + (iconHtml ? ' ' : '') + '<span>' + cleanMsg + '</span>';
   container.appendChild(t);
   setTimeout(() => {
     if (t.parentNode) t.remove();
-  }, 3000);
+  }, 3200);
 }
 
 // ============================================================================
@@ -1533,7 +1555,7 @@ function runAutoInaprocCheckSync(proj, notifyToast = false) {
       summary: `Hasil pencarian otomatis pada Database Riil Daftar Hitam Nasional INAPROC LKPP (5.357 data sanksi) untuk "${cleanName}": Tidak ditemukan catatan sanksi (Bersih - 15 / 15 Poin).`
     };
     if (notifyToast) {
-      showToast(`✓ Auto-Check Daftar Hitam LKPP: "${cleanName}" Terverifikasi BERSIH (15/15 Poin).`);
+      showToast(`Auto-Check Daftar Hitam LKPP: "${cleanName}" Terverifikasi BERSIH (15/15 Poin).`);
     }
   }
 }
@@ -1562,7 +1584,7 @@ async function triggerLiveInaprocCheck(isManualClick = false) {
     if (proj.inaprocStatus === 'blacklisted') {
       showToast(`⚠️ Hasil Scan Daftar Hitam INAPROC: "${cleanName}" TERDETEKSI BLACKLIST (SK: ${proj.inaprocAutoResult?.skNumber || '-'}) — 0/15 Poin!`);
     } else {
-      showToast(`✓ Hasil Scan Daftar Hitam INAPROC: "${cleanName}" Bersih / Nihil Sanksi (15/15 Poin).`);
+      showToast(`Hasil Scan Daftar Hitam INAPROC: "${cleanName}" Bersih / Nihil Sanksi (15/15 Poin).`);
     }
   }
 }
@@ -1606,7 +1628,7 @@ function setInaprocResult(status, compName) {
     showToast(`⚠️ Sanksi INAPROC Dikonfirmasi: "${compName || proj.companyName}" Terdaftar Blacklist Nasional (-30 Poin)!`);
   } else {
     proj.inaprocVerificationNote = `Terverifikasi Nihil Sanksi di https://daftar-hitam.inaproc.id/ (${dtStr} WIB oleh ${uwName})`;
-    showToast(`✓ Hasil INAPROC Dikonfirmasi: "${compName || proj.companyName}" Terverifikasi Bersih di Portal Resmi!`);
+    showToast(`Hasil INAPROC Dikonfirmasi: "${compName || proj.companyName}" Terverifikasi Bersih di Portal Resmi!`);
   }
   saveProjectsToStorage();
   renderAll();
@@ -1971,9 +1993,9 @@ async function fetchGoogleNewsForProject(isManualClick = false, isAutoInputTrigg
     showToast(`🔍 Auto-Screening 5C "${cleanName}": ${inaprocTxt} | ${newsTxt}.`);
   } else if (isManualClick) {
     if (proj.googleNewsItems.length === 0) {
-      showToast(`✓ Google News "${cleanName}": Tidak ditemukan berita (0 artikel) — Tidak memiliki citra negatif (20/20 Poin).`);
+      showToast(`Google News "${cleanName}": Tidak ditemukan berita (0 artikel) — Tidak memiliki citra negatif (20/20 Poin).`);
     } else {
-      showToast(`📰 Google News "${cleanName}": Ditemukan ${proj.googleNewsItems.length} artikel berita riil.`);
+      showToast(`Google News "${cleanName}": Ditemukan ${proj.googleNewsItems.length} artikel berita riil.`);
     }
   }
 }
@@ -2154,23 +2176,29 @@ function compute5CAnalysis(proj, f23, m) {
   };
 
   // 3. Capital (Bobot 20%) — Rincian Skor Maksimal 100 Poin
-  const eq = m ? m.eq23 : ((f23.capital || 0) + (f23.otherCap || 0) + (f23.retEarn || 0) + (f23.re || 0));
-  const tl = m ? m.tl23 : ((f23.ap || 0) + (f23.stDebt || 0) + (f23.otherAp || 0) + (f23.accrued || 0) + (f23.ltDebt || 0));
-  const der = m ? m.der23 : (eq > 0 ? tl / eq : 99);
-  const cr = m ? m.currentRatio23 : ((f23.ca || 1) / Math.max(1, f23.cl || 1));
-  const nwcVal = m ? m.nwc23 : ((f23.cash || 0) + (f23.ar || 0) + (f23.inv || 0) - (f23.ap || 0) - (f23.stDebt || 0));
+  const eq = (m && typeof m.eq23 === 'number') ? m.eq23 : ((f23.capital || 0) + (f23.otherCap || 0) + (f23.retEarn || 0) + (f23.re || 0));
+  const tl = (m && typeof m.tl23 === 'number') ? m.tl23 : ((f23.ap || 0) + (f23.stDebt || 0) + (f23.otherAp || 0) + (f23.accrued || 0) + (f23.ltDebt || 0));
+  const isZeroDebt = tl === 0 || (m && m.tl23 === 0) || (typeof m?.der23 === 'number' && m.der23 === 0);
+  const der = isZeroDebt ? 0 : ((m && typeof m.der23 === 'number') ? m.der23 : (eq > 0 ? tl / eq : 99));
+  const cr = (m && typeof m.currentRatio23 === 'number') ? m.currentRatio23 : ((f23.ca || 1) / Math.max(1, f23.cl || 1));
+  const nwcVal = (m && typeof m.nwc23 === 'number') ? m.nwc23 : ((f23.cash || 0) + (f23.ar || 0) + (f23.inv || 0) - (f23.ap || 0) - (f23.stDebt || 0));
   const reTotal = (f23.retEarn || 0) + (f23.re || 0);
-  const reErosion = m ? m.reErosionPct23 : ((f23.capital > 0 && reTotal < 0) ? (Math.abs(reTotal) / f23.capital) * 100 : 0);
+  const reErosion = (m && typeof m.reErosionPct23 === 'number') ? m.reErosionPct23 : ((f23.capital > 0 && reTotal < 0) ? (Math.abs(reTotal) / f23.capital) * 100 : 0);
 
   // 3A. Leverage Utang terhadap Modal / DER (Maks 35 Poin)
   let capDerPts = 5;
-  if (eq > 0 && der <= 2.0) capDerPts = 35;
-  else if (eq > 0 && der <= 2.5) capDerPts = 28;
-  else if (eq > 0 && der <= 4.0) capDerPts = 18;
-  else capDerPts = 5;
+  if (isZeroDebt || (eq > 0 && der <= 2.0)) {
+    capDerPts = 35; // Bebas utang (DER 0,00x) atau solvabilitas prima (DER <= 2,0x) -> 35 Poin Maksimal Penuh
+  } else if (eq > 0 && der <= 2.5) {
+    capDerPts = 28;
+  } else if (eq > 0 && der <= 4.0) {
+    capDerPts = 18;
+  } else {
+    capDerPts = 5;
+  }
 
   // 3B. Likuiditas Lancar / Current Ratio (Maks 25 Poin)
-  const isNoDebtCL = (m && (m.currentRatio23 === null || m.isNoDebt23)) || (f23.cl === 0 || !f23.cl);
+  const isNoDebtCL = (m && (m.currentRatio23 === null || m.isNoDebt23)) || (f23.cl === 0 || !f23.cl) || isZeroDebt;
   let capCrPts = 5;
   if (isNoDebtCL) {
     capCrPts = 25; // Bebas utang lancar / kewajiban jangka pendek nihil -> Likuiditas prima sempurna
@@ -2192,18 +2220,19 @@ function compute5CAnalysis(proj, f23, m) {
 
   // 3D. Ketahanan Ekuitas & Laba Ditahan (Maks 20 Poin)
   let capEqPts = 5;
-  if (eq > 0 && reErosion === 0) capEqPts = 20;
+  if ((eq > 0 || isZeroDebt) && reErosion === 0) capEqPts = 20;
   else if (eq > 0 && reErosion <= 25) capEqPts = 12;
   else capEqPts = 5;
 
   const capitScore = Math.max(15, Math.min(100, Math.round(capDerPts + capCrPts + capNwcPts + capEqPts)));
   const capitNotes = [];
-  if (der > 4.0) capitNotes.push(`Leverage Tinggi (DER ${der.toFixed(2)}x)`);
+  if (isZeroDebt || der === 0) capitNotes.push('Bebas Utang / Solvabilitas Prima (DER 0,00x)');
+  else if (der > 4.0) capitNotes.push(`Leverage Tinggi (DER ${der.toFixed(2)}x)`);
   else if (der > 2.5) capitNotes.push(`DER Moderat (${der.toFixed(2)}x)`);
   if (isNoDebtCL) capitNotes.push('Bebas Kewajiban Lancar (Likuiditas Prima)');
   else if (cr !== null && cr < 1.0) capitNotes.push(`Current Ratio < 1.0x (${cr.toFixed(2)}x)`);
   if (reErosion > 0) capitNotes.push(`Erosi Modal ${reErosion.toFixed(1)}%`);
-  const capitNote = capitNotes.length ? capitNotes.join('; ') : 'Struktur permodalan & ekuitas sehat.';
+  const capitNote = capitNotes.length ? capitNotes.join('; ') : 'Struktur permodalan & ekuitas prima.';
 
   const capitBreakdown = {
     derPts: capDerPts,
@@ -2217,14 +2246,24 @@ function compute5CAnalysis(proj, f23, m) {
     total: capitScore
   };
 
-  // 4. Collateral (Bobot 20%): Agunan Pokok Persediaan (Maks 50 Poin) & Jaminan Tambahan Fixed Assets (Maks 50 Poin)
-  const inv = f23.inv || 0;
-  const fa = f23.fa || 0;
-  const reqPlafond = proj.requestedPlafond || 1;
-  const invRatio = (inv / reqPlafond) * 100;
-  const faRatio = (fa / reqPlafond) * 100;
+  // 4. Collateral (Bobot 20%): Agunan Pokok & Jaminan Tambahan
+  // Evaluasi fleksibel: Jika informasi agunan diisi user (>0), sistem menggunakan nilai agunan tersebut.
+  // Jika tidak terisi / kosong / 0, hitungan collateral otomatis sesuai kondisi eksisting (Neraca f23.inv & f23.fa).
+  const hasCustomPrimary = typeof proj.collateralPrimaryVal === 'number' && proj.collateralPrimaryVal > 0;
+  const hasCustomAdditional = typeof proj.collateralAdditionalVal === 'number' && proj.collateralAdditionalVal > 0;
 
-  // 4A. Agunan Pokok (Persediaan Barang - Maks 50 Poin)
+  const inv = hasCustomPrimary ? proj.collateralPrimaryVal : (f23.inv || 0);
+  const fa = hasCustomAdditional ? proj.collateralAdditionalVal : (f23.fa || 0);
+  const reqPlafond = proj.requestedPlafond || 1;
+  const invRatio = reqPlafond > 0 ? (inv / reqPlafond) * 100 : 0;
+  const faRatio = reqPlafond > 0 ? (fa / reqPlafond) * 100 : 0;
+
+  const primaryTypeLabel = proj.collateralPrimaryType || (hasCustomPrimary ? 'Agunan Pokok Terdaftar' : 'Persediaan Barang (Inventory)');
+  const additionalTypeLabel = proj.collateralAdditionalType || (hasCustomAdditional ? 'Jaminan Tambahan Terdaftar' : 'Aktiva Tetap (Fixed Assets)');
+  const primaryBinding = proj.collateralPrimaryBinding || (hasCustomPrimary ? 'Pengikatan Sesuai Ketentuan' : 'Fidusia Persediaan / Resi Gudang (CMA)');
+  const additionalBinding = proj.collateralAdditionalBinding || (hasCustomAdditional ? 'Pengikatan Sesuai Ketentuan' : 'Hak Tanggungan (HT) Peringkat I');
+
+  // 4A. Agunan Pokok (Maks 50 Poin)
   let collInvPts = 20;
   if (invRatio >= 100) collInvPts = 50;
   else if (invRatio >= 80) collInvPts = 42;
@@ -2232,7 +2271,7 @@ function compute5CAnalysis(proj, f23, m) {
   else if (invRatio > 0) collInvPts = 20;
   else collInvPts = 0;
 
-  // 4B. Jaminan Tambahan (Fixed Assets HT Peringkat I >= 120% - Maks 50 Poin)
+  // 4B. Jaminan Tambahan (Maks 50 Poin)
   let collFaPts = 20;
   if (faRatio >= 120) collFaPts = 50;
   else if (faRatio >= 100) collFaPts = 42;
@@ -2242,7 +2281,7 @@ function compute5CAnalysis(proj, f23, m) {
 
   const collScore = Math.max(10, Math.min(100, Math.round(collInvPts + collFaPts)));
   const collRatio = faRatio; // Backward compatibility
-  const collNote = `Agunan Pokok Persediaan ${fmtRp(inv, true)} (${invRatio.toFixed(0)}%) & Jaminan Tambahan Fixed Asset ${fmtRp(fa, true)} (${faRatio.toFixed(0)}% plafond).`;
+  const collNote = `Agunan Pokok (${primaryTypeLabel}) ${fmtRp(inv, true)} (${invRatio.toFixed(0)}%) & Jaminan Tambahan (${additionalTypeLabel}) ${fmtRp(fa, true)} (${faRatio.toFixed(0)}% plafond).`;
 
   const collBreakdown = {
     invPts: collInvPts,
@@ -2331,6 +2370,15 @@ function compute5CAnalysis(proj, f23, m) {
     invRatio,
     faVal: fa,
     faRatio,
+    hasCustomPrimary,
+    hasCustomAdditional,
+    primaryTypeLabel,
+    additionalTypeLabel,
+    primaryBinding,
+    additionalBinding,
+    primaryDesc: proj.collateralPrimaryDesc || '',
+    additionalDesc: proj.collateralAdditionalDesc || '',
+    liquidationVal: proj.collateralAdditionalLiquidationVal || 0,
     condScore,
     condNote,
     condBreakdown,
@@ -2667,8 +2715,8 @@ function computeDCCSWCM(proj) {
   const quickRatio22 = isNoDebt22 ? null : (cl22 > 0 ? (ca22 - (f22.inv || 0)) / cl22 : 0);
   const quickRatio23 = isNoDebt23 ? null : (cl23 > 0 ? (ca23 - (f23.inv || 0)) / cl23 : 0);
   const cashRatio23 = isNoDebt23 ? null : (cl23 > 0 ? (f23.cash || 0) / cl23 : 0);
-  const der22 = eq22 > 0 ? tl22 / eq22 : 99;
-  const der23 = eq23 > 0 ? tl23 / eq23 : 99;
+  const der22 = tl22 === 0 ? 0 : (eq22 > 0 ? tl22 / eq22 : 99);
+  const der23 = tl23 === 0 ? 0 : (eq23 > 0 ? tl23 / eq23 : 99);
   const invToCA23 = ca23 > 0 ? (f23.inv / ca23) * 100 : 0;
   const reErosionPct23 = f23.capital > 0 && f23.re < 0 ? (Math.abs(f23.re) / f23.capital) * 100 : 0;
 
@@ -2817,7 +2865,17 @@ function computeDCCSWCM(proj) {
   const fiveC = compute5CAnalysis(proj, f23, {
     gpm23,
     cashGapAtSCFMaturity_Actual,
-    icr23: f23.finCost > 0 ? (f23.rev - f23.cogs - f23.opex) / f23.finCost : 1
+    icr23: f23.finCost > 0 ? (f23.rev - f23.cogs - f23.opex) / f23.finCost : 1,
+    pureCashRunwayDays,
+    eq23,
+    tl23,
+    der23,
+    currentRatio23,
+    isNoDebt23,
+    nwc23,
+    isNWCDeficit,
+    reErosionPct23,
+    revGrowth
   });
 
   const rawQual = fiveC.totalScore;
@@ -3021,11 +3079,11 @@ function computeDCCSWCM(proj) {
     name: 'Debt to Equity Ratio (DER) & Proteksi Erosi Modal',
     formula: 'Total Liabilitas / Ekuitas',
     benchmark: 'DER &le; 2,5x & Erosi Modal < 25%',
-    actualStr: `DER: ${fmtNum(der23, 2)}x | Erosi: ${fmtNum(reErosionPct23, 1)}%`,
+    actualStr: `DER: ${fmtNum(der23, 2)}x${der23 === 0 ? ' (Bebas Utang)' : ''} | Erosi: ${fmtNum(reErosionPct23, 1)}%`,
     maxPts: 5,
     earnedPts: s6A,
     lostPts: 5 - s6A,
-    reason: reErosionPct23 > 50 ? 'Akumulasi rugi menggerus sebagian besar modal saham.' : (der23 <= 2.5 ? 'Permodalan kuat & solvabel.' : 'Leverage utang tinggi.')
+    reason: reErosionPct23 > 50 ? 'Akumulasi rugi menggerus sebagian besar modal saham.' : (der23 === 0 ? 'Bebas utang (solvabilitas prima).' : (der23 <= 2.5 ? 'Permodalan kuat & solvabel.' : 'Leverage utang tinggi.'))
   });
 
   let s6B = (stDebtGrowth <= 25 ? 3 : (stDebtGrowth <= 50 ? 2 : 1)) + (proj.kmkTenorDays > 0 ? 0 : 2);
@@ -3330,16 +3388,21 @@ function buildDynamicCaseInsights(proj, m) {
     detail: `Porsi penutupan risiko asuransi kredit oleh Askrindo dibatasi maksimal <strong>${effectiveCovPct}% (${fmtRp(maxCoverNominal, true)})</strong>. Sisa <strong>${100 - effectiveCovPct}% (${fmtRp(bankRiskSharingNominal, true)})</strong> wajib menjadi porsi <em>risk sharing</em> yang ditanggung oleh ${proj.bankName} guna memastikan bank mitra memiliki kepentingan bersama (<em>skin in the game</em>) dalam memantau kelancaran usaha debitur.`
   });
 
-  // Jaminan Tambahan: Fixed Asset >= 120% (Melengkapi Agunan Pokok Persediaan)
+  // Jaminan Tambahan: Minimal 120% (Melengkapi Agunan Pokok)
   const minCollateralVal = proj.requestedPlafond * 1.2;
+  const curPrimaryVal = (typeof proj.collateralPrimaryVal === 'number' && proj.collateralPrimaryVal > 0) ? proj.collateralPrimaryVal : (proj.fin23?.inv || 0);
+  const curAdditionalVal = (typeof proj.collateralAdditionalVal === 'number' && proj.collateralAdditionalVal > 0) ? proj.collateralAdditionalVal : (proj.fin23?.fa || 0);
+  const curPrimaryLabel = proj.collateralPrimaryType || 'Persediaan Barang';
+  const curAdditionalLabel = proj.collateralAdditionalType || 'Fixed Asset (Tanah / Bangunan / Mesin)';
+  const curAdditionalBinding = proj.collateralAdditionalBinding || 'Hak Tanggungan (HT) Peringkat I';
   mitigations.push({
-    title: `Jaminan Tambahan Fixed Asset (Tanah / Bangunan / Mesin) Minimal 120% Plafond (${fmtRp(minCollateralVal, true)})`,
-    detail: `Kewajiban pengikatan <strong>Jaminan Tambahan Fixed Asset bersertifikat minimal 120% dari total plafond kredit (${fmtRp(minCollateralVal, true)})</strong> yang diikat Hak Tanggungan (HT) Peringkat I dari total aset tetap debitur (${fmtRp(proj.fin23.fa)}) yang berstatus <em>free & clear</em>, guna melengkapi Agunan Pokok berupa Persediaan Barang (${fmtRp(proj.fin23.inv, true)}) yang diikat Fidusia / CMA.`
+    title: `Jaminan Tambahan (${curAdditionalLabel}) Minimal 120% Plafond (${fmtRp(minCollateralVal, true)})`,
+    detail: `Kewajiban pengikatan <strong>Jaminan Tambahan (${curAdditionalLabel}) bersertifikat minimal 120% dari total plafond kredit (${fmtRp(minCollateralVal, true)})</strong> yang diikat ${curAdditionalBinding} dari nilai agunan terdaftar (${fmtRp(curAdditionalVal, true)}) yang berstatus <em>free & clear</em>, guna melengkapi Agunan Pokok berupa ${curPrimaryLabel} (${fmtRp(curPrimaryVal, true)}) yang diikat ${proj.collateralPrimaryBinding || 'Fidusia / CMA'}.`
   });
 
   requiredInfos.push({
-    title: `Daftar & Penilaian Appraisal Aset Tetap Free & Clear (${fmtRp(proj.fin23.fa)})`,
-    detail: `Underwriter wajib meminta laporan appraisal independen terbaru atas Aset Tetap debitur (${fmtRp(proj.fin23.fa)}) guna memastikan kecukupan nilai pasar jaminan tambahan minimal 120% (${fmtRp(minCollateralVal, true)}) yang bebas sengketa.`
+    title: `Daftar & Penilaian Appraisal Agunan Free & Clear (${fmtRp(curAdditionalVal, true)})`,
+    detail: `Underwriter wajib meminta laporan appraisal independen terbaru atas Jaminan Tambahan debitur (${fmtRp(curAdditionalVal, true)}) guna memastikan kecukupan nilai pasar jaminan tambahan minimal 120% (${fmtRp(minCollateralVal, true)}) yang bebas sengketa.`
   });
 
   return { criticalPointsFin, criticalPointsCredit, requiredInfos, mitigations };
@@ -4174,7 +4237,7 @@ function render5CTab(proj, m) {
                 </div>
                 <table style="width:100%; border-collapse:collapse; font-size:0.64rem;">
                   <tr>
-                    <td style="padding:2px 0;">&bull; ⚖️ <strong>Leverage DER (${fmtNum(m.der23, 2)}x):</strong></td>
+                    <td style="padding:2px 0;">&bull; ⚖️ <strong>Leverage DER (${m.der23 !== null ? fmtNum(m.der23, 2) + 'x' : '-'}${m.der23 === 0 ? ' - Bebas Utang' : ''}):</strong></td>
                     <td style="text-align:right; font-weight:700; color:${(fiveC.capitBreakdown?.derPts || 0) >= 28 ? '#15803d' : ((fiveC.capitBreakdown?.derPts || 0) >= 18 ? '#b45309' : '#dc2626')};">${fiveC.capitBreakdown?.derPts ?? 0} / 35 Poin</td>
                   </tr>
                   <tr>
@@ -4191,7 +4254,7 @@ function render5CTab(proj, m) {
                   </tr>
                 </table>
                 <div style="margin-top:4px; padding-top:4px; border-top:1px dashed #cbd5e1; color:#475569; font-size:0.62rem; line-height:1.35;">
-                  <em>💡 <strong>Syarat Skor 100 Penuh:</strong> DER &le; 2,0x (35 poin), Current Ratio &ge; 1,50x (25 poin), NWC Surplus 1 Siklus (20 poin), dan Laba Ditahan Positif Tanpa Erosi Modal (20 poin).</em>
+                  <em>💡 <strong>Syarat Skor 100 Penuh:</strong> DER &le; 2,0x atau Bebas Utang 0,00x (35 poin), Current Ratio &ge; 1,50x atau Bebas Utang Lancar (25 poin), NWC Surplus 1 Siklus (20 poin), dan Laba Ditahan Positif Tanpa Erosi Modal (20 poin).</em>
                 </div>
               </div>
             </div>
@@ -4210,16 +4273,28 @@ function render5CTab(proj, m) {
               <div class="five-c-detail">
                 <div style="font-weight:700; color:#0f172a; margin-bottom:0.35rem;">${fiveC.collNote}</div>
                 <div style="margin-bottom:0.35rem; background:#f0f9ff; padding:0.35rem 0.5rem; border-radius:5px; border-left:3px solid #0284c7;">
-                  <strong style="color:#0369a1;">Agunan Pokok (Persediaan / Inventory):</strong><br/>
-                  &bull; Nilai Persediaan Riil: <strong>${fmtRp(fiveC.invVal || proj.fin23.inv, true)}</strong><br/>
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+                    <strong style="color:#0369a1;">Agunan Pokok (${fiveC.primaryTypeLabel || 'Persediaan Barang'}):</strong>
+                    <span style="font-size:0.6rem; font-weight:700; padding:1px 5px; border-radius:3px; ${fiveC.hasCustomPrimary ? 'background:#e0f2fe; color:#0284c7;' : 'background:#f1f5f9; color:#475569;'}">
+                      ${fiveC.hasCustomPrimary ? '✓ Input Agunan' : '⚡ Eksisting Neraca'}
+                    </span>
+                  </div>
+                  &bull; Nilai Agunan Pokok: <strong>${fmtRp(fiveC.invVal, true)}</strong><br/>
                   &bull; Coverage vs Plafond: <strong>${(fiveC.invRatio || 0).toFixed(0)}%</strong> (Plafond: ${fmtRp(proj.requestedPlafond, true)})<br/>
-                  &bull; Pengikatan: <strong>Fidusia Persediaan / Resi Gudang (CMA)</strong>
+                  &bull; Pengikatan: <strong>${fiveC.primaryBinding || 'Fidusia Persediaan / CMA'}</strong>
+                  ${fiveC.primaryDesc ? `<br/>&bull; Rincian: <em>${fiveC.primaryDesc}</em>` : ''}
                 </div>
                 <div style="background:#f0fdf4; padding:0.35rem 0.5rem; border-radius:5px; border-left:3px solid #10b981;">
-                  <strong style="color:#15803d;">Jaminan Tambahan (Fixed Assets):</strong><br/>
-                  &bull; Aset Tetap Free &amp; Clear: <strong>${fmtRp(fiveC.faVal || proj.fin23.fa, true)}</strong><br/>
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+                    <strong style="color:#15803d;">Jaminan Tambahan (${fiveC.additionalTypeLabel || 'Fixed Assets'}):</strong>
+                    <span style="font-size:0.6rem; font-weight:700; padding:1px 5px; border-radius:3px; ${fiveC.hasCustomAdditional ? 'background:#dcfce7; color:#15803d;' : 'background:#f1f5f9; color:#475569;'}">
+                      ${fiveC.hasCustomAdditional ? '✓ Input Agunan' : '⚡ Eksisting Neraca'}
+                    </span>
+                  </div>
+                  &bull; Nilai Jaminan Tambahan: <strong>${fmtRp(fiveC.faVal, true)}</strong>${fiveC.liquidationVal > 0 ? ` (Likuidasi: ${fmtRp(fiveC.liquidationVal, true)})` : ''}<br/>
                   &bull; Coverage vs Plafond: <strong>${(fiveC.faRatio || fiveC.collRatio || 0).toFixed(0)}%</strong> (Standar Askrindo &ge; 120%)<br/>
-                  &bull; Pengikatan: <strong>Wajib Hak Tanggungan (HT) Peringkat I</strong>
+                  &bull; Pengikatan: <strong>${fiveC.additionalBinding || 'Hak Tanggungan (HT) Peringkat I'}</strong>
+                  ${fiveC.additionalDesc ? `<br/>&bull; Rincian: <em>${fiveC.additionalDesc}</em>` : ''}
                 </div>
               </div>
 
@@ -4233,21 +4308,21 @@ function render5CTab(proj, m) {
                 </div>
                 <table style="width:100%; border-collapse:collapse; font-size:0.64rem;">
                   <tr>
-                    <td style="padding:2px 0;">&bull; 📦 <strong>Agunan Pokok Persediaan (${(fiveC.invRatio || 0).toFixed(0)}%):</strong></td>
+                    <td style="padding:2px 0;">&bull; 📦 <strong>Agunan Pokok (${fiveC.primaryTypeLabel || 'Persediaan'} - ${(fiveC.invRatio || 0).toFixed(0)}%):</strong></td>
                     <td style="text-align:right; font-weight:700; color:${(fiveC.collBreakdown?.invPts || 0) >= 42 ? '#15803d' : ((fiveC.collBreakdown?.invPts || 0) >= 32 ? '#b45309' : '#dc2626')};">${fiveC.collBreakdown?.invPts ?? 0} / 50 Poin</td>
                   </tr>
                   <tr>
-                    <td style="padding:2px 0;">&bull; 🏢 <strong>Jaminan Tambahan Fixed Asset (${(fiveC.faRatio || 0).toFixed(0)}%):</strong></td>
+                    <td style="padding:2px 0;">&bull; 🏢 <strong>Jaminan Tambahan (${fiveC.additionalTypeLabel || 'Fixed Assets'} - ${(fiveC.faRatio || 0).toFixed(0)}%):</strong></td>
                     <td style="text-align:right; font-weight:700; color:${(fiveC.collBreakdown?.faPts || 0) >= 42 ? '#15803d' : ((fiveC.collBreakdown?.faPts || 0) >= 32 ? '#b45309' : '#dc2626')};">${fiveC.collBreakdown?.faPts ?? 0} / 50 Poin</td>
                   </tr>
                 </table>
                 <div style="margin-top:4px; padding-top:4px; border-top:1px dashed #cbd5e1; color:#475569; font-size:0.62rem; line-height:1.35;">
-                  <em>💡 <strong>Syarat Skor 100 Penuh:</strong> Coverage Agunan Pokok Persediaan &ge; 100% Plafond (50 poin) dan Jaminan Tambahan Fixed Assets HT Peringkat I &ge; 120% Plafond (50 poin).</em>
+                  <em>💡 <strong>Syarat Skor 100 Penuh:</strong> Coverage Agunan Pokok &ge; 100% Plafond (50 poin) dan Jaminan Tambahan &ge; 120% Plafond (50 poin).</em>
                 </div>
               </div>
             </div>
             <div style="font-size:0.62rem; color:${(fiveC.faRatio || 0) >= 120 && (fiveC.invRatio || 0) >= 80 ? '#166534' : '#92400e'}; background:${(fiveC.faRatio || 0) >= 120 && (fiveC.invRatio || 0) >= 80 ? '#f0fdf4' : '#fffbeb'}; padding:4px; border-radius:4px; text-align:center; font-weight:700; margin-top:0.3rem;">
-              ${(fiveC.faRatio || 0) >= 120 ? `Agunan Pokok Persediaan &amp; Jaminan Tambahan HT Memadai (${(fiveC.faRatio || 0).toFixed(0)}% &ge; 120%)` : `Jaminan Tambahan HT Mengcover ${(fiveC.faRatio || 0).toFixed(0)}% (Target &ge; 120%)`}
+              ${(fiveC.faRatio || 0) >= 120 ? `Agunan Pokok &amp; Jaminan Tambahan Memadai (${(fiveC.faRatio || 0).toFixed(0)}% &ge; 120%)` : `Jaminan Tambahan Mengcover ${(fiveC.faRatio || 0).toFixed(0)}% (Target &ge; 120%)`}
             </div>
           </div>
 
@@ -5184,8 +5259,8 @@ function renderCaseStudyQATab(proj, m) {
                 <div class="term-desc">Fasilitas kredit modal kerja debitur memenuhi standar underwriting. Rekomendasi coverage penjaminan Askrindo disetujui sebesar <strong>${m.recCoveragePct || 70}% (${fmtRp((proj.requestedPlafond || 0) * ((m.recCoveragePct || 70) / 100), true)})</strong> dengan tarif premi IJP standar <strong>${m.ijpRate}</strong>.</div>
               </div>
               <div class="term-card" style="border-color:#bbf7d0; background:#f0fdf4;">
-                <div class="term-title"><span style="color:#166534;">2. Agunan Pokok &amp; Pengikatan</span><span style="color:#15803d;">Fidusia Persediaan / Piutang</span></div>
-                <div class="term-desc">Agunan pokok berupa persediaan dagang/piutang usaha diikat secara yuridis sempurna (Akta Fidusia terdaftar Kemenkumham) dan diproteksi asuransi kerugian.</div>
+                <div class="term-title"><span style="color:#166534;">2. Agunan Pokok &amp; Pengikatan</span><span style="color:#15803d;">${proj.collateralPrimaryType || 'Fidusia Persediaan / Piutang'}</span></div>
+                <div class="term-desc">Agunan pokok berupa ${proj.collateralPrimaryType || 'persediaan dagang/piutang usaha'} senilai <strong>${fmtRp((typeof proj.collateralPrimaryVal === 'number' && proj.collateralPrimaryVal > 0) ? proj.collateralPrimaryVal : (proj.fin23?.inv || 0), true)}</strong> diikat secara yuridis sempurna (${proj.collateralPrimaryBinding || 'Akta Fidusia terdaftar Kemenkumham'}) dan diproteksi asuransi kerugian.</div>
               </div>
               <div class="term-card" style="border-color:#bbf7d0; background:#f0fdf4;">
                 <div class="term-title"><span style="color:#166534;">3. Monitoring Rekening Penampungan</span><span style="color:#15803d;">Payroll / Rekening Operasional ${proj.bankName}</span></div>
@@ -5213,8 +5288,8 @@ function renderCaseStudyQATab(proj, m) {
                 <div class="term-desc">${isMaritimeOrImportRisk(proj) ? `Penutupan asuransi kargo laut Askrindo untuk komoditas impor dengan Banker's Clause / Loss Payee ke ${proj.bankName}.` : (proj.procurementMethod === 'domestic' ? `Penutupan asuransi pengangkutan darat Askrindo (Inland Transit All Risks) untuk proteksi distribusi logistik dengan Banker's Clause ke ${proj.bankName}.` : `Tidak ada risiko pengiriman laut/kargo fisik. Pengalihan mitigasi difokuskan pada perlindungan tempat usaha/aset dan pengawasan perputaran kas di ${proj.bankName}.`)}</div>
               </div>
               <div class="term-card">
-                <div class="term-title"><span>3. Jaminan Tambahan Fixed Asset</span><span style="color:#0284c7;">HT &ge; 120%</span></div>
-                <div class="term-desc">Jaminan tambahan berupa Aset Tetap diikat Hak Tanggungan Peringkat I minimal 120% (${fmtRp(proj.requestedPlafond * 1.2, true)}) dari aset tetap terdaftar (${fmtRp(proj.fin23.fa, true)}) untuk melengkapi Agunan Pokok Persediaan Barang (${fmtRp(proj.fin23.inv, true)}).</div>
+                <div class="term-title"><span>3. Jaminan Tambahan (${proj.collateralAdditionalType || 'Fixed Asset'})</span><span style="color:#0284c7;">Coverage &ge; 120%</span></div>
+                <div class="term-desc">Jaminan tambahan berupa ${proj.collateralAdditionalType || 'Aset Tetap'} diikat ${proj.collateralAdditionalBinding || 'Hak Tanggungan Peringkat I'} minimal 120% (${fmtRp(proj.requestedPlafond * 1.2, true)}) dari nilai jaminan terdaftar (${fmtRp((typeof proj.collateralAdditionalVal === 'number' && proj.collateralAdditionalVal > 0) ? proj.collateralAdditionalVal : (proj.fin23?.fa || 0), true)}) untuk melengkapi Agunan Pokok (${proj.collateralPrimaryType || 'Persediaan Barang'} - ${fmtRp((typeof proj.collateralPrimaryVal === 'number' && proj.collateralPrimaryVal > 0) ? proj.collateralPrimaryVal : (proj.fin23?.inv || 0), true)}).</div>
               </div>
               <div class="term-card">
                 <div class="term-title"><span>4. KMK Backup sebagai Buffer Likuiditas</span><span style="color:#0284c7;">Tranche Bertahap</span></div>
@@ -6166,7 +6241,7 @@ function renderPrintableReport(proj, m) {
                   <td class="num-col"><strong>${m.der23.toFixed(2)}x</strong></td>
                   <td>&le; 2.50x (Batas Solvabilitas Sehat)</td>
                   <td style="color:${m.der23 <= 2.5 ? '#166534' : '#dc2626'}; font-weight:700;">
-                    ${m.der23 <= 2.5 ? '&#10003; Memenuhi RAC' : '&#9888; Deviasi (Leverage Berlebih / Utang Tinggi)'}
+                    ${m.der23 === 0 ? '&#10003; Memenuhi RAC (Bebas Utang)' : (m.der23 <= 2.5 ? '&#10003; Memenuhi RAC' : '&#9888; Deviasi (Leverage Berlebih / Utang Tinggi)')}
                   </td>
                 </tr>
                 <tr>
@@ -6226,7 +6301,7 @@ function renderPrintableReport(proj, m) {
                   <td><strong>3. Capital (20%)</strong></td>
                   <td class="num-col"><strong style="color:${fiveC.capitScore >= 70 ? '#166534' : '#dc2626'};">${fiveC.capitScore} / 100</strong></td>
                   <td>
-                    &bull; Leverage DER: ${m.der23 !== null ? m.der23.toFixed(2) + 'x' : '-'} (${fiveC.capitBreakdown?.derPts ?? 0}/35 Poin)<br/>
+                    &bull; Leverage DER: ${m.der23 !== null ? m.der23.toFixed(2) + 'x' + (m.der23 === 0 ? ' (Bebas Utang)' : '') : '-'} (${fiveC.capitBreakdown?.derPts ?? 0}/35 Poin)<br/>
                     &bull; Current Ratio: ${m.currentRatio23 !== null ? m.currentRatio23.toFixed(2) + 'x' : 'N/A (Bebas Utang)'} (${fiveC.capitBreakdown?.crPts ?? 0}/25 Poin)<br/>
                     &bull; Kecukupan NWC Riil: ${fmtRp(m.nwc23, true)} (${fiveC.capitBreakdown?.nwcPts ?? 0}/20 Poin)<br/>
                     &bull; Ketahanan Ekuitas: ${fmtRp(m.eq23, true)} (${fiveC.capitBreakdown?.eqPts ?? 0}/20 Poin)
@@ -6239,8 +6314,8 @@ function renderPrintableReport(proj, m) {
                   <td><strong>4. Collateral (20%)</strong></td>
                   <td class="num-col"><strong style="color:${fiveC.collScore >= 70 ? '#166534' : '#dc2626'};">${fiveC.collScore} / 100</strong></td>
                   <td>
-                    &bull; Agunan Pokok Persediaan: ${fmtRp(fiveC.invVal, true)} (${fiveC.invRatio.toFixed(0)}% plafond — ${fiveC.collBreakdown?.invPts ?? 0}/50 Poin)<br/>
-                    &bull; Jaminan Tambahan Fixed Assets: ${fmtRp(fiveC.faVal, true)} (${fiveC.faRatio.toFixed(0)}% plafond — ${fiveC.collBreakdown?.faPts ?? 0}/50 Poin)
+                    &bull; Agunan Pokok (${fiveC.primaryTypeLabel || 'Persediaan'}): ${fmtRp(fiveC.invVal, true)} (${fiveC.invRatio.toFixed(0)}% plafond &mdash; ${fiveC.collBreakdown?.invPts ?? 0}/50 Poin)<br/>
+                    &bull; Jaminan Tambahan (${fiveC.additionalTypeLabel || 'Fixed Assets'}): ${fmtRp(fiveC.faVal, true)} (${fiveC.faRatio.toFixed(0)}% plafond &mdash; ${fiveC.collBreakdown?.faPts ?? 0}/50 Poin)
                   </td>
                   <td style="color:${fiveC.collScore >= 70 ? '#166534' : '#d97706'}; font-weight:700;">
                     ${fiveC.collScore >= 80 ? 'Sangat Memadai (HT &ge; 120%)' : (fiveC.collScore >= 60 ? 'Cukup / Standar' : 'Agunan Kurang')}
@@ -6629,8 +6704,77 @@ function populateFormInputs(proj) {
     }
   });
 
+  setVal('inp_collateralPrimaryType', proj.collateralPrimaryType || '');
+  setVal('inp_collateralPrimaryVal', proj.collateralPrimaryVal, true);
+  setVal('inp_collateralPrimaryBinding', proj.collateralPrimaryBinding || '');
+  setVal('inp_collateralPrimaryDesc', proj.collateralPrimaryDesc || '');
+
+  setVal('inp_collateralAdditionalType', proj.collateralAdditionalType || '');
+  setVal('inp_collateralAdditionalVal', proj.collateralAdditionalVal, true);
+  setVal('inp_collateralAdditionalLiquidationVal', proj.collateralAdditionalLiquidationVal, true);
+  setVal('inp_collateralAdditionalBinding', proj.collateralAdditionalBinding || '');
+  setVal('inp_collateralAdditionalDesc', proj.collateralAdditionalDesc || '');
+
   const m = computeDCCSWCM(proj);
   updateFinancialStatementTableComputed(proj, m);
+  updateCollateralCardDisplay(proj);
+}
+
+function updateCollateralCardDisplay(proj) {
+  if (!proj) return;
+  const f23 = proj.fin23 || {};
+  const reqPlafond = proj.requestedPlafond || 1;
+  const hasCustomP = typeof proj.collateralPrimaryVal === 'number' && proj.collateralPrimaryVal > 0;
+  const hasCustomA = typeof proj.collateralAdditionalVal === 'number' && proj.collateralAdditionalVal > 0;
+
+  const pVal = hasCustomP ? proj.collateralPrimaryVal : (f23.inv || 0);
+  const aVal = hasCustomA ? proj.collateralAdditionalVal : (f23.fa || 0);
+
+  const lblInv = document.getElementById('lblExistingInvVal');
+  const lblFa = document.getElementById('lblExistingFaVal');
+  if (lblInv) lblInv.textContent = fmtRp(f23.inv || 0, true);
+  if (lblFa) lblFa.textContent = fmtRp(f23.fa || 0, true);
+
+  const bP = document.getElementById('badgePrimaryCollateralMode');
+  if (bP) {
+    if (hasCustomP) {
+      bP.textContent = '✓ Data Input Khusus';
+      bP.style.background = '#e0f2fe';
+      bP.style.color = '#0369a1';
+    } else {
+      bP.textContent = '⚡ Kondisi Eksisting (Neraca)';
+      bP.style.background = '#f1f5f9';
+      bP.style.color = '#475569';
+    }
+  }
+
+  const bA = document.getElementById('badgeAdditionalCollateralMode');
+  if (bA) {
+    if (hasCustomA) {
+      bA.textContent = '✓ Data Input Khusus';
+      bA.style.background = '#dcfce7';
+      bA.style.color = '#15803d';
+    } else {
+      bA.textContent = '⚡ Kondisi Eksisting (Neraca)';
+      bA.style.background = '#f1f5f9';
+      bA.style.color = '#475569';
+    }
+  }
+
+  const bSummary = document.getElementById('collateralStatusSummaryBadge');
+  if (bSummary) {
+    if (hasCustomP || hasCustomA) {
+      bSummary.innerHTML = `🛡️ Mode Input Agunan: Pokok ${fmtRp(pVal, true)} (${((pVal / reqPlafond) * 100).toFixed(0)}%) &bull; Tambahan ${fmtRp(aVal, true)} (${((aVal / reqPlafond) * 100).toFixed(0)}%)`;
+      bSummary.style.background = '#e0f2fe';
+      bSummary.style.color = '#0369a1';
+      bSummary.style.borderColor = '#bae6fd';
+    } else {
+      bSummary.innerHTML = `⚡ Mode Otomatis: Neraca Eksisting (Persediaan: ${fmtRp(f23.inv || 0, true)} &bull; FA: ${fmtRp(f23.fa || 0, true)})`;
+      bSummary.style.background = '#f0fdf4';
+      bSummary.style.color = '#166534';
+      bSummary.style.borderColor = '#86efac';
+    }
+  }
 }
 
 function updateFinancialStatementTableComputed(proj, m) {
@@ -6812,6 +6956,7 @@ function updateFinancialStatementTableComputed(proj, m) {
       }
     }
   }
+  updateCollateralCardDisplay(proj);
 }
 
 function syncInputsToModel() {
@@ -6878,6 +7023,17 @@ function syncInputsToModel() {
   proj.claimedDOI = getFmtNumOrNull('inp_claimedDOI');
   proj.claimedDOP = getFmtNumOrNull('inp_claimedDOP');
 
+  proj.collateralPrimaryType = getStr('inp_collateralPrimaryType');
+  proj.collateralPrimaryVal = getFmtNumOrNull('inp_collateralPrimaryVal');
+  proj.collateralPrimaryBinding = getStr('inp_collateralPrimaryBinding');
+  proj.collateralPrimaryDesc = getStr('inp_collateralPrimaryDesc');
+
+  proj.collateralAdditionalType = getStr('inp_collateralAdditionalType');
+  proj.collateralAdditionalVal = getFmtNumOrNull('inp_collateralAdditionalVal');
+  proj.collateralAdditionalLiquidationVal = getFmtNumOrNull('inp_collateralAdditionalLiquidationVal');
+  proj.collateralAdditionalBinding = getStr('inp_collateralAdditionalBinding');
+  proj.collateralAdditionalDesc = getStr('inp_collateralAdditionalDesc');
+
   proj.year1 = getPlainNum('inp_year1') || 2022;
   proj.year2 = getPlainNum('inp_year2') || 2023;
 
@@ -6896,6 +7052,7 @@ function syncInputsToModel() {
   saveProjectsToStorage();
   const m = computeDCCSWCM(proj);
   updateFinancialStatementTableComputed(proj, m);
+  updateCollateralCardDisplay(proj);
 
   // Update dynamic year labels
   const y1El = document.getElementById('thLabelYear1');
@@ -6956,6 +7113,35 @@ function setProcurementMethod(method) {
 
   const label = method === 'none' ? 'Tidak Ada Pengiriman Fisik' : (method === 'domestic' ? 'Domestik / Lokal' : 'Impor Luar Negeri / Jalur Laut');
   showToast(`Metode logistik berhasil diset: "${label}" & analisa telah dihitung ulang.`);
+}
+
+function saveCurrentAnalysisGlobal() {
+  const proj = getActiveProject();
+  if (!proj) {
+    showToast('Pilih atau buat berkas analisa terlebih dahulu.');
+    return;
+  }
+  const rNone = document.getElementById('inp_proc_none');
+  const rDomestic = document.getElementById('inp_proc_domestic');
+  const rImport = document.getElementById('inp_proc_import');
+  if (rNone && rNone.checked) {
+    proj.procurementMethod = 'none';
+  } else if (rDomestic && rDomestic.checked) {
+    proj.procurementMethod = 'domestic';
+  } else if (rImport && rImport.checked) {
+    proj.procurementMethod = 'import_sea';
+  }
+  syncInputsToModel();
+  if (inaprocAutoTriggerTimer) {
+    clearTimeout(inaprocAutoTriggerTimer);
+    inaprocAutoTriggerTimer = null;
+  }
+  runAutoInaprocCheckSync(proj, false);
+  runAutoGoogleNewsCheckSync(proj, false);
+  cleanStaleLegacyKeys();
+  saveProjectsToStorage(true);
+  renderAll();
+  showToast(`Seluruh data analisa "${proj.companyName || 'Debitur'}" berhasil disimpan ke Database Cloud.`);
 }
 
 function saveAllInputsAndRecalculate() {
@@ -7243,7 +7429,7 @@ function createNewProjectFromModal() {
   const yr2 = parseInt(document.getElementById('new_year2').value, 10) || 2023;
   const estYearVal = parseInt(document.getElementById('new_estYear')?.value, 10);
   const estYear = estYearVal || (yr2 - 5);
-  const tpl = document.getElementById('new_templateType').value;
+  const tpl = document.getElementById('new_templateType')?.value || 'blank_healthy';
 
   const defaults = getDefaultProjects();
   let baseObj;
@@ -7275,6 +7461,15 @@ function createNewProjectFromModal() {
       claimedDOI: null,
       claimedDOP: null,
       claimedWCTargetDays: null,
+      collateralPrimaryType: '',
+      collateralPrimaryVal: null,
+      collateralPrimaryBinding: '',
+      collateralPrimaryDesc: '',
+      collateralAdditionalType: '',
+      collateralAdditionalVal: null,
+      collateralAdditionalLiquidationVal: null,
+      collateralAdditionalBinding: '',
+      collateralAdditionalDesc: '',
       year1: yr1,
       year2: yr2,
       estYear: estYear,
@@ -7527,6 +7722,8 @@ function renderAll() {
     setTxt('bannerUnderwriter', curSession ? (curSession.fullName || curSession.username) : '-');
     setTxt('bannerScoreCircle', '0');
     setTxt('bannerDecisionText', 'SIAP ANALISA KASUS BARU');
+    const decElReset = document.getElementById('bannerDecisionText');
+    if (decElReset) decElReset.className = 'case-decision-pill decision-pending';
     setTxt('bannerOptimalLimit', 'Rekomendasi: -');
 
     const gradeBadge = document.getElementById('bannerGradeBadge');
@@ -7780,6 +7977,8 @@ async function checkAuthAndRoute() {
     if (navUserEl) navUserEl.textContent = session.username;
     const navRoleEl = document.getElementById('navUserRoleTag');
     if (navRoleEl) navRoleEl.textContent = session.role === 'analyst' ? 'Analis' : session.role;
+    const navUnitEl = document.getElementById('navUserUnit');
+    if (navUnitEl) navUnitEl.textContent = getCleanUnit(session.unit) || 'Divisi Underwriting Komersial';
 
     const searchInput = document.getElementById('searchProjectInput');
     if (searchInput) searchInput.value = '';
@@ -8204,6 +8403,8 @@ function performActualLogout() {
   setTxt('bannerUnderwriter', '-');
   setTxt('bannerScoreCircle', '0');
   setTxt('bannerDecisionText', '-');
+  const decElLogout = document.getElementById('bannerDecisionText');
+  if (decElLogout) decElLogout.className = 'case-decision-pill decision-pending';
   setTxt('bannerOptimalLimit', 'Rekomendasi: -');
 
   showToast('Sampai jumpa, ' + name + '. Sesi telah diakhiri.');
@@ -8556,6 +8757,8 @@ async function saveEditUserFromModal() {
 
     const navUserEl = document.getElementById('navUserName');
     if (navUserEl) navUserEl.textContent = newUname;
+    const navUnitEl = document.getElementById('navUserUnit');
+    if (navUnitEl) navUnitEl.textContent = getCleanUnit(newUnit) || 'Divisi Underwriting Komersial';
     const adminUnameEl = document.getElementById('adminSessionUserName');
     if (adminUnameEl) adminUnameEl.textContent = newUname;
   }
@@ -8669,6 +8872,232 @@ async function confirmDeleteUser(username) {
     showToast(`Pengguna "${username}" telah dihapus dari server cloud.`);
   } catch (err) {
     alert('Gagal menghapus pengguna dari server: ' + err.message);
+  }
+}
+
+// ============================================================================
+// 14. PENGATURAN AKUN PENGGUNA & GANTI KATA SANDI MANDIRI
+// ============================================================================
+function toggleUserDropdownMenu(event) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  const menu = document.getElementById('userDropdownMenu');
+  const btn = document.getElementById('navUserSessionPill');
+  const caret = document.getElementById('userMenuCaret');
+  if (!menu) return;
+
+  const isOpen = menu.style.display === 'block';
+  if (isOpen) {
+    closeUserDropdownMenu();
+  } else {
+    const sess = getActiveSession();
+    const fullNameEl = document.getElementById('dropdownUserFullName');
+    const unameEl = document.getElementById('dropdownUsername');
+    const unitEl = document.getElementById('dropdownUserUnit');
+    const adminLink = document.getElementById('dropdownAdminLinkContainer');
+
+    if (fullNameEl) fullNameEl.textContent = sess?.fullName || sess?.username || 'Pengguna ASCA';
+    if (unameEl) unameEl.textContent = sess?.username || '-';
+    if (unitEl) unitEl.textContent = getCleanUnit(sess?.unit) || 'Divisi Underwriting Komersial';
+    if (adminLink) adminLink.style.display = sess?.role === 'admin' ? 'block' : 'none';
+
+    menu.style.display = 'block';
+    if (btn) btn.setAttribute('aria-expanded', 'true');
+    if (caret) caret.style.transform = 'rotate(180deg)';
+  }
+}
+
+function closeUserDropdownMenu() {
+  const menu = document.getElementById('userDropdownMenu');
+  const btn = document.getElementById('navUserSessionPill');
+  const caret = document.getElementById('userMenuCaret');
+  if (menu) menu.style.display = 'none';
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+  if (caret) caret.style.transform = 'rotate(0deg)';
+}
+
+function switchToAdminConsole() {
+  closeUserDropdownMenu();
+  const appTopNavbar = document.getElementById('appTopNavbar');
+  const appLayoutContainer = document.getElementById('appLayoutContainer');
+  const adminLayoutContainer = document.getElementById('adminLayoutContainer');
+  if (appTopNavbar) appTopNavbar.style.display = 'none';
+  if (appLayoutContainer) appLayoutContainer.style.display = 'none';
+  if (adminLayoutContainer) adminLayoutContainer.style.display = 'flex';
+  renderAdminUserManagement();
+}
+
+// Tutup dropdown menu bila user klik di luar area profil
+document.addEventListener('click', function(e) {
+  const wrapper = document.getElementById('userMenuWrapper');
+  if (wrapper && !wrapper.contains(e.target)) {
+    closeUserDropdownMenu();
+  }
+});
+
+function openUserSettingsModal() {
+  closeUserDropdownMenu();
+  const modal = document.getElementById('modalUserSettings');
+  if (!modal) return;
+
+  // Reset form inputs & password masking
+  const curInp = document.getElementById('inp_currentPassword');
+  const newInp = document.getElementById('inp_newPassword');
+  const cnfInp = document.getElementById('inp_confirmNewPassword');
+  if (curInp) { curInp.value = ''; curInp.type = 'password'; }
+  if (newInp) { newInp.value = ''; newInp.type = 'password'; }
+  if (cnfInp) { cnfInp.value = ''; cnfInp.type = 'password'; }
+
+  // Reset toggle buttons to default eye icon
+  modal.querySelectorAll('.login-toggle-pwd').forEach(btn => {
+    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
+    btn.title = 'Tampilkan Password';
+  });
+
+  const alertBox = document.getElementById('settingsAlertBox');
+  if (alertBox) alertBox.style.display = 'none';
+
+  const sess = getActiveSession();
+  const fName = document.getElementById('settingsFullNameDisplay');
+  const uName = document.getElementById('settingsUsernameDisplay');
+  const uUnit = document.getElementById('settingsUnitDisplay');
+  const rBadge = document.getElementById('settingsRoleBadge');
+
+  if (fName) fName.textContent = sess?.fullName || sess?.username || 'Analis Kredit';
+  if (uName) uName.textContent = sess?.username || '-';
+  if (uUnit) uUnit.textContent = getCleanUnit(sess?.unit) || 'Divisi Underwriting Komersial';
+  if (rBadge) rBadge.textContent = sess?.role === 'analyst' ? 'Analis' : (sess?.role || 'User');
+
+  modal.classList.add('open');
+}
+
+function closeUserSettingsModal() {
+  const modal = document.getElementById('modalUserSettings');
+  if (modal) modal.classList.remove('open');
+}
+
+async function handleSelfPasswordSubmit(event) {
+  if (event) event.preventDefault();
+  const sess = getActiveSession();
+  if (!sess || !sess.username) {
+    showToast('Sesi Anda telah berakhir, silakan login kembali.');
+    return;
+  }
+
+  const curInp = document.getElementById('inp_currentPassword');
+  const newInp = document.getElementById('inp_newPassword');
+  const cnfInp = document.getElementById('inp_confirmNewPassword');
+  const alertBox = document.getElementById('settingsAlertBox');
+  const alertMsg = document.getElementById('settingsAlertMsg');
+  const btnSave = document.getElementById('btnSaveSelfPassword');
+
+  const curPwd = (curInp?.value || '').trim();
+  const newPwd = (newInp?.value || '').trim();
+  const cnfPwd = (cnfInp?.value || '').trim();
+
+  const showErr = (msg) => {
+    if (alertBox && alertMsg) {
+      alertBox.style.display = 'flex';
+      alertMsg.textContent = msg;
+    }
+  };
+
+  if (!curPwd) {
+    showErr('Harap masukkan password awal / saat ini!');
+    if (curInp) curInp.focus();
+    return;
+  }
+  if (!newPwd) {
+    showErr('Password baru tidak boleh kosong!');
+    if (newInp) newInp.focus();
+    return;
+  }
+  if (newPwd.length < 4) {
+    showErr('Password baru minimal 4 karakter!');
+    if (newInp) newInp.focus();
+    return;
+  }
+  if (newPwd !== cnfPwd) {
+    showErr('Konfirmasi password tidak cocok dengan password baru!');
+    if (cnfInp) cnfInp.focus();
+    return;
+  }
+  if (newPwd === curPwd) {
+    showErr('Password baru tidak boleh sama dengan password awal / lama!');
+    if (newInp) newInp.focus();
+    return;
+  }
+
+  if (alertBox) alertBox.style.display = 'none';
+  if (btnSave) {
+    btnSave.disabled = true;
+    btnSave.innerHTML = '<span>Memverifikasi &amp; Menyimpan...</span>';
+  }
+
+  try {
+    // 1. Verifikasi kecocokan password awal/saat ini
+    let userRecord = null;
+    try {
+      const res = await supabaseFetch(`users?username=eq.${encodeURIComponent(sess.username)}&select=*`);
+      if (Array.isArray(res) && res.length > 0) {
+        userRecord = res[0];
+      }
+    } catch (e) {
+      console.warn('Gagal fetch user dari cloud, gunakan data lokal:', e);
+    }
+
+    if (!userRecord) {
+      const localUsers = getUsersFromStorage();
+      userRecord = localUsers.find(u => u.username.toLowerCase() === sess.username.toLowerCase());
+    }
+
+    if (!userRecord || String(userRecord.password) !== curPwd) {
+      showErr('Password awal / saat ini yang Anda masukkan salah!');
+      if (curInp) {
+        curInp.focus();
+        curInp.select();
+      }
+      if (btnSave) {
+        btnSave.disabled = false;
+        btnSave.innerHTML = '<span>Simpan Kata Sandi</span>';
+      }
+      return;
+    }
+
+    // 2. Simpan kata sandi baru ke Supabase Cloud
+    let cloudSaved = false;
+    try {
+      await supabaseFetch(`users?username=eq.${encodeURIComponent(sess.username)}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ password: newPwd })
+      });
+      cloudSaved = true;
+    } catch (errCloud) {
+      console.warn('Simpan password ke Supabase cloud gagal/offline, update lokal cache:', errCloud);
+    }
+
+    // 3. Simpan kata sandi baru ke Local Storage Users
+    const localUsers = getUsersFromStorage();
+    const idx = localUsers.findIndex(u => u.username.toLowerCase() === sess.username.toLowerCase());
+    if (idx !== -1) {
+      localUsers[idx].password = newPwd;
+      saveUsersToStorage(localUsers);
+    }
+
+    closeUserSettingsModal();
+    showToast(`Kata sandi akun "${sess.username}" berhasil diperbarui.`);
+  } catch (err) {
+    showErr('Gagal memperbarui kata sandi: ' + err.message);
+  } finally {
+    if (btnSave) {
+      btnSave.disabled = false;
+      btnSave.innerHTML = `
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        <span>Simpan Kata Sandi</span>
+      `;
+    }
   }
 }
 
@@ -9287,5 +9716,66 @@ function applyExtractedFinDataToForm() {
   syncInputsToModel();
   closeAiFinUploadModal();
 
+  // Pastikan Bagian D terbuka agar data ekstraksi langsung terlihat
+  toggleInputSection('secD', true);
+
   showToast(`🎉 Laporan Keuangan Th ${y1} & ${y2} berhasil diekstrak dan diterapkan!`);
+}
+
+// ============================================================================
+// FITUR HIDE & SEE (COLLAPSIBLE) BAGIAN INPUT DATA (A, B, C, D)
+// ============================================================================
+const INPUT_SECTIONS_STATE = {
+  secA: true, // true = terbuka (tampil), false = tertutup (sembunyi)
+  secB: true,
+  secC: true,
+  secD: true
+};
+
+function handleCardHeaderToggle(secId, event) {
+  if (event && event.target && event.target.closest('button, input, select, textarea, label, a, datalist')) {
+    return;
+  }
+  toggleInputSection(secId);
+}
+
+function toggleInputSection(secId, forceState) {
+  const cardMap = {
+    secA: { card: 'cardInputSecA', body: 'bodyInputSecA', btn: 'btnToggleSecA', lbl: 'lblToggleSecA' },
+    secB: { card: 'cardInputSecB', body: 'bodyInputSecB', btn: 'btnToggleSecB', lbl: 'lblToggleSecB' },
+    secC: { card: 'cardCollateralInput', body: 'bodyInputSecC', btn: 'btnToggleSecC', lbl: 'lblToggleSecC' },
+    secD: { card: 'cardInputSecD', body: 'bodyInputSecD', btn: 'btnToggleSecD', lbl: 'lblToggleSecD' }
+  };
+
+  const item = cardMap[secId];
+  if (!item) return;
+
+  const cardEl = document.getElementById(item.card);
+  const bodyEl = document.getElementById(item.body);
+  const btnEl = document.getElementById(item.btn);
+  const lblEl = document.getElementById(item.lbl);
+
+  if (!cardEl || !bodyEl) return;
+
+  const currentState = INPUT_SECTIONS_STATE[secId] !== false;
+  const newState = forceState !== undefined ? forceState : !currentState;
+  INPUT_SECTIONS_STATE[secId] = newState;
+
+  if (newState) {
+    bodyEl.style.display = '';
+    cardEl.classList.remove('is-collapsed');
+    if (btnEl) btnEl.setAttribute('aria-expanded', 'true');
+    if (lblEl) lblEl.textContent = 'Sembunyikan';
+  } else {
+    bodyEl.style.display = 'none';
+    cardEl.classList.add('is-collapsed');
+    if (btnEl) btnEl.setAttribute('aria-expanded', 'false');
+    if (lblEl) lblEl.textContent = 'Tampilkan';
+  }
+}
+
+function toggleAllInputSections(openAll) {
+  ['secA', 'secB', 'secC', 'secD'].forEach(secId => {
+    toggleInputSection(secId, openAll);
+  });
 }

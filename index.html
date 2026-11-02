@@ -150,7 +150,11 @@
 
       <div class="brand-titles">
         <h1>
-          Askrindo Smart Credit Analysis (ASCA)
+          <span>Askrindo Smart Credit Analysis (ASCA)</span>
+          <span class="app-version-badge" id="appVersionBadge" title="ASCA - Versi 1.0 (Produksi)">
+            <span class="app-version-dot" aria-hidden="true"></span>
+            <span>Versi 1.0</span>
+          </span>
         </h1>
         <p>Platform Analisa Kredit berbasis Artificial Intelligence dengan Metode DCC-SWCM</p>
       </div>
@@ -161,14 +165,48 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         <span>Beranda</span>
       </button>
-      <div class="user-session-pill" id="navUserSessionPill" title="Sesi Analis Aktif">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <strong id="navUserName">1922</strong>
-        <span class="user-role-tag" id="navUserRoleTag">Analis</span>
+      <div class="user-unit-pill" id="navUserUnitPill" title="Unit Kerja / Divisi Pengguna" style="display:inline-flex; align-items:center; gap:0.35rem; background:rgba(255, 255, 255, 0.12); border:1px solid rgba(255, 255, 255, 0.25); padding:0.2rem 0.6rem; border-radius:20px; font-size:0.72rem; color:#e0f2fe; white-space:nowrap;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2" style="flex-shrink:0;"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+        <span id="navUserUnit">Divisi Underwriting Komersial</span>
+      </div>
+      <div class="user-menu-wrapper" id="userMenuWrapper" style="position:relative; display:inline-block;">
+        <button type="button" class="user-session-pill btn-user-menu" id="navUserSessionPill" onclick="toggleUserDropdownMenu(event)" title="Klik untuk menu akun &amp; pengaturan kata sandi" aria-expanded="false" style="cursor:pointer; outline:none; border:1px solid rgba(255,255,255,0.3); transition:all 0.15s ease;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <strong id="navUserName">1922</strong>
+          <span class="user-role-tag" id="navUserRoleTag">Analis</span>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-left:2px; transition:transform 0.2s;" id="userMenuCaret"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+
+        <!-- DROPDOWN MENU PENGATURAN AKUN -->
+        <div class="user-dropdown-menu" id="userDropdownMenu" style="display:none; position:absolute; right:0; top:calc(100% + 6px); background:#ffffff; color:#0f172a; border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 10px 25px -5px rgba(0,0,0,0.2), 0 8px 10px -6px rgba(0,0,0,0.1); width:235px; z-index:9999; overflow:hidden; font-size:0.75rem; text-align:left;">
+          <!-- User Info Banner in Dropdown -->
+          <div style="background:#f8fafc; padding:0.6rem 0.8rem; border-bottom:1px solid #e2e8f0;">
+            <div style="font-weight:700; color:var(--askrindo-navy); font-size:0.8rem;" id="dropdownUserFullName">Analis Kredit</div>
+            <div style="font-size:0.68rem; color:#64748b; margin-top:2px;">User ID: <strong id="dropdownUsername">1922</strong></div>
+            <div style="font-size:0.65rem; color:#0284c7; margin-top:1px;" id="dropdownUserUnit">Divisi Underwriting Komersial</div>
+          </div>
+
+          <!-- Dropdown Action Items -->
+          <div style="padding:0.35rem 0;">
+            <button type="button" class="user-dropdown-item" onclick="openUserSettingsModal()" style="width:100%; display:flex; align-items:center; gap:0.55rem; padding:0.55rem 0.85rem; border:none; background:transparent; color:#1e293b; font-size:0.76rem; font-weight:600; cursor:pointer; text-align:left; transition:background 0.12s;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              <span>Pengaturan &amp; Ganti Password</span>
+            </button>
+            <div id="dropdownAdminLinkContainer" style="display:none;">
+              <button type="button" class="user-dropdown-item" onclick="switchToAdminConsole()" style="width:100%; display:flex; align-items:center; gap:0.55rem; padding:0.55rem 0.85rem; border:none; background:transparent; color:#1e293b; font-size:0.76rem; font-weight:600; cursor:pointer; text-align:left; transition:background 0.12s;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <span>Panel Manajemen Pengguna</span>
+              </button>
+            </div>
+            <div style="margin:0.25rem 0; border-top:1px solid #f1f5f9;"></div>
+            <button type="button" class="user-dropdown-item" onclick="closeUserDropdownMenu(); logoutSession();" style="width:100%; display:flex; align-items:center; gap:0.55rem; padding:0.55rem 0.85rem; border:none; background:transparent; color:#dc2626; font-size:0.76rem; font-weight:600; cursor:pointer; text-align:left; transition:background 0.12s;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              <span>Keluar dari Akun</span>
+            </button>
+          </div>
+        </div>
       </div>
       <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="importWorkspaceJSON(event)" />
-      <button class="btn-logout" onclick="logoutSession()" title="Keluar dari akun ASCA"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> Keluar
-      </button>
     </div>
   </header>
 
@@ -222,23 +260,17 @@
 
       <!-- WORKSPACE LEMBAR ANALISA KASUS AKTIF -->
       <div id="projectWorkspaceView" class="project-workspace-view">
-        <div class="workspace-top-bar no-print" style="margin-bottom:0.45rem; display:flex; justify-content:space-between; align-items:center;">
-          <button class="btn btn-outline btn-sm" onclick="showWelcomeHub()" style="display:flex; align-items:center; gap:0.35rem; font-weight:600; color:var(--askrindo-navy);">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-            <span>Kembali ke Beranda</span>
-          </button>
-          <span style="font-size:0.72rem; color:var(--text-muted);">Mode Analisa Kasus Aktif</span>
-        </div>
-
         <!-- CASE BANNER -->
         <div class="case-banner">
           <div class="case-title-area">
-            <h2>
-              <span id="bannerCompanyName">-</span>
-              <span id="bannerGradeBadge" class="grade-badge grade-BB" style="cursor:pointer;" onclick="switchTab('tab-grade')" title="Klik untuk melihat Penentuan Grade Risk & Indikator Penyebab">-</span>
-              <span id="bannerCoverageBadge" class="cover-badge cover-conditional" style="display:none; cursor:pointer;" onclick="switchTab('tab-mitigasi')" title="Klik untuk melihat Rekomendasi Porsi Coverage Asuransi Kredit Askrindo">-</span>
-              <span id="bannerFacilityType" style="font-size:0.68rem; background:#e0f2fe; color:#0369a1; padding:2px 7px; border-radius:99px; font-weight:600;">-</span>
-            </h2>
+            <div class="case-header-main">
+              <h2 class="case-company-name" id="bannerCompanyName">-</h2>
+              <div class="case-badges-strip">
+                <span id="bannerGradeBadge" class="grade-badge grade-BB" style="cursor:pointer;" onclick="switchTab('tab-grade')" title="Klik untuk melihat Penentuan Grade Risk &amp; Indikator Penyebab">-</span>
+                <span id="bannerCoverageBadge" class="cover-badge cover-conditional" style="display:none; cursor:pointer;" onclick="switchTab('tab-mitigasi')" title="Klik untuk melihat Rekomendasi Porsi Coverage Asuransi Kredit Askrindo">-</span>
+                <span id="bannerFacilityType" class="badge-facility-type">-</span>
+              </div>
+            </div>
             <div class="case-submeta">
               <span><strong>Bank:</strong> <span id="bannerBankName">-</span></span>
               <span><strong>Sektor:</strong> <span id="bannerSector">-</span></span>
@@ -246,23 +278,30 @@
               <span><strong>Plafond:</strong> <span id="bannerPlafond">-</span></span>
               <span><strong>Lap. Keu:</strong> <span id="bannerFinYears">2022 &amp; 2023</span></span>
               <span><strong>Underwriter:</strong> <span id="bannerUnderwriter">-</span></span>
+              <span><strong>Unit / Divisi:</strong> <span id="bannerUnit">-</span></span>
             </div>
           </div>
 
-        <div class="case-quick-score">
-          <div id="bannerScoreCircle" class="score-circle" onclick="switchTab('tab-score')" title="Klik untuk melihat Rincian Perhitungan Score DCC-SWCM">0</div>
-          <div>
-            <div style="font-size:0.64rem; text-transform:uppercase; color:var(--text-muted); font-weight:700; display:flex; gap:0.4rem; align-items:center;">
-              <span>Skor DCC-SWCM</span>
-              <a href="javascript:void(0)" onclick="switchTab('tab-5c')" style="color:var(--askrindo-blue); text-decoration:underline; font-size:0.62rem;">[Analisa 5C]</a>
-              <a href="javascript:void(0)" onclick="switchTab('tab-score')" style="color:var(--askrindo-blue); text-decoration:underline; font-size:0.62rem;">[Rincian Skor]</a>
-              <a href="javascript:void(0)" onclick="switchTab('tab-grade')" style="color:var(--askrindo-blue); text-decoration:underline; font-size:0.62rem;">[Indikator Grade]</a>
+          <div class="case-banner-actions">
+            <div class="case-quick-score">
+              <div id="bannerScoreCircle" class="score-circle" onclick="switchTab('tab-score')" title="Klik untuk melihat Rincian Perhitungan Score DCC-SWCM">0</div>
+              <div class="case-score-details">
+                <div class="case-score-nav-links">
+                  <span class="score-title-label">Skor DCC-SWCM</span>
+                  <a href="javascript:void(0)" onclick="switchTab('tab-5c')" style="color:var(--askrindo-blue); text-decoration:underline; font-size:0.62rem;">[Analisa 5C]</a>
+                  <a href="javascript:void(0)" onclick="switchTab('tab-score')" style="color:var(--askrindo-blue); text-decoration:underline; font-size:0.62rem;">[Rincian Skor]</a>
+                  <a href="javascript:void(0)" onclick="switchTab('tab-grade')" style="color:var(--askrindo-blue); text-decoration:underline; font-size:0.62rem;">[Indikator Grade]</a>
+                </div>
+                <div id="bannerDecisionText" class="case-decision-pill">-</div>
+                <div id="bannerOptimalLimit" class="case-optimal-limit">Rekomendasi Coverage: -</div>
+              </div>
             </div>
-            <div id="bannerDecisionText" style="font-size:0.8rem; font-weight:800; color:var(--askrindo-navy);">-</div>
-            <div id="bannerOptimalLimit" style="font-size:0.66rem; color:var(--text-muted);">Rekomendasi Coverage: -</div>
+            <button type="button" class="btn btn-primary btn-save-analysis-global" id="btnSaveAnalysisGlobal" onclick="saveCurrentAnalysisGlobal()" title="Simpan seluruh berkas analisa ini ke Database Cloud" style="display:inline-flex; align-items:center; gap:0.4rem; padding:0.52rem 1.15rem; font-size:0.82rem; font-weight:800; background:linear-gradient(135deg, #0284c7 0%, #003366 100%); color:#ffffff; border:none; border-radius:7px; box-shadow:0 3px 10px rgba(0, 51, 102, 0.25); cursor:pointer; transition:all 0.2s cubic-bezier(0.4, 0, 0.2, 1); white-space:nowrap;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              <span>Simpan</span>
+            </button>
           </div>
         </div>
-      </div>
 
       <!-- NAVIGATION TABS -->
       <nav class="nav-tabs no-print">
@@ -390,17 +429,33 @@
             <div style="font-size:0.88rem; font-weight:800; color:var(--askrindo-navy);">Formulir Penginputan Data Kasus Analisa Kredit</div>
             <div style="font-size:0.74rem; color:var(--text-muted);">Setiap perubahan tersimpan otomatis secara real-time. Klik tombol simpan untuk memastikan rekalkulasi seluruh model analisa diperbarui.</div>
           </div>
-          <button type="button" class="btn btn-primary" onclick="saveAllInputsAndRecalculate()" style="display:flex; align-items:center; gap:0.4rem; padding:0.45rem 1.1rem; font-size:0.82rem; font-weight:700;">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-            Simpan Perubahan &amp; Hitung Ulang Analisa
-          </button>
+          <div style="display:flex; align-items:center; gap:0.45rem; flex-wrap:wrap;">
+            <button type="button" class="btn-outline-input-control" onclick="toggleAllInputSections(false)" title="Tutup / Sembunyikan Semua Bagian Input Data (A, B, C, D)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="18 15 12 9 6 15"/></svg>
+              <span>Tutup Semua</span>
+            </button>
+            <button type="button" class="btn-outline-input-control" onclick="toggleAllInputSections(true)" title="Buka / Tampilkan Semua Bagian Input Data (A, B, C, D)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg>
+              <span>Buka Semua</span>
+            </button>
+            <button type="button" class="btn btn-primary" onclick="saveAllInputsAndRecalculate()" style="display:flex; align-items:center; gap:0.4rem; padding:0.45rem 1.1rem; font-size:0.82rem; font-weight:700;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Simpan Perubahan &amp; Hitung Ulang Analisa
+            </button>
+          </div>
         </div>
-        <div class="grid-2">
-          <div class="card">
-            <div class="card-header">
-              <div class="card-title">A. Profil Debitur &amp; Struktur Fasilitas Kredit</div>
+
+        <!-- CARD A -->
+        <div class="card" id="cardInputSecA">
+            <div class="card-header card-header-collapsible" onclick="handleCardHeaderToggle('secA', event)" title="Klik untuk Sembunyikan / Tampilkan Bagian A" style="display:flex; justify-content:space-between; align-items:center;">
+              <div class="card-title" style="margin:0;">🏢 A. Profil Debitur &amp; Struktur Fasilitas Kredit</div>
+              <button type="button" class="btn-card-toggle" id="btnToggleSecA" onclick="event.stopPropagation(); toggleInputSection('secA');" aria-label="Toggle Bagian A" title="Sembunyikan / Tampilkan">
+                <span class="toggle-label" id="lblToggleSecA">Sembunyikan</span>
+                <svg class="toggle-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
             </div>
-            <div class="form-grid">
+            <div class="card-body-collapsible" id="bodyInputSecA">
+              <div class="form-grid">
               <div class="form-group full">
                 <label>Nama Perusahaan / Debitur</label>
                 <input type="text" id="inp_companyName" class="form-control" oninput="syncInputsToModel()" />
@@ -411,7 +466,7 @@
               </div>
               <div class="form-group">
                 <label>Sektor Industri</label>
-                <input type="text" id="inp_sector" list="list_sectors" class="form-control" oninput="syncInputsToModel()" />
+                <input type="text" id="inp_sector" list="list_sectors" class="form-control" placeholder="Pilih atau cari sektor / KBLI 2025..." oninput="syncInputsToModel()" />
               </div>
               <div class="form-group">
                 <label>Tahun Berdiri</label>
@@ -458,13 +513,20 @@
                 <input type="text" id="inp_underwriter" class="form-control" oninput="syncInputsToModel()" />
               </div>
             </div>
+            </div>
           </div>
 
-          <div class="card">
-            <div class="card-header">
-              <div class="card-title">B. Rantai Pasok, Logistik &amp; Rasio Aktivitas Data Bank</div>
+          <!-- CARD B -->
+          <div class="card" style="margin-top:0.85rem;" id="cardInputSecB">
+            <div class="card-header card-header-collapsible" onclick="handleCardHeaderToggle('secB', event)" title="Klik untuk Sembunyikan / Tampilkan Bagian B" style="display:flex; justify-content:space-between; align-items:center;">
+              <div class="card-title" style="margin:0;">🚚 B. Rantai Pasok, Logistik &amp; Rasio Aktivitas Data Bank</div>
+              <button type="button" class="btn-card-toggle" id="btnToggleSecB" onclick="event.stopPropagation(); toggleInputSection('secB');" aria-label="Toggle Bagian B" title="Sembunyikan / Tampilkan">
+                <span class="toggle-label" id="lblToggleSecB">Sembunyikan</span>
+                <svg class="toggle-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
             </div>
-            <div class="form-grid">
+            <div class="card-body-collapsible" id="bodyInputSecB">
+              <div class="form-grid">
               <div class="form-group full">
                 <label>Deskripsi Tujuan Penggunaan Fasilitas &amp; Rantai Pasok Bisnis</label>
                 <textarea id="inp_businessDesc" class="form-control" style="min-height:74px;" oninput="syncInputsToModel()"></textarea>
@@ -510,35 +572,188 @@
                 </div>
               </div>
             </div>
+            </div>
+          </div>
+
+        <!-- CARD C: INFORMASI AGUNAN POKOK & JAMINAN TAMBAHAN (COLLATERAL) -->
+        <div class="card" style="margin-top:0.85rem;" id="cardCollateralInput">
+          <div class="card-header card-header-collapsible" onclick="handleCardHeaderToggle('secC', event)" title="Klik untuk Sembunyikan / Tampilkan Bagian C" style="flex-wrap:wrap; gap:0.5rem; justify-content:space-between; align-items:center;">
+            <div style="flex:1; min-width:280px;">
+              <div class="card-title" style="display:flex; align-items:center; gap:0.45rem;">
+                <span>🛡️ C. Informasi Agunan Pokok &amp; Jaminan Tambahan (Collateral)</span>
+                <span class="badge" style="background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; font-size:0.65rem; padding:2px 7px;">
+                  Opsional / Fleksibel
+                </span>
+              </div>
+              <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">
+                Input rincian penilaian agunan kredit. <strong>Bila tidak terisi, sistem otomatis menghitung nilai agunan berdasarkan kondisi eksisting neraca (Persediaan Barang &amp; Aktiva Tetap).</strong>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+              <div id="collateralStatusSummaryBadge" style="font-size:0.7rem; font-weight:700; padding:3px 10px; border-radius:999px; background:#f0fdf4; color:#166534; border:1px solid #86efac;">
+                ⚡ Mode Otomatis: Kondisi Eksisting Neraca
+              </div>
+              <button type="button" class="btn-card-toggle" id="btnToggleSecC" onclick="event.stopPropagation(); toggleInputSection('secC');" aria-label="Toggle Bagian C" title="Sembunyikan / Tampilkan">
+                <span class="toggle-label" id="lblToggleSecC">Sembunyikan</span>
+                <svg class="toggle-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="card-body-collapsible" id="bodyInputSecC">
+
+          <div class="grid-2" style="gap:1rem;">
+            <!-- SUB-CARD 1: AGUNAN POKOK (PRIMARY COLLATERAL) -->
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:0.85rem;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.6rem; padding-bottom:0.4rem; border-bottom:1.5px solid #0284c7;">
+                <div style="font-weight:800; font-size:0.82rem; color:#0369a1; display:flex; align-items:center; gap:0.35rem;">
+                  <span>📦 1. Agunan Pokok (Primary Collateral)</span>
+                </div>
+                <span id="badgePrimaryCollateralMode" style="font-size:0.63rem; font-weight:700; padding:2px 6px; border-radius:4px; background:#f1f5f9; color:#475569;">
+                  ⚡ Kondisi Eksisting (Neraca)
+                </span>
+              </div>
+
+              <div class="form-grid">
+                <div class="form-group full">
+                  <label>Jenis / Objek Agunan Pokok</label>
+                  <input type="text" id="inp_collateralPrimaryType" list="list_collateral_primary_types" class="form-control" placeholder="Pilih / ketik jenis agunan pokok (default: Persediaan Barang)..." oninput="syncInputsToModel()" />
+                  <datalist id="list_collateral_primary_types">
+                    <option value="Persediaan Barang Dagang (Inventory)">
+                    <option value="Piutang Usaha / Invoice Tagihan (Accounts Receivable)">
+                    <option value="Resi Gudang / Commodity Warrant (CMA)">
+                    <option value="Kontrak Kerja / Surat Perintah Kerja (SPK)">
+                    <option value="Kas / Deposito / Rekening Khusus Escrow">
+                    <option value="Persediaan Bahan Baku &amp; Barang Jadi">
+                    <option value="Piutang Termin Konstruksi">
+                  </datalist>
+                </div>
+
+                <div class="form-group full">
+                  <label>
+                    Nilai Taksasi / Appraisal Agunan Pokok <span class="unit-hint">(Rp)</span>
+                  </label>
+                  <input type="text" inputmode="numeric" id="inp_collateralPrimaryVal" class="form-control fmt-dots" placeholder="Kosongkan jika memakai Persediaan Neraca (Eksisting)..." oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" />
+                  <div id="hintPrimaryCollateral" style="font-size:0.68rem; color:#64748b; margin-top:3px;">
+                    &bull; Nilai eksisting neraca saat ini: <strong id="lblExistingInvVal">Rp 0</strong> (Persediaan Barang).
+                  </div>
+                </div>
+
+                <div class="form-group full">
+                  <label>Bentuk Pengikatan Agunan Pokok</label>
+                  <input type="text" id="inp_collateralPrimaryBinding" list="list_primary_bindings" class="form-control" placeholder="Pilih / ketik jenis pengikatan (default: Fidusia Persediaan / CMA)..." oninput="syncInputsToModel()" />
+                  <datalist id="list_primary_bindings">
+                    <option value="Fidusia Terdaftar Kemenkumham (Notariil)">
+                    <option value="Cessie Piutang Usaha Notariil &amp; Pemberitahuan ke Bouwheer">
+                    <option value="Resi Gudang / Collateral Management Agreement (CMA)">
+                    <option value="Gadai Bilyet Deposito / Hold Fund Rekening Bank">
+                    <option value="Standing Instruction Escrow Account 100% Cash In">
+                  </datalist>
+                </div>
+
+                <div class="form-group full">
+                  <label>Keterangan, Lokasi &amp; Bukti Dokumen Agunan Pokok</label>
+                  <textarea id="inp_collateralPrimaryDesc" class="form-control" style="min-height:50px;" placeholder="Misal: Gudang penyimpanan Sukoharjo, polis asuransi kerugian barang dagang, dokumen CMA, dsb..." oninput="syncInputsToModel()"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- SUB-CARD 2: JAMINAN TAMBAHAN (ADDITIONAL COLLATERAL) -->
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:0.85rem;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.6rem; padding-bottom:0.4rem; border-bottom:1.5px solid #16a34a;">
+                <div style="font-weight:800; font-size:0.82rem; color:#15803d; display:flex; align-items:center; gap:0.35rem;">
+                  <span>🏢 2. Jaminan Tambahan (Additional Collateral)</span>
+                </div>
+                <span id="badgeAdditionalCollateralMode" style="font-size:0.63rem; font-weight:700; padding:2px 6px; border-radius:4px; background:#f1f5f9; color:#475569;">
+                  ⚡ Kondisi Eksisting (Neraca)
+                </span>
+              </div>
+
+              <div class="form-grid">
+                <div class="form-group full">
+                  <label>Jenis Jaminan Tambahan</label>
+                  <input type="text" id="inp_collateralAdditionalType" list="list_collateral_additional_types" class="form-control" placeholder="Pilih / ketik jenis jaminan tambahan (default: Aset Tetap)..." oninput="syncInputsToModel()" />
+                  <datalist id="list_collateral_additional_types">
+                    <option value="Tanah &amp; Bangunan (SHM / SHGB)">
+                    <option value="Mesin Pabrik / Peralatan Industri">
+                    <option value="Kendaraan Operasional / Truk / Kapal">
+                    <option value="Cash Collateral / Deposito Berjangka">
+                    <option value="Corporate Guarantee / Personal Guarantee (Borgtocht)">
+                    <option value="Tanah Kosong / Lahan Industri Bersertifikat">
+                  </datalist>
+                </div>
+
+                <div class="form-group">
+                  <label>
+                    Nilai Pasar Appraisal <span class="unit-hint">(Rp)</span>
+                  </label>
+                  <input type="text" inputmode="numeric" id="inp_collateralAdditionalVal" class="form-control fmt-dots" placeholder="Kosongkan jika memakai Aktiva Tetap (Eksisting)..." oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" />
+                  <div id="hintAdditionalCollateral" style="font-size:0.68rem; color:#64748b; margin-top:3px;">
+                    &bull; Nilai eksisting neraca saat ini: <strong id="lblExistingFaVal">Rp 0</strong> (Aktiva Tetap).
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>
+                    Nilai Likuidasi <span class="unit-hint">(Rp - Opsional)</span>
+                  </label>
+                  <input type="text" inputmode="numeric" id="inp_collateralAdditionalLiquidationVal" class="form-control fmt-dots" placeholder="Nilai likuidasi cepat..." oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" />
+                </div>
+
+                <div class="form-group full">
+                  <label>Bentuk Pengikatan Jaminan Tambahan</label>
+                  <input type="text" id="inp_collateralAdditionalBinding" list="list_additional_bindings" class="form-control" placeholder="Pilih / ketik jenis pengikatan (default: Hak Tanggungan HT)..." oninput="syncInputsToModel()" />
+                  <datalist id="list_additional_bindings">
+                    <option value="Hak Tanggungan (HT) Peringkat I Notariil">
+                    <option value="Hak Tanggungan (HT) Peringkat II">
+                    <option value="Surat Kuasa Memasang Hak Tanggungan (SKMHT) - APHT">
+                    <option value="Fidusia Notariil Mesin &amp; Kendaraan Terdaftar">
+                    <option value="Blokir Deposito / Bilyet Hold Fund">
+                    <option value="Personal Guarantee (Borgtocht) Notariil Pasangan / Pemegang Saham">
+                  </datalist>
+                </div>
+
+                <div class="form-group full">
+                  <label>Bukti Kepemilikan &amp; Keterangan Sertifikat</label>
+                  <textarea id="inp_collateralAdditionalDesc" class="form-control" style="min-height:50px;" placeholder="Misal: SHM No. 1234/Desa Ngruki Luas 850m² an. Rahmat Santosa, kondisi clean &amp; clear tanpa sengketa..." oninput="syncInputsToModel()"></textarea>
+                </div>
+              </div>
+            </div>
+            </div>
           </div>
         </div>
 
-        <!-- FULL-WIDTH CARD C: TEMPLATE NERACA & LABA RUGI SESUAI SHEET PERHITUNGAN -->
-        <div class="card" style="margin-top:0.85rem;">
-          <div class="card-header" style="flex-wrap:wrap; gap:0.5rem;">
-            <div>
-              <div class="card-title">C. Perhitungan Analisa Keuangan &mdash; Template Neraca &amp; Laba Rugi Audited (dalam Rupiah)</div>
+        <!-- FULL-WIDTH CARD D: TEMPLATE NERACA & LABA RUGI SESUAI SHEET PERHITUNGAN -->
+        <div class="card" style="margin-top:0.85rem;" id="cardInputSecD">
+          <div class="card-header card-header-collapsible" onclick="handleCardHeaderToggle('secD', event)" title="Klik untuk Sembunyikan / Tampilkan Bagian D" style="flex-wrap:wrap; gap:0.5rem; justify-content:space-between; align-items:center;">
+            <div style="flex:1; min-width:300px;">
+              <div class="card-title">📊 D. Perhitungan Analisa Keuangan &mdash; Template Neraca &amp; Laba Rugi Audited (dalam Rupiah)</div>
               <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;">
                 Template standar Neraca (Aktiva &amp; Passiva) serta Laporan Laba Rugi (R/L). Baris subtotal, total, persentase common-size (%), dan pertumbuhan (Growth %) dihitung otomatis secara real-time.
               </div>
             </div>
             <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap;">
-              <button type="button" class="btn btn-primary btn-sm" onclick="openAiFinUploadModal()" style="display:inline-flex; align-items:center; gap:6px; font-weight:700; font-size:0.73rem; background:linear-gradient(135deg, #1e40af 0%, #0284c7 100%); border:none; box-shadow:0 2px 5px rgba(2,132,199,0.3); padding:4px 11px;">
+              <button type="button" class="btn btn-primary btn-sm" onclick="event.stopPropagation(); openAiFinUploadModal();" style="display:inline-flex; align-items:center; gap:6px; font-weight:700; font-size:0.73rem; background:linear-gradient(135deg, #1e40af 0%, #0284c7 100%); border:none; box-shadow:0 2px 5px rgba(2,132,199,0.3); padding:4px 11px;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                 <span>📤 Upload &amp; Pindai Lapkeu (AI OCR)</span>
               </button>
               <div id="finBalanceStatusBadge" style="font-size:0.7rem; font-weight:700; padding:3px 10px; border-radius:999px; background:#dcfce7; color:#166534; border:1px solid #86efac;">
                 &#10003; Neraca Balance (Aktiva = Passiva)
               </div>
-              <div style="display:flex; align-items:center; gap:0.35rem; font-size:0.72rem; background:#f8fafc; padding:3px 8px; border-radius:6px; border:1px solid var(--border-color);">
+              <div style="display:flex; align-items:center; gap:0.35rem; font-size:0.72rem; background:#f8fafc; padding:3px 8px; border-radius:6px; border:1px solid var(--border-color);" onclick="event.stopPropagation()">
                 <span style="color:var(--text-muted); font-weight:600;">Tahun Audited:</span>
                 <input type="number" id="inp_year1" class="form-control" style="width:68px; padding:2px 5px; font-weight:700; text-align:center;" oninput="syncInputsToModel()" title="Tahun Periode 1" />
                 <span>&amp;</span>
                 <input type="number" id="inp_year2" class="form-control" style="width:68px; padding:2px 5px; font-weight:700; text-align:center;" oninput="syncInputsToModel()" title="Tahun Periode 2" />
               </div>
+              <button type="button" class="btn-card-toggle" id="btnToggleSecD" onclick="event.stopPropagation(); toggleInputSection('secD');" aria-label="Toggle Bagian D" title="Sembunyikan / Tampilkan">
+                <span class="toggle-label" id="lblToggleSecD">Sembunyikan</span>
+                <svg class="toggle-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
             </div>
           </div>
-          <div class="table-responsive">
+          <div class="card-body-collapsible" id="bodyInputSecD">
+            <div class="table-responsive">
             <table class="data-table" id="finStatementInputTable">
               <thead>
                 <tr>
@@ -990,16 +1205,7 @@
               </tbody>
             </table>
           </div>
-        </div>
-
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-top:1rem; padding:0.85rem 1.1rem; background:#ffffff; border:1px solid #e2e8f0; border-radius:8px;">
-          <div style="font-size:0.78rem; color:var(--text-muted);">
-            Perubahan metode pengadaan logistik, struktur kredit, dan pos keuangan akan langsung mengkalibrasi Pilar Rasio, 5C, Stress-Test, Rekomendasi, hingga Review Analisa.
           </div>
-          <button type="button" class="btn btn-primary" onclick="saveAllInputsAndRecalculate()" style="display:flex; align-items:center; gap:0.4rem; padding:0.55rem 1.25rem; font-size:0.85rem; font-weight:700;">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-            Simpan Perubahan &amp; Hitung Ulang Analisa
-          </button>
         </div>
       </section>
 
@@ -1472,50 +1678,292 @@
     </div>
   </div>
 
+  <!-- ========================================================= -->
+  <!-- MODAL PENGATURAN AKUN & GANTI PASSWORD MANDIRI -->
+  <!-- ========================================================= -->
+  <div class="modal-backdrop" id="modalUserSettings" onclick="if(event.target === this) closeUserSettingsModal()">
+    <div class="modal-content" style="max-width:440px; border-radius:10px; overflow:hidden; padding:0;">
+      <!-- Modal Header -->
+      <div style="background:var(--askrindo-navy); color:#ffffff; padding:0.85rem 1.1rem; display:flex; justify-content:space-between; align-items:center;">
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <div>
+            <div style="font-weight:800; font-size:0.9rem; line-height:1.2;">Pengaturan Akun &amp; Kata Sandi</div>
+            <div style="font-size:0.68rem; color:#bae6fd;">Perbarui kata sandi profil Anda secara mandiri</div>
+          </div>
+        </div>
+        <button type="button" onclick="closeUserSettingsModal()" style="background:transparent; border:none; color:#ffffff; font-size:1.3rem; line-height:1; cursor:pointer; opacity:0.8;" title="Tutup">&times;</button>
+      </div>
+
+      <!-- Modal Body -->
+      <div style="padding:1rem 1.1rem;">
+        <!-- Profil Pengguna Aktif -->
+        <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:6px; padding:0.65rem 0.8rem; margin-bottom:1rem; font-size:0.75rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
+            <span style="color:#0369a1; font-weight:700;">Profil Pengguna:</span>
+            <span class="user-role-tag" id="settingsRoleBadge">Analis</span>
+          </div>
+          <div style="color:#0f172a; font-weight:700; font-size:0.82rem;" id="settingsFullNameDisplay">-</div>
+          <div style="color:#475569; font-size:0.7rem; margin-top:2px;">
+            Username: <strong id="settingsUsernameDisplay">-</strong> &bull; Unit: <span id="settingsUnitDisplay">-</span>
+          </div>
+        </div>
+
+        <!-- Alert Error Message -->
+        <div id="settingsAlertBox" style="display:none; background:#fef2f2; border:1px solid #fecaca; color:#991b1b; padding:0.55rem 0.75rem; border-radius:6px; font-size:0.73rem; margin-bottom:0.85rem; align-items:center; gap:0.4rem;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span id="settingsAlertMsg"></span>
+        </div>
+
+        <!-- Form Ubah Password -->
+        <form onsubmit="handleSelfPasswordSubmit(event)">
+          <div class="form-grid" style="gap:0.75rem;">
+            <div class="form-group full">
+              <label style="font-weight:700; font-size:0.75rem; color:#1e293b;">
+                Password Awal / Saat Ini <span style="color:#dc2626;">*</span>
+              </label>
+              <div style="position:relative; display:flex; align-items:center;">
+                <input type="password" id="inp_currentPassword" class="form-control" placeholder="Masukkan kata sandi lama Anda..." autocomplete="current-password" required style="padding-right:38px;" />
+                <button type="button" class="login-toggle-pwd" onclick="togglePasswordVisibility('inp_currentPassword', this)" title="Tampilkan Password" style="right:0.65rem;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group full">
+              <label style="font-weight:700; font-size:0.75rem; color:#1e293b;">
+                Password Baru <span style="color:#dc2626;">*</span>
+              </label>
+              <div style="position:relative; display:flex; align-items:center;">
+                <input type="password" id="inp_newPassword" class="form-control" placeholder="Minimal 4 karakter..." autocomplete="new-password" required style="padding-right:38px;" />
+                <button type="button" class="login-toggle-pwd" onclick="togglePasswordVisibility('inp_newPassword', this)" title="Tampilkan Password" style="right:0.65rem;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+              <div style="font-size:0.67rem; color:#64748b; margin-top:2px;">Disarankan memuat kombinasi huruf dan angka untuk keamanan optimal.</div>
+            </div>
+
+            <div class="form-group full">
+              <label style="font-weight:700; font-size:0.75rem; color:#1e293b;">
+                Ulangi Password Baru <span style="color:#dc2626;">*</span>
+              </label>
+              <div style="position:relative; display:flex; align-items:center;">
+                <input type="password" id="inp_confirmNewPassword" class="form-control" placeholder="Ketik ulang password baru Anda..." autocomplete="new-password" required style="padding-right:38px;" />
+                <button type="button" class="login-toggle-pwd" onclick="togglePasswordVisibility('inp_confirmNewPassword', this)" title="Tampilkan Password" style="right:0.65rem;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1.1rem; padding-top:0.8rem; border-top:1px solid #e2e8f0;">
+            <button type="button" class="btn btn-outline" onclick="closeUserSettingsModal()" style="padding:0.42rem 1rem; font-size:0.78rem;">Batal</button>
+            <button type="submit" id="btnSaveSelfPassword" class="btn btn-primary" style="padding:0.42rem 1.15rem; font-size:0.78rem; font-weight:700; display:inline-flex; align-items:center; gap:0.35rem;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              <span>Simpan Kata Sandi</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <!-- MASTER DATALISTS UNTUK DROPDOWN CEPAT & AUTOCOMPLETE (KBLI 2025 BPS) -->
   <datalist id="list_sectors">
+    <!-- 22 KATEGORI UTAMA KBLI 2025 (PERATURAN BPS NO. 7 TAHUN 2025) -->
     <option value="Kategori A: Pertanian, Kehutanan dan Perikanan">
     <option value="Kategori B: Pertambangan dan Penggalian">
-    <option value="Kategori C: Industri Pengolahan (Manufaktur)">
+    <option value="Kategori C: Industri Pengolahan">
     <option value="Kategori D: Pengadaan Listrik, Gas, Uap/Air Panas dan Udara Dingin">
-    <option value="Kategori E: Pengelolaan Air, Pengelolaan Air Limbah, Pengelolaan dan Daur Ulang Sampah, dan Aktivitas Remediasi">
+    <option value="Kategori E: Penyediaan Air, Pengelolaan Air Limbah, Penanganan Limbah dan Remediasi">
     <option value="Kategori F: Konstruksi">
     <option value="Kategori G: Perdagangan Besar dan Eceran; Reparasi dan Perawatan Mobil dan Sepeda Motor">
     <option value="Kategori H: Pengangkutan dan Pergudangan">
     <option value="Kategori I: Penyediaan Akomodasi dan Penyediaan Makan Minum">
-    <option value="Kategori J: Informasi dan Komunikasi">
-    <option value="Kategori K: Aktivitas Keuangan dan Asuransi">
-    <option value="Kategori L: Real Estat">
-    <option value="Kategori M: Aktivitas Profesional, Ilmiah dan Teknis">
-    <option value="Kategori N: Aktivitas Penyewaan dan Sewa Guna Usaha Tanpa Hak Opsi, Ketenagakerjaan, Agen Perjalanan dan Penunjang Usaha Lainnya">
-    <option value="Kategori O: Administrasi Pemerintahan, Pertahanan dan Jaminan Sosial Wajib">
-    <option value="Kategori P: Pendidikan">
-    <option value="Kategori Q: Aktivitas Kesehatan Manusia dan Aktivitas Sosial">
-    <option value="Kategori R: Kesenian, Hiburan dan Rekreasi">
-    <option value="Kategori S: Aktivitas Jasa Lainnya">
-    <option value="Kategori T: Aktivitas Rumah Tangga Sebagai Pemberi Kerja; Aktivitas Menghasilkan Barang dan Jasa oleh Rumah Tangga Sendiri">
+    <option value="Kategori J: Aktivitas Penerbitan, Penyiaran, serta Produksi dan Distribusi Konten">
+    <option value="Kategori K: Aktivitas Telekomunikasi, Pemrograman Komputer, Konsultansi, Infrastruktur Komputasi dan Jasa Informasi Lainnya">
+    <option value="Kategori L: Aktivitas Keuangan dan Asuransi">
+    <option value="Kategori M: Real Estat">
+    <option value="Kategori N: Aktivitas Profesional, Ilmiah dan Teknis">
+    <option value="Kategori O: Aktivitas Penyewaan dan Sewa Guna Usaha Tanpa Hak Opsi, Ketenagakerjaan, Agen Perjalanan dan Penunjang Usaha Lainnya">
+    <option value="Kategori P: Administrasi Pemerintahan, Pertahanan dan Jaminan Sosial Wajib">
+    <option value="Kategori Q: Pendidikan">
+    <option value="Kategori R: Aktivitas Kesehatan Manusia dan Aktivitas Sosial">
+    <option value="Kategori S: Kesenian, Hiburan dan Rekreasi">
+    <option value="Kategori T: Aktivitas Jasa Lainnya">
     <option value="Kategori U: Aktivitas Badan Internasional dan Badan Ekstra Internasional Lainnya">
+    <option value="Kategori V: Aktivitas Rumah Tangga Sebagai Pemberi Kerja; Aktivitas Menghasilkan Barang dan Jasa Sendiri">
+
+    <!-- GOLONGAN POKOK KBLI 2025 (2 DIGIT UNTUK PROFIL DEBITUR ASKRINDO/BANK) -->
+    <option value="01: Pertanian Tanaman, Peternakan, Perburuan dan Kegiatan Jasa Terkait">
+    <option value="02: Pengelolaan Kehutanan dan Pemanenan Kayu">
+    <option value="03: Perikanan dan Budi Daya Perairan (Akuakultur)">
+    <option value="05: Pertambangan Batu Bara dan Lignit">
+    <option value="06: Ekstraksi Minyak Bumi dan Gas Alam">
+    <option value="07: Pertambangan Bijih Logam (Nikel, Bauksit, Tembaga, Emas, Timah)">
+    <option value="08: Pertambangan dan Penggalian Lainnya (Pasir, Batu, Tanah Liat, Mineral Industri)">
+    <option value="09: Aktivitas Jasa Penunjang Pertambangan">
+    <option value="10: Industri Makanan (FMCG, Beras, Minyak Sawit/Goreng, Olahan Pangan)">
+    <option value="11: Industri Minuman">
+    <option value="12: Industri Pengolahan Tembakau / Rokok">
+    <option value="13: Industri Tekstil">
+    <option value="14: Industri Pakaian Jadi (Garmen dan Konveksi)">
+    <option value="15: Industri Kulit, Barang dari Kulit dan Alas Kaki (Sepatu)">
+    <option value="16: Industri Kayu, Barang dari Kayu dan Gabus (Bukan Furnitur)">
+    <option value="17: Industri Kertas dan Barang dari Kertas">
+    <option value="18: Industri Pencetakan dan Reproduksi Media Rekaman">
+    <option value="19: Industri Produk dari Batu Bara dan Pengilangan Minyak Bumi">
+    <option value="20: Industri Bahan Kimia dan Barang Kimia (Pupuk, Polimer, Cat)">
+    <option value="21: Industri Farmasi, Produk Obat Kimia dan Obat Tradisional">
+    <option value="22: Industri Karet, Barang dari Karet dan Plastik">
+    <option value="23: Industri Barang Galian Bukan Logam (Semen, Keramik, Kaca, Beton Siap Pakai)">
+    <option value="24: Industri Logam Dasar (Baja, Besi, Aluminium, Peleburan Logam)">
+    <option value="25: Industri Barang Logam, Bukan Mesin dan Peralatannya">
+    <option value="26: Industri Komputer, Barang Elektronik dan Optik">
+    <option value="27: Industri Peralatan Listrik (Kabel Listrik, Trafo, Panel Listrik, Generator)">
+    <option value="28: Industri Mesin dan Perlengkapan YTDL">
+    <option value="29: Industri Kendaraan Bermotor, Trailer dan Semi Trailer (Otomotif & Karoseri)">
+    <option value="30: Industri Alat Angkutan Lainnya (Galangan Kapal, Kereta Api, Kedirgantaraan)">
+    <option value="31: Industri Furnitur / Mebel">
+    <option value="32: Industri Pengolahan Lainnya">
+    <option value="33: Jasa Reparasi dan Pemasangan Mesin dan Peralatan">
+    <option value="35: Pengadaan Listrik, Gas, Uap/Air Panas dan Udara Dingin (PLTU, PLTS, EBT)">
+    <option value="36: Pengelolaan Air Bersih (PDAM / SPAM)">
+    <option value="37: Pengelolaan Air Limbah">
+    <option value="38: Pengumpulan, Pengolahan dan Pembuangan Sampah / Daur Ulang">
+    <option value="39: Aktivitas Remediasi dan Pengelolaan Limbah Lainnya">
+    <option value="41: Konstruksi Gedung (Hunian, Komersial, Pabrik, Rumah Sakit)">
+    <option value="42: Konstruksi Bangunan Sipil (Jalan Raya, Jembatan, Pelabuhan, Bendungan, Irigasi)">
+    <option value="43: Konstruksi Khusus (Pondasi, Elektrikal, Mekanikal, Finishing Bangunan)">
+    <option value="45: Perdagangan, Reparasi dan Perawatan Mobil dan Sepeda Motor">
+    <option value="46: Perdagangan Besar (Distributor Bahan Pokok, Komoditas, Mesin, Farmasi, Alat Kesehatan)">
+    <option value="47: Perdagangan Eceran (Supermarket, Minimarket, Retail)">
+    <option value="49: Angkutan Darat dan Angkutan Melalui Saluran Pipa (Logistik Truk, Angkutan Penumpang)">
+    <option value="50: Angkutan Perairan (Pelayaran Laut, Tongkang, Kapal Kargo Logistik)">
+    <option value="51: Angkutan Udara (Kargo Udara & Maskapai)">
+    <option value="52: Pergudangan dan Aktivitas Penunjang Angkutan (Cold Storage, Freight Forwarding, EMKL)">
+    <option value="53: Aktivitas Pos dan Kurir / Ekspedisi Logistik">
+    <option value="55: Penyediaan Akomodasi (Hotel, Resor, Penginapan)">
+    <option value="56: Penyediaan Makanan dan Minuman (Restoran, Kafe, Katering Komersial)">
+    <option value="58: Aktivitas Penerbitan (Buku, Piranti Lunak/Software Digital)">
+    <option value="59: Aktivitas Produksi Gambar Bergerak, Video, Musik dan Rekaman Suara">
+    <option value="60: Aktivitas Penyiaran dan Pemrograman (Radio, Televisi, Media Penyiaran)">
+    <option value="61: Telekomunikasi (Operator Seluler, Jaringan Fiber Optik, Internet Service Provider)">
+    <option value="62: Pemrograman Komputer, Konsultansi TI dan Aktivitas Terkait (Software House & Solusi IT)">
+    <option value="63: Aktivitas Jasa Informasi (Pusat Data/Data Center, Layanan Cloud, Portal Web)">
+    <option value="64: Aktivitas Jasa Keuangan (Perbankan, Multifinance, Modal Ventura, P2P Lending/Fintech)">
+    <option value="65: Asuransi, Reasuransi dan Dana Pensiun">
+    <option value="66: Aktivitas Penunjang Jasa Keuangan dan Asuransi (Pialang/Broker, Agen, Kliring)">
+    <option value="68: Real Estat (Developer Properti, Pengembang Kawasan Industri, Pengelola Properti)">
+    <option value="69: Aktivitas Hukum dan Akuntansi">
+    <option value="70: Aktivitas Kantor Pusat dan Konsultansi Manajemen Bisnis">
+    <option value="71: Aktivitas Arsitektur dan Keinsinyuran / Engineering; Analisis dan Uji Teknis">
+    <option value="72: Penelitian dan Pengembangan Ilmu Pengetahuan dan Teknologi">
+    <option value="73: Periklanan dan Penelitian Pasar (Advertising & Media Agency)">
+    <option value="74: Aktivitas Profesional, Ilmiah dan Teknis Lainnya (Desain Industri, Konsultan Teknis)">
+    <option value="75: Aktivitas Kesehatan Hewan / Veteriner">
+    <option value="77: Aktivitas Penyewaan dan Sewa Guna Usaha Tanpa Hak Opsi (Rental Alat Berat, Kendaraan, Mesin)">
+    <option value="78: Aktivitas Ketenagakerjaan (Outsourcing & Penyaluran Tenaga Kerja)">
+    <option value="79: Aktivitas Agen Perjalanan, Tur Operator dan Jasa Reservasi Lainnya">
+    <option value="80: Aktivitas Keamanan dan Penyelidikan (Jasa Pengamanan / Security Service)">
+    <option value="81: Aktivitas Jasa untuk Gedung dan Pertamanan (Facility Management & Cleaning Service)">
+    <option value="82: Aktivitas Administrasi Kantor, Penunjang Kantor dan Penunjang Usaha Lainnya (BPO)">
+    <option value="84: Administrasi Pemerintahan, Pertahanan dan Jaminan Sosial Wajib">
+    <option value="85: Pendidikan (Sekolah, Universitas, Lembaga Pelatihan / Vokasi)">
+    <option value="86: Aktivitas Kesehatan Manusia (Rumah Sakit, Klinik, Laboratorium Medis)">
+    <option value="87: Aktivitas Sosial di Dalam Panti">
+    <option value="88: Aktivitas Sosial Tanpa Akomodasi">
+    <option value="90: Aktivitas Hiburan, Seni dan Kreativitas">
+    <option value="91: Perpustakaan, Arsip, Museum dan Aktivitas Kebudayaan Lainnya">
+    <option value="92: Aktivitas Perjudian dan Pertaruhan">
+    <option value="93: Aktivitas Olahraga dan Rekreasi Lainnya">
+    <option value="94: Aktivitas Keanggotaan Organisasi (Asosiasi Bisnis, Profesi)">
+    <option value="95: Reparasi Komputer dan Barang Keperluan Pribadi dan Perlengkapan Rumah Tangga">
+    <option value="96: Aktivitas Jasa Perorangan Lainnya (Laundry Komersial, Salon, Perawatan Pribadi)">
+    <option value="97: Aktivitas Rumah Tangga Sebagai Pemberi Kerja">
+    <option value="98: Aktivitas Menghasilkan Barang dan Jasa oleh Rumah Tangga untuk Konsumsi Sendiri">
+    <option value="99: Aktivitas Badan Internasional dan Badan Ekstra Internasional">
   </datalist>
 
   <datalist id="list_banks">
-    <option value="Bank Dana">
+    <!-- HIMBARA & BANK BUMN -->
     <option value="Bank Mandiri">
     <option value="Bank Rakyat Indonesia (BRI)">
     <option value="Bank Negara Indonesia (BNI)">
     <option value="Bank Tabungan Negara (BTN)">
+    <option value="Bank Syariah Indonesia (BSI)">
+    <option value="Bank Raya Indonesia">
+
+    <!-- BANK PEMBANGUNAN DAERAH (BPD SELURUH INDONESIA / ASBANDA) -->
+    <option value="Bank DKI (BPD DKI Jakarta)">
+    <option value="Bank BJB (BPD Jawa Barat & Banten)">
+    <option value="Bank Jateng (BPD Jawa Tengah)">
+    <option value="Bank BPD DIY (DI Yogyakarta)">
+    <option value="Bank Jatim (BPD Jawa Timur)">
+    <option value="Bank Banten (BPD Banten)">
+    <option value="Bank Sumut (BPD Sumatera Utara)">
+    <option value="Bank Nagari (BPD Sumatera Barat)">
+    <option value="Bank Riau Kepri Syariah (BPD Riau & Kepri)">
+    <option value="Bank Jambi (BPD Jambi)">
+    <option value="Bank Sumsel Babel (BPD Sumsel & Babel)">
+    <option value="Bank Bengkulu (BPD Bengkulu)">
+    <option value="Bank Lampung (BPD Lampung)">
+    <option value="Bank Aceh Syariah (BPD Aceh)">
+    <option value="Bank Kalbar (BPD Kalimantan Barat)">
+    <option value="Bank Kalteng (BPD Kalimantan Tengah)">
+    <option value="Bank Kalsel (BPD Kalimantan Selatan)">
+    <option value="Bank Kaltimtara (BPD Kaltim & Kaltara)">
+    <option value="Bank Sulselbar (BPD Sulsel & Sulbar)">
+    <option value="Bank SulutGo (BPD Sulut & Gorontalo)">
+    <option value="Bank Sulteng (BPD Sulawesi Tengah)">
+    <option value="Bank Sultra (BPD Sulawesi Tenggara)">
+    <option value="Bank BPD Bali">
+    <option value="Bank NTB Syariah (BPD Nusa Tenggara Barat)">
+    <option value="Bank NTT (BPD Nusa Tenggara Timur)">
+    <option value="Bank Maluku Malut (BPD Maluku & Malut)">
+    <option value="Bank Papua (BPD Papua)">
+
+    <!-- BANK PEREKONOMIAN RAKYAT (BPR & BPRS / BUMD DAERAH) -->
+    <option value="Bank Perekonomian Rakyat (BPR) - Umum / Daerah">
+    <option value="Bank Perekonomian Rakyat Syariah (BPRS) - Umum">
+    <option value="BPR BUMD (Milik Pemerintah Daerah)">
+    <option value="BPR Lestari">
+    <option value="BPR Modern Express">
+    <option value="BPR Eka Bumi Artha (Metro Lampung)">
+    <option value="BPR Karyajatnika Sadaya (BPR KS)">
+    <option value="BPR Supra Artapersada (Jawa Barat)">
+    <option value="BPR Hasa Mitra Makassar (Sulawesi)">
+    <option value="BPR Nusamba Group">
+    <option value="BPR Danagung Group (Yogyakarta)">
+    <option value="BPR Delta Artha (Sidoarjo)">
+    <option value="BPR Bank Bapas 69 (Magelang)">
+    <option value="BPR Bank Sleman">
+    <option value="BPR Bank Jogja">
+    <option value="BPR Bank Solo (Surakarta)">
+    <option value="BPR Bank Jombang">
+    <option value="BPR Bank Pasar / BPR Daerah">
+    <option value="BPR Palu Lokadanatama">
+
+    <!-- BANK SWASTA NASIONAL & SYARIAH -->
     <option value="Bank Central Asia (BCA)">
     <option value="Bank CIMB Niaga">
-    <option value="Bank Syariah Indonesia (BSI)">
     <option value="Bank Danamon">
     <option value="Bank Permata">
-    <option value="Bank BJB">
-    <option value="Bank Jatim">
-    <option value="Bank Jateng">
-    <option value="Bank DKI">
-    <option value="Bank Sumut">
-    <option value="Bank Mega">
+    <option value="Bank Maybank Indonesia">
     <option value="Bank OCBC NISP">
     <option value="Bank Panin">
+    <option value="Bank Mega">
+    <option value="Bank BTPN (SMBC)">
+    <option value="Bank Muamalat Indonesia">
+    <option value="Bank Sinarmas">
+    <option value="KB Bank (Bank Bukopin)">
+    <option value="Bank Woori Saudara (BWS)">
+    <option value="Bank UOB Indonesia">
+    <option value="Bank DBS Indonesia">
+    <option value="Bank Mayapada">
+    <option value="Bank BCA Syariah">
+    <option value="Bank Aladin Syariah">
+    <option value="Bank Dana">
     <option value="Citibank Indonesia">
   </datalist>
 
@@ -2067,7 +2515,7 @@
         </div>
         <div class="form-group">
           <label>Sektor Industri (Pilih atau Ketik)</label>
-          <input type="text" id="new_sector" list="list_sectors" class="form-control" placeholder="Pilih / ketik sektor industri..." />
+          <input type="text" id="new_sector" list="list_sectors" class="form-control" placeholder="Pilih / cari sektor industri (KBLI 2025)..." />
         </div>
         <div class="form-group">
           <label>Bank Mitra Pengaju (Pilih atau Ketik)</label>
@@ -2092,14 +2540,6 @@
             <span>&amp;</span>
             <input type="number" id="new_year2" class="form-control" placeholder="Thn 2" />
           </div>
-        </div>
-        <div class="form-group full">
-          <label>Template Data Awal</label>
-          <select id="new_templateType" class="form-control">
-            <option value="blank_healthy">Perusahaan Standar (Modal Kerja Normal - Siap Diisi)</option>
-            <option value="clone_rahmat">Salin Struktur dari Kasus PT Rahmat Santosa (Trade Financing Kedelai)</option>
-            <option value="clone_current">Salin dari Proyek yang Sedang Aktif</option>
-          </select>
         </div>
       </div>
       <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
@@ -2162,7 +2602,7 @@
 
           <div style="margin-top:0.85rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
             <div style="font-size:0.7rem; color:#64748b;">
-              💡 <em>Tips: Jika neraca dan laba rugi terpisah di file berbeda, pilih keduanya secara bersamaan. AI akan menggabungkan datanya secara cerdas.</em>
+              💡 <em>Tips: Jika neraca dan laba rugi terpisah di file berbeda, pilih keduanya secara bersamaan. AI akan menggabungkan datanya secara otomatis.</em>
             </div>
             <button type="button" id="btnStartAiExtraction" class="btn btn-primary" onclick="runGeminiFinExtraction()" style="display:inline-flex; align-items:center; gap:6px; font-weight:700; font-size:0.78rem; background:linear-gradient(135deg, #1e40af 0%, #0284c7 100%);" disabled>
               ⚡ Mulai Ekstraksi Dokumen

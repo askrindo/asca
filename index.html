@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="favicon.png" />
   <link rel="shortcut icon" href="favicon.ico" />
   <link rel="apple-touch-icon" href="favicon.png" />
-  <link rel="stylesheet" href="styles.css?v=1793546000" />
+  <link rel="stylesheet" href="styles.css?v=1793602000" />
   <style id="login-critical-styles">
     /* Anti-Cache Guarantee for Enterprise Login Interface */
     .login-screen {
@@ -143,10 +143,6 @@
   <!-- TOP NAVBAR -->
   <header class="top-navbar" id="appTopNavbar" style="display:none;">
     <div class="brand-wrap">
-      <button class="sidebar-toggle-btn no-print" onclick="toggleSidebar()" id="topSidebarToggleBtn" title="Minimize / Tampilkan Daftar Analisa">
-        <span id="sidebarToggleIcon">&#9776;</span> Analisa
-      </button>
-
       <!-- Logo ASCA -->
       <div class="askrindo-logo-box" title="ASCA - Askrindo Smart Credit Analysis">
         <img src="logo-asca.png" alt="ASCA - Askrindo Smart Credit Analysis" class="askrindo-logo-img" />
@@ -181,8 +177,13 @@
     <!-- SIDEBAR: DAFTAR KASUS / ANALISA (COLLAPSIBLE) -->
     <aside class="sidebar no-print" id="projectSidebar">
       <!-- Tampilan saat Diminimize -->
-      <div class="sidebar-collapsed-strip" onclick="toggleSidebar()" title="Klik untuk membuka Daftar Analisa">
-        <span style="font-size:0.9rem; font-weight:800; color:var(--askrindo-blue);">&#9776;</span>
+      <div class="sidebar-collapsed-strip" onclick="toggleSidebar()" title="Klik untuk menampilkan Daftar Analisa">
+        <div class="btn-unhide-sidebar" title="Buka Daftar Analisa">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="13 17 18 12 13 7"></polyline>
+            <polyline points="6 17 11 12 6 7"></polyline>
+          </svg>
+        </div>
         <div class="vertical-text">Daftar Analisa (<span id="projectCountCollapsed">0</span>)</div>
       </div>
 
@@ -191,9 +192,12 @@
         <div class="sidebar-header">
           <div class="sidebar-header-top">
             <h2>Daftar Analisa (<span id="projectCountBadge">0</span>)</h2>
-            <div style="display:flex; gap:0.25rem;">
-              <button class="btn btn-outline btn-sm" onclick="toggleSidebar()" title="Minimize Daftar Analisa">&laquo;</button>
-            </div>
+            <button type="button" class="btn-hide-sidebar" onclick="toggleSidebar()" title="Sembunyikan / Minimize Daftar Analisa">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="11 17 6 12 11 7"></polyline>
+                <polyline points="18 17 13 12 18 7"></polyline>
+              </svg>
+            </button>
           </div>
           <input type="search" id="searchProjectInput" name="project_search_query_prevent_autofill" class="search-box" placeholder="Cari debitur, sektor, bank..." autocomplete="chrome-off" autocorrect="off" autocapitalize="off" spellcheck="false" value="" oninput="renderProjectList()" onfocus="if(this.value==='1922'||this.value==='admin')this.value=''" />
         </div>
@@ -2221,6 +2225,6 @@
   <div class="toast-container" id="toastContainer"></div>
 
   <script src="inaproc-blacklist-db.js?v=1793516000"></script>
-  <script src="app.js?v=1793601000"></script>
+  <script src="app.js?v=1793602000"></script>
 </body>
 </html>

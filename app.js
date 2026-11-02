@@ -1020,13 +1020,15 @@ function renderBanner(proj, m) {
       covBadge.textContent = `Coverage Askrindo: ${m.recCoveragePct || 70}% (Layak Dijamin)`;
       covBadge.title = `Standar Underwriting Askrindo: Fasilitas Layak Dijamin dengan coverage ${m.recCoveragePct || 70}%`;
     } else if (m.isInitialReject) {
+      const condCov = m.recCoveragePct || (m.gradeMeta && m.gradeMeta.maxCoverage) || 55;
       covBadge.className = 'cover-badge cover-conditional';
-      covBadge.textContent = 'Tidak Layak (Opsi Bersyarat 55%)';
-      covBadge.title = 'Rekomendasi awal: Tolak skema pengajuan standar. Opsi bersyarat maksimal coverage 55%.';
+      covBadge.textContent = `Tidak Layak (Apabila Disetujui Maksimal Coverage ${condCov}%)`;
+      covBadge.title = `Rekomendasi awal: Tolak skema pengajuan awal (Tidak Layak). Apabila disetujui, rekomendasi maksimal coverage ${condCov}%.`;
     } else {
+      const condCov = m.recCoveragePct || (m.gradeMeta && m.gradeMeta.maxCoverage) || 60;
       covBadge.className = 'cover-badge cover-conditional';
-      covBadge.textContent = `Coverage Bersyarat: Maks ${m.recCoveragePct || 60}%`;
-      covBadge.title = `Persetujuan bersyarat dengan coverage ${m.recCoveragePct || 60}%`;
+      covBadge.textContent = `Coverage Bersyarat: Maks ${condCov}%`;
+      covBadge.title = `Persetujuan bersyarat dengan coverage ${condCov}%`;
     }
   }
 
@@ -1047,11 +1049,11 @@ function renderBanner(proj, m) {
       const maxGuaranteedNominal = (proj.requestedPlafond || 0) * (effectiveCov / 100);
       optEl.innerHTML = `<strong>Rekomendasi Coverage:</strong> Maks ${effectiveCov}% (${fmtRp(maxGuaranteedNominal, true)}) &bull; <span style="color:#16a34a; font-weight:700;">Layak Dijamin</span> &bull; IJP: ${m.ijpRate}`;
     } else if (m.isInitialReject) {
-      const effectiveCov = 55;
+      const effectiveCov = m.recCoveragePct || (m.gradeMeta && m.gradeMeta.maxCoverage) || 55;
       const maxGuaranteedNominal = (proj.requestedPlafond || 0) * (effectiveCov / 100);
-      optEl.innerHTML = `<strong>Evaluasi Sistem:</strong> <span style="color:#dc2626; font-weight:700;">Tidak Layak</span> &bull; Opsi Bersyarat: Maks 55% (${fmtRp(maxGuaranteedNominal, true)}) &bull; IJP: ${m.ijpRate}`;
+      optEl.innerHTML = `<strong>Evaluasi Sistem:</strong> <span style="color:#dc2626; font-weight:700;">Tidak Layak</span> &bull; Apabila Disetujui Maksimal Coverage ${effectiveCov}% (${fmtRp(maxGuaranteedNominal, true)}) &bull; IJP: ${m.ijpRate}`;
     } else {
-      const effectiveCov = m.recCoveragePct || 60;
+      const effectiveCov = m.recCoveragePct || (m.gradeMeta && m.gradeMeta.maxCoverage) || 60;
       const maxGuaranteedNominal = (proj.requestedPlafond || 0) * (effectiveCov / 100);
       optEl.innerHTML = `<strong>Rekomendasi Coverage:</strong> Maks ${effectiveCov}% (${fmtRp(maxGuaranteedNominal, true)}) &bull; <span style="color:#d97706; font-weight:700;">Persetujuan Bersyarat</span> &bull; IJP: ${m.ijpRate}`;
     }
@@ -3411,8 +3413,8 @@ function renderGradeRiskTab(proj, m) {
         </div>
         <div>
           <div style="font-size:0.64rem; color:#475569;">Maksimal Coverage Asuransi Kredit</div>
-          <div style="font-size:0.92rem; font-weight:800; color:#0f172a;">${m.recCoveragePct > 0 ? `${m.recCoveragePct}% Plafond` : '0% (Maks 55% jika Bersyarat)'}</div>
-          <div style="font-size:0.63rem; color:#64748b;">Risk Sharing Bank: ${m.recCoveragePct > 0 ? `${100 - m.recCoveragePct}%` : 'Minimal 45% (Opsi Bersyarat)'}</div>
+          <div style="font-size:0.92rem; font-weight:800; color:#0f172a;">${m.isInitialReject ? `Maks ${m.recCoveragePct || 55}% (Apabila Disetujui)` : `${m.recCoveragePct || 70}% Plafond`}</div>
+          <div style="font-size:0.63rem; color:#64748b;">Risk Sharing Bank: ${100 - (m.recCoveragePct || (m.isInitialReject ? 55 : 70))}% ${m.isInitialReject ? '(Apabila Disetujui)' : ''}</div>
         </div>
         <div>
           <div style="font-size:0.64rem; color:#475569;">Indikasi Rate IJP Askrindo</div>
@@ -4965,7 +4967,7 @@ function renderCaseStudyQATab(proj, m) {
                 </span>
               ` : (m.isInitialReject ? `
                 <span class="cover-badge cover-conditional">
-                  Rekomendasi Coverage Bersyarat: Maks 55% (Risk Sharing ${proj.bankName} 45%) &bull; Rekomendasi Tarif IJP: 3,75% - 4,50% p.a.
+                  Tidak Layak (Apabila Disetujui Maksimal Coverage ${m.recCoveragePct || 55}%) &bull; Risk Sharing ${proj.bankName} ${100 - (m.recCoveragePct || 55)}% &bull; Rekomendasi Tarif IJP: ${m.ijpRate || '3,75% - 4,50% p.a.'}
                 </span>
               ` : `
                 <span class="cover-badge cover-conditional">
@@ -5016,8 +5018,8 @@ function renderCaseStudyQATab(proj, m) {
             </div>
             <div class="grid-2" style="gap:0.45rem;">
               <div class="term-card">
-                <div class="term-title"><span>1. Pembatasan Coverage Askrindo &amp; Rekomendasi Tarif IJP</span><span style="color:#0284c7;">Maks 55% | IJP 3,75% - 4,50% p.a.</span></div>
-                <div class="term-desc">Plafon dijamin Askrindo dibatasi maksimal 55% (${fmtRp(proj.requestedPlafond * 0.55, true)}), 45% risk sharing oleh ${proj.bankName}. Jika disetujui bersyarat oleh Komite Pemutus, <strong>Rekomendasi Tarif IJP adalah 3,75% - 4,50% p.a.</strong> (memuat <em>High-Risk Loading Premium</em>) dengan syarat wajib penyediaan Cash Collateral / Deposito minimal 10-20% serta restrukturisasi transaksi menjadi <em>Ring-Fenced Self-Liquidating</em>.</div>
+                <div class="term-title"><span>1. Pembatasan Coverage Askrindo &amp; Rekomendasi Tarif IJP</span><span style="color:#0284c7;">Maks ${m.recCoveragePct || 55}% | IJP ${m.ijpRate || '3,75% - 4,50% p.a.'}</span></div>
+                <div class="term-desc">Plafon dijamin Askrindo dibatasi maksimal ${m.recCoveragePct || 55}% (${fmtRp(proj.requestedPlafond * ((m.recCoveragePct || 55) / 100), true)}), ${100 - (m.recCoveragePct || 55)}% risk sharing oleh ${proj.bankName}. Jika disetujui bersyarat oleh Komite Pemutus, <strong>Rekomendasi Tarif IJP adalah ${m.ijpRate || '3,75% - 4,50% p.a.'}</strong> (memuat <em>High-Risk Loading Premium</em>) dengan syarat wajib penyediaan Cash Collateral / Deposito minimal 10-20% serta restrukturisasi transaksi menjadi <em>Ring-Fenced Self-Liquidating</em>.</div>
               </div>
               <div class="term-card">
                 <div class="term-title"><span>${isMaritimeOrImportRisk(proj) ? '2. Wajib Asuransi Marine Cargo' : (proj.procurementMethod === 'domestic' ? '2. Wajib Asuransi Inland Transit' : '2. Proteksi Aset & Kebakaran (Property/PAR)')}</span><span style="color:#0284c7;">${isMaritimeOrImportRisk(proj) ? 'ICC (A) All Risks' : (proj.procurementMethod === 'domestic' ? 'All Risks Darat' : 'Property All Risks')}</span></div>
@@ -5139,7 +5141,7 @@ function renderCaseStudyQATab(proj, m) {
               <tr>
                 <td><strong>Rekomendasi Porsi Coverage Asuransi Kredit Askrindo</strong></td>
                 <td class="num-col">Pengajuan Bank: Coverage 100% (Askrindo Tanggung Semua Risiko)</td>
-                <td class="num-col" style="color:#166534; font-weight:700;">Maksimal 55% (${fmtRp(proj.requestedPlafond * 0.55, true)}) | Risk-Sharing Bank Mitra 45% (${fmtRp(proj.requestedPlafond * 0.45, true)})</td>
+                <td class="num-col" style="color:#166534; font-weight:700;">Maksimal ${m.recCoveragePct || 55}% (${fmtRp(proj.requestedPlafond * ((m.recCoveragePct || 55) / 100), true)}) | Risk-Sharing Bank Mitra ${100 - (m.recCoveragePct || 55)}% (${fmtRp(proj.requestedPlafond * ((100 - (m.recCoveragePct || 55)) / 100), true)})</td>
                 <td>Prudent underwriting &amp; pembagian risiko proporsional demi skin-in-the-game</td>
               </tr>
               <tr>
@@ -6303,12 +6305,12 @@ function renderPrintableReport(proj, m) {
               ` : (m.isInitialReject ? `
                 <div style="border-top:1px dashed #fca5a5; padding-top:0.35rem; margin-top:0.35rem;">
                   <div style="font-weight:800; font-size:0.75rem; color:#0f766e; margin-bottom:0.2rem;">
-                    OPSI PERSETUJUAN BERSYARAT KOMITE ASURANSI KREDIT ASKRINDO (REKOMENDASI COVERAGE MAKS 55%):
+                    OPSI PERSETUJUAN BERSYARAT KOMITE ASURANSI KREDIT ASKRINDO (REKOMENDASI COVERAGE MAKS ${m.recCoveragePct || 55}%):
                   </div>
                   <div style="font-size:0.7rem; color:#1e293b; line-height:1.35;">
                     Apabila fasilitas disetujui demi kepentingan strategis kemitraan dengan <strong>${proj.bankName}</strong>, transaksi wajib direstrukturisasi dengan <strong>7 Syarat Wajib (Condition Precedent)</strong>:
                     <ol style="margin:0.2rem 0 0.3rem 1.1rem; padding:0;">
-                      <li><strong>Rekomendasi Coverage Askrindo Dibatasi Maksimal 55%</strong> (${fmtRp(proj.requestedPlafond * 0.55, true)}) &amp; Risk Sharing ${proj.bankName} Minimal 45% (${fmtRp(proj.requestedPlafond * 0.45, true)}), dengan <strong>Rekomendasi Tarif IJP Bersyarat sebesar 3,75% - 4,50% p.a.</strong> (memuat <em>High-Risk Loading Premium</em> + Wajib Cash Collateral / Deposito 10-20% &amp; Restrukturisasi Ring-Fenced).</li>
+                      <li><strong>Rekomendasi Coverage Askrindo Dibatasi Maksimal ${m.recCoveragePct || 55}%</strong> (${fmtRp(proj.requestedPlafond * ((m.recCoveragePct || 55) / 100), true)}) &amp; Risk Sharing ${proj.bankName} Minimal ${100 - (m.recCoveragePct || 55)}% (${fmtRp(proj.requestedPlafond * ((100 - (m.recCoveragePct || 55)) / 100), true)}), dengan <strong>Rekomendasi Tarif IJP Bersyarat sebesar ${m.ijpRate || '3,75% - 4,50% p.a.'}</strong> (memuat <em>High-Risk Loading Premium</em> + Wajib Cash Collateral / Deposito 10-20% &amp; Restrukturisasi Ring-Fenced).</li>
                       ${isMaritimeOrImportRisk(proj) ? `
                         <li><strong>Wajib Asuransi Marine Cargo Askrindo (All Risks Warehouse to Warehouse)</strong> dengan Banker\'s Clause / Loss Payee Askrindo &amp; ${proj.bankName}.</li>
                       ` : (proj.procurementMethod === 'domestic' ? `

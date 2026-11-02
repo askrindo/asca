@@ -344,106 +344,179 @@ function getDefaultProjects() {
 }
 
 // ============================================================================
-// 2. RISK GRADE DEFINITIONS TABLE
+// 2. RISK GRADE DEFINITIONS TABLE (TABEL VI.1 RATING AKSEPTASI ASKRINDO)
+// Sumber: Petunjuk Teknis Akseptasi Surety Bond | ASKRINDO Insurance (PT IDX Consulting)
 // ============================================================================
 const ASKRINDO_GRADE_CATALOG = [
   {
     grade: 'AAA',
-    name: 'Prime / Superior Quality',
-    minScore: 90,
+    name: 'Minimum Risk',
+    scoreRange: '> 95 - 100',
+    minScore: 96,
     maxScore: 100,
-    color: '#15803d',
-    bg: '#dcfce7',
+    scoreFloor: 95,
+    scoreCeil: 100,
+    color: '#047857',
+    bg: '#ecfdf5',
     badgeCls: 'grade-AAA',
     maxCoverage: 85,
     ijpRate: '0,65%  -  0,90% p.a.',
     decision: 'DIREKOMENDASIKAN LAYAK PENUH (FAST-TRACK APPROVE)',
     decisionClass: 'layak',
-    criteriaSummary: 'GPM &ge; 12%, Siklus Gross < Tenor Kredit (Buffer > 30 hr), Cash Runway &ge; 4 bln, NWC Surplus, Quick Ratio &ge; 1,2x, DER < 1,5x, DSCR &ge; 1,50x.'
+    criteriaSummary: 'Indikasi bahwa Perusahaan berkualitas terbaik layak dan stabil, memiliki kemampuan yang sangat kuat dalam memenuhi kewajibannya.'
   },
   {
     grade: 'AA',
-    name: 'Very Strong Capacity',
-    minScore: 80,
-    maxScore: 89,
-    color: '#166534',
-    bg: '#dcfce7',
+    name: 'Acceptable Risk',
+    scoreRange: '> 87 - 95',
+    minScore: 88,
+    maxScore: 95,
+    scoreFloor: 87,
+    scoreCeil: 95,
+    color: '#15803d',
+    bg: '#f0fdf4',
     badgeCls: 'grade-AA',
     maxCoverage: 80,
     ijpRate: '0,90%  -  1,25% p.a.',
     decision: 'DIREKOMENDASIKAN LAYAK (APPROVE)',
     decisionClass: 'layak',
-    criteriaSummary: 'GPM &ge; 9%, Siklus Gross &le; Tenor Kredit, Cash Runway &ge; 3 bln, Quick Ratio &ge; 0,9x, DER &le; 2,2x, DSCR &ge; 1,30x, Rasio data bank akurat.'
+    criteriaSummary: 'Indikasi bahwa Perusahaan berkualitas baik, sedikit lebih berisiko dibanding minimum risk.'
   },
   {
     grade: 'A',
-    name: 'Good / Adequate Working Capital',
-    minScore: 70,
-    maxScore: 79,
-    color: '#1e40af',
-    bg: '#dbeafe',
+    name: 'Average Risk',
+    scoreRange: '> 79 - 87',
+    minScore: 80,
+    maxScore: 87,
+    scoreFloor: 79,
+    scoreCeil: 87,
+    color: '#0f766e',
+    bg: '#f0fdfa',
     badgeCls: 'grade-A',
     maxCoverage: 75,
     ijpRate: '1,25%  -  1,60% p.a.',
     decision: 'LAYAK DENGAN COVENANT STANDAR',
     decisionClass: 'layak',
-    criteriaSummary: 'GPM &ge; 6%, Siklus Gross &le; Tenor Kredit, Cash Runway 2 - 3 bln, Quick Ratio &ge; 0,75x, DER &le; 2,8x, DSCR &ge; 1,15x.'
+    criteriaSummary: 'Indikasi bahwa Perusahaan dalam situasi ekonomi dapat berpengaruh pada kondisi keuangan Perusahaan, masih memiliki kemampuan dalam memenuhi kewajibannya, namun sensitif terhadap perubahan.'
   },
   {
     grade: 'BBB',
-    name: 'Satisfactory / Moderate Risk',
-    minScore: 60,
-    maxScore: 69,
-    color: '#1d4ed8',
-    bg: '#e0f2fe',
+    name: 'Allowable Risk',
+    scoreRange: '> 71 - 79',
+    minScore: 72,
+    maxScore: 79,
+    scoreFloor: 71,
+    scoreCeil: 79,
+    color: '#0369a1',
+    bg: '#f0f9ff',
     badgeCls: 'grade-BBB',
     maxCoverage: 70,
-    ijpRate: '1,60%  -  2,10% p.a.',
+    ijpRate: '1,60%  -  2,00% p.a.',
     decision: 'LAYAK BERSYARAT (MODERATE COVENANT)',
     decisionClass: 'bersyarat',
-    criteriaSummary: 'GPM 3% - 6%, Siklus mendekati batas tenor, Cash Runway 1,5 - 2 bln, butuh escrow account & pembatasan pencairan bertahap.'
+    criteriaSummary: 'Indikasi bahwa Perusahaan dengan kualitas menengah, dimana saat ini dalam kondisi memuaskan, memiliki kemampuan yang cukup dalam memenuhi kewajibannya.'
   },
   {
     grade: 'BB',
-    name: 'Watchlist / Vulnerable Cycle',
-    minScore: 45,
-    maxScore: 59,
-    color: '#92400e',
-    bg: '#fef3c7',
+    name: 'Marginal Risk',
+    scoreRange: '> 63 - 71',
+    minScore: 64,
+    maxScore: 71,
+    scoreFloor: 63,
+    scoreCeil: 71,
+    color: '#1d4ed8',
+    bg: '#eff6ff',
     badgeCls: 'grade-BB',
-    maxCoverage: 60,
-    ijpRate: '2,10%  -  2,85% p.a.',
-    decision: 'LAYAK BERSYARAT KETAT (WAJIB RESTRUKTURISASI SKEMA)',
+    maxCoverage: 65,
+    ijpRate: '2,00%  -  2,50% p.a.',
+    decision: 'LAYAK BERSYARAT KETAT (RING-FENCED ESCROW)',
     decisionClass: 'bersyarat',
-    criteriaSummary: 'Marjin tipis/tertekan, Cash Runway < 1,5 bln, DOI melambat (>120 hr) atau ada defisit NWC, wajib tranching & agunan likuid.'
+    criteriaSummary: 'Indikasi bahwa Perusahaan ada kecenderungan mengalami perubahan dalam situasi ekonomi, kemampuannya rentan dalam memenuhi kewajibannya.'
   },
   {
     grade: 'B',
-    name: 'High Risk / Structural Mismatch',
-    minScore: 25,
-    maxScore: 44,
-    color: '#991b1b',
-    bg: '#fee2e2',
+    name: 'Early Warning',
+    scoreRange: '> 55 - 63',
+    minScore: 56,
+    maxScore: 63,
+    scoreFloor: 55,
+    scoreCeil: 63,
+    color: '#b45309',
+    bg: '#fffbeb',
     badgeCls: 'grade-B',
-    maxCoverage: 50,
-    ijpRate: '2,85%  -  3,75% p.a. (+Cash Collateral)',
-    decision: 'TOLAK SKEMA AWAL / WAJIB RING-FENCED TURNAROUND',
-    decisionClass: 'tolak',
-    criteriaSummary: 'Gross Loss atau Siklus Gross > Tenor Kredit, Cash Burn tinggi (Runway < 1 bln), Defisit NWC per siklus, Quick Ratio < 0,5x.'
+    maxCoverage: 60,
+    ijpRate: '2,50%  -  3,00% p.a. (+Monitoring Ketat)',
+    decision: 'PERINGATAN DINI / LAYAK BERSYARAT DENGAN AGUNAN TAMBAHAN',
+    decisionClass: 'bersyarat',
+    criteriaSummary: 'Indikasi bahwa Perusahaan saat ini goyah, tergantung situasi ekonomi yang menguntungkan, kemampuan memenuhi kewajibannya sangat rendah.'
   },
   {
-    grade: 'C',
-    name: 'Severe Default Risk / Reject',
+    grade: 'CCC',
+    name: 'Precautionary',
+    scoreRange: '> 47 - 55',
+    minScore: 48,
+    maxScore: 55,
+    scoreFloor: 47,
+    scoreCeil: 55,
+    color: '#c2410c',
+    bg: '#fff7ed',
+    badgeCls: 'grade-CCC',
+    maxCoverage: 55,
+    ijpRate: '3,00%  -  3,75% p.a. (+Cash Collateral)',
+    decision: 'PRECAUTIONARY / REKOMENDASI RESTRUKTURISASI SKEMA',
+    decisionClass: 'tolak',
+    criteriaSummary: 'Indikasi bahwa Perusahaan sangat goyah, sangat spekulatif, kemampuan sangat bergantung pada kondisi bisnis.'
+  },
+  {
+    grade: 'D',
+    name: 'Substandard',
+    scoreRange: '> 39 - 47',
+    minScore: 40,
+    maxScore: 47,
+    scoreFloor: 39,
+    scoreCeil: 47,
+    color: '#b91c1c',
+    bg: '#fef2f2',
+    badgeCls: 'grade-D',
+    maxCoverage: 50,
+    ijpRate: '3,75%  -  4,50% p.a. (High-Risk Loading)',
+    decision: 'SUBSTANDARD / TIDAK LAYAK (KEMUNGKINAN DEFAULT TINGGI)',
+    decisionClass: 'tolak',
+    criteriaSummary: 'Indikasi bahwa Perusahaan sangat goyah sekali, kemungkinan default.'
+  },
+  {
+    grade: 'DD',
+    name: 'Doubtful',
+    scoreRange: '> 31 - 39',
+    minScore: 32,
+    maxScore: 39,
+    scoreFloor: 31,
+    scoreCeil: 39,
+    color: '#991b1b',
+    bg: '#fee2e2',
+    badgeCls: 'grade-DD',
+    maxCoverage: 45,
+    ijpRate: '4,50%  -  5,50% p.a. (Special Distressed Rate)',
+    decision: 'DOUBTFUL / TOLAK PENGAJUAN (POTENSI GAGAL BAYAR)',
+    decisionClass: 'tolak',
+    criteriaSummary: 'Indikasi bahwa Perusahaan akan default/mengalami kegagalan.'
+  },
+  {
+    grade: 'DDD',
+    name: 'Expected Loss',
+    scoreRange: '<= 31',
     minScore: 0,
-    maxScore: 24,
+    maxScore: 31,
+    scoreFloor: 0,
+    scoreCeil: 31,
     color: '#7f1d1d',
     bg: '#fecaca',
-    badgeCls: 'grade-C',
-    maxCoverage: 55,
-    ijpRate: '3,75%  -  4,50% p.a. (Opsi Bersyarat Khusus)',
-    decision: 'TOLAK SKEMA PENGAJUAN AWAL (CERTAIN DEFAULT ON MATURITY)',
+    badgeCls: 'grade-DDD',
+    maxCoverage: 0,
+    ijpRate: 'Tidak Ditawarkan (Uninsurable Default)',
+    decision: 'EXPECTED LOSS / TOLAK MUTLAK (KONDISI DEFAULT)',
     decisionClass: 'tolak',
-    criteriaSummary: 'Gross Loss beruntun + Mismatch Tenor parah. Jika disetujui bersyarat: Rekomendasi Tarif IJP 3,75% - 4,50% p.a. (+Cash Collateral), Maks Coverage 55% (Risk Sharing Bank 45%), dan Wajib Ring-Fenced Escrow.'
+    criteriaSummary: 'Indikasi bahwa Perusahaan sudah tidak memiliki kemampuan dan kondisinya sudah default.'
   }
 ];
 
@@ -453,10 +526,14 @@ function getGradeMetadataByScore(score, hasKnockOutCap = false, manualOverride =
     if (found) return { ...found, isOverridden: true };
   }
   let effectiveScore = score;
-  if (hasKnockOutCap && effectiveScore > 44) {
-    effectiveScore = 44;
+  if (hasKnockOutCap && effectiveScore > 55) {
+    effectiveScore = 55;
   }
-  const matched = ASKRINDO_GRADE_CATALOG.find((g) => effectiveScore >= g.minScore && effectiveScore <= g.maxScore) || ASKRINDO_GRADE_CATALOG[ASKRINDO_GRADE_CATALOG.length - 1];
+  const matched = ASKRINDO_GRADE_CATALOG.find((g) => {
+    if (g.grade === 'DDD') return effectiveScore <= 31;
+    if (g.grade === 'AAA') return effectiveScore > 95;
+    return effectiveScore > g.scoreFloor && effectiveScore <= g.scoreCeil;
+  }) || ASKRINDO_GRADE_CATALOG[ASKRINDO_GRADE_CATALOG.length - 1];
   return { ...matched, isOverridden: false };
 }
 
@@ -3195,34 +3272,31 @@ function computeDCCSWCM(proj) {
 
   const isBlacklisted = (proj.inaprocStatus === 'blacklisted');
   const isSevereGrossLoss = (gp23 < 0 && (f23.rev || 0) > 0);
-  const isDefaultRisk = (score < 50);
-
+  const isDefaultRisk = (score <= 55); // CCC, D, DD, DDD (Score <= 55)
   const isInitialReject = isBlacklisted || isSevereGrossLoss || isDefaultRisk;
-  const isLayak = (score >= 60 && !isInitialReject);
-  const isBersyarat = (score >= 50 && score < 60 && !isInitialReject);
+  const isLayak = (score > 79 && !isInitialReject); // AAA, AA, A (Score > 79)
+  const isBersyarat = (score > 55 && score <= 79 && !isInitialReject); // BBB, BB, B (Score > 55 - 79)
 
   let stage1Decision = '';
   let stage1Summary = '';
 
   if (isInitialReject) {
-    stage1Decision = 'TOLAK SKEMA PENGAJUAN AWAL (TIDAK LAYAK)';
+    stage1Decision = gradeMeta.decision || 'TOLAK SKEMA PENGAJUAN AWAL (TIDAK LAYAK)';
     if (isBlacklisted) {
+      stage1Decision = 'TOLAK SKEMA PENGAJUAN AWAL (BLACKLIST INAPROC)';
       stage1Summary = 'Debitur tercatat aktif dalam Daftar Hitam Nasional (INAPROC LKPP). Rekomendasi mutlak: Tolak penjaminan kredit.';
     } else if (isSevereGrossLoss) {
+      stage1Decision = 'TOLAK SKEMA PENGAJUAN AWAL (GROSS LOSS KRONIS)';
       stage1Summary = `Struktur operasional debitur mengalami kerugian kotor kronis (Gross Loss: ${fmtRp(gp23, true)}). Skema awal tidak feasible dan berisiko default.`;
     } else {
-      stage1Summary = `Skor komprehensif debitur (${score}/100) berada pada kategori risiko tinggi (Grade D / Tidak Layak). Fasilitas skema awal tidak dapat disetujui secara standar.`;
+      stage1Summary = `Skor komprehensif debitur (${score}/100) berada pada Rating ${gradeMeta.grade} (${gradeMeta.name}). ${gradeMeta.criteriaSummary}`;
     }
   } else if (isLayak) {
-    stage1Decision = 'SETUJU (LAYAK DIJAMIN)';
-    stage1Summary = 'Struktur permodalan, rentabilitas, rasio likuiditas, dan kemampuan pengembalian kewajiban debitur dinilai sehat serta memenuhi seluruh kriteria kelayakan underwriting asuransi kredit Askrindo.';
-    gradeMeta.decision = 'SETUJU (LAYAK DIJAMIN)';
-    gradeMeta.decisionClass = 'setuju';
+    stage1Decision = gradeMeta.decision || 'SETUJU (LAYAK DIJAMIN)';
+    stage1Summary = `Struktur permodalan, rentabilitas, rasio likuiditas, dan kemampuan pengembalian kewajiban debitur dinilai sehat (${gradeMeta.name}) serta memenuhi seluruh kriteria kelayakan underwriting asuransi kredit Askrindo.`;
   } else {
-    stage1Decision = 'PERSETUJUAN BERSYARAT DENGAN MITIGASI KETAT';
-    stage1Summary = 'Karakter dan kapasitas debitur berada pada zona risiko moderat sehingga penjaminan direkomendasikan dengan syarat pembatasan coverage dan mitigasi ring-fenced.';
-    gradeMeta.decision = 'LAYAK BERSYARAT (MODERATE COVENANT)';
-    gradeMeta.decisionClass = 'bersyarat';
+    stage1Decision = gradeMeta.decision || 'PERSETUJUAN BERSYARAT DENGAN MITIGASI KETAT';
+    stage1Summary = `Karakter dan kapasitas debitur berada pada zona ${gradeMeta.name} (Rating ${gradeMeta.grade}) sehingga penjaminan direkomendasikan dengan syarat pembatasan coverage dan mitigasi ring-fenced.`;
   }
 
   return {
@@ -3640,7 +3714,7 @@ function renderGradeRiskTab(proj, m) {
   const container = document.getElementById('gradeRiskMenuContainer');
   if (!container) return;
   if (!m || !m.hasFinancials) {
-    container.innerHTML = getFinEmptyStateHTML('Penentuan Grade Risk Belum Tersedia', 'Grade Risk Askrindo (AAA hingga D) dan skor kelayakan kredit akan dikalkulasikan secara otomatis setelah Anda melengkapi data laporan keuangan.');
+    container.innerHTML = getFinEmptyStateHTML('Penentuan Rating Akseptasi Belum Tersedia', 'Rating Akseptasi Askrindo (AAA hingga DDD - Petunjuk Teknis Akseptasi Surety Bond / PT IDX Consulting) dan skor kelayakan kredit akan dikalkulasikan secara otomatis setelah Anda melengkapi data laporan keuangan.');
     return;
   }
 
@@ -3652,7 +3726,7 @@ function renderGradeRiskTab(proj, m) {
     return `
       <div class="grade-step-box ${isActive ? 'active-grade' : ''}" style="background:${isActive ? g.bg : '#f8fafc'}; border-color:${isActive ? g.color : '#e2e8f0'};">
         <div style="font-size:0.92rem; font-weight:900; color:${g.color};">${g.grade}</div>
-        <div style="font-size:0.62rem; font-weight:700; color:#334155;">Skor ${g.minScore} - ${g.maxScore}</div>
+        <div style="font-size:0.62rem; font-weight:700; color:#334155;">${g.scoreRange}</div>
         <div style="font-size:0.6rem; color:#64748b; margin-top:2px;">${g.name}</div>
         ${isActive ? `<div style="margin-top:2px; font-size:0.58rem; font-weight:800; background:${g.color}; color:#fff; border-radius:3px; padding:1px 3px;">POSISI SAAT INI</div>` : ''}
       </div>
@@ -3662,7 +3736,7 @@ function renderGradeRiskTab(proj, m) {
   container.innerHTML = `
     <div class="card" style="border-left: 4px solid ${m.gradeMeta.color};">
       <div class="card-header">
-        <div class="card-title">Menu Penentuan Grade Risk Askrindo &amp; Indikator Penyebabnya (${proj.companyName})</div>
+        <div class="card-title">Menu Penentuan Rating Akseptasi Askrindo &amp; Indikator Penyebabnya (${proj.companyName})</div>
         <button class="btn btn-primary btn-sm" onclick="switchTab('tab-score')">Lihat Rincian Perhitungan Score (${m.score}/100)  + </button>
       </div>
 
@@ -3672,19 +3746,19 @@ function renderGradeRiskTab(proj, m) {
 
       <div style="background:${m.gradeMeta.bg}; border:1.5px solid ${m.gradeMeta.color}; border-radius:8px; padding:0.6rem 0.8rem; margin-bottom:0.6rem; display:grid; grid-template-columns: 1.5fr 1fr 1fr 1.2fr; gap:0.55rem; align-items:center;">
         <div>
-          <div style="font-size:0.66rem; text-transform:uppercase; font-weight:700; color:${m.gradeMeta.color};">Hasil Penetapan Risk Grade</div>
-          <div style="font-size:1.1rem; font-weight:900; color:${m.gradeMeta.color};">GRADE ${m.riskGrade}</div>
+          <div style="font-size:0.66rem; text-transform:uppercase; font-weight:700; color:${m.gradeMeta.color};">Hasil Penetapan Rating Akseptasi</div>
+          <div style="font-size:1.1rem; font-weight:900; color:${m.gradeMeta.color};">RATING ${m.riskGrade}</div>
           <div style="font-size:0.68rem; color:#1e293b;">Skor Komposit: <strong>${m.score} / 100</strong> (${fmtNum(m.totalRawScore, 1)} Poin)</div>
         </div>
         <div>
           <div style="font-size:0.64rem; color:#475569;">Maksimal Coverage Asuransi Kredit</div>
-          <div style="font-size:0.92rem; font-weight:800; color:#0f172a;">${m.isInitialReject ? `Maks ${m.recCoveragePct || 55}% (Apabila Disetujui)` : `${m.recCoveragePct || 70}% Plafond`}</div>
-          <div style="font-size:0.63rem; color:#64748b;">Risk Sharing Bank: ${100 - (m.recCoveragePct || (m.isInitialReject ? 55 : 70))}% ${m.isInitialReject ? '(Apabila Disetujui)' : ''}</div>
+          <div style="font-size:0.92rem; font-weight:800; color:#0f172a;">${m.isInitialReject ? `Maks ${m.recCoveragePct || (m.gradeMeta && m.gradeMeta.maxCoverage) || 50}% (Apabila Disetujui)` : `${m.recCoveragePct || 70}% Plafond`}</div>
+          <div style="font-size:0.63rem; color:#64748b;">Risk Sharing Bank: ${100 - (m.recCoveragePct || (m.isInitialReject ? 50 : 70))}% ${m.isInitialReject ? '(Apabila Disetujui)' : ''}</div>
         </div>
         <div>
           <div style="font-size:0.64rem; color:#475569;">Indikasi Rate IJP Askrindo</div>
           <div style="font-size:0.82rem; font-weight:800; color:var(--askrindo-blue);">${m.ijpRate}</div>
-          <div style="font-size:0.63rem; color:#64748b;">${m.shortGrade === 'C' ? 'Skema awal ditolak; jika disetujui bersyarat rekomendasi rate 3,75% - 4,50% p.a. (High-Risk Loading Premium)' : 'Berdasarkan profil risiko siklus kas'}</div>
+          <div style="font-size:0.63rem; color:#64748b;">${m.isInitialReject ? 'Skema awal berisiko tinggi; penjaminan membutuhkan mitigasi restrukturisasi komite' : 'Berdasarkan profil risiko siklus kas'}</div>
         </div>
         <div>
           <div style="font-size:0.64rem; color:#475569;">Rekomendasi Keputusan Komite</div>
@@ -3694,7 +3768,7 @@ function renderGradeRiskTab(proj, m) {
 
       ${m.hasKnockOutCap ? `
       <div style="background:#fef2f2; border:1px solid #fca5a5; border-left:4px solid #dc2626; padding:0.45rem 0.65rem; border-radius:6px; margin-bottom:0.6rem; font-size:0.71rem; color:#991b1b;">
-        &#9888; <strong>Aturan Veto / Hard-Cap Grade Underwriting&bull; Aktif:</strong> Karena debitur mengalami <strong>Gross Loss (${fmtPct(m.gpm23)})</strong> sekaligus <strong>Mismatch Tenor Berat (Siklus Gross ${fmtNum(m.grossCycle23, 1)} hr > Tenor ${m.scfTenor} hr)</strong>, maka Risk Grade otomatis terkunci maksimal pada zona <strong>High Risk / Reject (B / C)</strong> hingga struktur transaksi dimodifikasi menjadi <em>Ring-Fenced Self-Liquidating</em>.
+        &#9888; <strong>Aturan Veto / Hard-Cap Grade Underwriting Aktif:</strong> Karena debitur mengalami <strong>Gross Loss (${fmtPct(m.gpm23)})</strong> sekaligus <strong>Mismatch Tenor Berat (Siklus Gross ${fmtNum(m.grossCycle23, 1)} hr > Tenor ${m.scfTenor} hr)</strong>, maka Risk Grade otomatis terkunci maksimal pada zona <strong>Precautionary / High Risk (CCC / Score &le; 55)</strong> hingga struktur transaksi dimodifikasi menjadi <em>Ring-Fenced Self-Liquidating</em>.
       </div>` : ''}
 
       <div class="grid-2" style="margin-bottom:0.6rem;">
@@ -3745,15 +3819,15 @@ function renderGradeRiskTab(proj, m) {
 
           <div style="margin-top:0.5rem; background:#fff; padding:0.45rem 0.55rem; border-radius:6px; border:1px solid #cbd5e1;">
             <div style="font-weight:700; font-size:0.71rem; color:var(--askrindo-navy); margin-bottom:0.25rem;">
-              &#9888; Penetapan / Override Grade Risk oleh Underwriter (Opsional):
+              &#9888; Penetapan / Override Rating Akseptasi oleh Underwriter (Opsional):
             </div>
             <div class="grid-2" style="gap:0.35rem;">
               <div>
-                <label style="font-size:0.64rem; font-weight:600;">Pilih Mode Penentuan Grade:</label>
+                <label style="font-size:0.64rem; font-weight:600;">Pilih Mode Penentuan Rating:</label>
                 <select class="form-control" onchange="setManualGradeOverride(this.value)">
                   <option value="AUTO" ${(!proj.manualGradeOverride || proj.manualGradeOverride === 'AUTO') ? 'selected' : ''}>Otomatis Sistem DCC-SWCM (Skor ${m.score})</option>
                   ${ASKRINDO_GRADE_CATALOG.map((g) => `
-                    <option value="${g.grade}" ${proj.manualGradeOverride === g.grade ? 'selected' : ''}>Override Manual ke Grade ${g.grade} (${g.name})</option>
+                    <option value="${g.grade}" ${proj.manualGradeOverride === g.grade ? 'selected' : ''}>Override Manual ke Rating ${g.grade} (${g.name})</option>
                   `).join('')}
                 </select>
               </div>
@@ -3769,32 +3843,35 @@ function renderGradeRiskTab(proj, m) {
 
     <div class="card">
       <div class="card-header">
-        <div class="card-title">Tabel Parameter &amp; Matriks Standar Penentuan Grade Risk Askrindo (AAA s/d C)</div>
-        <span style="font-size:0.66rem; color:var(--text-muted);">Baris berwarna menunjukkan posisi Grade kasus aktif</span>
+        <div>
+          <div class="card-title">Tabel VI.1 Rating Akseptasi (Petunjuk Teknis Akseptasi Surety Bond | ASKRINDO Insurance)</div>
+          <div style="font-size:0.68rem; color:var(--text-muted); margin-top:2px;">Sumber: Internal Credit Rating PT. IDX Consulting</div>
+        </div>
+        <span style="font-size:0.66rem; color:var(--text-muted);">Baris berwarna menunjukkan posisi Rating kasus aktif</span>
       </div>
       <div class="table-responsive">
         <table class="data-table">
           <thead>
             <tr>
-              <th>Grade</th>
-              <th>Rentang Skor</th>
-              <th>Kategori Risiko</th>
-              <th>Indikator Ambang Batas (Threshold)</th>
-              <th class="num-col">Maks Coverage</th>
-              <th>Indikasi Tarif IJP</th>
-              <th>Rekomendasi Keputusan</th>
+              <th style="min-width:90px;">Score</th>
+              <th style="min-width:65px;">Rating</th>
+              <th style="min-width:130px;">Kategori</th>
+              <th>Deskripsi Karakteristik Risiko</th>
+              <th class="num-col" style="min-width:85px;">Maks Coverage</th>
+              <th style="min-width:130px;">Indikasi Tarif IJP</th>
+              <th style="min-width:160px;">Rekomendasi Keputusan</th>
             </tr>
           </thead>
           <tbody>
             ${ASKRINDO_GRADE_CATALOG.map((g) => {
               const active = g.grade === m.shortGrade;
               return `
-                <tr style="${active ? `background:${g.bg}; font-weight:700;` : ''}">
+                <tr style="${active ? `background:${g.bg}; font-weight:700; border-left:4px solid ${g.color};` : ''}">
+                  <td><strong>${g.scoreRange}</strong></td>
                   <td><span class="grade-badge ${g.badgeCls}">${g.grade}</span> ${active ? '&#10003;' : ''}</td>
-                  <td><strong>${g.minScore}  -  ${g.maxScore}</strong></td>
-                  <td>${g.name}</td>
-                  <td>${g.criteriaSummary}</td>
-                  <td class="num-col"><strong>${g.maxCoverage}%</strong></td>
+                  <td><strong>${g.name}</strong></td>
+                  <td style="font-size:0.73rem; line-height:1.4;">${g.criteriaSummary}</td>
+                  <td class="num-col"><strong>${g.maxCoverage > 0 ? `${g.maxCoverage}%` : '0% (Ditolak)'}</strong></td>
                   <td>${g.ijpRate}</td>
                   <td style="color:${g.color}; font-weight:700;">${g.decision}</td>
                 </tr>
@@ -3813,7 +3890,7 @@ function setManualGradeOverride(val) {
   proj.manualGradeOverride = val;
   saveProjectsToStorage();
   renderAll();
-  showToast(val === 'AUTO' ? 'Grade Risk kembali ke perhitungan otomatis.' : `Grade Risk di-override ke Grade ${val}.`);
+  showToast(val === 'AUTO' ? 'Rating Akseptasi kembali ke perhitungan otomatis.' : `Rating Akseptasi di-override ke Rating ${val}.`);
 }
 
 function setOverrideReason(val) {
@@ -4426,7 +4503,7 @@ function renderScoreCalculationTab(proj, m) {
         <div class="card-title">Menu Rincian Perhitungan Score DCC-SWCM (${proj.companyName})</div>
         <div style="display:flex; gap:0.35rem; align-items:center;">
           <span class="grade-badge ${m.gradeMeta.badgeCls}" style="font-size:0.72rem; padding:3px 9px;">
-            Total Score: ${m.score} / 100 (Grade ${m.shortGrade})
+            Total Score: ${m.score} / 100 (Rating ${m.shortGrade})
           </span>
           <button class="btn btn-outline btn-sm" onclick="switchTab('tab-5c')"> Analisa 5C</button>
           <button class="btn btn-outline btn-sm" onclick="switchTab('tab-grade')"> Indikator Grade</button>
@@ -4514,7 +4591,7 @@ function renderScoreCalculationTab(proj, m) {
               <td class="num-col">100,0</td>
               <td class="num-col" style="color:${m.gradeMeta.color};">${fmtNum(m.totalRawScore, 1)} (Dibulatkan: ${m.score})</td>
               <td class="num-col" style="color:#dc2626;">-${fmtNum(m.totalLostPoints, 1)}</td>
-              <td>Menghasilkan <strong>Grade ${m.riskGrade}</strong></td>
+              <td>Menghasilkan <strong>Rating ${m.riskGrade}</strong></td>
             </tr>
           </tfoot>
         </table>
@@ -6538,7 +6615,7 @@ function renderPrintableReport(proj, m) {
                   <td class="num-col" style="font-size:0.75rem;">100 Poin</td>
                   <td class="num-col" style="font-size:0.78rem; color:${m.gradeMeta.color};">${m.score} / 100</td>
                   <td>
-                    <strong>PENETAPAN GRADE RISIKO: <span class="grade-badge ${m.gradeMeta.badgeCls}">${m.shortGrade}</span> (${m.gradeMeta.name})</strong><br/>
+                    <strong>PENETAPAN RATING AKSEPTASI: <span class="grade-badge ${m.gradeMeta.badgeCls}">${m.shortGrade}</span> (${m.gradeMeta.name})</strong><br/>
                     Maksimal Coverage Askrindo: <strong>${m.recCoveragePct}%</strong> | Indikasi Tarif IJP: <strong>${m.ijpRate}</strong>
                   </td>
                 </tr>

@@ -205,9 +205,10 @@
           <!-- Diisi otomatis oleh JavaScript -->
         </div>
 
-        <div class="sidebar-footer">
-          <span id="autoSaveStatus">&#10003; Tersimpan otomatis</span>
-          <button class="btn btn-danger btn-sm" onclick="deleteCurrentProject()" title="Hapus proyek aktif">Hapus</button>
+        <div class="sidebar-footer" style="display:flex; justify-content:space-between; align-items:center; gap:0.4rem; padding:0.6rem 0.8rem;">
+          <span id="autoSaveStatus" style="font-size:0.72rem; color:var(--text-muted); flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">&#10003; Tersimpan otomatis</span>
+          <button type="button" id="btnForceCloudSyncSidebar" class="btn btn-outline btn-xs" onclick="forceSyncAllLocalToCloud()" title="Paksa seluruh analisa di komputer ini menjadi Database Cloud Supabase agar muncul di semua perangkat" style="font-size:0.68rem; padding:3px 7px; font-weight:700; white-space:nowrap; border-color:#0ea5e9; color:#0284c7;">Simpan Cloud</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteCurrentProject()" title="Hapus proyek aktif" style="padding:3px 8px; font-size:0.72rem;">Hapus</button>
         </div>
       </div>
     </aside>
@@ -2223,6 +2224,6 @@
   <div class="toast-container" id="toastContainer"></div>
 
   <script src="inaproc-blacklist-db.js?v=1793516000"></script>
-  <script src="app.js?v=1793595000"></script>
+  <script src="app.js?v=1793596500"></script>
 </body>
 </html>

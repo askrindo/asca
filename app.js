@@ -1029,7 +1029,7 @@ function renderWelcomeHub() {
       ${projectCards.length > 0 ? projectCards : `
         <div style="grid-column:1/-1; background:#fff; border:1px dashed #cbd5e1; border-radius:10px; padding:2.5rem 1.5rem; text-align:center; color:#64748b;">
           <h4 style="font-size:1.05rem; color:#334155; margin-bottom:0.35rem; font-weight:800;">Belum Ada Berkas Analisa Debitur</h4>
-          <p style="font-size:0.85rem; max-width:480px; margin:0 auto; line-height:1.45;">Gunakan tombol <strong>"Buat Analisa Baru"</strong> atau <strong>"Buka File Analisa"</strong> di atas untuk memulai evaluasi kredit.</p>
+          <p style="font-size:0.85rem; max-width:480px; margin:0 auto; line-height:1.45;">Gunakan tombol <strong>"Buat Analisa Baru"</strong> atau <strong>"Buka File Analisa"</strong> di atas untuk memulai analisa asuransi kredit.</p>
         </div>
       `}
     </div>

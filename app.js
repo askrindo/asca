@@ -943,7 +943,20 @@ function renderProjectList() {
             <span class="grade-badge ${m.gradeMeta.badgeCls}">${m.shortGrade}</span>
           </div>
           <div class="project-meta">
-            <span>${p.bankName}</span> &bull; <span>${fmtRp(p.requestedPlafond, true)}</span> &bull;<span style="font-weight:600;">Score: ${m.score}</span>
+            <span>${p.bankName}</span> &bull; <span>${fmtRp(p.requestedPlafond, true)}</span> &bull; <span style="font-weight:600;">Score: ${m.score}</span>
+          </div>
+          <div class="project-item-actions" style="display:flex; gap:0.3rem; margin-top:0.35rem; padding-top:0.3rem; border-top:1px dashed #e2e8f0; justify-content:flex-end; align-items:center;">
+            <button type="button" class="btn btn-outline btn-xs" onclick="event.stopPropagation(); duplicateProjectById('${p.id}')" title="Duplikasi Analisa Debitur" style="display:inline-flex; align-items:center; gap:3px; font-weight:700; font-size:0.68rem; padding:2px 7px;">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              <span>Duplikasi</span>
+            </button>
+            <button type="button" class="btn btn-outline btn-xs" onclick="event.stopPropagation(); exportSingleProjectJSON('${p.id}')" title="Simpan berkas analisa (.json)" style="display:inline-flex; align-items:center; gap:3px; font-weight:700; font-size:0.68rem; padding:2px 7px;">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              <span>Simpan (.json)</span>
+            </button>
+            <button type="button" class="btn btn-outline btn-xs" onclick="event.stopPropagation(); deleteProjectById('${p.id}')" title="Hapus Analisa" style="color:#dc2626; border-color:#fca5a5; padding:2px 5px; font-size:0.68rem; font-weight:700; display:inline-flex; align-items:center;">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
           </div>
         </div>
       `;

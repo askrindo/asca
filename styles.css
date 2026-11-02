@@ -239,6 +239,13 @@ body {
   font-size: 0.74rem;
 }
 
+.btn-xs {
+  padding: 0.15rem 0.38rem;
+  font-size: 0.68rem;
+  line-height: 1.2;
+  border-radius: 4px;
+}
+
 /* LAYOUT WITH COLLAPSIBLE SIDEBAR */
 .app-layout {
   display: grid;

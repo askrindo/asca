@@ -500,7 +500,8 @@ function sanitizeProjectData(p) {
 
 function getCurrentProjectStorageKey() {
   const session = getActiveSession();
-  const uname = session ? session.username : '1922';
+  const uname = session ? session.username : null;
+  if (!uname) return null;
   return USER_PROJECTS_KEY_PREFIX + uname;
 }
 
@@ -643,7 +644,11 @@ function cleanStaleLegacyKeys() {
 
 async function forceSyncAllLocalToCloud() {
   const session = getActiveSession();
-  const uname = session ? session.username : '1922';
+  if (!session || !session.username) {
+    alert('Silakan masuk ke akun Anda terlebih dahulu.');
+    return;
+  }
+  const uname = session.username;
 
   const btnHero = document.getElementById('btnForceCloudSyncHero');
   const btnSidebar = document.getElementById('btnForceCloudSyncSidebar');
@@ -655,13 +660,13 @@ async function forceSyncAllLocalToCloud() {
   setBtnText('<span>&#8635; Menyimpan ke Cloud...</span>');
 
   try {
-    // Ambil analisa yang saat ini PERSIS berada di layar pengguna
+    // Ambil analisa yang saat ini PERSIS berada di layar pengguna akun ini
     let finalProjects = Array.isArray(projects) ? projects : [];
 
     // Jika di memori masih kosong, coba ambil dari cache user spesifik saat ini
     if (finalProjects.length === 0) {
       const userKey = getCurrentProjectStorageKey();
-      const raw = localStorage.getItem(userKey);
+      const raw = userKey ? localStorage.getItem(userKey) : null;
       if (raw) {
         try {
           const parsed = JSON.parse(raw);
@@ -673,7 +678,7 @@ async function forceSyncAllLocalToCloud() {
     }
 
     if (finalProjects.length === 0) {
-      alert('Tidak ada berkas analisa aktif di layar untuk disimpan.');
+      alert('Tidak ada berkas analisa aktif di akun Anda untuk disimpan.');
       setBtnText('<span>Paksa Simpan ke Cloud</span>');
       return;
     }
@@ -684,24 +689,23 @@ async function forceSyncAllLocalToCloud() {
       activeProjectId = projects[0]?.id || null;
     }
 
-    // 1. Simpan persis data saat ini ke LocalStorage (dan sinkronkan STORAGE_KEY)
+    // 1. Simpan persis data ke LocalStorage khusus akun ini
     const userKey = getCurrentProjectStorageKey();
-    localStorage.setItem(userKey, JSON.stringify(projects));
-    if (uname === '1922') {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+    if (userKey) {
+      localStorage.setItem(userKey, JSON.stringify(projects));
     }
 
-    // 2. Bersihkan kunci legacy lama agar berkas yang sudah dihapus tidak pernah muncul kembali
+    // 2. Bersihkan kunci legacy lama agar tidak terjadi kebocoran cache antar akun
     cleanStaleLegacyKeys();
 
-    // 3. PAKSA simpan langsung ke Database Cloud Supabase (menimpa server sesuai kondisi layar saat ini)
+    // 3. PAKSA simpan langsung ke Database Cloud Supabase KHUSUS untuk akun pengguna ini
     await saveProjectsToCloud(uname, projects);
 
     renderAll();
     renderWelcomeHub();
 
-    alert(`BERHASIL DISIMPAN KE CLOUD!\n\nSebanyak ${projects.length} berkas analisa yang ada di layar Anda saat ini telah berhasil disimpan permanen ke Database Cloud Supabase untuk akun "${uname}".\n\nBerkas yang telah Anda hapus tidak akan pernah muncul kembali, dan ketika login dari komputer lain, data ini akan langsung muncul!`);
-    showToast(`✓ ${projects.length} berkas analisa berhasil disimpan ke Cloud Database!`);
+    alert(`BERHASIL DISIMPAN KE CLOUD!\n\nSebanyak ${projects.length} berkas analisa milik akun "${uname}" telah berhasil disimpan secara mandiri ke Database Cloud Supabase.\n\nAkun lain tidak akan melihat atau memiliki berkas analisa ini, dan jika Anda login dari komputer lain dengan akun "${uname}", berkas ini akan langsung muncul!`);
+    showToast(`✓ ${projects.length} berkas analisa akun ${uname} berhasil disimpan ke Cloud!`);
   } catch (err) {
     alert('Terjadi kendala saat menyimpan ke Cloud Database: ' + err.message);
   } finally {
@@ -711,12 +715,17 @@ async function forceSyncAllLocalToCloud() {
 
 async function syncProjectsWithCloud(username) {
   if (!username) return;
+  const session = getActiveSession();
+  if (!session || session.username !== username) return;
+
   try {
     const cloudProjects = await fetchProjectsFromCloud(username);
+    const curSession = getActiveSession();
+    if (!curSession || curSession.username !== username) return;
+
     if (cloudProjects && Array.isArray(cloudProjects)) {
       if (cloudProjects.length > 0) {
-        // Database Cloud adalah MASTER SUMBER KEBENARAN.
-        // Tampilkan persis data yang ada di database cloud (tidak membangkitkan data lama yang sudah dihapus).
+        // Database Cloud adalah MASTER SUMBER KEBENARAN akun ini.
         const sanitized = cloudProjects.map(sanitizeProjectData);
         sanitized.forEach((p) => ensureInaprocAutoChecked(p));
 
@@ -726,9 +735,8 @@ async function syncProjectsWithCloud(username) {
         }
 
         const userKey = getCurrentProjectStorageKey();
-        localStorage.setItem(userKey, JSON.stringify(projects));
-        if (username === '1922') {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+        if (userKey) {
+          localStorage.setItem(userKey, JSON.stringify(projects));
         }
 
         renderAll();
@@ -738,13 +746,24 @@ async function syncProjectsWithCloud(username) {
         if (el) {
           const now = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
           el.innerHTML = "&#10003; Sinkron Cloud (" + now + ")";
-          el.title = `${projects.length} berkas analisa tersimpan di Cloud Database Supabase`;
+          el.title = `${projects.length} berkas analisa tersimpan di Cloud Database Supabase untuk akun "${username}"`;
         }
         console.log(`[ASCA Cloud Sync] Sukses memuat ${projects.length} berkas analisa dari database untuk user "${username}"`);
-      } else if (projects.length > 0) {
-        // Database cloud masih kosong untuk akun ini, unggah data analisa lokal yang ada di layar
-        console.log(`[ASCA Cloud Sync] Database cloud kosong, mengunggah ${projects.length} analisa lokal untuk user "${username}"`);
-        await saveProjectsToCloud(username, projects);
+      } else {
+        // Cloud database kosong untuk user ini:
+        // Hanya jika di cache lokal pengguna ini memang sudah ada data proyek yang baru dibuat, unggah ke cloud
+        const userKey = getCurrentProjectStorageKey();
+        const rawLocal = userKey ? localStorage.getItem(userKey) : null;
+        if (rawLocal && projects.length > 0) {
+          console.log(`[ASCA Cloud Sync] Database cloud kosong, mengunggah ${projects.length} analisa lokal untuk user "${username}"`);
+          await saveProjectsToCloud(username, projects);
+        } else {
+          // Akun pengguna ini memang bersih tanpa analisa
+          projects = [];
+          activeProjectId = null;
+          renderAll();
+          renderWelcomeHub();
+        }
       }
     }
   } catch (err) {
@@ -754,8 +773,12 @@ async function syncProjectsWithCloud(username) {
 
 function loadProjectsFromStorage() {
   const session = getActiveSession();
-  const uname = session ? session.username : '1922';
-  const is1922 = uname === '1922';
+  if (!session || !session.username) {
+    projects = [];
+    activeProjectId = null;
+    return;
+  }
+  const uname = session.username;
   const userKey = getCurrentProjectStorageKey();
 
   projects = [];
@@ -763,47 +786,32 @@ function loadProjectsFromStorage() {
 
   try {
     // 1. Muat cache spesifik pengguna saat ini
-    const raw = localStorage.getItem(userKey);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        projects = parsed.map(sanitizeProjectData);
-        activeProjectId = projects[0]?.id || null;
-      }
-    } else if (is1922) {
-      // Fallback awal hanya untuk 1922 jika userKey belum ada
-      const rawLegacy = localStorage.getItem(STORAGE_KEY);
-      if (rawLegacy) {
-        const parsed = JSON.parse(rawLegacy);
+    if (userKey) {
+      const raw = localStorage.getItem(userKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.length > 0) {
           projects = parsed.map(sanitizeProjectData);
           activeProjectId = projects[0]?.id || null;
         }
-      }
-      if (projects.length === 0) {
-        projects = getDefaultProjects();
-        activeProjectId = projects[0]?.id || null;
       }
     }
   } catch (e) {
     console.warn('Gagal memuat localStorage:', e);
   }
 
-  // 2. Sinkronkan dari Cloud Database Supabase (Cloud adalah Master)
-  if (session && session.username) {
-    syncProjectsWithCloud(session.username);
-  }
+  // 2. Sinkronkan dari Cloud Database Supabase (Cloud adalah Master untuk akun ini)
+  syncProjectsWithCloud(uname);
 }
 
 function saveProjectsToStorage(immediateCloud = false) {
   try {
-    const userKey = getCurrentProjectStorageKey();
-    localStorage.setItem(userKey, JSON.stringify(projects));
-
-    // Mirror to main STORAGE_KEY if user is 1922
     const session = getActiveSession();
-    if (!session || session.username === '1922') {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+    if (!session || !session.username) return;
+
+    const userKey = getCurrentProjectStorageKey();
+    if (userKey) {
+      localStorage.setItem(userKey, JSON.stringify(projects));
     }
 
     const el = document.getElementById('autoSaveStatus');
@@ -812,9 +820,7 @@ function saveProjectsToStorage(immediateCloud = false) {
       el.innerHTML = "&#10003; Tersimpan (" + now + ")";
     }
 
-    if (session && session.username) {
-      triggerCloudSaveDebounced(session.username, immediateCloud ? 50 : 800);
-    }
+    triggerCloudSaveDebounced(session.username, immediateCloud ? 50 : 800);
   } catch (e) {
     console.error('Gagal menyimpan ke localStorage:', e);
   }
@@ -8137,6 +8143,16 @@ async function handleLoginSubmit(event, isForce = false) {
     };
     setActiveSession(session);
 
+    // Reset in-memory state agar data user sebelumnya tidak terbawa ke sesi baru
+    projects = [];
+    activeProjectId = null;
+    currentProjectsPayload = '';
+    if (cloudSaveDebounceTimer) {
+      clearTimeout(cloudSaveDebounceTimer);
+      cloudSaveDebounceTimer = null;
+    }
+    cleanStaleLegacyKeys();
+
     if (alertBox) alertBox.style.display = 'none';
     if (usernameInput) usernameInput.value = '';
     if (passwordInput) passwordInput.value = '';
@@ -8225,6 +8241,12 @@ function performActualLogout() {
   // 1. Reset state in-memory
   projects = [];
   activeProjectId = null;
+  currentProjectsPayload = '';
+  if (cloudSaveDebounceTimer) {
+    clearTimeout(cloudSaveDebounceTimer);
+    cloudSaveDebounceTimer = null;
+  }
+  cleanStaleLegacyKeys();
   switchTab('tab-dashboard');
 
   // 2. Clear session auth & temp storage

@@ -625,31 +625,8 @@ function triggerCloudSaveDebounced(username, delayMs = 800) {
   }, delayMs);
 }
 
-function collectAllLocalProjects(username) {
-  const userKey = getCurrentProjectStorageKey();
-  const foundMap = new Map();
-
-  const addProjects = (list) => {
-    if (!Array.isArray(list)) return;
-    list.forEach(p => {
-      if (p && (p.id || p.companyName)) {
-        const idKey = p.id || ('case-' + (p.companyName || Math.random()));
-        if (!foundMap.has(idKey)) {
-          foundMap.set(idKey, sanitizeProjectData(p));
-        }
-      }
-    });
-  };
-
-  // 1. Kunci spesifik user saat ini
-  try {
-    const raw = localStorage.getItem(userKey);
-    if (raw) addProjects(JSON.parse(raw));
-  } catch (e) {}
-
-  // 2. Kunci legacy umum (dibuat sebelum sistem multi-user atau di versi terdahulu)
-  const legacyKeys = [
-    STORAGE_KEY,
+function cleanStaleLegacyKeys() {
+  const staleKeys = [
     'ASKRINDO_ASCA_PROJECTS_V1',
     'ASKRINDO_AFCA_PROJECTS_V28',
     'ASKRINDO_AFCA_PROJECTS_V27',
@@ -659,22 +636,9 @@ function collectAllLocalProjects(username) {
     'ASKRINDO_AFCA_PROJECTS',
     'ASCA_DRAFT_PROJECT'
   ];
-  legacyKeys.forEach(k => {
-    try {
-      const raw = localStorage.getItem(k);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) {
-          addProjects(parsed);
-        } else if (parsed && typeof parsed === 'object') {
-          if (Array.isArray(parsed.projects)) addProjects(parsed.projects);
-          else if (parsed.id || parsed.companyName) addProjects([parsed]);
-        }
-      }
-    } catch (e) {}
+  staleKeys.forEach(k => {
+    try { localStorage.removeItem(k); } catch (e) {}
   });
-
-  return Array.from(foundMap.values());
 }
 
 async function forceSyncAllLocalToCloud() {
@@ -688,26 +652,30 @@ async function forceSyncAllLocalToCloud() {
     if (btnSidebar) btnSidebar.innerHTML = html;
   };
 
-  setBtnText('<span>&#8635; Memaksa Unggah ke Cloud...</span>');
+  setBtnText('<span>&#8635; Menyimpan ke Cloud...</span>');
 
   try {
-    // 1. Kumpulkan seluruh analisa lokal dari semua storage browser
-    const localProjects = collectAllLocalProjects(uname);
-    const currentList = Array.isArray(projects) ? projects : [];
+    // Ambil analisa yang saat ini PERSIS berada di layar pengguna
+    let finalProjects = Array.isArray(projects) ? projects : [];
 
-    const mergedMap = new Map();
-    localProjects.forEach(p => mergedMap.set(p.id || p.companyName, sanitizeProjectData(p)));
-    currentList.forEach(p => mergedMap.set(p.id || p.companyName, sanitizeProjectData(p)));
-
-    let finalProjects = Array.from(mergedMap.values());
+    // Jika di memori masih kosong, coba ambil dari cache user spesifik saat ini
     if (finalProjects.length === 0) {
-      if (uname === '1922') {
-        finalProjects = getDefaultProjects();
-      } else {
-        alert('Tidak ditemukan berkas analisa lokal di komputer ini untuk diunggah.');
-        setBtnText('<span>Paksa Simpan ke Cloud</span>');
-        return;
+      const userKey = getCurrentProjectStorageKey();
+      const raw = localStorage.getItem(userKey);
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            finalProjects = parsed.map(sanitizeProjectData);
+          }
+        } catch (e) {}
       }
+    }
+
+    if (finalProjects.length === 0) {
+      alert('Tidak ada berkas analisa aktif di layar untuk disimpan.');
+      setBtnText('<span>Paksa Simpan ke Cloud</span>');
+      return;
     }
 
     finalProjects.forEach(p => ensureInaprocAutoChecked(p));
@@ -716,21 +684,24 @@ async function forceSyncAllLocalToCloud() {
       activeProjectId = projects[0]?.id || null;
     }
 
-    // 2. Simpan cache lokal
+    // 1. Simpan persis data saat ini ke LocalStorage (dan sinkronkan STORAGE_KEY)
     const userKey = getCurrentProjectStorageKey();
     localStorage.setItem(userKey, JSON.stringify(projects));
     if (uname === '1922') {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
     }
 
-    // 3. PAKSA simpan langsung ke Database Cloud Supabase
+    // 2. Bersihkan kunci legacy lama agar berkas yang sudah dihapus tidak pernah muncul kembali
+    cleanStaleLegacyKeys();
+
+    // 3. PAKSA simpan langsung ke Database Cloud Supabase (menimpa server sesuai kondisi layar saat ini)
     await saveProjectsToCloud(uname, projects);
 
     renderAll();
     renderWelcomeHub();
 
-    alert(`BERHASIL!\n\nSebanyak ${projects.length} berkas analisa dari komputer ini telah DIPAKSA menjadi Database Cloud untuk akun "${uname}".\n\nSekarang Anda dapat membuka akun ini dari komputer atau laptop mana pun dan seluruh analisa tersebut akan langsung otomatis muncul!`);
-    showToast(`✓ ${projects.length} berkas analisa berhasil dipaksa disimpan ke Cloud Database!`);
+    alert(`BERHASIL DISIMPAN KE CLOUD!\n\nSebanyak ${projects.length} berkas analisa yang ada di layar Anda saat ini telah berhasil disimpan permanen ke Database Cloud Supabase untuk akun "${uname}".\n\nBerkas yang telah Anda hapus tidak akan pernah muncul kembali, dan ketika login dari komputer lain, data ini akan langsung muncul!`);
+    showToast(`✓ ${projects.length} berkas analisa berhasil disimpan ke Cloud Database!`);
   } catch (err) {
     alert('Terjadi kendala saat menyimpan ke Cloud Database: ' + err.message);
   } finally {
@@ -741,64 +712,41 @@ async function forceSyncAllLocalToCloud() {
 async function syncProjectsWithCloud(username) {
   if (!username) return;
   try {
-    const cloudProjects = (await fetchProjectsFromCloud(username)) || [];
-    const localProjects = collectAllLocalProjects(username);
+    const cloudProjects = await fetchProjectsFromCloud(username);
+    if (cloudProjects && Array.isArray(cloudProjects)) {
+      if (cloudProjects.length > 0) {
+        // Database Cloud adalah MASTER SUMBER KEBENARAN.
+        // Tampilkan persis data yang ada di database cloud (tidak membangkitkan data lama yang sudah dihapus).
+        const sanitized = cloudProjects.map(sanitizeProjectData);
+        sanitized.forEach((p) => ensureInaprocAutoChecked(p));
 
-    // Smart Merge: Gabungkan database cloud dengan analisa yang ada di komputer ini
-    const mergedMap = new Map();
-    // 1. Masukkan analisa dari cloud database terlebih dahulu
-    cloudProjects.forEach(cp => {
-      if (cp && (cp.id || cp.companyName)) {
-        mergedMap.set(cp.id || cp.companyName, sanitizeProjectData(cp));
+        projects = sanitized;
+        if (!activeProjectId || !projects.some(p => p.id === activeProjectId)) {
+          activeProjectId = projects[0]?.id || null;
+        }
+
+        const userKey = getCurrentProjectStorageKey();
+        localStorage.setItem(userKey, JSON.stringify(projects));
+        if (username === '1922') {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+        }
+
+        renderAll();
+        renderWelcomeHub();
+
+        const el = document.getElementById('autoSaveStatus');
+        if (el) {
+          const now = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+          el.innerHTML = "&#10003; Sinkron Cloud (" + now + ")";
+          el.title = `${projects.length} berkas analisa tersimpan di Cloud Database Supabase`;
+        }
+        console.log(`[ASCA Cloud Sync] Sukses memuat ${projects.length} berkas analisa dari database untuk user "${username}"`);
+      } else if (projects.length > 0) {
+        // Database cloud masih kosong untuk akun ini, unggah data analisa lokal yang ada di layar
+        console.log(`[ASCA Cloud Sync] Database cloud kosong, mengunggah ${projects.length} analisa lokal untuk user "${username}"`);
+        await saveProjectsToCloud(username, projects);
       }
-    });
-
-    let hasNewLocalToUpload = false;
-    // 2. Jika ada analisa di komputer lokal ini yang belum masuk database cloud, gabungkan!
-    localProjects.forEach(lp => {
-      const key = lp.id || lp.companyName;
-      if (!mergedMap.has(key)) {
-        mergedMap.set(key, sanitizeProjectData(lp));
-        hasNewLocalToUpload = true;
-      }
-    });
-
-    let finalProjects = Array.from(mergedMap.values());
-
-    if (finalProjects.length === 0 && username === '1922') {
-      finalProjects = getDefaultProjects();
-      hasNewLocalToUpload = true;
     }
-
-    finalProjects.forEach(p => ensureInaprocAutoChecked(p));
-
-    // Jika terdapat analisa lokal yang belum tercatat di database cloud, OTOMATIS PAKSA UNGGAH!
-    if (hasNewLocalToUpload && finalProjects.length > 0) {
-      console.log(`[ASCA Cloud Sync] Memaksa unggah ${finalProjects.length} analisa lokal pengguna "${username}" ke Cloud Database`);
-      await saveProjectsToCloud(username, finalProjects);
-    }
-
-    projects = finalProjects;
-    if (!activeProjectId || !projects.some(p => p.id === activeProjectId)) {
-      activeProjectId = projects[0]?.id || null;
-    }
-
-    const userKey = getCurrentProjectStorageKey();
-    localStorage.setItem(userKey, JSON.stringify(projects));
-    if (username === '1922') {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
-    }
-
-    renderAll();
-    renderWelcomeHub();
-
-    const el = document.getElementById('autoSaveStatus');
-    if (el) {
-      const now = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-      el.innerHTML = "&#10003; Sinkron Cloud (" + now + ")";
-      el.title = `${projects.length} berkas analisa tersimpan di Cloud Database Supabase`;
-    }
-    console.log(`[ASCA Cloud Sync] Sukses sinkron ${projects.length} berkas analisa untuk user "${username}"`);
   } catch (err) {
     console.warn('[ASCA Cloud Sync] Sinkronisasi cloud tertunda (offline/timeout):', err);
   }
@@ -814,20 +762,34 @@ function loadProjectsFromStorage() {
   activeProjectId = null;
 
   try {
-    const localProjects = collectAllLocalProjects(uname);
-    if (localProjects.length > 0) {
-      projects = localProjects;
-      activeProjectId = projects[0]?.id || null;
+    // 1. Muat cache spesifik pengguna saat ini
+    const raw = localStorage.getItem(userKey);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        projects = parsed.map(sanitizeProjectData);
+        activeProjectId = projects[0]?.id || null;
+      }
     } else if (is1922) {
-      projects = getDefaultProjects();
-      projects.forEach((p) => ensureInaprocAutoChecked(p));
-      activeProjectId = projects[0].id;
+      // Fallback awal hanya untuk 1922 jika userKey belum ada
+      const rawLegacy = localStorage.getItem(STORAGE_KEY);
+      if (rawLegacy) {
+        const parsed = JSON.parse(rawLegacy);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          projects = parsed.map(sanitizeProjectData);
+          activeProjectId = projects[0]?.id || null;
+        }
+      }
+      if (projects.length === 0) {
+        projects = getDefaultProjects();
+        activeProjectId = projects[0]?.id || null;
+      }
     }
   } catch (e) {
     console.warn('Gagal memuat localStorage:', e);
   }
 
-  // Sinkronkan berkas analisa pengguna dari Cloud Database secara asinkron (Smart Merge & Auto Force Push)
+  // 2. Sinkronkan dari Cloud Database Supabase (Cloud adalah Master)
   if (session && session.username) {
     syncProjectsWithCloud(session.username);
   }
@@ -938,7 +900,10 @@ function deleteProjectById(id) {
   projects = projects.filter(p => p.id !== id);
   if (projects.length > 0 && activeProjectId === id) {
     activeProjectId = projects[0].id;
+  } else if (projects.length === 0) {
+    activeProjectId = null;
   }
+  cleanStaleLegacyKeys();
   saveProjectsToStorage(true);
   renderProjectList();
   renderWelcomeHub();
@@ -7465,7 +7430,8 @@ function deleteCurrentProject() {
   const curr = getActiveProject();
   if (!confirm(`Hapus proyek analisa "${curr.companyName}"?`)) return;
   projects = projects.filter((p) => p.id !== curr.id);
-  activeProjectId = projects[0].id;
+  activeProjectId = projects[0]?.id || null;
+  cleanStaleLegacyKeys();
   saveProjectsToStorage(true);
   renderAll();
   showToast('Proyek telah dihapus.');

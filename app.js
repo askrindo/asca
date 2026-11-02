@@ -1182,13 +1182,21 @@ function renderProjectList() {
 
   const searchInput = document.getElementById('searchProjectInput');
   const session = getActiveSession();
-  if (searchInput) {
+  if (searchInput && !projectSearchManuallyTyped) {
     const rawVal = (searchInput.value || '').trim();
-    if (rawVal === '1922' || rawVal.toLowerCase() === 'admin' || (session && rawVal.toLowerCase() === session.username.toLowerCase())) {
-      searchInput.value = '';
+    if (rawVal) {
+      const lower = rawVal.toLowerCase();
+      if (lower === '1922' || lower === 'admin' || (session && lower === session.username.toLowerCase())) {
+        searchInput.value = '';
+      }
     }
   }
   const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+  const btnClearSidebar = document.getElementById('btnSidebarClearSearch');
+  if (btnClearSidebar) {
+    btnClearSidebar.style.display = query ? 'block' : 'none';
+  }
 
   const filtered = projects.filter((p) => {
     if (!query) return true;
@@ -7936,8 +7944,8 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 window.addEventListener('load', () => {
-  const asi = document.getElementById('adminUserSearchInput');
   const sess = getActiveSession();
+  const asi = document.getElementById('adminUserSearchInput');
   if (asi && !adminSearchManuallyTyped) {
     const val = (asi.value || '').trim().toLowerCase();
     if (val === 'admin' || val === '1922' || (sess && val === sess.username.toLowerCase())) {
@@ -7945,6 +7953,16 @@ window.addEventListener('load', () => {
       asi.setAttribute('readonly', 'readonly');
       const bc = document.getElementById('btnAdminClearSearch');
       if (bc) bc.style.display = 'none';
+    }
+  }
+  const psi = document.getElementById('searchProjectInput');
+  if (psi && !projectSearchManuallyTyped) {
+    const pVal = (psi.value || '').trim().toLowerCase();
+    if (pVal === 'admin' || pVal === '1922' || (sess && pVal === sess.username.toLowerCase())) {
+      psi.value = '';
+      psi.setAttribute('readonly', 'readonly');
+      const pbc = document.getElementById('btnSidebarClearSearch');
+      if (pbc) pbc.style.display = 'none';
     }
   }
 });
@@ -8095,18 +8113,41 @@ async function checkAuthAndRoute() {
     if (navUnitEl) navUnitEl.textContent = getCleanUnit(session.unit) || 'Divisi Underwriting Komersial';
 
     const searchInput = document.getElementById('searchProjectInput');
-    if (searchInput) searchInput.value = '';
+    projectSearchManuallyTyped = false;
+    if (searchInput) {
+      searchInput.value = '';
+      searchInput.setAttribute('readonly', 'readonly');
+    }
+    const btnClearSidebar = document.getElementById('btnSidebarClearSearch');
+    if (btnClearSidebar) btnClearSidebar.style.display = 'none';
+
     setupSearchProjectInputProtection();
-    [50, 150, 300, 600, 1200, 2000].forEach((delay) => {
-      setTimeout(() => {
-        const si = document.getElementById('searchProjectInput');
-        const sess = getActiveSession();
-        if (si && (si.value === '1922' || si.value === 'admin' || (sess && si.value.trim().toLowerCase() === sess.username.toLowerCase()))) {
-          si.value = '';
-          renderProjectList();
+
+    // Guard interval berkala untuk membersihkan injeksi autofill browser pada saat transisi/login (0 - 4500ms)
+    let projectAutofillTicks = 0;
+    const projectGuardInterval = setInterval(() => {
+      projectAutofillTicks++;
+      const si = document.getElementById('searchProjectInput');
+      const sess = getActiveSession();
+      if (si && !projectSearchManuallyTyped) {
+        const val = (si.value || '').trim();
+        if (val) {
+          const lVal = val.toLowerCase();
+          if (lVal === '1922' || lVal === 'admin' || (sess && lVal === sess.username.toLowerCase())) {
+            si.value = '';
+            if (!document.activeElement || document.activeElement !== si) {
+              si.setAttribute('readonly', 'readonly');
+            }
+            const bc = document.getElementById('btnSidebarClearSearch');
+            if (bc) bc.style.display = 'none';
+            renderProjectList();
+          }
         }
-      }, delay);
-    });
+      }
+      if (projectAutofillTicks >= 45) {
+        clearInterval(projectGuardInterval);
+      }
+    }, 100);
 
     loadProjectsFromStorage();
     renderAll();
@@ -8122,22 +8163,59 @@ async function checkAuthAndRoute() {
   }
 }
 
+let projectSearchManuallyTyped = false;
+
+function clearProjectSearch() {
+  projectSearchManuallyTyped = false;
+  const si = document.getElementById('searchProjectInput');
+  if (si) {
+    si.value = '';
+    si.setAttribute('readonly', 'readonly');
+  }
+  const btnClear = document.getElementById('btnSidebarClearSearch');
+  if (btnClear) btnClear.style.display = 'none';
+  renderProjectList();
+}
+
 function setupSearchProjectInputProtection() {
   const si = document.getElementById('searchProjectInput');
-  if (!si || si.__protectionAttached) return;
+  if (!si) return;
+  projectSearchManuallyTyped = false;
+  if (si.__protectionAttached) return;
   si.__protectionAttached = true;
-  const cleanIfUsername = () => {
+
+  si.addEventListener('keydown', (e) => {
+    if ((e.key && e.key.length === 1) || e.key === 'Backspace' || e.key === 'Delete') {
+      projectSearchManuallyTyped = true;
+    }
+  });
+
+  const cleanIfAutofill = () => {
+    if (projectSearchManuallyTyped) return;
     const sess = getActiveSession();
-    const val = (si.value || '').trim().toLowerCase();
-    if (val === '1922' || val === 'admin' || (sess && val === sess.username.toLowerCase())) {
+    const val = (si.value || '').trim();
+    if (!val) return;
+    const lower = val.toLowerCase();
+    if (lower === '1922' || lower === 'admin' || (sess && lower === sess.username.toLowerCase())) {
       si.value = '';
+      if (!document.activeElement || document.activeElement !== si) {
+        si.setAttribute('readonly', 'readonly');
+      }
+      const bc = document.getElementById('btnSidebarClearSearch');
+      if (bc) bc.style.display = 'none';
       renderProjectList();
     }
   };
-  si.addEventListener('focus', cleanIfUsername);
-  si.addEventListener('click', cleanIfUsername);
-  si.addEventListener('input', cleanIfUsername);
-  si.addEventListener('change', cleanIfUsername);
+
+  si.addEventListener('focus', cleanIfAutofill);
+  si.addEventListener('click', cleanIfAutofill);
+  si.addEventListener('change', cleanIfAutofill);
+  si.addEventListener('input', () => {
+    if (!projectSearchManuallyTyped) {
+      cleanIfAutofill();
+    }
+  });
+  si.addEventListener('animationstart', cleanIfAutofill);
 }
 
 let adminSearchManuallyTyped = false;
@@ -8398,11 +8476,19 @@ async function handleLoginSubmit(event, isForce = false) {
 
     showToast('Selamat datang, ' + user.fullName + '!');
     await checkAuthAndRoute();
+    projectSearchManuallyTyped = false;
     const finalSearchInput = document.getElementById('searchProjectInput');
-    if (finalSearchInput) finalSearchInput.value = '';
+    if (finalSearchInput) {
+      finalSearchInput.value = '';
+      finalSearchInput.setAttribute('readonly', 'readonly');
+      const pbc = document.getElementById('btnSidebarClearSearch');
+      if (pbc) pbc.style.display = 'none';
+    }
+    adminSearchManuallyTyped = false;
     const finalAdminSearch = document.getElementById('adminUserSearchInput');
     if (finalAdminSearch) {
       finalAdminSearch.value = '';
+      finalAdminSearch.setAttribute('readonly', 'readonly');
       const bc = document.getElementById('btnAdminClearSearch');
       if (bc) bc.style.display = 'none';
     }
@@ -8497,12 +8583,21 @@ function performActualLogout() {
   } catch (e) {}
 
   // 3. Reset form inputs di DOM agar tidak ada data input yang tersisa
+  projectSearchManuallyTyped = false;
+  adminSearchManuallyTyped = false;
   const allInputs = document.querySelectorAll('#appLayoutContainer input, #appLayoutContainer select, #appLayoutContainer textarea, #adminLayoutContainer input, #adminLayoutContainer select, #adminLayoutContainer textarea');
   allInputs.forEach(inp => {
     if (inp.type !== 'file' && inp.type !== 'button' && inp.type !== 'submit') {
       inp.value = '';
     }
   });
+  const psi = document.getElementById('searchProjectInput');
+  if (psi) {
+    psi.value = '';
+    psi.setAttribute('readonly', 'readonly');
+  }
+  const pbc = document.getElementById('btnSidebarClearSearch');
+  if (pbc) pbc.style.display = 'none';
   const bc = document.getElementById('btnAdminClearSearch');
   if (bc) bc.style.display = 'none';
 

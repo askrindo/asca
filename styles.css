@@ -2825,3 +2825,20 @@ input[type="range"] {
   font-weight: 800;
   flex-shrink: 0;
 }
+
+/* ============================================================================
+   ANTI-AUTOFILL & CREDENTIAL PROTECTION
+   ============================================================================ */
+@keyframes onAutoFillStart {
+  from { opacity: 0.99; }
+  to { opacity: 1; }
+}
+
+input:-webkit-autofill {
+  animation-name: onAutoFillStart;
+}
+
+.sidebar-search-wrap {
+  position: relative;
+  width: 100%;
+}

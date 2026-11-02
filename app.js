@@ -126,6 +126,8 @@ function getDefaultProjects() {
       kmkTenorDays: 90,
       interestRate: 9.5,
       underwriter: 'Tim Underwriting Komersial Askrindo',
+      checker: 'Kepala Bagian Underwriting',
+      approver: 'Komite Pemutus Asuransi Kredit',
       year1: 2022,
       year2: 2023,
       qualitative5CScore: 6,
@@ -198,6 +200,8 @@ function getDefaultProjects() {
       kmkTenorDays: 0,
       interestRate: 8.5,
       underwriter: 'Tim Underwriting Komersial Askrindo',
+      checker: 'Kepala Bagian Underwriting',
+      approver: 'Komite Pemutus Asuransi Kredit',
       year1: 2023,
       year2: 2024,
       qualitative5CScore: 8.5,
@@ -270,6 +274,8 @@ function getDefaultProjects() {
       kmkTenorDays: 0,
       interestRate: 9.25,
       underwriter: 'Tim Underwriting Komersial Askrindo',
+      checker: 'Kepala Bagian Underwriting',
+      approver: 'Komite Pemutus Asuransi Kredit',
       year1: 2022,
       year2: 2023,
       qualitative5CScore: 9.0,
@@ -6607,19 +6613,19 @@ function renderPrintableReport(proj, m) {
               <div>
                 <div>Disusun Oleh,</div>
                 <div style="height:36px;"></div>
-                <div style="font-weight:700; border-top:1px solid #94a3b8; padding-top:3px;">${proj.underwriter}</div>
+                <div style="font-weight:700; border-top:1px solid #94a3b8; padding-top:3px;">${proj.underwriter || 'Analis Underwriting'}</div>
                 <div style="color:var(--text-muted);">Analis Underwriting Askrindo</div>
               </div>
               <div>
                 <div>Diperiksa Oleh,</div>
                 <div style="height:36px;"></div>
-                <div style="font-weight:700; border-top:1px solid #94a3b8; padding-top:3px;">Kepala Bagian Underwriting</div>
+                <div style="font-weight:700; border-top:1px solid #94a3b8; padding-top:3px;">${proj.checker || 'Kepala Bagian Underwriting'}</div>
                 <div style="color:var(--text-muted);">Reviewer Risiko Asuransi Kredit</div>
               </div>
               <div>
                 <div>Disetujui Oleh,</div>
                 <div style="height:36px;"></div>
-                <div style="font-weight:700; border-top:1px solid #94a3b8; padding-top:3px;">Komite Pemutus Asuransi Kredit</div>
+                <div style="font-weight:700; border-top:1px solid #94a3b8; padding-top:3px;">${proj.approver || 'Komite Pemutus Asuransi Kredit'}</div>
                 <div style="color:var(--text-muted);">PT Asuransi Kredit Indonesia</div>
               </div>
             </div>
@@ -6658,6 +6664,8 @@ function populateFormInputs(proj) {
   setVal('inp_kmkTenorDays', proj.kmkTenorDays, true);
   setVal('inp_interestRate', proj.interestRate);
   setVal('inp_underwriter', proj.underwriter);
+  setVal('inp_checker', proj.checker || 'Kepala Bagian Underwriting');
+  setVal('inp_approver', proj.approver || 'Komite Pemutus Asuransi Kredit');
   setVal('inp_businessDesc', proj.businessDesc);
 
   const procMethod = proj.procurementMethod || (isMaritimeOrImportRisk(proj) ? 'import_sea' : 'none');
@@ -6993,6 +7001,8 @@ function syncInputsToModel() {
   proj.kmkTenorDays = getFmtNum('inp_kmkTenorDays');
   proj.interestRate = getPlainNum('inp_interestRate');
   proj.underwriter = getStr('inp_underwriter');
+  proj.checker = getStr('inp_checker');
+  proj.approver = getStr('inp_approver');
   proj.businessDesc = getStr('inp_businessDesc');
 
   const rNone = document.getElementById('inp_proc_none');
@@ -7392,6 +7402,13 @@ function switchTab(tabId) {
   document.querySelectorAll('.tab-pane').forEach((pane) => {
     pane.classList.toggle('active', pane.id === tabId);
   });
+  if (tabId === 'tab-report') {
+    const proj = getActiveProject();
+    if (proj) {
+      const m = computeDCCSWCM(proj);
+      renderPrintableReport(proj, m);
+    }
+  }
 }
 
 function openNewProjectModal() {
@@ -7455,6 +7472,8 @@ function createNewProjectFromModal() {
       kmkTenorDays: 120,
       interestRate: 11.0,
       underwriter: 'Analis Underwriting',
+      checker: 'Kepala Bagian Underwriting',
+      approver: 'Komite Pemutus Asuransi Kredit',
       businessDesc: '',
       procurementMethod: 'domestic',
       claimedDOR: null,

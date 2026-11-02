@@ -840,10 +840,9 @@ function renderWelcomeHub() {
 
     <div class="hub-projects-grid">
       ${projectCards.length > 0 ? projectCards : `
-        <div style="grid-column:1/-1; background:#fff; border:1px dashed #cbd5e1; border-radius:10px; padding:3rem 1.5rem; text-align:center; color:#64748b;">
-          <h4 style="font-size:1.1rem; color:#334155; margin-bottom:0.5rem; font-weight:800;">Belum Ada Berkas Analisa Debitur</h4>
-          <p style="font-size:0.85rem; max-width:480px; margin:0 auto 1.25rem auto;">Mulai dengan membuat analisa kredit baru atau buka file database (.asca.json) untuk memulai analisa.</p>
-          <button type="button" class="btn btn-primary" onclick="openNewProjectModal()" style="background:linear-gradient(135deg, #f59e0b 0%, #ea580c 100%) !important; border:1px solid #f97316 !important; font-weight:800 !important;">Buat Analisa Baru</button>
+        <div style="grid-column:1/-1; background:#fff; border:1px dashed #cbd5e1; border-radius:10px; padding:2.5rem 1.5rem; text-align:center; color:#64748b;">
+          <h4 style="font-size:1.05rem; color:#334155; margin-bottom:0.35rem; font-weight:800;">Belum Ada Berkas Analisa Debitur</h4>
+          <p style="font-size:0.85rem; max-width:480px; margin:0 auto; line-height:1.45;">Gunakan tombol <strong>"Buat Analisa Baru"</strong> atau <strong>"Buka File Analisa"</strong> di atas untuk memulai evaluasi kredit.</p>
         </div>
       `}
     </div>
@@ -922,7 +921,7 @@ function renderProjectList() {
     container.innerHTML = `
       <div style="padding:1.5rem 0.8rem; text-align:center; color:var(--text-muted); font-size:0.75rem;">
         ${projects.length === 0 
-          ? 'Belum ada berkas analisa.<br/><button class="btn btn-primary btn-sm" style="margin-top:0.6rem; background:linear-gradient(135deg, #f59e0b 0%, #ea580c 100%); border:none; font-weight:700;" onclick="openNewProjectModal()">Buat Analisa Baru</button>' 
+          ? 'Belum ada berkas analisa tersimpan.' 
           : `Tidak ada analisa yang cocok dengan kata kunci "${query}".`}
       </div>
     `;

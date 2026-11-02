@@ -642,77 +642,6 @@ function cleanStaleLegacyKeys() {
   });
 }
 
-async function forceSyncAllLocalToCloud() {
-  const session = getActiveSession();
-  if (!session || !session.username) {
-    alert('Silakan masuk ke akun Anda terlebih dahulu.');
-    return;
-  }
-  const uname = session.username;
-
-  const btnHero = document.getElementById('btnForceCloudSyncHero');
-  const btnSidebar = document.getElementById('btnForceCloudSyncSidebar');
-  const setBtnText = (html) => {
-    if (btnHero) btnHero.innerHTML = html;
-    if (btnSidebar) btnSidebar.innerHTML = html;
-  };
-
-  setBtnText('<span>&#8635; Menyimpan ke Cloud...</span>');
-
-  try {
-    // Ambil analisa yang saat ini PERSIS berada di layar pengguna akun ini
-    let finalProjects = Array.isArray(projects) ? projects : [];
-
-    // Jika di memori masih kosong, coba ambil dari cache user spesifik saat ini
-    if (finalProjects.length === 0) {
-      const userKey = getCurrentProjectStorageKey();
-      const raw = userKey ? localStorage.getItem(userKey) : null;
-      if (raw) {
-        try {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            finalProjects = parsed.map(sanitizeProjectData);
-          }
-        } catch (e) {}
-      }
-    }
-
-    if (finalProjects.length === 0) {
-      alert('Tidak ada berkas analisa aktif di akun Anda untuk disimpan.');
-      setBtnText('<span>Paksa Simpan ke Cloud</span>');
-      return;
-    }
-
-    finalProjects.forEach(p => ensureInaprocAutoChecked(p));
-    projects = finalProjects;
-    if (!activeProjectId || !projects.some(p => p.id === activeProjectId)) {
-      activeProjectId = projects[0]?.id || null;
-    }
-
-    // 1. Simpan persis data ke LocalStorage khusus akun ini
-    const userKey = getCurrentProjectStorageKey();
-    if (userKey) {
-      localStorage.setItem(userKey, JSON.stringify(projects));
-    }
-
-    // 2. Bersihkan kunci legacy lama agar tidak terjadi kebocoran cache antar akun
-    cleanStaleLegacyKeys();
-
-    // 3. PAKSA simpan langsung ke Database Cloud Supabase KHUSUS untuk akun pengguna ini
-    await saveProjectsToCloud(uname, projects);
-
-    renderAll();
-    renderWelcomeHub();
-
-    alert(`BERHASIL DISIMPAN KE CLOUD!\n\nSebanyak ${projects.length} berkas analisa milik akun "${uname}" telah berhasil disimpan secara mandiri ke Database Cloud Supabase.\n\nAkun lain tidak akan melihat atau memiliki berkas analisa ini, dan jika Anda login dari komputer lain dengan akun "${uname}", berkas ini akan langsung muncul!`);
-    showToast(`✓ ${projects.length} berkas analisa akun ${uname} berhasil disimpan ke Cloud!`);
-  } catch (err) {
-    alert('Terjadi kendala saat menyimpan ke Cloud Database: ' + err.message);
-  } finally {
-    setBtnText('<span>Paksa Simpan ke Cloud</span>');
-  }
-}
-
 async function syncProjectsWithCloud(username) {
   if (!username) return;
   const session = getActiveSession();
@@ -978,9 +907,9 @@ function renderWelcomeHub() {
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
               <span>Duplikasi</span>
             </button>
-            <button type="button" class="btn btn-outline btn-xs" onclick="exportSingleProjectJSON('${p.id}')" title="Simpan berkas analisa ini ke file .asca.json" style="display:inline-flex; align-items:center; gap:3px; padding:3px 8px; font-weight:700;">
+            <button type="button" class="btn btn-outline btn-xs" onclick="exportSingleProjectJSON('${p.id}')" title="Export berkas analisa ini (.json)" style="display:inline-flex; align-items:center; gap:3px; padding:3px 8px; font-weight:700;">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-              <span>Simpan (.json)</span>
+              <span>Export</span>
             </button>
             <button type="button" class="btn btn-outline btn-xs" onclick="deleteProjectById('${p.id}')" title="Hapus Berkas Analisa" style="color:#dc2626; border-color:#fca5a5; padding:3px 8px; font-weight:700;">
               Hapus
@@ -1018,10 +947,6 @@ function renderWelcomeHub() {
             <span style="color:#003366 !important; font-weight:800 !important; font-size:0.86rem !important;">Buka File Analisa</span>
             <input type="file" accept=".json" style="display:none" onchange="importWorkspaceJSON(event)" />
           </label>
-          <button type="button" id="btnForceCloudSyncHero" class="btn" onclick="forceSyncAllLocalToCloud()" style="margin:0; background:rgba(255,255,255,0.18) !important; color:#ffffff !important; font-weight:800 !important; font-size:0.86rem !important; padding:9px 18px !important; border-radius:6px !important; border:1.5px solid rgba(255,255,255,0.55) !important; backdrop-filter:blur(6px) !important; display:inline-flex !important; align-items:center !important; gap:8px !important; cursor:pointer !important; box-shadow:0 3px 10px rgba(0,0,0,0.12) !important;" title="Paksa seluruh berkas analisa di komputer ini menjadi Database Cloud (tersimpan permanen di server Supabase)">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/><polyline points="12 11 12 15 12 11"/><polyline points="9 13 12 10 15 13"/></svg>
-            <span style="color:#ffffff !important; font-weight:800 !important; font-size:0.86rem !important;">Paksa Simpan ke Cloud</span>
-          </button>
         </div>
       </div>
       <div style="background:rgba(255,255,255,0.14); backdrop-filter:blur(8px); padding:1.15rem 1.35rem; border-radius:12px; border:1px solid rgba(255,255,255,0.25); min-width:260px; display:flex; align-items:center; gap:1.1rem; box-shadow:0 8px 24px rgba(0,0,0,0.12);">
@@ -1211,9 +1136,9 @@ function renderProjectList() {
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
               <span>Duplikasi</span>
             </button>
-            <button type="button" class="btn btn-outline btn-xs" onclick="event.stopPropagation(); exportSingleProjectJSON('${p.id}')" title="Simpan berkas analisa (.json)" style="display:inline-flex; align-items:center; gap:3px; font-weight:700; font-size:0.68rem; padding:2px 7px;">
+            <button type="button" class="btn btn-outline btn-xs" onclick="event.stopPropagation(); exportSingleProjectJSON('${p.id}')" title="Export berkas analisa (.json)" style="display:inline-flex; align-items:center; gap:3px; font-weight:700; font-size:0.68rem; padding:2px 7px;">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-              <span>Simpan (.json)</span>
+              <span>Export</span>
             </button>
             <button type="button" class="btn btn-outline btn-xs" onclick="event.stopPropagation(); deleteProjectById('${p.id}')" title="Hapus Analisa" style="color:#dc2626; border-color:#fca5a5; padding:2px 5px; font-size:0.68rem; font-weight:700; display:inline-flex; align-items:center;">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>

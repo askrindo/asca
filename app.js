@@ -935,7 +935,8 @@ function renderWelcomeHub() {
         </div>
         <h1>Selamat Datang, ${analystName}!</h1>
         <p>
-          Portal evaluasi underwriting komprehensif berbasis <strong>Dynamic Cash Conversion &amp; Stress-Tested Working Capital Model (DCC-SWCM)</strong>. Kelola portofolio debitur, analisa laporan keuangan, kalkulasi cash burn rate, dan tetapkan struktur covenants mitigasi risiko secara presisi.
+          Platform Analisa Kredit berbasis <strong>Artificial Intelligence</strong> dengan Metode <strong>Dynamic Cash Conversion &amp; Stress-Tested Working Capital Model (DCC-SWCM)</strong>.<br />
+          Analisa asuransi kredit berdasarkan portofolio debitur, analisa laporan keuangan, kalkulasi cash burn rate, dan tetapkan struktur covenants mitigasi risiko secara presisi.
         </p>
         <div class="welcome-hero-actions" style="display:flex; align-items:center; gap:0.65rem; flex-wrap:wrap;">
           <button type="button" class="btn btn-hero-cta" onclick="openNewProjectModal()" style="background:linear-gradient(135deg, #f59e0b 0%, #ea580c 100%) !important; color:#ffffff !important; font-weight:800 !important; font-size:0.86rem !important; padding:9px 20px !important; border-radius:6px !important; border:1px solid #f97316 !important; box-shadow:0 4px 14px rgba(234, 88, 12, 0.45) !important; display:inline-flex !important; align-items:center !important; gap:8px !important; cursor:pointer !important;">

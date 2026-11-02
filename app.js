@@ -750,11 +750,16 @@ function renderWelcomeHub() {
         <p>
           Portal evaluasi underwriting komprehensif berbasis <strong>Dynamic Cash Conversion &amp; Stress-Tested Working Capital Model (DCC-SWCM)</strong>. Kelola portofolio debitur, analisa laporan keuangan, kalkulasi cash burn rate, dan tetapkan struktur covenants mitigasi risiko secara presisi.
         </p>
-        <div class="welcome-hero-actions">
+        <div class="welcome-hero-actions" style="display:flex; align-items:center; gap:0.65rem; flex-wrap:wrap;">
           <button type="button" class="btn btn-hero-cta" onclick="openNewProjectModal()" style="background:linear-gradient(135deg, #f59e0b 0%, #ea580c 100%) !important; color:#ffffff !important; font-weight:800 !important; font-size:0.86rem !important; padding:9px 20px !important; border-radius:6px !important; border:1px solid #f97316 !important; box-shadow:0 4px 14px rgba(234, 88, 12, 0.45) !important; display:inline-flex !important; align-items:center !important; gap:8px !important; cursor:pointer !important;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.8"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             <span style="color:#ffffff !important; font-weight:800 !important; font-size:0.86rem !important;">Buat Analisa Baru</span>
           </button>
+          <label class="btn btn-hero-white" style="margin:0; background:#ffffff !important; color:#003366 !important; font-weight:800 !important; font-size:0.86rem !important; padding:9px 18px !important; border-radius:6px !important; border:1.5px solid #ffffff !important; box-shadow:0 3px 10px rgba(0, 0, 0, 0.15) !important; display:inline-flex !important; align-items:center !important; gap:8px !important; cursor:pointer !important;" title="Buka file database analisa (.asca.json) dari komputer">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#003366" stroke-width="2.2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            <span style="color:#003366 !important; font-weight:800 !important; font-size:0.86rem !important;">Buka File Analisa</span>
+            <input type="file" accept=".json" style="display:none" onchange="importWorkspaceJSON(event)" />
+          </label>
         </div>
       </div>
       <div style="background:rgba(255,255,255,0.14); backdrop-filter:blur(8px); padding:1.15rem 1.35rem; border-radius:12px; border:1px solid rgba(255,255,255,0.25); min-width:260px; display:flex; align-items:center; gap:1.1rem; box-shadow:0 8px 24px rgba(0,0,0,0.12);">
@@ -830,13 +835,6 @@ function renderWelcomeHub() {
       <div class="hub-section-title">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--askrindo-navy)" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
         <span>Daftar Analisa &amp; Portofolio Debitur</span>
-      </div>
-      <div>
-        <label class="btn btn-outline btn-sm" style="margin:0; display:inline-flex; align-items:center; gap:0.35rem; font-weight:700; cursor:pointer;" title="Buka file database analisa (.asca.json) dari komputer">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-          <span>Buka File</span>
-          <input type="file" accept=".json" style="display:none" onchange="importWorkspaceJSON(event)" />
-        </label>
       </div>
     </div>
 
@@ -5787,20 +5785,26 @@ function renderPrintableReport(proj, m) {
       <thead>
         <tr>
           <td>
-            <div class="memo-header-wrap" style="border-bottom:2.5px solid var(--askrindo-navy); padding-bottom:0.65rem; margin-bottom:0.75rem; display:flex; justify-content:space-between; align-items:center;">
-              <div style="display:flex; align-items:center; gap:0.75rem;">
-                <img src="logo-asca.png" alt="ASCA - Askrindo Smart Credit Analysis" style="height:38px; width:auto; object-fit:contain;" />
-                <div>
-                  <h2 style="font-size:0.95rem; color:var(--askrindo-navy);">NOTA ANALISA UNDERWRITING ASURANSI KREDIT (ASCA)</h2>
-                  <p style="font-size:0.68rem; color:var(--text-muted);">Metode: Dynamic Cash Conversion &amp; Stress-Tested Working Capital Model (DCC-SWCM)</p>
-                </div>
-              </div>
-              <div style="text-align:right; font-size:0.68rem;">
-                <div><strong>Tanggal:</strong> ${today}</div>
-                <div><strong>ID Kasus:</strong> ${caseNumber}</div>
-                <div><strong>Underwriter:</strong> ${proj.underwriter}</div>
-              </div>
-            </div>
+            <table class="memo-header-table" style="width:100%; border-collapse:collapse; border:none; margin:0 0 0.75rem 0; border-bottom:2.5px solid var(--askrindo-navy);">
+              <tbody>
+                <tr>
+                  <td style="vertical-align:middle; text-align:left; border:none; padding:0 0 0.65rem 0; background:transparent;">
+                    <div style="display:flex; align-items:center; gap:0.75rem;">
+                      <img src="logo-asca.png" alt="ASCA - Askrindo Smart Credit Analysis" style="height:38px; width:auto; object-fit:contain;" />
+                      <div>
+                        <h2 style="font-size:0.95rem; color:var(--askrindo-navy); margin:0 0 2px 0; font-weight:800; line-height:1.2;">NOTA ANALISA UNDERWRITING ASURANSI KREDIT (ASCA)</h2>
+                        <p style="font-size:0.68rem; color:var(--text-muted); margin:0; line-height:1.2;">Metode: Dynamic Cash Conversion &amp; Stress-Tested Working Capital Model (DCC-SWCM)</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td style="vertical-align:middle; text-align:right; border:none; padding:0 0 0.65rem 0; background:transparent; white-space:nowrap; font-size:0.68rem; line-height:1.45;">
+                    <div><strong>Tanggal:</strong> ${today}</div>
+                    <div><strong>ID Kasus:</strong> ${caseNumber}</div>
+                    <div><strong>Underwriter:</strong> ${proj.underwriter}</div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </td>
         </tr>
       </thead>

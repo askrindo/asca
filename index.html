@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="favicon.png" />
   <link rel="shortcut icon" href="favicon.ico" />
   <link rel="apple-touch-icon" href="favicon.png" />
-  <link rel="stylesheet" href="styles.css?v=1793512200" />
+  <link rel="stylesheet" href="styles.css?v=1793542000" />
   <style id="login-critical-styles">
     /* Anti-Cache Guarantee for Enterprise Login Interface */
     .login-screen {
@@ -161,8 +161,8 @@
     </div>
 
     <div class="top-actions no-print">
-      <button class="btn btn-outline" id="btnNavHome" onclick="showWelcomeHub()" title="Buka Beranda Portal & Ringkasan Portofolio Kasus" style="display:flex; align-items:center; gap:0.35rem;">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <button class="btn-nav-home" id="btnNavHome" onclick="showWelcomeHub()" title="Buka Beranda Portal & Ringkasan Portofolio Kasus">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         <span>Beranda</span>
       </button>
       <div class="user-session-pill" id="navUserSessionPill" title="Sesi Analis Aktif">
@@ -192,10 +192,6 @@
           <div class="sidebar-header-top">
             <h2>Daftar Analisa (<span id="projectCountBadge">0</span>)</h2>
             <div style="display:flex; gap:0.25rem;">
-              <label class="btn btn-outline btn-sm" style="margin:0; padding:2px 7px; font-size:0.72rem; cursor:pointer;" title="Buka file database analisa (.asca.json) dari komputer">
-                Buka
-                <input type="file" accept=".json" style="display:none" onchange="importWorkspaceJSON(event)" />
-              </label>
               <button class="btn btn-outline btn-sm" onclick="resetToDefaultCases()" title="Kembalikan contoh kasus bawaan">
                 Reset
               </button>
@@ -2227,6 +2223,6 @@
   <div class="toast-container" id="toastContainer"></div>
 
   <script src="inaproc-blacklist-db.js?v=1793516000"></script>
-  <script src="app.js?v=1793541000"></script>
+  <script src="app.js?v=1793542000"></script>
 </body>
 </html>

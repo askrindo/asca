@@ -126,8 +126,11 @@ function getDefaultProjects() {
       kmkTenorDays: 90,
       interestRate: 9.5,
       underwriter: 'Tim Underwriting Komersial Askrindo',
+      underwriterTitle: 'Analis Underwriting Askrindo',
       checker: 'Kepala Bagian Underwriting',
+      checkerTitle: 'Reviewer Risiko Asuransi Kredit',
       approver: 'Komite Pemutus Asuransi Kredit',
+      approverTitle: 'PT Asuransi Kredit Indonesia',
       year1: 2022,
       year2: 2023,
       qualitative5CScore: 6,
@@ -200,8 +203,11 @@ function getDefaultProjects() {
       kmkTenorDays: 0,
       interestRate: 8.5,
       underwriter: 'Tim Underwriting Komersial Askrindo',
+      underwriterTitle: 'Analis Underwriting Askrindo',
       checker: 'Kepala Bagian Underwriting',
+      checkerTitle: 'Reviewer Risiko Asuransi Kredit',
       approver: 'Komite Pemutus Asuransi Kredit',
+      approverTitle: 'PT Asuransi Kredit Indonesia',
       year1: 2023,
       year2: 2024,
       qualitative5CScore: 8.5,
@@ -274,8 +280,11 @@ function getDefaultProjects() {
       kmkTenorDays: 0,
       interestRate: 9.25,
       underwriter: 'Tim Underwriting Komersial Askrindo',
+      underwriterTitle: 'Analis Underwriting Askrindo',
       checker: 'Kepala Bagian Underwriting',
+      checkerTitle: 'Reviewer Risiko Asuransi Kredit',
       approver: 'Komite Pemutus Asuransi Kredit',
+      approverTitle: 'PT Asuransi Kredit Indonesia',
       year1: 2022,
       year2: 2023,
       qualitative5CScore: 9.0,
@@ -6614,19 +6623,19 @@ function renderPrintableReport(proj, m) {
                 <div>Disusun Oleh,</div>
                 <div style="height:36px;"></div>
                 <div style="font-weight:700; border-top:1px solid #94a3b8; padding-top:3px;">${proj.underwriter || 'Analis Underwriting'}</div>
-                <div style="color:var(--text-muted);">Analis Underwriting Askrindo</div>
+                <div style="color:var(--text-muted);">${proj.underwriterTitle || 'Analis Underwriting Askrindo'}</div>
               </div>
               <div>
                 <div>Diperiksa Oleh,</div>
                 <div style="height:36px;"></div>
                 <div style="font-weight:700; border-top:1px solid #94a3b8; padding-top:3px;">${proj.checker || 'Kepala Bagian Underwriting'}</div>
-                <div style="color:var(--text-muted);">Reviewer Risiko Asuransi Kredit</div>
+                <div style="color:var(--text-muted);">${proj.checkerTitle || 'Reviewer Risiko Asuransi Kredit'}</div>
               </div>
               <div>
                 <div>Disetujui Oleh,</div>
                 <div style="height:36px;"></div>
                 <div style="font-weight:700; border-top:1px solid #94a3b8; padding-top:3px;">${proj.approver || 'Komite Pemutus Asuransi Kredit'}</div>
-                <div style="color:var(--text-muted);">PT Asuransi Kredit Indonesia</div>
+                <div style="color:var(--text-muted);">${proj.approverTitle || 'PT Asuransi Kredit Indonesia'}</div>
               </div>
             </div>
           </td>
@@ -6664,8 +6673,11 @@ function populateFormInputs(proj) {
   setVal('inp_kmkTenorDays', proj.kmkTenorDays, true);
   setVal('inp_interestRate', proj.interestRate);
   setVal('inp_underwriter', proj.underwriter);
+  setVal('inp_underwriter_title', proj.underwriterTitle || 'Analis Underwriting Askrindo');
   setVal('inp_checker', proj.checker || 'Kepala Bagian Underwriting');
+  setVal('inp_checker_title', proj.checkerTitle || 'Reviewer Risiko Asuransi Kredit');
   setVal('inp_approver', proj.approver || 'Komite Pemutus Asuransi Kredit');
+  setVal('inp_approver_title', proj.approverTitle || 'PT Asuransi Kredit Indonesia');
   setVal('inp_businessDesc', proj.businessDesc);
 
   const procMethod = proj.procurementMethod || (isMaritimeOrImportRisk(proj) ? 'import_sea' : 'none');
@@ -7001,8 +7013,11 @@ function syncInputsToModel() {
   proj.kmkTenorDays = getFmtNum('inp_kmkTenorDays');
   proj.interestRate = getPlainNum('inp_interestRate');
   proj.underwriter = getStr('inp_underwriter');
+  proj.underwriterTitle = getStr('inp_underwriter_title');
   proj.checker = getStr('inp_checker');
+  proj.checkerTitle = getStr('inp_checker_title');
   proj.approver = getStr('inp_approver');
+  proj.approverTitle = getStr('inp_approver_title');
   proj.businessDesc = getStr('inp_businessDesc');
 
   const rNone = document.getElementById('inp_proc_none');
@@ -7472,8 +7487,11 @@ function createNewProjectFromModal() {
       kmkTenorDays: 120,
       interestRate: 11.0,
       underwriter: 'Analis Underwriting',
+      underwriterTitle: 'Analis Underwriting Askrindo',
       checker: 'Kepala Bagian Underwriting',
+      checkerTitle: 'Reviewer Risiko Asuransi Kredit',
       approver: 'Komite Pemutus Asuransi Kredit',
+      approverTitle: 'PT Asuransi Kredit Indonesia',
       businessDesc: '',
       procurementMethod: 'domestic',
       claimedDOR: null,

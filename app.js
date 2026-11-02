@@ -1021,7 +1021,7 @@ function renderBanner(proj, m) {
       covBadge.title = `Standar Underwriting Askrindo: Fasilitas Layak Dijamin dengan coverage ${m.recCoveragePct || 70}%`;
     } else if (m.isInitialReject) {
       covBadge.className = 'cover-badge cover-conditional';
-      covBadge.textContent = 'Tidak Layak Standar (Opsi Bersyarat 55%)';
+      covBadge.textContent = 'Tidak Layak (Opsi Bersyarat 55%)';
       covBadge.title = 'Rekomendasi awal: Tolak skema pengajuan standar. Opsi bersyarat maksimal coverage 55%.';
     } else {
       covBadge.className = 'cover-badge cover-conditional';
@@ -1049,7 +1049,7 @@ function renderBanner(proj, m) {
     } else if (m.isInitialReject) {
       const effectiveCov = 55;
       const maxGuaranteedNominal = (proj.requestedPlafond || 0) * (effectiveCov / 100);
-      optEl.innerHTML = `<strong>Evaluasi Sistem:</strong> <span style="color:#dc2626; font-weight:700;">Tidak Layak Standar</span> &bull; Opsi Bersyarat: Maks 55% (${fmtRp(maxGuaranteedNominal, true)}) &bull; IJP: ${m.ijpRate}`;
+      optEl.innerHTML = `<strong>Evaluasi Sistem:</strong> <span style="color:#dc2626; font-weight:700;">Tidak Layak</span> &bull; Opsi Bersyarat: Maks 55% (${fmtRp(maxGuaranteedNominal, true)}) &bull; IJP: ${m.ijpRate}`;
     } else {
       const effectiveCov = m.recCoveragePct || 60;
       const maxGuaranteedNominal = (proj.requestedPlafond || 0) * (effectiveCov / 100);
@@ -2943,7 +2943,7 @@ function computeDCCSWCM(proj) {
   let stage1Summary = '';
 
   if (isInitialReject) {
-    stage1Decision = 'TOLAK SKEMA PENGAJUAN AWAL (TIDAK LAYAK STANDAR)';
+    stage1Decision = 'TOLAK SKEMA PENGAJUAN AWAL (TIDAK LAYAK)';
     if (isBlacklisted) {
       stage1Summary = 'Debitur tercatat aktif dalam Daftar Hitam Nasional (INAPROC LKPP). Rekomendasi mutlak: Tolak penjaminan kredit.';
     } else if (isSevereGrossLoss) {

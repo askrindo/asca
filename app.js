@@ -857,7 +857,7 @@ function renderWelcomeHub() {
         Alur Prosedur Kerja Analisis Underwriting ASCA DCC-SWCM
       </div>
       <div style="font-size:0.75rem; color:#64748b;">
-        Ikuti empat langkah standar underwriting penjaminan kredit modal kerja PT Askrindo:
+        Ikuti empat langkah standar underwriting asuransi kredit PT Askrindo (Persero):
       </div>
       <div class="hub-workflow-steps">
         <div class="hub-step-item">

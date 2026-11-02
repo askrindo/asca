@@ -1,0 +1,1479 @@
+﻿<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Manual - Askrindo Smart Credit Analysis (ASCA)</title>
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <style>
+    :root {
+      --askrindo-navy: #003366;
+      --askrindo-blue: #0284c7;
+      --askrindo-light: #f0f7ff;
+      --askrindo-accent: #0ea5e9;
+      --askrindo-gold: #d97706;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --border-color: #cbd5e1;
+      --bg-page: #f8fafc;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: var(--text-main);
+      background: var(--bg-page);
+      line-height: 1.6;
+      font-size: 14px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* FLOATING TOP ACTION BAR */
+    .top-action-bar {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: #003366;
+      color: #ffffff;
+      padding: 10px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+    }
+
+    .top-action-bar .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: 0.3px;
+    }
+
+    .top-action-bar .doc-badge {
+      background: #0284c7;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .top-action-bar .actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 6px;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+
+    .btn-print {
+      background: #ffffff;
+      color: #003366;
+    }
+
+    .btn-print:hover {
+      background: #e0f2fe;
+      transform: translateY(-1px);
+    }
+
+    .btn-back {
+      background: rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-back:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    /* DOCUMENT CONTAINER (A4 SIMULATED ON SCREEN) */
+    .document-wrapper {
+      max-width: 900px;
+      margin: 28px auto 60px;
+      background: #ffffff;
+      padding: 50px 60px;
+      box-shadow: 0 4px 25px rgba(0, 0, 0, 0.08);
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    }
+
+    /* DOCUMENT HEADER TABLE */
+    .doc-control-box {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 30px;
+      border: 2px solid var(--askrindo-navy);
+      background: #ffffff;
+    }
+
+    .doc-control-box td {
+      padding: 10px 14px;
+      border: 1px solid #94a3b8;
+      vertical-align: middle;
+      font-size: 11.5px;
+    }
+
+    .doc-control-box .col-logo {
+      width: 25%;
+      text-align: center;
+      background: #f8fafc;
+    }
+
+    .doc-control-box .col-title {
+      width: 45%;
+      text-align: center;
+    }
+
+    .doc-control-box .col-title h1 {
+      font-size: 14px;
+      color: var(--askrindo-navy);
+      margin-bottom: 2px;
+      text-transform: uppercase;
+      font-weight: 800;
+    }
+
+    .doc-control-box .col-title p {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    .doc-control-box .col-meta {
+      width: 30%;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .doc-control-box .col-meta strong {
+      color: var(--askrindo-navy);
+    }
+
+    /* COVER SECTION */
+    .cover-section {
+      text-align: center;
+      padding: 40px 20px 60px;
+      border-bottom: 2px dashed #cbd5e1;
+      margin-bottom: 40px;
+    }
+
+    .cover-badge {
+      display: inline-block;
+      background: #e0f2fe;
+      color: #0369a1;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 14px;
+      border-radius: 999px;
+      margin-bottom: 20px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      border: 1px solid #bae6fd;
+    }
+
+    .cover-title {
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--askrindo-navy);
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+
+    .cover-subtitle {
+      font-size: 18px;
+      font-weight: 700;
+      color: #0284c7;
+      margin-bottom: 18px;
+    }
+
+    .cover-desc {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      max-width: 650px;
+      margin: 0 auto 35px;
+      line-height: 1.6;
+    }
+
+    .cover-meta-grid {
+      display: inline-grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      text-align: left;
+      background: #f8fafc;
+      padding: 16px 24px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      font-size: 12px;
+    }
+
+    .cover-meta-grid div strong {
+      color: var(--askrindo-navy);
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    /* HEADINGS & CHAPTERS */
+    h1.chapter-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: #ffffff;
+      background: linear-gradient(135deg, #003366 0%, #0284c7 100%);
+      padding: 10px 16px;
+      border-radius: 6px;
+      margin: 40px 0 20px;
+      letter-spacing: -0.2px;
+    }
+
+    h2.section-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--askrindo-navy);
+      margin: 28px 0 14px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    h3.subsection-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #0369a1;
+      margin: 18px 0 10px;
+    }
+
+    p {
+      margin-bottom: 12px;
+      text-align: justify;
+    }
+
+    /* STEP-BY-STEP LISTS */
+    ol.step-list {
+      margin: 12px 0 18px 20px;
+      padding-left: 10px;
+    }
+
+    ol.step-list li {
+      margin-bottom: 8px;
+      padding-left: 6px;
+      line-height: 1.55;
+    }
+
+    ol.step-list li strong {
+      color: var(--askrindo-navy);
+    }
+
+    ul.bullet-list {
+      margin: 10px 0 16px 20px;
+      padding-left: 10px;
+    }
+
+    ul.bullet-list li {
+      margin-bottom: 6px;
+    }
+
+    /* SCREENSHOT FIGURE BOX */
+    .figure-box {
+      margin: 22px 0;
+      text-align: center;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .figure-box img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 5px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+      display: block;
+      margin: 0 auto;
+    }
+
+    .figure-caption {
+      margin-top: 10px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #334155;
+      font-style: italic;
+    }
+
+    /* DATA TABLES */
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 18px 0 24px;
+      font-size: 12.5px;
+      border: 1px solid #cbd5e1;
+    }
+
+    table.data-table th {
+      background: #003366;
+      color: #ffffff;
+      padding: 9px 12px;
+      font-weight: 700;
+      text-align: left;
+      border: 1px solid #002244;
+      font-size: 12px;
+    }
+
+    table.data-table td {
+      padding: 8px 12px;
+      border: 1px solid #cbd5e1;
+      vertical-align: top;
+      line-height: 1.45;
+    }
+
+    table.data-table tr:nth-child(even) td {
+      background: #f8fafc;
+    }
+
+    table.data-table tr:hover td {
+      background: #f1f5f9;
+    }
+
+    /* ALERT / CALLOUT BOXES */
+    .alert-box {
+      margin: 18px 0;
+      padding: 12px 18px;
+      border-radius: 6px;
+      font-size: 12.5px;
+      line-height: 1.5;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .alert-important {
+      background: #eff6ff;
+      border-left: 4px solid #0284c7;
+      color: #1e3a8a;
+    }
+
+    .alert-important strong {
+      color: #003366;
+    }
+
+    .alert-warning {
+      background: #fffbeb;
+      border-left: 4px solid #f59e0b;
+      color: #92400e;
+    }
+
+    /* TABLE OF CONTENTS */
+    .toc-box {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 24px 30px;
+      margin: 30px 0;
+    }
+
+    .toc-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--askrindo-navy);
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      border-bottom: 2px solid #0284c7;
+      padding-bottom: 6px;
+    }
+
+    .toc-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .toc-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 12.5px;
+    }
+
+    .toc-item.level-1 {
+      font-weight: 700;
+      color: var(--askrindo-navy);
+      margin-top: 10px;
+    }
+
+    .toc-item.level-2 {
+      padding-left: 18px;
+      color: #475569;
+    }
+
+    .toc-dots {
+      flex: 1;
+      border-bottom: 1px dotted #94a3b8;
+      margin: 0 8px 4px;
+    }
+
+    .toc-page {
+      font-weight: 600;
+      color: #0369a1;
+    }
+
+    /* FOOTER */
+    .doc-footer {
+      margin-top: 50px;
+      padding-top: 18px;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* PRINT SPECIFIC STYLES */
+    @media print {
+      body {
+        background: #ffffff !important;
+        font-size: 11pt !important;
+      }
+
+      .no-print, .top-action-bar {
+        display: none !important;
+      }
+
+      .document-wrapper {
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+      }
+
+      .page-break {
+        page-break-before: always !important;
+        break-before: page !important;
+      }
+
+      .figure-box {
+        box-shadow: none !important;
+        border: 1px solid #94a3b8 !important;
+        page-break-inside: avoid !important;
+      }
+
+      table.data-table {
+        page-break-inside: avoid !important;
+      }
+
+      th {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP ACTION BAR (SCREEN ONLY) -->
+  <div class="top-action-bar no-print">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      <span>ASCA USER MANUAL</span>
+      <span class="doc-badge">v1.0 (Produksi)</span>
+    </div>
+    <div class="actions">
+      <a href="../index.html" class="btn-action btn-back">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        Buka Aplikasi ASCA
+      </a>
+      <a href="USER_MANUAL_ASCA.md" download class="btn-action btn-back">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Unduh .MD
+      </a>
+      <button onclick="window.print()" class="btn-action btn-print">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Cetak ke PDF (Ctrl+P)
+      </button>
+    </div>
+  </div>
+
+  <div class="document-wrapper">
+
+    <!-- DOCUMENT CONTROL HEADER -->
+    <table class="doc-control-box">
+      <tr>
+        <td class="col-logo">
+          <strong style="color:var(--askrindo-navy); font-size:13px; display:block;">PT ASURANSI KREDIT INDONESIA</strong>
+          <span style="font-size:10px; color:var(--text-muted);">Divisi Underwriting Komersial</span>
+        </td>
+        <td class="col-title">
+          <h1>USER MANUAL APLIKASI</h1>
+          <p>Askrindo Smart Credit Analysis (ASCA) - DCC-SWCM Engine</p>
+        </td>
+        <td class="col-meta">
+          <div><strong>No. Dok:</strong> ASCA-UM-UW-2026-001</div>
+          <div><strong>Revisi:</strong> 1.0 (Produksi)</div>
+          <div><strong>Tanggal:</strong> 3 November 2026</div>
+          <div><strong>Klasifikasi:</strong> Terbatas (Internal Underwriting)</div>
+        </td>
+      </tr>
+    </table>
+
+    <!-- COVER SECTION -->
+    <div class="cover-section">
+      <div class="cover-badge">STANDARD OPERATING PROCEDURE & USER MANUAL</div>
+      <h1 class="cover-title">ASKRINDO SMART CREDIT ANALYSIS</h1>
+      <div class="cover-subtitle">Sistem Analisa Kelayakan Penjaminan Kredit Berbasis Dynamic Cash Conversion & Stress-Tested Working Capital (DCC-SWCM)</div>
+      <p class="cover-desc">
+        Panduan operasional komprehensif bagi Analis Underwriting (*Maker*), Pejabat Pemeriksa (*Checker*), dan Komite Kredit (*Approver*) dalam mengevaluasi permohonan kredit komersial, simulasi sensitivitas makroekonomi, penetapan rating 10-tier, serta penerbitan nota review akseptasi penjaminan.
+      </p>
+
+      <div class="cover-meta-grid">
+        <div><strong>Penyusun:</strong> Alrizal Akbar Nusantara (Underwriter)</div>
+        <div><strong>Unit Kerja:</strong> Askrindo Branch Office Ambon</div>
+        <div><strong>Sasaran Pengguna:</strong> Seluruh Analis & Pejabat Penjaminan Kredit</div>
+        <div><strong>Versi Aplikasi:</strong> ASCA Enterprise v1.0 Production</div>
+      </div>
+    </div>
+<h2 class='section-title'>DAFTAR ISI</h2>
+<ol class='step-list'>
+<li><strong>PENDAHULUAN</strong> ...................................................................................................................... 2</li>
+</ol>
+<ul class='bullet-list'>
+<li>A. Tujuan Dokumen ................................................................................................................... 2</li>
+<li>B. Riwayat Dokumen (<em>Document History</em>) ................................................................................. 2</li>
+<li>C. Gambaran Umum Sistem ASCA ............................................................................................ 2</li>
+</ul>
+<ol class='step-list'>
+<li><strong>BAB I: AUTENTIKASI & MANAJEMEN PENGGUNA</strong> ................................................................... 3</li>
+</ol>
+<ul class='bullet-list'>
+<li>1.1 Akses & Login Sistem .......................................................................................................... 3</li>
+<li>1.2 Informasi Sesi & Profil Pengguna ........................................................................................... 4</li>
+<li>1.3 Pengaturan Akun & Ganti Kata Sandi ..................................................................................... 4</li>
+<li>1.4 Konfirmasi Keluar (<em>Safety Logout</em>) ....................................................................................... 5</li>
+</ul>
+<ol class='step-list'>
+<li><strong>BAB II: BERANDA PORTAL & RINGKASAN PORTOFOLIO</strong> .......................................................... 6</li>
+</ol>
+<ul class='bullet-list'>
+<li>2.1 Tampilan Beranda Portal (<em>Welcome Hub</em>) .............................................................................. 6</li>
+<li>2.2 Ringkasan Metrik Akseptasi & Portofolio ............................................................................... 7</li>
+<li>2.3 Tombol Aksi Cepat (<em>Quick Actions</em>) ...................................................................................... 8</li>
+</ul>
+<ol class='step-list'>
+<li><strong>BAB III: MANAJEMEN BERKAS & SIDEBAR KASUS</strong> ................................................................. 9</li>
+</ol>
+<ul class='bullet-list'>
+<li>3.1 Pencarian Debitur & Filter Cerdas ......................................................................................... 9</li>
+<li>3.2 Tampilan Sidebar (<em>Expand / Collapse</em>) ................................................................................ 10</li>
+<li>3.3 Aksi Duplikasi, Ekspor Kasus Tunggal, & Hapus .................................................................... 11</li>
+<li>3.4 Indikator Auto-Save Realtime ............................................................................................... 11</li>
+</ul>
+<ol class='step-list'>
+<li><strong>BAB IV: PEMBUATAN PROYEK ANALISA BARU</strong> ....................................................................... 12</li>
+</ol>
+<ul class='bullet-list'>
+<li>4.1 Form Modal Proyek Baru ..................................................................................................... 12</li>
+<li>4.2 Parameter Debitur, Plafond, & Tahun Buku ............................................................................ 13</li>
+<li>4.3 Ketentuan Inisialisasi Modul (<em>Empty-State Guard</em>) ............................................................... 14</li>
+</ul>
+<ol class='step-list'>
+<li><strong>BAB V: HEADER ANALISA ADAPTIF 2-TIER</strong> ............................................................................ 15</li>
+</ol>
+<ul class='bullet-list'>
+<li>5.1 Informasi Utama & Micro-Chips Metadata ............................................................................. 15</li>
+<li>5.2 Lingkaran Skor DCC-SWCM & Tautan Navigasi Cepat ............................................................. 16</li>
+<li>5.3 Keputusan Cepat & Rekomendasi Coverage ............................................................................ 17</li>
+<li>5.4 Tombol Simpan Global ke Cloud ........................................................................................... 17</li>
+</ul>
+<ol class='step-list'>
+<li><strong>BAB VI: MODUL ANALISA INTI (10 TABS WORKSPACE)</strong> ............................................................ 18</li>
+</ol>
+<ul class='bullet-list'>
+<li>6.1 Tab 1: Dashboard Debitur & Radar 5C ................................................................................. 18</li>
+<li>6.2 Tab 2: Input Parameter & Laporan Keuangan ........................................................................ 20</li>
+<li>6.3 Tab 3: Dynamic Cash Conversion (DCC) ............................................................................... 23</li>
+<li>6.4 Tab 4: Stress-Testing & Shock Sensitivitas ............................................................................ 25</li>
+<li>6.5 Tab 5: Net Working Capital (NWC) & CBRT ............................................................................ 27</li>
+<li>6.6 Tab 6: Proyeksi Cash Flow & Debt Service (DSCR) ................................................................. 29</li>
+<li>6.7 Tab 7: Grade Risk & Indikator Penyebab (10-Tier Rating) ....................................................... 31</li>
+<li>6.8 Tab 8: Rincian Perhitungan Skor DCC-SWCM ........................................................................ 33</li>
+<li>6.9 Tab 9: Rekomendasi Struktur Fasilitas & Mitigasi Risiko .......................................................... 35</li>
+<li>6.10 Tab 10: Review Analisa & Lembar Keputusan Underwriting .................................................... 37</li>
+</ul>
+<ol class='step-list'>
+<li><strong>BAB VII: EKSPOR LAPORAN & PENCETAKAN RESMI</strong> ................................................................. 40</li>
+</ol>
+<ul class='bullet-list'>
+<li>7.1 Ekspor Berkas JSON Portofolio ............................................................................................ 40</li>
+<li>7.2 Impor & Pemulihan Berkas Cadangan ................................................................................... 41</li>
+<li>7.3 Cetak Nota Review Analisa ke Format PDF ............................................................................ 41</li>
+</ul>
+<ol class='step-list'>
+<li><strong>DAFTAR GAMBAR</strong> ................................................................................................................. 42</li>
+<li><strong>DAFTAR TABEL</strong> ................................................................................................................... 43</li>
+</ol>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<h2 class='section-title'>A. TUJUAN</h2>
+<p>User Manual ini disusun sebagai panduan operasional standar (<em>Standard Operating Procedure</em>) bagi pejabat dan staf penjaminan kredit PT Asuransi Kredit Indonesia (Persero) — meliputi <strong>Analis Kredit (Underwriter)</strong>, <strong>Pemeriksa (Checker)</strong>, dan <strong>Pemutus / Pimpinan Cabang (Approver)</strong> — dalam mengoperasikan sistem aplikasi <strong>Askrindo Smart Credit Analysis (ASCA)</strong>. Sistem ini memfasilitasi analisa kelayakan kredit, penilaian risiko multi-skenario, penentuan porsi penjaminan optimal, serta penyusunan nota review akseptasi berbasis kecerdasan komputasi (<em>AI-assisted</em>).</p>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<h2 class='section-title'>B. DOCUMENT HISTORY</h2>
+<table class='data-table'><thead><tr>
+<th>Versi</th>
+<th>Tanggal</th>
+<th>Keterangan / Alasan Perubahan</th>
+<th>Penyusun / Penanggung Jawab</th>
+</tr></thead><tbody>
+<tr>
+<td><strong>0.1</strong></td>
+<td>15 Okt 2026</td>
+<td>Perancangan arsitektur sistem analisa kredit DCC-SWCM dan struktur data awal.</td>
+<td>Tim Pengembang ASCA</td>
+</tr>
+<tr>
+<td><strong>0.5</strong></td>
+<td>25 Okt 2026</td>
+<td>Integrasi 10 Modul Analisa, simulasi stress-test makroekonomi, dan formula DSCR.</td>
+<td>Underwriting AFCA</td>
+</tr>
+<tr>
+<td><strong>0.9</strong></td>
+<td>30 Okt 2026</td>
+<td>Penerapan 10-tier Rating Akseptasi Askrindo (AAA s/d DDD) berbasis Juknis Surety Bond.</td>
+<td>Tim Underwriting Komersial</td>
+</tr>
+<tr>
+<td><strong>1.0</strong></td>
+<td>3 Nov 2026</td>
+<td>Rilis Produksi v1.0: Tata kelola sesi enterprise, header analisa adaptif full-width, portal beranda eksekutif, dan modul cetak nota review lengkap.</td>
+<td>Alrizal Akbar Nusantara (Branch Office Ambon)</td>
+</tr>
+</tbody></table>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<h2 class='section-title'>C. GAMBARAN UMUM SISTEM ASCA</h2>
+<p>Platform <strong>ASCA</strong> mengintegrasikan dua model evaluasi kredit modern:</p>
+<ol class='step-list'>
+<li><strong>Dynamic Cash Conversion (DCC):</strong> Mengukur kecepatan aktual siklus konversi piutang dan persediaan debitur menjadi kas riil setelah dikurangi tempo hutang usaha (<em>Trade Credit</em>).</li>
+<li><strong>Stress-Tested Working Capital Model (SWCM):</strong> Menguji ketahanan likuiditas modal kerja (<em>Net Working Capital</em>) dan waktu ketahanan kas (<em>Cash Burn Rate Time</em>) terhadap 4 variabel guncangan pasar (<em>shock</em>): penurunan omzet penjualan, lonjakan harga bahan baku (HPP), depresiasi kurs valuta asing (USD/IDR), dan kenaikan suku bunga pinjaman perbankan.</li>
+</ol>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<div class='page-break'></div>
+<h1 class='chapter-title'>BAB I: AUTENTIKASI & MANAJEMEN PENGGUNA</h1>
+<p>## 1.1 Akses & Login Sistem</p>
+<p>Pengguna mengakses aplikasi ASCA melalui peramban web modern (<em>Google Chrome, Microsoft Edge, Mozilla Firefox</em>) melalui URL resmi: <code>https://askrindo.github.io/asca/</code>.</p>
+<div class="figure-box">
+  <img src="./manual_images/gambar_01_login_screen.png" alt="Gambar 1. Halaman Login Sistem ASCA" loading="lazy">
+  <div class="figure-caption">Gambar 1. Halaman Login Sistem ASCA</div>
+</div>
+<h3 class='subsection-title'>Langkah-langkah Login:</h3>
+<ol class='step-list'>
+<li>Buka tautan sistem ASCA pada peramban.</li>
+<li>Pada field <strong>Username / NIP</strong>, masukkan nomor identitas pegawai atau akun terdaftar (contoh: <code>1922</code> atau akun analis Anda).</li>
+<li>Pada field <strong>Kata Sandi (Password)</strong>, ketikkan password akun Anda. Klik ikon mata untuk melihat karakter kata sandi jika diperlukan.</li>
+<li>Klik tombol <strong>Masuk ke Sistem</strong>. Sistem akan memvalidasi kredensial dan mengarahkan pengguna ke <strong>Beranda Portal Kasus</strong>.</li>
+</ol>
+<h3 class='subsection-title'>Tabel 1. Elemen Field Halaman Login</h3>
+<table class='data-table'><thead><tr>
+<th>No</th>
+<th>Field</th>
+<th>Tipe</th>
+<th>Sifat</th>
+<th>Keterangan</th>
+</tr></thead><tbody>
+<tr>
+<td>1</td>
+<td>Username / NIP</td>
+<td>Alphanumeric</td>
+<td>Wajib Diisi</td>
+<td>Identitas unik pengguna atau Nomor Induk Pegawai (NIP).</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Kata Sandi (Password)</td>
+<td>Password</td>
+<td>Wajib Diisi</td>
+<td>Sandi pengaman akun. Dilengkapi enkripsi sesi lokal.</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Tombol Show/Hide Password</td>
+<td>Tombol Ikon</td>
+<td>Opsional</td>
+<td>Mengubah visibilitas teks kata sandi (sensor titik / teks polos).</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Tombol Masuk ke Sistem</td>
+<td>Tombol Submit</td>
+<td>Wajib Diklik</td>
+<td>Mengirimkan form dan menginisialisasi sesi kerja pengguna.</td>
+</tr>
+</tbody></table>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<p>## 1.2 Informasi Sesi & Profil Pengguna</p>
+<p>Setelah berhasil masuk, bilah navigasi atas (<em>Top Navigation Bar</em>) akan menampilkan identitas dinamis pengguna yang aktif:</p>
+<ul class='bullet-list'>
+<li><strong>Unit Kerja / Divisi:</strong> Menampilkan unit kerja pengguna (contoh: <em>Branch Office Ambon</em> atau <em>Divisi Underwriting Komersial</em>).</li>
+<li><strong>User Session Pill:</strong> Menampilkan Nomor Pegawai/Username (<code>1922</code>), Role Pengguna (<code>Analis</code>), dan panah menu dropdown.</li>
+</ul>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<p>## 1.3 Pengaturan Akun & Ganti Kata Sandi</p>
+<p>Pengguna dapat memperbarui kata sandi akun secara mandiri melalui menu profil.</p>
+<div class="figure-box">
+  <img src="./manual_images/gambar_16_pengaturan_user.png" alt="Gambar 16. Modal Pengaturan Akun & Ganti Password" loading="lazy">
+  <div class="figure-caption">Gambar 16. Modal Pengaturan Akun & Ganti Password</div>
+</div>
+<h3 class='subsection-title'>Langkah-langkah Mengganti Kata Sandi:</h3>
+<ol class='step-list'>
+<li>Klik pada <strong>User Session Pill</strong> di pojok kanan atas bilah navigasi.</li>
+<li>Pilih submenu <strong>Pengaturan & Ganti Password</strong>. Jendela modal dialog akan muncul di tengah layar.</li>
+<li>Masukkan kata sandi saat ini pada field <strong>Password Lama</strong>.</li>
+<li>Masukkan sandi baru pada field <strong>Password Baru</strong> (minimal 6 karakter).</li>
+<li>Masukkan ulang sandi baru pada field <strong>Konfirmasi Password Baru</strong>.</li>
+<li>Klik tombol <strong>Simpan Password Baru</strong>. Sistem akan memverifikasi kecocokan dan menampilkan notifikasi sukses.</li>
+</ol>
+<h3 class='subsection-title'>Tabel 2. Field Modal Pengaturan Akun</h3>
+<table class='data-table'><thead><tr>
+<th>No</th>
+<th>Field</th>
+<th>Tipe</th>
+<th>Keterangan</th>
+</tr></thead><tbody>
+<tr>
+<td>1</td>
+<td>User ID</td>
+<td>Read-only</td>
+<td>Username / NIP pengguna yang sedang login.</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Nama Lengkap</td>
+<td>Read-only</td>
+<td>Nama resmi pemegang akun.</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Role / Hak Akses</td>
+<td>Read-only</td>
+<td>Peran otorisasi (<em>Analyst</em>, <em>Approver</em>, atau <em>Admin</em>).</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Password Lama</td>
+<td>Input Password</td>
+<td>Kata sandi aktif saat ini untuk validasi keamanan.</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Password Baru</td>
+<td>Input Password</td>
+<td>Kata sandi pengganti yang diinginkan.</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Konfirmasi Password Baru</td>
+<td>Input Password</td>
+<td>Harus identik dengan field Password Baru.</td>
+</tr>
+</tbody></table>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<p>## 1.4 Konfirmasi Keluar (<em>Safety Logout</em>)</p>
+<p>Untuk mencegah penutupan sesi yang tidak disengaja saat proses analisa berlangsung, ASCA dilengkapi dialog konfirmasi dua langkah.</p>
+<div class="figure-box">
+  <img src="./manual_images/gambar_17_konfirmasi_logout.png" alt="Gambar 17. Dialog Konfirmasi Keluar" loading="lazy">
+  <div class="figure-caption">Gambar 17. Dialog Konfirmasi Keluar</div>
+</div>
+<h3 class='subsection-title'>Langkah-langkah Keluar:</h3>
+<ol class='step-list'>
+<li>Klik tombol <strong>User Session Pill</strong> di pojok kanan atas, lalu klik <strong>Keluar dari Akun</strong>.</li>
+<li>Kotak dialog peringatan akan muncul: <em>"Apakah Anda yakin ingin keluar dari sistem ASCA?"</em>.</li>
+<li>Klik tombol merah <strong>Ya, Keluar</strong> untuk mengakhiri sesi, atau klik <strong>Batal</strong> untuk melanjutkan pekerjaan.</li>
+</ol>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<div class='page-break'></div>
+<h1 class='chapter-title'>BAB II: BERANDA PORTAL & RINGKASAN PORTOFOLIO</h1>
+<p>## 2.1 Tampilan Beranda Portal (<em>Welcome Hub</em>)</p>
+<p>Beranda Portal merupakan pusat kendali eksekutif yang menyajikan ikhtisar seluruh berkas analisa debitur, statistik kelayakan kredit, serta jalan pintas pembuatan kasus baru.</p>
+<div class="figure-box">
+  <img src="./manual_images/gambar_02_beranda_portal.png" alt="Gambar 2. Beranda Portal & Ringkasan Portofolio Kasus" loading="lazy">
+  <div class="figure-caption">Gambar 2. Beranda Portal & Ringkasan Portofolio Kasus</div>
+</div>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<p>## 2.2 Ringkasan Metrik Akseptasi & Portofolio</p>
+<p>Pada bagian tengah portal terdapat kartu metrik portofolio yang dikalkulasi secara realtime:</p>
+<h3 class='subsection-title'>Tabel 3. Kartu Metrik Portofolio Beranda</h3>
+<table class='data-table'><thead><tr>
+<th>No</th>
+<th>Kartu Indikator</th>
+<th>Warna Aksen</th>
+<th>Keterangan & Definisi</th>
+</tr></thead><tbody>
+<tr>
+<td>1</td>
+<td><strong>Total Plafon Portofolio</strong></td>
+<td>Biru Gradasi</td>
+<td>Akumulasi total nilai permohonan plafond penjaminan kredit dari seluruh berkas debitur aktif.</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>Total Berkas Debitur</strong></td>
+<td>Biru Muda</td>
+<td>Jumlah total berkas analisa kredit yang tersimpan di dalam memori sistem.</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>Layak Dijamin</strong></td>
+<td>Hijau (<em>Emerald</em>)</td>
+<td>Jumlah kasus dengan hasil evaluasi <em>Layak Penuh</em> (Rekomendasi penjaminan standar s/d 80%-90%).</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>Persetujuan Bersyarat</strong></td>
+<td>Oranye (<em>Amber</em>)</td>
+<td>Jumlah kasus dengan status <em>Conditional Approval</em> (memerlukan <em>Cash Collateral</em>, restrukturisasi skema, atau porsi penjaminan maksimum 55%-70%).</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>Tolak Skema / High Risk</strong></td>
+<td>Merah (<em>Crimson</em>)</td>
+<td>Jumlah kasus yang tidak layak dijamin (<em>Uninsurable / Reject</em>) akibat masalah likuiditas parah, gross loss, atau rasio DSCR kritis.</td>
+</tr>
+<tr>
+<td>6</td>
+<td><strong>Belum Dianalisis</strong></td>
+<td>Abu-abu</td>
+<td>Kasus baru yang belum diinput data laporan keuangannya (<em>Zero Financials</em>).</td>
+</tr>
+</tbody></table>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<p>## 2.3 Tombol Aksi Cepat (<em>Quick Actions</em>)</p>
+<ul class='bullet-list'>
+<li><strong>Tombol <code>+ Buat Analisa Baru</code> (Warna Oranye Kontras Tinggi):</strong> Membuka modal pendaftaran proyek debitur baru.</li>
+<li><strong>Tombol <code>Buka File Analisa</code> (Putih Bersih):</strong> Membuka file explorer lokal komputer untuk mengimpor file cadangan database (<code>.asca.json</code>).</li>
+<li><strong>Tombol Navigasi <code>Beranda</code> pada Header:</strong> Mengembalikan tampilan layar ke portal ini kapan saja saat berada di dalam lembar kerja analisa kasus.</li>
+</ul>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<div class='page-break'></div>
+<h1 class='chapter-title'>BAB III: MANAJEMEN BERKAS & SIDEBAR KASUS</h1>
+<p>## 3.1 Pencarian Debitur & Filter Cerdas</p>
+<p>Sidebar sebelah kiri memuat seluruh arsip debitur yang tersimpan. Pengguna dapat mencari berkas secara instan menggunakan kolom pencarian di bagian atas sidebar.</p>
+<div class="figure-box">
+  <img src="./manual_images/gambar_04_sidebar_workspace.png" alt="Gambar 4. Sidebar Kasus & Tata Letak Ruang Kerja" loading="lazy">
+  <div class="figure-caption">Gambar 4. Sidebar Kasus & Tata Letak Ruang Kerja</div>
+</div>
+<h3 class='subsection-title'>Fitur Kolom Pencarian:</h3>
+<ul class='bullet-list'>
+<li><strong>Pencarian Multi-Atribut:</strong> Pengguna dapat mengetikkan nama perusahaan debitur, nama bank penyalur kredit, maupun nama sektor usaha.</li>
+<li><strong>Tombol Clear Search (<code>×</code>):</strong> Menghapus kata kunci pencarian seketika untuk menampilkan kembali seluruh daftar debitur.</li>
+<li><strong>Proteksi Anti-Autofill:</strong> Field dilengkapi atribut proteksi khusus sehingga kredensial akun peramban tidak akan pernah bocor tertempel ke kolom pencarian kasus.</li>
+</ul>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<p>## 3.2 Tampilan Sidebar (<em>Expand / Collapse</em>)</p>
+<ul class='bullet-list'>
+<li>Untuk memperluas area pandang tabel keuangan pada layar laptop atau monitor berukuran kecil, klik tombol panah lipat (<code>«</code>) di sudut kanan atas header sidebar.</li>
+<li>Sidebar akan menciut (<em>collapse</em>) menjadi bilah ramping dengan indikator jumlah kasus.</li>
+<li>Klik ikon panah buka (<code>»</code>) pada bilah ramping tersebut untuk membuka kembali daftar lengkap analisa debitur.</li>
+</ul>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<p>## 3.3 Aksi Duplikasi, Ekspor Kasus Tunggal, & Hapus</p>
+<p>Setiap kartu debitur pada sidebar dilengkapi 3 tombol aksi mikro:</p>
+<ol class='step-list'>
+<li><strong>Tombol Duplikasi:</strong> Menyalin seluruh data debitur, neraca, laba rugi, dan parameter kredit ke dalam berkas kasus baru dengan imbuhan nama <code>(Salinan)</code>. Fitur ini sangat berguna untuk melakukan simulasi skenario alternatif tanpa mengubah berkas asli.</li>
+<li><strong>Tombol Export:</strong> Mengunduh berkas analisa debitur tersebut ke dalam format JSON tunggal (<code>[Nama_Debitur].json</code>).</li>
+<li><strong>Tombol Hapus:</strong> Menghapus berkas analisa debitur secara permanen setelah mendapatkan konfirmasi persetujuan dari pengguna.</li>
+</ol>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<h2 class='section-title'>3.4 Indikator Auto-Save Realtime</h2>
+<p>Pada bagian footer sidebar terdapat indikator status penyimpanan otomatis:</p>
+<p><code>✓ Tersimpan otomatis (Database Cloud Aktif)</code></p>
+<p>Setiap kali pengguna melakukan perubahan angka atau teks pada form, ASCA secara otomatis menyimpan perubahan ke <em>Local Storage</em> dan mengunggahnya ke repositori <em>Cloud Storage</em> tanpa perlu menekan tombol simpan berulang-ulang.</p>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<div class='page-break'></div>
+<h1 class='chapter-title'>BAB IV: PEMBUATAN PROYEK ANALISA BARU</h1>
+<h2 class='section-title'>4.1 Form Modal Proyek Baru</h2>
+<p>Untuk menganalisa debitur yang baru mengajukan permohonan penjaminan kredit, pengguna membuka form pembuatan proyek baru.</p>
+<div class="figure-box">
+  <img src="./manual_images/gambar_03_modal_proyek_baru.png" alt="Gambar 3. Modal Pembuatan Proyek Analisa Baru" loading="lazy">
+  <div class="figure-caption">Gambar 3. Modal Pembuatan Proyek Analisa Baru</div>
+</div>
+<h3 class='subsection-title'>Langkah-langkah Pembuatan Proyek Baru:</h3>
+<ol class='step-list'>
+<li>Klik tombol <strong><code>+ Buat Analisa Baru</code></strong> pada Beranda Portal atau ikon tambah pada sidebar.</li>
+<li>Jendela modal dialog <em>Buat Analisa Kredit Baru</em> akan terbuka.</li>
+<li>Lengkapi seluruh isian parameter sesuai dokumen permohonan kredit yang diterima dari bank mitra.</li>
+<li>Klik tombol <strong>Buat Proyek & Mulai Analisa</strong>.</li>
+</ol>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<h3 class='subsection-title'>Tabel 4. Field Modal Analisa Baru</h3>
+<table class='data-table'><thead><tr>
+<th>No</th>
+<th>Field</th>
+<th>Tipe Kontrol</th>
+<th>Keterangan / Pilihan</th>
+</tr></thead><tbody>
+<tr>
+<td>1</td>
+<td><strong>Nama Perusahaan / Debitur</strong></td>
+<td>Text Input</td>
+<td>Nama resmi badan usaha calon terjamin (PT / CV / Koperasi).</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>Nama Bank Penyalur Kredit</strong></td>
+<td>Combobox / Text</td>
+<td>Bank mitra penyalur kredit (contoh: Bank Mandiri, BRI, BNI, Bank Dana, Bank Maluku Malut).</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>Jenis Fasilitas Kredit</strong></td>
+<td>Dropdown Menu</td>
+<td>Pilihan fasilitas: <em>KMK Revolving, KMK Transaksional, SCF AP, Forex Line, atau Paket Gabungan</em>.</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>Sektor Usaha / Industri</strong></td>
+<td>Dropdown Menu</td>
+<td>Klasifikasi lapangan usaha sesuai KBLI / Sektor Askrindo (Perdagangan, Manufaktur, Konstruksi, Jasa, dll.).</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>Kota / Domisili Usaha</strong></td>
+<td>Text Input</td>
+<td>Kota atau Kabupaten lokasi kantor pusat / operasional debitur.</td>
+</tr>
+<tr>
+<td>6</td>
+<td><strong>Plafond Kredit yang Dimohonkan</strong></td>
+<td>Numeric (Rupiah)</td>
+<td>Nilai nominal permohonan kredit dalam satuan Rupiah (contoh: Rp 16.689.000.000).</td>
+</tr>
+<tr>
+<td>7</td>
+<td><strong>Tahun Laporan Keuangan 1 (Historis)</strong></td>
+<td>Numeric (Tahun)</td>
+<td>Tahun buku keuangan awal yang akan diinput (contoh: 2022).</td>
+</tr>
+<tr>
+<td>8</td>
+<td><strong>Tahun Laporan Keuangan 2 (Terbaru)</strong></td>
+<td>Numeric (Tahun)</td>
+<td>Tahun buku keuangan pembanding/terbaru (contoh: 2023).</td>
+</tr>
+</tbody></table>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<p>## 4.3 Ketentuan Inisialisasi Modul (<em>Empty-State Guard</em>)</p>
+<div class='alert-box alert-important'><div><strong>Prinsip Integritas Analisa Keuangan:</strong> Saat proyek baru pertama kali dibuat, sistem ASCA <strong>TIDAK AKAN</strong> menampilkan estimasi skor palsu, angka rekomendasi tiruan, ataupun hasil stress-test sebelum Analis menginputkan data Laporan Keuangan (Neraca & Laba Rugi). Seluruh modul kalkulasi (DCC, Stress-Test, NWC, Cash Flow, Grade Risk, Rincian Skor, dan Review Analisa) akan menampilkan kartu panduan *Empty-State* yang mengarahkan Analis untuk menginput data keuangan pada <strong>Tab 2</strong> terlebih dahulu. </div></div>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<div class='page-break'></div>
+<h1 class='chapter-title'>BAB V: HEADER ANALISA ADAPTIF 2-TIER</h1>
+<p>## 5.1 Informasi Utama & Micro-Chips Metadata</p>
+<p>Header Analisa (<code>.case-banner</code>) dirancang dengan struktur 2-Tier adaptif yang responsif pada semua ukuran resolusi layar:</p>
+<div class="figure-box">
+  <img src="./manual_images/gambar_05_header_analisa.png" alt="Gambar 5. Header Analisa Adaptif 2-Tier" loading="lazy">
+  <div class="figure-caption">Gambar 5. Header Analisa Adaptif 2-Tier</div>
+</div>
+<ul class='bullet-list'>
+<li><strong>Tier 1 (Informasi Debitur & Micro-Chips):</strong></li>
+<li><strong>Nama Perusahaan:</strong> Ditampilkan dengan tipografi tegas (<em>Navy Blue Bold</em>).</li>
+<li><strong>Badges Utama:</strong> Badge Rating Risiko (<em>contoh: DDD (16/100)</em>), Status Kelayakan Penjaminan (<em>contoh: Tidak Layak / Layak Bersyarat</em>), dan Jenis Fasilitas Pembiayaan.</li>
+<li><strong>Structured Micro-Chips:</strong> Wadah ringkas berlatar <code>#f8fafc</code> dengan garis halus <code>#e2e8f0</code> yang memuat metadata penting:</li>
+<li><code>BANK</code>: Nama bank kreditor.</li>
+<li><code>SEKTOR</code>: Bidang usaha (teks panjang dilengkapi pemotongan <em>ellipsis</em> dan tooltip <em>title</em> saat disentuh kursor).</li>
+<li><code>DOMISILI</code>: Kota kedudukan debitur.</li>
+<li><code>PLAFOND</code>: Plafon pengajuan kredit terformat Rupiah.</li>
+<li><code>LAP. KEU</code>: Dua tahun buku keuangan yang dievaluasi.</li>
+<li><code>UNDERWRITER</code>: Nama analis pembuat berkas.</li>
+<li><code>UNIT / DIVISI</code>: Cabang penjaminan Askrindo terkait.</li>
+</ul>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<p>## 5.2 Lingkaran Skor DCC-SWCM & Tautan Navigasi Cepat</p>
+<ul class='bullet-list'>
+<li><strong>Lingkaran Skor Interaktif (<code>score-circle</code>):</strong> Menampilkan skor komposit skala 0 s/d 100 dengan warna yang berubah otomatis sesuai grade risiko (Merah: High Risk/DDD, Oranye: Moderate/BB, Hijau: Prime/AAA). Klik lingkaran ini untuk langsung melompat ke lembar Rincian Skor.</li>
+<li><strong>Tautan Navigasi Cepat (Pill Badges):</strong></li>
+<li><code>Analisa 5C</code>: Melompat ke grafik radar evaluasi 5C.</li>
+<li><code>Rincian Skor</code>: Melompat ke tabel perhitungan bobot penilaian.</li>
+<li><code>Indikator Grade</code>: Melompat ke matriks grade rating akseptasi.</li>
+</ul>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<p>## 5.3 Keputusan Cepat & Rekomendasi Coverage</p>
+<ul class='bullet-list'>
+<li><strong>Pill Keputusan Akseptasi:</strong> Menampilkan kesimpulan tegas (misal: <code>TOLAK SKEMA PENGAJUAN AWAL (GROSS LOSS KRONIS)</code> atau <code>PERSETUJUAN BERSYARAT DENGAN RESTRUKTURISASI</code>).</li>
+<li><strong>Baris Rekomendasi Coverage:</strong> Menampilkan porsi penjaminan maksimum yang disarankan dan estimasi IJP (<em>Imbal Jasa Penjaminan</em>).</li>
+</ul>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<h2 class='section-title'>5.4 Tombol Simpan Global ke Cloud</h2>
+<p>Tombol <strong><code>[ 💾 Simpan ]</code></strong> terletak kokoh di ujung kanan Tier 2 (<code>align-self: stretch</code>). Menekan tombol ini akan mengompilasi seluruh tab dan menyimpannya secara permanen ke pangkalan data cloud.</p>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<div class='page-break'></div>
+<h1 class='chapter-title'>BAB VI: MODUL ANALISA INTI (10 TABS WORKSPACE)</h1>
+<p>Workspace ASCA terbagi ke dalam 10 Tab Analisa komprehensif yang saling terhubung secara terpadu.</p>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<p>## 6.1 Tab 1: Dashboard Debitur & Radar 5C</p>
+<p>Menyajikan rangkuman eksekutif visual yang ideal untuk presentasi komite kredit dan review manajemen.</p>
+<div class="figure-box">
+  <img src="./manual_images/gambar_06_tab1_dashboard.png" alt="Gambar 6. Tab 1 - Dashboard Debitur & Radar 5C" loading="lazy">
+  <div class="figure-caption">Gambar 6. Tab 1 - Dashboard Debitur & Radar 5C</div>
+</div>
+<h3 class='subsection-title'>Fitur Utama Tab Dashboard:</h3>
+<ol class='step-list'>
+<li><strong>Grafik Radar 5C:</strong> Visualisasi polygon 5 dimensi kredit (<em>Character, Capacity, Capital, Collateral, Condition</em>) membandingkan profil debitur terhadap standar minimum akseptasi Askrindo.</li>
+<li><strong>Kartu Skor Kuantitatif & Kualitatif:</strong> Pemisahan skor aspek rasio keuangan dan aspek kelayakan kualitatif operasional.</li>
+<li><strong>Ringkasan Indikator Keuangan Kunci:</strong> Menampilkan metrik DCC (hari), NWC (Rp), DSCR (kali), dan Debt-to-Equity Ratio (DER).</li>
+</ol>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<p>## 6.2 Tab 2: Input Parameter & Laporan Keuangan</p>
+<p>Merupakan fondasi utama kalkulasi sistem. Analis menginputkan data finansial debitur selama dua periode tahun buku terakhir.</p>
+<div class="figure-box">
+  <img src="./manual_images/gambar_07_tab2_input_data.png" alt="Gambar 7. Tab 2 - Parameter Debitur & Laporan Keuangan" loading="lazy">
+  <div class="figure-caption">Gambar 7. Tab 2 - Parameter Debitur & Laporan Keuangan</div>
+</div>
+<h3 class='subsection-title'>Tabel 5. Komponen Input Laporan Keuangan Tab 2</h3>
+<table class='data-table'><thead><tr>
+<th>No</th>
+<th>Bagian Laporan</th>
+<th>Field / Akun Finansial</th>
+<th>Fungsi dalam Perhitungan DCC-SWCM</th>
+</tr></thead><tbody>
+<tr>
+<td>1</td>
+<td><strong>Profil & Fasilitas</strong></td>
+<td>Limit SCF, Limit Forex, Suku Bunga (%)</td>
+<td>Menghitung beban bunga tahunan dan batas likuiditas penjaminan.</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>Neraca - Aset Lancar</strong></td>
+<td>Kas & Setara Kas</td>
+<td>Komponen utama likuiditas primer dan ketahanan <em>Cash Burn Rate</em>.</td>
+</tr>
+<tr>
+<td>3</td>
+<td></td>
+<td>Piutang Usaha</td>
+<td>Menghitung <em>Days Sales Outstanding</em> (DSO) dan perputaran piutang.</td>
+</tr>
+<tr>
+<td>4</td>
+<td></td>
+<td>Persediaan Barang (<em>Inventory</em>)</td>
+<td>Menghitung <em>Days Inventory Outstanding</em> (DIO) dan kebutuhan modal kerja.</td>
+</tr>
+<tr>
+<td>5</td>
+<td></td>
+<td>Aset Lancar Lainnya</td>
+<td>Menghitung total aktiva lancar dan rasio <em>Current Ratio</em>.</td>
+</tr>
+<tr>
+<td>6</td>
+<td><strong>Neraca - Kewajiban Lancar</strong></td>
+<td>Hutang Usaha (<em>Trade Payables</em>)</td>
+<td>Menghitung <em>Days Payable Outstanding</em> (DPO) dan siklus pembiayaan supplier.</td>
+</tr>
+<tr>
+<td>7</td>
+<td></td>
+<td>Hutang Bank Jangka Pendek</td>
+<td>Komponen kewajiban lancar yang jatuh tempo dalam 12 bulan.</td>
+</tr>
+<tr>
+<td>8</td>
+<td></td>
+<td>Kewajiban Lancar Lainnya</td>
+<td>Menghitung total <em>Current Liabilities</em> untuk penentuan NWC.</td>
+</tr>
+<tr>
+<td>9</td>
+<td><strong>Neraca - Solvabilitas</strong></td>
+<td>Total Hutang & Total Ekuitas</td>
+<td>Menghitung rasio solvabilitas <em>Debt to Equity Ratio</em> (DER) dan <em>Debt to Asset</em>.</td>
+</tr>
+<tr>
+<td>10</td>
+<td><strong>Laba Rugi</strong></td>
+<td>Penjualan / Pendapatan Usaha</td>
+<td>Menghitung pertumbuhan omzet (<em>Sales Growth</em>) dan basis rasio efisiensi.</td>
+</tr>
+<tr>
+<td>11</td>
+<td></td>
+<td>Harga Pokok Penjualan (HPP)</td>
+<td>Menghitung <em>Gross Profit Margin</em> (GPM) dan rasio perputaran persediaan.</td>
+</tr>
+<tr>
+<td>12</td>
+<td></td>
+<td>Beban Operasional / Umum</td>
+<td>Menghitung <em>Cash Burn Rate</em> bulanan dan laba operasional (EBITDA).</td>
+</tr>
+<tr>
+<td>13</td>
+<td></td>
+<td>Laba Bersih (<em>Net Profit</em>)</td>
+<td>Menghitung <em>Net Profit Margin</em> (NPM), ROA, dan ROE.</td>
+</tr>
+</tbody></table>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<h2 class='section-title'>6.3 Tab 3: Dynamic Cash Conversion (DCC)</h2>
+<p>Modul ini mengkalkulasi efisiensi arus siklus kas operasional debitur dari saat pembelian bahan baku hingga penerimaan pelunasan tagihan.</p>
+<div class="figure-box">
+  <img src="./manual_images/gambar_08_tab3_dcc.png" alt="Gambar 8. Tab 3 - Dynamic Cash Conversion Cycle" loading="lazy">
+  <div class="figure-caption">Gambar 8. Tab 3 - Dynamic Cash Conversion Cycle</div>
+</div>
+<h3 class='subsection-title'>Tabel 6. Rumus & Parameter DCC</h3>
+<table class='data-table'><thead><tr>
+<th>Parameter</th>
+<th>Formula Komputasi</th>
+<th>Interpretasi Underwriting</th>
+</tr></thead><tbody>
+<tr>
+<td><strong>Days Sales Outstanding (DSO)</strong></td>
+<td>$\text{DSO} = \frac{\text{Piutang Usaha}}{\text{Penjualan Tahunan}} \times 365$</td>
+<td>Rata-rata hari yang dibutuhkan debitur untuk menagih piutang dari pembeli.</td>
+</tr>
+<tr>
+<td><strong>Days Inventory Outstanding (DIO)</strong></td>
+<td>$\text{DIO} = \frac{\text{Persediaan}}{\text{HPP Tahunan}} \times 365$</td>
+<td>Rata-rata hari lamanya barang mengendap di gudang sebelum berhasil terjual.</td>
+</tr>
+<tr>
+<td><strong>Days Payable Outstanding (DPO)</strong></td>
+<td>$\text{DPO} = \frac{\text{Hutang Usaha}}{\text{HPP Tahunan}} \times 365$</td>
+<td>Rata-rata tempo pembayaran yang diperoleh debitur dari pemasok/supplier.</td>
+</tr>
+<tr>
+<td><strong>DCC Net Cycle (Hari)</strong></td>
+<td>$\text{DCC} = \text{DSO} + \text{DIO} - \text{DPO}$</td>
+<td>Kesenjangan waktu (<em>cash gap</em>) di mana debitur membutuhkan talangan modal kerja. Siklus yang memanjang mengindikasikan risiko likuiditas tinggi.</td>
+</tr>
+</tbody></table>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<p>## 6.4 Tab 4: Stress-Testing & Shock Sensitivitas</p>
+<p>Menguji ketahanan kinerja debitur apabila terjadi kondisi makroekonomi dan operasional yang memburuk secara drastis.</p>
+<div class="figure-box">
+  <img src="./manual_images/gambar_09_tab4_stress_test.png" alt="Gambar 9. Tab 4 - Simulasi Stress-Testing & Shock Sensitivitas" loading="lazy">
+  <div class="figure-caption">Gambar 9. Tab 4 - Simulasi Stress-Testing & Shock Sensitivitas</div>
+</div>
+<h3 class='subsection-title'>4 Variabel Shock Skenario:</h3>
+<ol class='step-list'>
+<li><strong>Shock Penurunan Omzet (Sales Shock):</strong> Menyimulasikan penurunan omzet 10% s/d 30% akibat kontraksi pasar.</li>
+<li><strong>Shock Kenaikan HPP (COGS Shock):</strong> Menyimulasikan kenaikan harga bahan baku impor sebesar 10% s/d 25%.</li>
+<li><strong>Shock Fluktuasi Kurs (FX USD/IDR Shock):</strong> Menyimulasikan depresiasi Rupiah (misal Rp 15.500 $\rightarrow$ Rp 17.500 per USD).</li>
+<li><strong>Shock Suku Bunga (Interest Rate Shock):</strong> Menyimulasikan kenaikan suku bunga kredit bank 200 s/d 500 bps.</li>
+</ol>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<p>## 6.5 Tab 5: Net Working Capital (NWC) & CBRT</p>
+<p>Menghitung ketersediaan modal kerja riil dan berapa lama kas debitur mampu bertahan hidup (<em>survival runway</em>).</p>
+<div class="figure-box">
+  <img src="./manual_images/gambar_10_tab5_nwc_cbrt.png" alt="Gambar 10. Tab 5 - NWC & Cash Burn Rate Time" loading="lazy">
+  <div class="figure-caption">Gambar 10. Tab 5 - NWC & Cash Burn Rate Time</div>
+</div>
+<h3 class='subsection-title'>Tabel 7. Indikator NWC & CBRT</h3>
+<table class='data-table'><thead><tr>
+<th>Metrik</th>
+<th>Formula</th>
+<th>Standar Ambang Batas</th>
+</tr></thead><tbody>
+<tr>
+<td><strong>Net Working Capital (NWC)</strong></td>
+<td>$\text{NWC} = \text{Aset Lancar} - \text{Kewajiban Lancar}$</td>
+<td>Harus bernilai positif ($> 0$). Jika negatif, debitur berisiko gagal bayar jangka pendek.</td>
+</tr>
+<tr>
+<td><strong>Monthly Cash Burn Rate (CBR)</strong></td>
+<td>$\text{CBR} = \frac{\text{Beban Operasional Tahunan} + \text{Beban Bunga}}{12}$</td>
+<td>Kebutuhan kas bulanan untuk membiayai operasional tetap debitur.</td>
+</tr>
+<tr>
+<td><strong>Cash Burn Rate Time (CBRT)</strong></td>
+<td>$\text{CBRT} = \frac{\text{Kas \& Setara Kas}}{\text{Monthly CBR}}$</td>
+<td>Waktu bertahan kas (dalam bulan). Minimum sehat adalah $\ge 3$ bulan.</td>
+</tr>
+</tbody></table>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<p>## 6.6 Tab 6: Proyeksi Cash Flow & Debt Service (DSCR)</p>
+<p>Memproyeksikan arus kas bulanan selama 12 bulan ke depan untuk menguji kemampuan membayar angsuran pokok dan bunga bank (<em>Debt Service</em>).</p>
+<div class="figure-box">
+  <img src="./manual_images/gambar_11_tab6_cashflow.png" alt="Gambar 11. Tab 6 - Proyeksi Cash Flow & DSCR" loading="lazy">
+  <div class="figure-caption">Gambar 11. Tab 6 - Proyeksi Cash Flow & DSCR</div>
+</div>
+<h3 class='subsection-title'>Rumus Debt Service Coverage Ratio (DSCR):</h3>
+<p>$$\text{DSCR} = \frac{\text{Cash Flow Available for Debt Service (CFADS)}}{\text{Angsuran Pokok Pinjaman} + \text{Beban Bunga Pinjaman}}$$</p>
+<ul class='bullet-list'>
+<li><strong>DSCR $\ge 1.30\times$:</strong> Sangat Layak (<em>Prime/Superior</em>).</li>
+<li><strong>$1.00\times \le \text{DSCR} < 1.30\times$:</strong> Layak Bersyarat (<em>Moderate</em>).</li>
+<li><strong>DSCR $< 1.00\times$:</strong> Defisit Arus Kas (<em>Inadequate / High Risk</em>).</li>
+</ul>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<p>## 6.7 Tab 7: Grade Risk & Indikator Penyebab (10-Tier Rating)</p>
+<p>Menetapkan peringkat rating akseptasi resmi Askrindo berdasarkan tabel standardisasi industri penjaminan kredit.</p>
+<div class="figure-box">
+  <img src="./manual_images/gambar_12_tab7_grade_risk.png" alt="Gambar 12. Tab 7 - Penentuan Grade Risk 10-Tier" loading="lazy">
+  <div class="figure-caption">Gambar 12. Tab 7 - Penentuan Grade Risk 10-Tier</div>
+</div>
+<h3 class='subsection-title'>Tabel 8. Matriks 10-Tier Rating Akseptasi Askrindo</h3>
+<p><em>(Mengacu pada Tabel VI.1 Petunjuk Teknis Suretyship Askrindo / Standar PT IDX Consulting)</em></p>
+<table class='data-table'><thead><tr>
+<th>Rating Grade</th>
+<th>Rentang Skor</th>
+<th>Kategori Risiko</th>
+<th>Rekomendasi Akseptasi Askrindo</th>
+<th>Porsi Coverage Maks.</th>
+</tr></thead><tbody>
+<tr>
+<td><strong>AAA</strong></td>
+<td>$91 - 100$</td>
+<td>Risiko Sangat Rendah</td>
+<td>Disetujui Penuh (Tanpa Syarat Khusus)</td>
+<td>$90\%$</td>
+</tr>
+<tr>
+<td><strong>AA</strong></td>
+<td>$81 - 90$</td>
+<td>Risiko Rendah</td>
+<td>Disetujui Penuh (Fasilitas Standar)</td>
+<td>$85\%$</td>
+</tr>
+<tr>
+<td><strong>A</strong></td>
+<td>$71 - 80$</td>
+<td>Risiko Terkendali Baik</td>
+<td>Disetujui Penuh</td>
+<td>$80\%$</td>
+</tr>
+<tr>
+<td><strong>BBB</strong></td>
+<td>$61 - 70$</td>
+<td>Risiko Sedang (<em>Investment Grade</em>)</td>
+<td>Disetujui dengan Pemantauan Berkala</td>
+<td>$75\%$</td>
+</tr>
+<tr>
+<td><strong>BB</strong></td>
+<td>$51 - 60$</td>
+<td>Risiko Cukup Tinggi</td>
+<td>Persetujuan Bersyarat (<em>Covenants Ketat</em>)</td>
+<td>$70\%$</td>
+</tr>
+<tr>
+<td><strong>B</strong></td>
+<td>$41 - 50$</td>
+<td>Risiko Tinggi</td>
+<td>Persetujuan Bersyarat (<em>Cash Collateral</em>)</td>
+<td>$60\%$</td>
+</tr>
+<tr>
+<td><strong>CCC</strong></td>
+<td>$31 - 40$</td>
+<td>Risiko Sangat Rentan</td>
+<td>Pembatasan Ketat (<em>Escrow Account</em>)</td>
+<td>$55\%$</td>
+</tr>
+<tr>
+<td><strong>CC</strong></td>
+<td>$21 - 30$</td>
+<td>Risiko Sangat Tinggi / Defisit</td>
+<td>Tolak Skema Awal (Restrukturisasi Wajib)</td>
+<td>$50\%$</td>
+</tr>
+<tr>
+<td><strong>C</strong></td>
+<td>$11 - 20$</td>
+<td>Kerugian Kronis / Insolvensi</td>
+<td><strong>Tolak Akseptasi Penjaminan</strong></td>
+<td>Opsi Maks $55\%$</td>
+</tr>
+<tr>
+<td><strong>DDD</strong></td>
+<td>$0 - 10$</td>
+<td>Default / Uninsurable</td>
+<td><strong>Tolak Mutlak (<em>Uninsurable</em>)</strong></td>
+<td>$0\%$</td>
+</tr>
+</tbody></table>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<h2 class='section-title'>6.8 Tab 8: Rincian Perhitungan Skor DCC-SWCM</h2>
+<p>Menyajikan pembobotan matematis transparan dari prinsip analisa kredit 5C Askrindo.</p>
+<div class="figure-box">
+  <img src="./manual_images/gambar_13_tab8_rincian_skor.png" alt="Gambar 13. Tab 8 - Rincian Perhitungan Skor DCC-SWCM" loading="lazy">
+  <div class="figure-caption">Gambar 13. Tab 8 - Rincian Perhitungan Skor DCC-SWCM</div>
+</div>
+<h3 class='subsection-title'>Tabel 9. Pembobotan Aspek 5C DCC-SWCM</h3>
+<table class='data-table'><thead><tr>
+<th>Pilar 5C</th>
+<th>Bobot</th>
+<th>Parameter Evaluasi Utama</th>
+</tr></thead><tbody>
+<tr>
+<td><strong>Character (Watak)</strong></td>
+<td>$15\%$</td>
+<td>Riwayat kolektibilitas BI Checking / SLIK OJK, integritas manajemen, blacklist INAPROC.</td>
+</tr>
+<tr>
+<td><strong>Capacity (Kapasitas)</strong></td>
+<td>$30\%$</td>
+<td>Siklus DCC, rasio DSCR, pertumbuhan omzet, perputaran piutang & persediaan.</td>
+</tr>
+<tr>
+<td><strong>Capital (Permodalan)</strong></td>
+<td>$25\%$</td>
+<td>Modal Kerja Bersih (NWC), Debt-to-Equity Ratio (DER), profitabilitas (GPM & NPM).</td>
+</tr>
+<tr>
+<td><strong>Collateral (Agunan)</strong></td>
+<td>$15\%$</td>
+<td>Nilai taksasi agunan <em>fixed assets</em>, pengikatan hak tanggungan, agunan likuid (<em>Cash/Deposito</em>).</td>
+</tr>
+<tr>
+<td><strong>Condition (Kondisi Makro)</strong></td>
+<td>$15\%$</td>
+<td>Ketahanan terhadap shock valas, ketergantungan impor, prospek industri debitur.</td>
+</tr>
+</tbody></table>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<p>## 6.9 Tab 9: Rekomendasi Struktur Fasilitas & Mitigasi Risiko</p>
+<p>Memberikan panduan klausul syarat persetujuan (<em>covenants</em>) dan restrukturisasi fasilitas kredit bagi bank mitra penjaminan.</p>
+<div class="figure-box">
+  <img src="./manual_images/gambar_14_tab9_rekomendasi.png" alt="Gambar 14. Tab 9 - Rekomendasi Fasilitas & Mitigasi Risiko" loading="lazy">
+  <div class="figure-caption">Gambar 14. Tab 9 - Rekomendasi Fasilitas & Mitigasi Risiko</div>
+</div>
+<h3 class='subsection-title'>Klausul Mitigasi Risiko Khusus Askrindo:</h3>
+<ol class='step-list'>
+<li><strong>Penyaluran Bertahap (<em>Tranche Disbursement</em>):</strong> Penarikan kredit tidak diberikan sekaligus melainkan berbasis dokumen progres transaksi (<em>Invoice Verified</em>).</li>
+<li><strong>Penyediaan Escrow Account:</strong> Seluruh penerimaan pembayaran dari debitur wajib dialirkan melalui rekening penampungan di bank penyalur kredit.</li>
+<li><strong>Penyertaan Cash Collateral Tambahan:</strong> Mewajibkan agunan tunai atau sertifikat deposito minimal 10%-20% dari total plafond.</li>
+</ol>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<p>## 6.10 Tab 10: Review Analisa & Lembar Keputusan Underwriting</p>
+<p>Dokumen resmi akhir yang merangkum keseluruhan analisa kredit, pertimbangan underwriter, dan jalur tanda tangan berjenjang (<em>Maker - Checker - Approver</em>).</p>
+<div class="figure-box">
+  <img src="./manual_images/gambar_15_tab10_review_analisa.png" alt="Gambar 15. Tab 10 - Review Analisa & Lembar Keputusan" loading="lazy">
+  <div class="figure-caption">Gambar 15. Tab 10 - Review Analisa & Lembar Keputusan</div>
+</div>
+<h3 class='subsection-title'>Tabel 10. Elemen Lembar Keputusan Review Analisa</h3>
+<table class='data-table'><thead><tr>
+<th>No</th>
+<th>Bagian Form</th>
+<th>Isian Data</th>
+<th>Pejabat Penanggung Jawab</th>
+</tr></thead><tbody>
+<tr>
+<td>1</td>
+<td><strong>Opini Analis Kredit</strong></td>
+<td>Catatan evaluasi, pertimbangan risiko utama, dan rekomendasi struktural.</td>
+<td>Analis Kredit / Underwriter</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>Tanda Tangan Maker</strong></td>
+<td>Nama Analis, NIP, Jabatan (<em>Underwriter Ahli Pertama</em>), Tanggal.</td>
+<td>Pembuat Berkas (<em>Maker</em>)</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>Tanda Tangan Checker</strong></td>
+<td>Nama Pemeriksa, NIP, Jabatan (<em>Kasi Underwriting Komersial</em>), Tanggal.</td>
+<td>Pemeriksa Berkas (<em>Checker</em>)</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>Tanda Tangan Approver</strong></td>
+<td>Nama Pejabat Pemutus, NIP, Jabatan (<em>Pemimpin Cabang / Kadiv</em>), Tanggal.</td>
+<td>Pejabat Pemutus (<em>Approver</em>)</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>Tombol Cetak PDF</strong></td>
+<td>Mencetak nota review ke format dokumen resmi PDF siap bubuh tanda tangan basah / digital.</td>
+<td>Seluruh Pejabat Berwenang</td>
+</tr>
+</tbody></table>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<div class='page-break'></div>
+<h1 class='chapter-title'>BAB VII: EKSPOR LAPORAN & PENCETAKAN RESMI</h1>
+<h2 class='section-title'>7.1 Ekspor Berkas JSON Portofolio</h2>
+<ul class='bullet-list'>
+<li>Untuk mencadangkan seluruh data analisa kasus dari akun pengguna, klik tombol <strong>User Menu</strong> $\rightarrow$ pilih <strong>Export Seluruh Database (.json)</strong>.</li>
+<li>Sistem akan mengunduh berkas dengan format:</li>
+</ul>
+<p><code>ASCA_Workspace_Backup_[Tanggal].json</code></p>
+<p>## 7.2 Impor & Pemulihan Berkas Cadangan</p>
+<ul class='bullet-list'>
+<li>Pada Beranda Portal, klik tombol <strong>Buka File Analisa</strong> atau tombol <strong>Impor Database</strong> di bilah atas.</li>
+<li>Pilih berkas cadangan <code>.json</code>. Sistem ASCA akan secara otomatis memulihkan seluruh arsip debitur, neraca, dan hasil kalkulasi tanpa ada data yang hilang.</li>
+</ul>
+<h2 class='section-title'>7.3 Cetak Nota Review Analisa ke Format PDF</h2>
+<ol class='step-list'>
+<li>Buka Tab 10 (<strong>Review Analisa</strong>).</li>
+<li>Periksa kembali kelengkapan catatan opini analis dan pejabat penandatangan.</li>
+<li>Klik tombol biru <strong><code>[ 🖨️ Cetak / Ekspor PDF ]</code></strong> di bagian atas lembar nota review.</li>
+<li>Jendela dialog cetak peramban akan terbuka:</li>
+</ol>
+<ul class='bullet-list'>
+<li>Pilih Printer: <strong>Save as PDF</strong> / <strong>Simpan sebagai PDF</strong>.</li>
+<li>Ukuran Kertas: <strong>A4</strong>.</li>
+<li>Margin: <strong>Default / Minimum</strong>.</li>
+<li>Opsi: Centang opsi <strong>Background graphics / Gambar latar belakang</strong>.</li>
+</ul>
+<ol class='step-list'>
+<li>Klik <strong>Save</strong> untuk menyimpan dokumen resmi akseptasi penjaminan.</li>
+</ol>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<h2 class='section-title'>DAFTAR GAMBAR</h2>
+<ul class='bullet-list'>
+<li><strong>Gambar 1.</strong> Halaman Login Sistem ASCA ....................................................................................... 3</li>
+<li><strong>Gambar 2.</strong> Beranda Portal & Ringkasan Portofolio Kasus (<em>Welcome Hub</em>) ........................................ 6</li>
+<li><strong>Gambar 3.</strong> Modal Pembuatan Proyek Analisa Baru ....................................................................... 12</li>
+<li><strong>Gambar 4.</strong> Sidebar Kasus & Tata Letak Ruang Kerja ...................................................................... 9</li>
+<li><strong>Gambar 5.</strong> Header Analisa Adaptif 2-Tier (<code>.case-banner</code>) ............................................................. 15</li>
+<li><strong>Gambar 6.</strong> Tab 1 - Dashboard Debitur & Radar 5C ......................................................................... 18</li>
+<li><strong>Gambar 7.</strong> Tab 2 - Parameter Debitur & Laporan Keuangan ........................................................... 20</li>
+<li><strong>Gambar 8.</strong> Tab 3 - Dynamic Cash Conversion Cycle (DCC) ........................................................... 23</li>
+<li><strong>Gambar 9.</strong> Tab 4 - Simulasi Stress-Testing & Shock Sensitivitas ..................................................... 25</li>
+<li><strong>Gambar 10.</strong> Tab 5 - Net Working Capital (NWC) & Cash Burn Rate Time (CBRT) .............................. 27</li>
+<li><strong>Gambar 11.</strong> Tab 6 - Proyeksi Cash Flow & Debt Service (DSCR) ..................................................... 29</li>
+<li><strong>Gambar 12.</strong> Tab 7 - Penentuan Grade Risk 10-Tier Askrindo (AAA s/d DDD) ..................................... 31</li>
+<li><strong>Gambar 13.</strong> Tab 8 - Rincian Perhitungan Skor DCC-SWCM (Bobot 5C) ........................................... 33</li>
+<li><strong>Gambar 14.</strong> Tab 9 - Rekomendasi Struktur Fasilitas & Mitigasi Risiko ............................................. 35</li>
+<li><strong>Gambar 15.</strong> Tab 10 - Review Analisa & Lembar Keputusan Underwriting ........................................ 37</li>
+<li><strong>Gambar 16.</strong> Modal Pengaturan Akun & Ganti Password .................................................................. 4</li>
+<li><strong>Gambar 17.</strong> Dialog Konfirmasi Keluar dari Sistem (<em>Safety Logout</em>) ................................................ 5</li>
+</ul>
+<hr style='border:0; border-top:1px solid #e2e8f0; margin:24px 0;'>
+<h2 class='section-title'>DAFTAR TABEL</h2>
+<ul class='bullet-list'>
+<li><strong>Tabel 1.</strong> Elemen Field Halaman Login ........................................................................................... 3</li>
+<li><strong>Tabel 2.</strong> Field Modal Pengaturan Akun ............................................................................................ 4</li>
+<li><strong>Tabel 3.</strong> Kartu Metrik Portofolio Beranda ....................................................................................... 7</li>
+<li><strong>Tabel 4.</strong> Field Modal Analisa Baru ................................................................................................. 13</li>
+<li><strong>Tabel 5.</strong> Komponen Input Laporan Keuangan Tab 2 ....................................................................... 21</li>
+<li><strong>Tabel 6.</strong> Rumus & Parameter Dynamic Cash Conversion (DCC) ...................................................... 24</li>
+<li><strong>Tabel 7.</strong> Indikator Net Working Capital (NWC) & CBRT ................................................................... 28</li>
+<li><strong>Tabel 8.</strong> Matriks 10-Tier Rating Akseptasi Askrindo (Tabel VI.1 Juknis) ............................................ 32</li>
+<li><strong>Tabel 9.</strong> Pembobotan Aspek 5C DCC-SWCM ................................................................................. 34</li>
+<li><strong>Tabel 10.</strong> Elemen Lembar Keputusan Review Analisa Tab 10 ........................................................... 38</li>
+</ul>
+    <!-- DOCUMENT CONTROL FOOTER -->
+    <div class="doc-footer">
+      <span>Dokumen No: ASCA-UM-UW-2026-001 | Revisi 1.0 (Produksi)</span>
+      <span>Hak Cipta &copy; 2026 PT Asuransi Kredit Indonesia (Persero) - Internal Underwriting</span>
+    </div>
+
+  </div>
+
+</body>
+</html>

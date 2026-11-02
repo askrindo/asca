@@ -1261,8 +1261,12 @@ function renderBanner(proj, m) {
   };
   setEl('bannerCompanyName', proj.companyName || '-');
   setEl('bannerFacilityType', proj.facilityType || '-');
+  const facEl = document.getElementById('bannerFacilityType');
+  if (facEl) facEl.title = proj.facilityType || '';
   setEl('bannerBankName', proj.bankName || '-');
   setEl('bannerSector', proj.sector || '-');
+  const sectorEl = document.getElementById('bannerSector');
+  if (sectorEl) sectorEl.title = proj.sector || '';
   setEl('bannerCity', proj.city || '-');
   setEl('bannerPlafond', fmtRp(proj.requestedPlafond));
   setEl('bannerFinYears', `${m ? m.yr1 : (proj.year1 || 2022)} & ${m ? m.yr2 : (proj.year2 || 2023)}`);

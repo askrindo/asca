@@ -290,16 +290,16 @@
               <div id="bannerScoreCircle" class="score-circle" onclick="switchTab('tab-score')" title="Klik untuk melihat Rincian Perhitungan Score DCC-SWCM">0</div>
               <div class="case-score-details">
                 <div class="case-score-nav-links">
-                  <span class="score-title-label">Skor DCC-SWCM</span>
-                  <a href="javascript:void(0)" onclick="switchTab('tab-5c')" style="color:var(--askrindo-blue); text-decoration:underline; font-size:0.62rem;">[Analisa 5C]</a>
-                  <a href="javascript:void(0)" onclick="switchTab('tab-score')" style="color:var(--askrindo-blue); text-decoration:underline; font-size:0.62rem;">[Rincian Skor]</a>
-                  <a href="javascript:void(0)" onclick="switchTab('tab-grade')" style="color:var(--askrindo-blue); text-decoration:underline; font-size:0.62rem;">[Indikator Grade]</a>
+                  <span class="score-title-label">Skor DCC-SWCM:</span>
+                  <a href="javascript:void(0)" onclick="switchTab('tab-5c')">Analisa 5C</a>
+                  <a href="javascript:void(0)" onclick="switchTab('tab-score')">Rincian Skor</a>
+                  <a href="javascript:void(0)" onclick="switchTab('tab-grade')">Indikator Grade</a>
                 </div>
                 <div id="bannerDecisionText" class="case-decision-pill">-</div>
                 <div id="bannerOptimalLimit" class="case-optimal-limit">Rekomendasi Coverage: -</div>
               </div>
             </div>
-            <button type="button" class="btn btn-primary btn-save-analysis-global" id="btnSaveAnalysisGlobal" onclick="saveCurrentAnalysisGlobal()" title="Simpan seluruh berkas analisa ini ke Database Cloud" style="display:inline-flex; align-items:center; gap:0.4rem; padding:0.52rem 1.15rem; font-size:0.82rem; font-weight:800; background:linear-gradient(135deg, #0284c7 0%, #003366 100%); color:#ffffff; border:none; border-radius:7px; box-shadow:0 3px 10px rgba(0, 51, 102, 0.25); cursor:pointer; transition:all 0.2s cubic-bezier(0.4, 0, 0.2, 1); white-space:nowrap;">
+            <button type="button" class="btn btn-primary btn-save-analysis-global" id="btnSaveAnalysisGlobal" onclick="saveCurrentAnalysisGlobal()" title="Simpan seluruh berkas analisa ini ke Database Cloud">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
               <span>Simpan</span>
             </button>

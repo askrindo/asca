@@ -459,15 +459,219 @@ function toggleSidebar() {
   if (icon) icon.innerHTML = '&#9776;';
 }
 
+function utf8ToBase64(str) {
+  try {
+    return window.btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function(match, p1) {
+      return String.fromCharCode('0x' + p1);
+    }));
+  } catch (e) {
+    return window.btoa(str);
+  }
+}
+
+function base64ToUtf8(str) {
+  try {
+    return decodeURIComponent(Array.prototype.map.call(window.atob(str), function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+  } catch (e) {
+    return window.atob(str);
+  }
+}
+
+let currentProjectsPayload = '';
+let isUserProjectsTableAvailable = null;
+let cloudSaveDebounceTimer = null;
+let isCloudSyncInProgress = false;
+
+function sanitizeProjectData(p) {
+  return {
+    year1: p.year1 || 2022,
+    year2: p.year2 || 2023,
+    qualitative5CScore: typeof p.qualitative5CScore === 'number' ? p.qualitative5CScore : 6,
+    manualGradeOverride: p.manualGradeOverride || 'AUTO',
+    overrideReason: p.overrideReason || '',
+    burnStressOpexGrowth: p.burnStressOpexGrowth || 0,
+    burnStressCollectionFreeze: !!p.burnStressCollectionFreeze,
+    procurementMethod: p.procurementMethod || (isMaritimeOrImportRisk(p) ? 'import_sea' : 'none'),
+    ...p
+  };
+}
+
 function getCurrentProjectStorageKey() {
   const session = getActiveSession();
   const uname = session ? session.username : '1922';
   return USER_PROJECTS_KEY_PREFIX + uname;
 }
 
+async function fetchProjectsFromCloud(username) {
+  if (!username) return null;
+
+  // 1. Coba baca dari tabel terdedikasi `user_projects` jika ada
+  if (isUserProjectsTableAvailable !== false) {
+    try {
+      const res = await supabaseFetch(`user_projects?username=eq.${encodeURIComponent(username)}&select=projects`);
+      if (Array.isArray(res)) {
+        isUserProjectsTableAvailable = true;
+        if (res.length > 0 && res[0].projects) {
+          const list = typeof res[0].projects === 'string' ? JSON.parse(res[0].projects) : res[0].projects;
+          if (Array.isArray(list)) return list;
+        }
+        return [];
+      }
+    } catch (err) {
+      if (err.message && (err.message.includes('PGRST205') || err.message.includes('404') || err.message.includes('schema cache'))) {
+        isUserProjectsTableAvailable = false;
+      }
+    }
+  }
+
+  // 2. Baca dari tabel users kolom unit (fallback otomatis lintas perangkat)
+  try {
+    const res = await supabaseFetch(`users?username=eq.${encodeURIComponent(username)}&select=unit`);
+    if (Array.isArray(res) && res.length > 0) {
+      const rawUnit = res[0].unit || '';
+      const payload = extractProjectsPayload(rawUnit);
+      if (payload) {
+        currentProjectsPayload = payload;
+        try {
+          const jsonStr = base64ToUtf8(payload);
+          const list = JSON.parse(jsonStr);
+          if (Array.isArray(list)) return list;
+        } catch (pe) {
+          console.warn('[ASCA Cloud] Gagal decode base64 projects payload:', pe);
+        }
+      }
+      return [];
+    }
+  } catch (err) {
+    console.warn('[ASCA Cloud] Gagal memuat projects dari database cloud:', err);
+  }
+  return null;
+}
+
+async function saveProjectsToCloud(username, projectsData) {
+  if (!username) return;
+  if (isCloudSyncInProgress) return;
+  isCloudSyncInProgress = true;
+
+  const el = document.getElementById('autoSaveStatus');
+  if (el) {
+    el.innerHTML = '<span style="color:#0ea5e9;">&#8635; Menyimpan ke Cloud...</span>';
+  }
+
+  // 1. Jika tabel user_projects tersedia, simpan juga ke tabel terdedikasi
+  if (isUserProjectsTableAvailable !== false) {
+    try {
+      await supabaseFetch('user_projects', {
+        method: 'POST',
+        headers: { 'Prefer': 'resolution=merge-duplicates' },
+        body: JSON.stringify({
+          username: username,
+          projects: projectsData,
+          updated_at: new Date().toISOString()
+        })
+      });
+      isUserProjectsTableAvailable = true;
+    } catch (err) {
+      if (err.message && (err.message.includes('PGRST205') || err.message.includes('404') || err.message.includes('schema cache'))) {
+        isUserProjectsTableAvailable = false;
+      }
+    }
+  }
+
+  // 2. Persist ke kolom unit tabel users (jaminan 100% tersimpan per pengguna di server)
+  try {
+    const jsonStr = JSON.stringify(projectsData);
+    const payload = utf8ToBase64(jsonStr);
+    currentProjectsPayload = payload;
+
+    const userRes = await supabaseFetch(`users?username=eq.${encodeURIComponent(username)}&select=unit`);
+    const rawUnit = (Array.isArray(userRes) && userRes.length > 0) ? (userRes[0].unit || '') : '';
+    const cleanUnit = getCleanUnit(rawUnit);
+
+    const lock = parseSessionLock(rawUnit);
+    const sId = lock ? lock.sessionId : getLocalSessionId();
+    const finalUnit = buildLockedUnit(cleanUnit, sId, payload);
+
+    await supabaseFetch(`users?username=eq.${encodeURIComponent(username)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ unit: finalUnit })
+    });
+
+    if (el) {
+      const now = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+      el.innerHTML = "&#10003; Tersimpan Cloud (" + now + ")";
+      el.title = `Tersimpan di Cloud Database Supabase (${projectsData.length} analisa)`;
+    }
+  } catch (err) {
+    console.warn('[ASCA Cloud] Gagal menyimpan ke server cloud (offline):', err);
+    if (el) {
+      const now = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+      el.innerHTML = "&#10003; Tersimpan Lokal (" + now + ")";
+    }
+  } finally {
+    isCloudSyncInProgress = false;
+  }
+}
+
+function triggerCloudSaveDebounced(username, delayMs = 800) {
+  if (!username) return;
+  if (cloudSaveDebounceTimer) {
+    clearTimeout(cloudSaveDebounceTimer);
+  }
+  cloudSaveDebounceTimer = setTimeout(() => {
+    saveProjectsToCloud(username, projects);
+  }, delayMs);
+}
+
+async function syncProjectsWithCloud(username) {
+  if (!username) return;
+  try {
+    const cloudProjects = await fetchProjectsFromCloud(username);
+    if (cloudProjects && Array.isArray(cloudProjects)) {
+      if (cloudProjects.length > 0) {
+        // Data analisa tersimpan di cloud database ditemukan!
+        const sanitized = cloudProjects.map(sanitizeProjectData);
+        sanitized.forEach((p) => ensureInaprocAutoChecked(p));
+
+        projects = sanitized;
+        if (!activeProjectId || !projects.some(p => p.id === activeProjectId)) {
+          activeProjectId = projects[0]?.id || null;
+        }
+
+        // Perbarui cache localStorage agar sinkron
+        const userKey = getCurrentProjectStorageKey();
+        localStorage.setItem(userKey, JSON.stringify(projects));
+        if (username === '1922') {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+        }
+
+        renderAll();
+        renderWelcomeHub();
+
+        const el = document.getElementById('autoSaveStatus');
+        if (el) {
+          const now = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+          el.innerHTML = "&#10003; Sinkron Cloud (" + now + ")";
+          el.title = `Berhasil memuat ${projects.length} berkas analisa dari Cloud Database Supabase`;
+        }
+        console.log(`[ASCA Cloud Sync] Sukses memuat ${projects.length} analisa dari database untuk user "${username}"`);
+      } else if (projects.length > 0) {
+        // Cloud database masih kosong untuk user ini, tetapi ada analisa lokal: unggah ke database cloud!
+        console.log(`[ASCA Cloud Sync] Mengunggah ${projects.length} analisa lokal pengguna "${username}" ke Cloud Database`);
+        await saveProjectsToCloud(username, projects);
+      }
+    }
+  } catch (err) {
+    console.warn('[ASCA Cloud Sync] Sinkronisasi cloud tertunda (offline/timeout):', err);
+  }
+}
+
 function loadProjectsFromStorage() {
   const session = getActiveSession();
-  const is1922 = session && session.username === '1922';
+  const uname = session ? session.username : '1922';
+  const is1922 = uname === '1922';
   const userKey = getCurrentProjectStorageKey();
 
   projects = [];
@@ -483,26 +687,14 @@ function loadProjectsFromStorage() {
           parsed = parsed.filter(p => !defaultIds.includes(p.id) && !p.id.startsWith('case-rahmat'));
         }
         if (parsed.length > 0) {
-          projects = parsed.map((p) => ({
-            year1: p.year1 || 2022,
-            year2: p.year2 || 2023,
-            qualitative5CScore: typeof p.qualitative5CScore === 'number' ? p.qualitative5CScore : 6,
-            manualGradeOverride: p.manualGradeOverride || 'AUTO',
-            overrideReason: p.overrideReason || '',
-            burnStressOpexGrowth: p.burnStressOpexGrowth || 0,
-            burnStressCollectionFreeze: !!p.burnStressCollectionFreeze,
-            procurementMethod: p.procurementMethod || (isMaritimeOrImportRisk(p) ? 'import_sea' : 'none'),
-            ...p
-          }));
+          projects = parsed.map(sanitizeProjectData);
           projects.forEach((p) => ensureInaprocAutoChecked(p));
           activeProjectId = projects[0].id;
-          saveProjectsToStorage();
-          return;
         }
       }
     }
 
-    if (is1922) {
+    if (projects.length === 0 && is1922) {
       const legacyKeys = [
         STORAGE_KEY,
         'ASKRINDO_ASCA_PROJECTS_V1',
@@ -518,39 +710,30 @@ function loadProjectsFromStorage() {
         if (raw) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            projects = parsed.map((p) => ({
-              year1: p.year1 || 2022,
-              year2: p.year2 || 2023,
-              qualitative5CScore: typeof p.qualitative5CScore === 'number' ? p.qualitative5CScore : 6,
-              manualGradeOverride: p.manualGradeOverride || 'AUTO',
-              overrideReason: p.overrideReason || '',
-              burnStressOpexGrowth: p.burnStressOpexGrowth || 0,
-              burnStressCollectionFreeze: !!p.burnStressCollectionFreeze,
-              procurementMethod: p.procurementMethod || (isMaritimeOrImportRisk(p) ? 'import_sea' : 'none'),
-              ...p
-            }));
+            projects = parsed.map(sanitizeProjectData);
             projects.forEach((p) => ensureInaprocAutoChecked(p));
             activeProjectId = projects[0].id;
-            saveProjectsToStorage();
-            return;
+            break;
           }
         }
       }
-      projects = getDefaultProjects();
-      projects.forEach((p) => ensureInaprocAutoChecked(p));
-      activeProjectId = projects[0].id;
-      saveProjectsToStorage();
-      return;
+      if (projects.length === 0) {
+        projects = getDefaultProjects();
+        projects.forEach((p) => ensureInaprocAutoChecked(p));
+        activeProjectId = projects[0].id;
+      }
     }
   } catch (e) {
     console.warn('Gagal memuat localStorage:', e);
   }
 
-  projects = [];
-  activeProjectId = null;
+  // Sinkronkan berkas analisa pengguna dari Cloud Database secara asinkron
+  if (session && session.username) {
+    syncProjectsWithCloud(session.username);
+  }
 }
 
-function saveProjectsToStorage() {
+function saveProjectsToStorage(immediateCloud = false) {
   try {
     const userKey = getCurrentProjectStorageKey();
     localStorage.setItem(userKey, JSON.stringify(projects));
@@ -565,6 +748,10 @@ function saveProjectsToStorage() {
     if (el) {
       const now = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
       el.innerHTML = "&#10003; Tersimpan (" + now + ")";
+    }
+
+    if (session && session.username) {
+      triggerCloudSaveDebounced(session.username, immediateCloud ? 50 : 800);
     }
   } catch (e) {
     console.error('Gagal menyimpan ke localStorage:', e);
@@ -638,7 +825,7 @@ function duplicateProjectById(id) {
   copy.caseNumber = generateNumericCaseNumber();
   copy.companyName = `${target.companyName} (Salinan)`;
   projects.unshift(copy);
-  saveProjectsToStorage();
+  saveProjectsToStorage(true);
   renderProjectList();
   renderWelcomeHub();
   showToast(`Kasus "${target.companyName}" berhasil diduplikasi!`);
@@ -652,7 +839,7 @@ function deleteProjectById(id) {
   if (projects.length > 0 && activeProjectId === id) {
     activeProjectId = projects[0].id;
   }
-  saveProjectsToStorage();
+  saveProjectsToStorage(true);
   renderProjectList();
   renderWelcomeHub();
   showToast('Berkas analisa debitur berhasil dihapus.');
@@ -7128,7 +7315,7 @@ function createNewProjectFromModal() {
 
   projects.unshift(baseObj);
   activeProjectId = baseObj.id;
-  saveProjectsToStorage();
+  saveProjectsToStorage(true);
   closeNewProjectModal();
 
   // Beralih dari Welcome Hub ke Ruang Kerja Analisa Kasus Baru
@@ -7155,7 +7342,7 @@ function duplicateCurrentProject() {
   copy.companyName = `${curr.companyName} (Salinan)`;
   projects.unshift(copy);
   activeProjectId = copy.id;
-  saveProjectsToStorage();
+  saveProjectsToStorage(true);
 
   const hubEl = document.getElementById('welcomeHubView');
   const wsEl = document.getElementById('projectWorkspaceView');
@@ -7175,7 +7362,7 @@ function deleteCurrentProject() {
   if (!confirm(`Hapus proyek analisa "${curr.companyName}"?`)) return;
   projects = projects.filter((p) => p.id !== curr.id);
   activeProjectId = projects[0].id;
-  saveProjectsToStorage();
+  saveProjectsToStorage(true);
   renderAll();
   showToast('Proyek telah dihapus.');
 }
@@ -7184,7 +7371,7 @@ function resetToDefaultCases() {
   if (!confirm('Kembalikan daftar analisa ke contoh kasus bawaan (termasuk PT Rahmat Santosa)?')) return;
   projects = getDefaultProjects();
   activeProjectId = projects[0].id;
-  saveProjectsToStorage();
+  saveProjectsToStorage(true);
   renderAll();
   showToast('Data contoh kasus bawaan berhasil dimuat ulang!');
 }
@@ -7249,14 +7436,14 @@ function importWorkspaceJSON(event) {
             projects.unshift(importedProj);
           }
           activeProjectId = importedProj.id;
-          saveProjectsToStorage();
+          saveProjectsToStorage(true);
           renderAll();
           showToast(`Berhasil memuat analisa "${importedProj.companyName || 'Debitur'}" dari file!`);
           return;
         }
         projects = list;
         activeProjectId = projects[0].id;
-        saveProjectsToStorage();
+        saveProjectsToStorage(true);
         renderAll();
         showToast(`Berhasil memuat ${list.length} berkas analisa dari file!`);
       } else {
@@ -7699,8 +7886,18 @@ function getLocalSessionId() {
 
 function getCleanUnit(rawUnit) {
   if (!rawUnit) return '';
-  const idx = rawUnit.indexOf('||SESS:');
-  return idx !== -1 ? rawUnit.substring(0, idx).trim() : rawUnit.trim();
+  let str = rawUnit;
+  const pIdx = str.indexOf('||PROJECTS:');
+  if (pIdx !== -1) str = str.substring(0, pIdx);
+  const sIdx = str.indexOf('||SESS:');
+  if (sIdx !== -1) str = str.substring(0, sIdx);
+  return str.trim();
+}
+
+function extractProjectsPayload(rawUnit) {
+  if (!rawUnit || !rawUnit.includes('||PROJECTS:')) return '';
+  const afterProj = rawUnit.split('||PROJECTS:')[1];
+  return afterProj.includes('||SESS:') ? afterProj.split('||SESS:')[0] : afterProj;
 }
 
 function parseSessionLock(rawUnit) {
@@ -7715,9 +7912,17 @@ function parseSessionLock(rawUnit) {
   return { sessionId, timestamp, isExpired };
 }
 
-function buildLockedUnit(baseUnit, sessionId) {
+function buildLockedUnit(baseUnit, sessionId = null, projectsPayload = null) {
   const clean = getCleanUnit(baseUnit);
-  return clean + '||SESS:' + sessionId + ':' + Date.now();
+  let res = clean;
+  const payload = projectsPayload !== null ? projectsPayload : currentProjectsPayload;
+  if (payload) {
+    res += '||PROJECTS:' + payload;
+  }
+  if (sessionId) {
+    res += '||SESS:' + sessionId + ':' + Date.now();
+  }
+  return res;
 }
 
 function startSessionHeartbeat(username, cleanUnit) {
@@ -7725,7 +7930,7 @@ function startSessionHeartbeat(username, cleanUnit) {
   const sId = getLocalSessionId();
   sessionHeartbeatTimer = setInterval(async () => {
     try {
-      const lockedUnit = buildLockedUnit(cleanUnit, sId);
+      const lockedUnit = buildLockedUnit(cleanUnit, sId, currentProjectsPayload);
       await supabaseFetch('users?username=eq.' + encodeURIComponent(username), {
         method: 'PATCH',
         body: JSON.stringify({ unit: lockedUnit })
@@ -7747,9 +7952,11 @@ async function releaseSessionLock(username, rawUnit) {
   stopSessionHeartbeat();
   try {
     const clean = getCleanUnit(rawUnit);
+    const projPayload = currentProjectsPayload || extractProjectsPayload(rawUnit);
+    const finalUnit = buildLockedUnit(clean, null, projPayload);
     await supabaseFetch('users?username=eq.' + encodeURIComponent(username), {
       method: 'PATCH',
-      body: JSON.stringify({ unit: clean })
+      body: JSON.stringify({ unit: finalUnit })
     });
   } catch (e) {
     console.warn('Release session lock error:', e);
@@ -7838,7 +8045,9 @@ async function handleLoginSubmit(event, isForce = false) {
 
     const nowIso = new Date().toISOString();
     const cleanUnit = getCleanUnit(user.unit);
-    const newLockedUnit = buildLockedUnit(cleanUnit, mySessionId);
+    const existingProjPayload = extractProjectsPayload(user.unit);
+    currentProjectsPayload = existingProjPayload;
+    const newLockedUnit = buildLockedUnit(cleanUnit, mySessionId, existingProjPayload);
     user.lastLogin = nowIso;
     user.unit = newLockedUnit;
 
@@ -8279,8 +8488,9 @@ async function saveEditUserFromModal() {
 
   const targetUser = allUsers.find(u => u.username.toLowerCase() === origUname.toLowerCase());
   const rawUnit = targetUser?.unit || '';
+  const projPayload = extractProjectsPayload(rawUnit);
   const sessLock = rawUnit.includes('||SESS:') ? '||SESS:' + rawUnit.split('||SESS:')[1] : '';
-  const finalUnit = newUnit + sessLock;
+  const finalUnit = newUnit + (projPayload ? '||PROJECTS:' + projPayload : '') + sessLock;
 
   const patchBody = {
     username: newUname,
@@ -8431,6 +8641,11 @@ async function confirmDeleteUser(username) {
     await supabaseFetch(`users?username=eq.${encodeURIComponent(username)}`, {
       method: 'DELETE'
     });
+    try {
+      await supabaseFetch(`user_projects?username=eq.${encodeURIComponent(username)}`, {
+        method: 'DELETE'
+      });
+    } catch (pe) {}
     localStorage.removeItem(USER_PROJECTS_KEY_PREFIX + username);
     await renderAdminUserManagement();
     showToast(`Pengguna "${username}" telah dihapus dari server cloud.`);

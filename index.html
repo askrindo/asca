@@ -143,8 +143,8 @@
   <!-- TOP NAVBAR -->
   <header class="top-navbar" id="appTopNavbar" style="display:none;">
     <div class="brand-wrap">
-      <button class="sidebar-toggle-btn no-print" onclick="toggleSidebar()" id="topSidebarToggleBtn" title="Minimize / Tampilkan Daftar Proyek">
-        <span id="sidebarToggleIcon">&#9776;</span> Proyek
+      <button class="sidebar-toggle-btn no-print" onclick="toggleSidebar()" id="topSidebarToggleBtn" title="Minimize / Tampilkan Daftar Analisa">
+        <span id="sidebarToggleIcon">&#9776;</span> Analisa
       </button>
 
       <!-- Logo ASCA -->
@@ -170,22 +170,7 @@
         <strong id="navUserName">1922</strong>
         <span class="user-role-tag" id="navUserRoleTag">Analis</span>
       </div>
-      <button class="btn btn-primary" onclick="openNewProjectModal()">
-        <span>+</span> Proyek Baru
-      </button>
-      <button class="btn btn-light" id="btnDuplicateProject" onclick="duplicateCurrentProject()" title="Duplikasi kasus aktif untuk simulasi alternatif">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Duplikasi
-      </button>
-      <button class="btn btn-light" id="btnExportJson" onclick="exportWorkspaceJSON()" title="Simpan seluruh database kasus ke file komputer (.asca.json)">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Simpan (.json)
-      </button>
-      <label class="btn btn-light" style="margin:0;" title="Buka file database .asca.json dari komputer">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> Buka File
-        <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="importWorkspaceJSON(event)" />
-      </label>
-      <button class="btn btn-gold" id="btnPrintReport" onclick="printUnderwritingReport()">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Cetak / PDF
-      </button>
+      <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="importWorkspaceJSON(event)" />
       <button class="btn-logout" onclick="logoutSession()" title="Keluar dari akun ASCA"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> Keluar
       </button>
     </div>
@@ -193,24 +178,28 @@
 
   <!-- MAIN LAYOUT -->
   <div class="app-layout" id="appLayoutContainer" style="display:none;">
-    <!-- SIDEBAR: DAFTAR KASUS / PROYEK (COLLAPSIBLE) -->
+    <!-- SIDEBAR: DAFTAR KASUS / ANALISA (COLLAPSIBLE) -->
     <aside class="sidebar no-print" id="projectSidebar">
       <!-- Tampilan saat Diminimize -->
-      <div class="sidebar-collapsed-strip" onclick="toggleSidebar()" title="Klik untuk membuka Daftar Proyek Analisa">
+      <div class="sidebar-collapsed-strip" onclick="toggleSidebar()" title="Klik untuk membuka Daftar Analisa">
         <span style="font-size:0.9rem; font-weight:800; color:var(--askrindo-blue);">&#9776;</span>
-        <div class="vertical-text">Daftar Proyek (<span id="projectCountCollapsed">0</span>)</div>
+        <div class="vertical-text">Daftar Analisa (<span id="projectCountCollapsed">0</span>)</div>
       </div>
 
       <!-- Tampilan Penuh -->
       <div class="sidebar-full-content" style="display:flex; flex-direction:column; height:100%;">
         <div class="sidebar-header">
           <div class="sidebar-header-top">
-            <h2>Daftar Proyek (<span id="projectCountBadge">0</span>)</h2>
-            <div style="display:flex; gap:0.2rem;">
+            <h2>Daftar Analisa (<span id="projectCountBadge">0</span>)</h2>
+            <div style="display:flex; gap:0.25rem;">
+              <label class="btn btn-outline btn-sm" style="margin:0; padding:2px 7px; font-size:0.72rem; cursor:pointer;" title="Buka file database analisa (.asca.json) dari komputer">
+                Buka
+                <input type="file" accept=".json" style="display:none" onchange="importWorkspaceJSON(event)" />
+              </label>
               <button class="btn btn-outline btn-sm" onclick="resetToDefaultCases()" title="Kembalikan contoh kasus bawaan">
                 Reset
               </button>
-              <button class="btn btn-outline btn-sm" onclick="toggleSidebar()" title="Minimize Daftar Proyek">&laquo;</button>
+              <button class="btn btn-outline btn-sm" onclick="toggleSidebar()" title="Minimize Daftar Analisa">&laquo;</button>
             </div>
           </div>
           <input type="search" id="searchProjectInput" name="project_search_query_prevent_autofill" class="search-box" placeholder="Cari debitur, sektor, bank..." autocomplete="chrome-off" autocorrect="off" autocapitalize="off" spellcheck="false" value="" oninput="renderProjectList()" onfocus="if(this.value==='1922'||this.value==='admin')this.value=''" />
@@ -1230,6 +1219,18 @@
       <!-- TAB 9: REVIEW ANALISA (PRINTABLE REPORT) -->
       <!-- ========================================================= -->
       <section id="tab-report" class="tab-pane">
+        <div class="no-print" style="margin-bottom:1rem; display:flex; justify-content:space-between; align-items:center; background:#ffffff; padding:0.85rem 1.25rem; border-radius:10px; border:1px solid #e2e8f0; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+          <div>
+            <h3 style="font-size:0.95rem; font-weight:800; color:var(--askrindo-navy); margin:0 0 2px 0;">Review Analisa &amp; Nota Underwriting Asuransi Kredit</h3>
+            <p style="font-size:0.75rem; color:var(--text-muted); margin:0;">Lembar resmi hasil evaluasi komprehensif kelayakan debitur, mitigasi risiko, dan rekomendasi komite penjaminan.</p>
+          </div>
+          <div>
+            <button type="button" class="btn btn-gold" id="btnPrintReport" onclick="printUnderwritingReport()" style="display:inline-flex; align-items:center; gap:0.4rem; padding:0.5rem 1.25rem; font-weight:800; font-size:0.85rem; box-shadow:0 3px 10px rgba(217,119,6,0.3); cursor:pointer;" title="Cetak Nota Analisa atau Simpan ke format PDF">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+              <span>Cetak / PDF</span>
+            </button>
+          </div>
+        </div>
         <div class="card" id="printableMemoContainer"></div>
       </section>
 
@@ -1475,19 +1476,29 @@
     </div>
   </div>
 
-  <!-- MASTER DATALISTS UNTUK DROPDOWN CEPAT & AUTOCOMPLETE -->
+  <!-- MASTER DATALISTS UNTUK DROPDOWN CEPAT & AUTOCOMPLETE (KBLI 2025 BPS) -->
   <datalist id="list_sectors">
-    <option value="Perdagangan Besar &amp; Eceran (Komoditas, Pangan, FMCG)">
-    <option value="Manufaktur &amp; Industri Pengolahan (Makanan, Minuman, Pakan Ternak)">
-    <option value="Pertanian, Perkebunan &amp; Peternakan">
-    <option value="Konstruksi, Infrastruktur &amp; Real Estate">
-    <option value="Transportasi, Logistik &amp; Pergudangan">
-    <option value="Teknologi Informasi, Digital &amp; Telekomunikasi">
-    <option value="Jasa Keuangan, Asuransi &amp; Pasar Modal">
-    <option value="Pertambangan, Minyak &amp; Gas Bumi">
-    <option value="Kesehatan, Farmasi &amp; Alat Medis">
-    <option value="Pariwisata, Perhotelan &amp; Restoran">
-    <option value="Energi Baru Terbarukan (EBT) &amp; Kelistrikan">
+    <option value="Kategori A: Pertanian, Kehutanan dan Perikanan">
+    <option value="Kategori B: Pertambangan dan Penggalian">
+    <option value="Kategori C: Industri Pengolahan (Manufaktur)">
+    <option value="Kategori D: Pengadaan Listrik, Gas, Uap/Air Panas dan Udara Dingin">
+    <option value="Kategori E: Pengelolaan Air, Pengelolaan Air Limbah, Pengelolaan dan Daur Ulang Sampah, dan Aktivitas Remediasi">
+    <option value="Kategori F: Konstruksi">
+    <option value="Kategori G: Perdagangan Besar dan Eceran; Reparasi dan Perawatan Mobil dan Sepeda Motor">
+    <option value="Kategori H: Pengangkutan dan Pergudangan">
+    <option value="Kategori I: Penyediaan Akomodasi dan Penyediaan Makan Minum">
+    <option value="Kategori J: Informasi dan Komunikasi">
+    <option value="Kategori K: Aktivitas Keuangan dan Asuransi">
+    <option value="Kategori L: Real Estat">
+    <option value="Kategori M: Aktivitas Profesional, Ilmiah dan Teknis">
+    <option value="Kategori N: Aktivitas Penyewaan dan Sewa Guna Usaha Tanpa Hak Opsi, Ketenagakerjaan, Agen Perjalanan dan Penunjang Usaha Lainnya">
+    <option value="Kategori O: Administrasi Pemerintahan, Pertahanan dan Jaminan Sosial Wajib">
+    <option value="Kategori P: Pendidikan">
+    <option value="Kategori Q: Aktivitas Kesehatan Manusia dan Aktivitas Sosial">
+    <option value="Kategori R: Kesenian, Hiburan dan Rekreasi">
+    <option value="Kategori S: Aktivitas Jasa Lainnya">
+    <option value="Kategori T: Aktivitas Rumah Tangga Sebagai Pemberi Kerja; Aktivitas Menghasilkan Barang dan Jasa oleh Rumah Tangga Sendiri">
+    <option value="Kategori U: Aktivitas Badan Internasional dan Badan Ekstra Internasional Lainnya">
   </datalist>
 
   <datalist id="list_banks">
@@ -2046,7 +2057,7 @@
   <div class="modal-backdrop" id="newProjectModal">
     <div class="modal-content">
       <div class="card-header">
-        <div class="card-title">Buat Proyek / Kasus Analisa Kredit Baru</div>
+        <div class="card-title">Buat Analisa Kredit Baru</div>
         <button class="btn btn-outline btn-sm" onclick="closeNewProjectModal()">&times;</button>
       </div>
       <div class="form-grid">
@@ -2216,6 +2227,6 @@
   <div class="toast-container" id="toastContainer"></div>
 
   <script src="inaproc-blacklist-db.js?v=1793516000"></script>
-  <script src="app.js?v=1793536000"></script>
+  <script src="app.js?v=1793541000"></script>
 </body>
 </html>

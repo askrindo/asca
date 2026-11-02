@@ -714,12 +714,17 @@ function renderWelcomeHub() {
             </div>
           </div>
         </div>
-        <div class="hub-card-footer">
-          <div style="display:flex; gap:0.4rem;">
-            <button type="button" class="btn btn-outline btn-xs" onclick="duplicateProjectById('${p.id}')" title="Duplikasi Proyek">
-              Salin
+        <div class="hub-card-footer" style="display:flex; justify-content:space-between; align-items:center; gap:0.4rem; flex-wrap:wrap;">
+          <div style="display:flex; gap:0.35rem; align-items:center; flex-wrap:wrap;">
+            <button type="button" class="btn btn-outline btn-xs" onclick="duplicateProjectById('${p.id}')" title="Duplikasi Analisa Debitur" style="display:inline-flex; align-items:center; gap:3px; padding:3px 8px; font-weight:700;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              <span>Duplikasi</span>
             </button>
-            <button type="button" class="btn btn-outline btn-xs" onclick="deleteProjectById('${p.id}')" title="Hapus Proyek" style="color:#dc2626; border-color:#fca5a5;">
+            <button type="button" class="btn btn-outline btn-xs" onclick="exportSingleProjectJSON('${p.id}')" title="Simpan berkas analisa ini ke file .asca.json" style="display:inline-flex; align-items:center; gap:3px; padding:3px 8px; font-weight:700;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              <span>Simpan (.json)</span>
+            </button>
+            <button type="button" class="btn btn-outline btn-xs" onclick="deleteProjectById('${p.id}')" title="Hapus Berkas Analisa" style="color:#dc2626; border-color:#fca5a5; padding:3px 8px; font-weight:700;">
               Hapus
             </button>
           </div>
@@ -748,17 +753,8 @@ function renderWelcomeHub() {
         <div class="welcome-hero-actions">
           <button type="button" class="btn btn-hero-cta" onclick="openNewProjectModal()" style="background:linear-gradient(135deg, #f59e0b 0%, #ea580c 100%) !important; color:#ffffff !important; font-weight:800 !important; font-size:0.86rem !important; padding:9px 20px !important; border-radius:6px !important; border:1px solid #f97316 !important; box-shadow:0 4px 14px rgba(234, 88, 12, 0.45) !important; display:inline-flex !important; align-items:center !important; gap:8px !important; cursor:pointer !important;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.8"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            <span style="color:#ffffff !important; font-weight:800 !important; font-size:0.86rem !important;">+ Buat Proyek Analisa Baru</span>
+            <span style="color:#ffffff !important; font-weight:800 !important; font-size:0.86rem !important;">Buat Analisa Baru</span>
           </button>
-          <button type="button" class="btn btn-hero-white" onclick="openAiFinUploadModal()" style="background:#ffffff !important; color:#003366 !important; font-weight:700 !important; font-size:0.82rem !important; padding:9px 18px !important; border-radius:6px !important; border:1.5px solid #ffffff !important; box-shadow:0 3px 10px rgba(0, 0, 0, 0.15) !important; display:inline-flex !important; align-items:center !important; gap:8px !important; cursor:pointer !important;">
-            <span style="font-size:1rem; line-height:1;">⚡</span>
-            <span style="color:#003366 !important; font-weight:700 !important; font-size:0.82rem !important; display:inline-block !important;">Pindai Laporan Keuangan AI OCR</span>
-          </button>
-          <label class="btn btn-hero-white" style="margin:0; background:#ffffff !important; color:#003366 !important; font-weight:700 !important; font-size:0.82rem !important; padding:9px 18px !important; border-radius:6px !important; border:1.5px solid #ffffff !important; box-shadow:0 3px 10px rgba(0, 0, 0, 0.15) !important; display:inline-flex !important; align-items:center !important; gap:8px !important; cursor:pointer !important;">
-            <span style="font-size:1rem; line-height:1;">📁</span>
-            <span style="color:#003366 !important; font-weight:700 !important; font-size:0.82rem !important; display:inline-block !important;">Buka File Database (.asca.json)</span>
-            <input type="file" accept=".json" style="display:none" onchange="importWorkspaceJSON(event)" />
-          </label>
         </div>
       </div>
       <div style="background:rgba(255,255,255,0.14); backdrop-filter:blur(8px); padding:1.15rem 1.35rem; border-radius:12px; border:1px solid rgba(255,255,255,0.25); min-width:260px; display:flex; align-items:center; gap:1.1rem; box-shadow:0 8px 24px rgba(0,0,0,0.12);">
@@ -829,24 +825,27 @@ function renderWelcomeHub() {
       </div>
     </div>
 
-    <!-- DAFTAR PROYEK ANALISA -->
+    <!-- DAFTAR ANALISA -->
     <div class="hub-section-header">
       <div class="hub-section-title">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--askrindo-navy)" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-        <span>Daftar Berkas &amp; Portofolio Kasus Kredit</span>
+        <span>Daftar Analisa &amp; Portofolio Debitur</span>
       </div>
-      <button type="button" class="btn btn-primary btn-sm" onclick="openNewProjectModal()" style="display:inline-flex; align-items:center; gap:0.35rem; font-weight:700;">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        <span>+ Proyek Baru</span>
-      </button>
+      <div>
+        <label class="btn btn-outline btn-sm" style="margin:0; display:inline-flex; align-items:center; gap:0.35rem; font-weight:700; cursor:pointer;" title="Buka file database analisa (.asca.json) dari komputer">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          <span>Buka File</span>
+          <input type="file" accept=".json" style="display:none" onchange="importWorkspaceJSON(event)" />
+        </label>
+      </div>
     </div>
 
     <div class="hub-projects-grid">
       ${projectCards.length > 0 ? projectCards : `
         <div style="grid-column:1/-1; background:#fff; border:1px dashed #cbd5e1; border-radius:10px; padding:3rem 1.5rem; text-align:center; color:#64748b;">
           <h4 style="font-size:1.1rem; color:#334155; margin-bottom:0.5rem; font-weight:800;">Belum Ada Berkas Analisa Debitur</h4>
-          <p style="font-size:0.85rem; max-width:480px; margin:0 auto 1.25rem auto;">Mulai dengan membuat proyek analisa kredit baru atau unggah file database (.asca.json) untuk memulai analisa.</p>
-          <button type="button" class="btn btn-primary" onclick="openNewProjectModal()">+ Buat Kasus Pertama Sekarang</button>
+          <p style="font-size:0.85rem; max-width:480px; margin:0 auto 1.25rem auto;">Mulai dengan membuat analisa kredit baru atau buka file database (.asca.json) untuk memulai analisa.</p>
+          <button type="button" class="btn btn-primary" onclick="openNewProjectModal()" style="background:linear-gradient(135deg, #f59e0b 0%, #ea580c 100%) !important; border:1px solid #f97316 !important; font-weight:800 !important;">Buat Analisa Baru</button>
         </div>
       `}
     </div>
@@ -925,8 +924,8 @@ function renderProjectList() {
     container.innerHTML = `
       <div style="padding:1.5rem 0.8rem; text-align:center; color:var(--text-muted); font-size:0.75rem;">
         ${projects.length === 0 
-          ? 'Belum ada proyek analisa.<br/><button class="btn btn-primary btn-sm" style="margin-top:0.6rem;" onclick="openNewProjectModal()">+ Buat Proyek</button>' 
-          : `Tidak ada proyek yang cocok dengan kata kunci "${query}".`}
+          ? 'Belum ada berkas analisa.<br/><button class="btn btn-primary btn-sm" style="margin-top:0.6rem; background:linear-gradient(135deg, #f59e0b 0%, #ea580c 100%); border:none; font-weight:700;" onclick="openNewProjectModal()">Buat Analisa Baru</button>' 
+          : `Tidak ada analisa yang cocok dengan kata kunci "${query}".`}
       </div>
     `;
     return;
@@ -7164,12 +7163,36 @@ function deleteCurrentProject() {
 }
 
 function resetToDefaultCases() {
-  if (!confirm('Kembalikan daftar proyek ke contoh kasus bawaan (termasuk PT Rahmat Santosa)?')) return;
+  if (!confirm('Kembalikan daftar analisa ke contoh kasus bawaan (termasuk PT Rahmat Santosa)?')) return;
   projects = getDefaultProjects();
   activeProjectId = projects[0].id;
   saveProjectsToStorage();
   renderAll();
   showToast('Data contoh kasus bawaan berhasil dimuat ulang!');
+}
+
+function exportSingleProjectJSON(id) {
+  const p = projects.find(item => item.id === id);
+  if (!p) {
+    showToast('Berkas analisa tidak ditemukan!', 'error');
+    return;
+  }
+  const cleanName = (p.companyName || 'Analisa').replace(/[^a-zA-Z0-9_\-]/g, '_');
+  const dataStr = JSON.stringify({
+    app: 'Askrindo Smart Credit Analysis (ASCA)',
+    method: 'DCC-SWCM',
+    exportedAt: new Date().toISOString(),
+    projects: [p]
+  }, null, 2);
+
+  const blob = new Blob([dataStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ASCA_${cleanName}_${new Date().toISOString().slice(0, 10)}.asca.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(`Berkas analisa "${p.companyName || 'Debitur'}" berhasil diunduh (.json)!`);
 }
 
 function exportWorkspaceJSON() {
@@ -7187,7 +7210,7 @@ function exportWorkspaceJSON() {
   a.download = `ASCA_Workspace_${new Date().toISOString().slice(0, 10)}.asca.json`;
   a.click();
   URL.revokeObjectURL(url);
-  showToast('File database proyek (.asca.json) berhasil diunduh!');
+  showToast('File database analisa (.asca.json) berhasil diunduh!');
 }
 
 function importWorkspaceJSON(event) {
@@ -7199,11 +7222,25 @@ function importWorkspaceJSON(event) {
       const parsed = JSON.parse(e.target.result);
       const list = Array.isArray(parsed) ? parsed : parsed.projects;
       if (Array.isArray(list) && list.length > 0) {
+        if (list.length === 1) {
+          const importedProj = list[0];
+          const existingIdx = projects.findIndex(p => p.id === importedProj.id);
+          if (existingIdx >= 0) {
+            projects[existingIdx] = importedProj;
+          } else {
+            projects.unshift(importedProj);
+          }
+          activeProjectId = importedProj.id;
+          saveProjectsToStorage();
+          renderAll();
+          showToast(`Berhasil memuat analisa "${importedProj.companyName || 'Debitur'}" dari file!`);
+          return;
+        }
         projects = list;
         activeProjectId = projects[0].id;
         saveProjectsToStorage();
         renderAll();
-        showToast(`Berhasil memuat ${list.length} proyek dari file!`);
+        showToast(`Berhasil memuat ${list.length} berkas analisa dari file!`);
       } else {
         alert('Format file JSON tidak valid.');
       }
@@ -7272,8 +7309,8 @@ function renderAll() {
       btnExp.title = 'Belum ada database proyek analisa untuk disimpan';
     }
     const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    setTxt('bannerCompanyName', 'Belum Ada Proyek Analisa');
-    setTxt('bannerSector', 'Klik tombol "+ Proyek Baru" untuk memulai analisa kasus kredit pertama Anda.');
+    setTxt('bannerCompanyName', 'Belum Ada Berkas Analisa');
+    setTxt('bannerSector', 'Klik tombol "Buat Analisa Baru" untuk memulai analisa kasus kredit pertama Anda.');
     setTxt('bannerGradeBadge', '-');
     setTxt('bannerFacilityType', '-');
     setTxt('bannerBankName', '-');
@@ -8740,7 +8777,7 @@ Balas HANYA format JSON valid tanpa tanda kutip markdown (\`\`\`json) atau teks 
 
     for (const modelName of modelsToTry) {
       try {
-        updateStatus(`3. Memproses analisis dengan model ${modelName}...`, `AI sedang mengekstrak tabel dari ${selectedAiFinFiles.length} berkas...`);
+        updateStatus('3. Memproses analisa data Laporan Keuangan yang telah diupload', `Mengekstrak tabel dan angka finansial dari ${selectedAiFinFiles.length} berkas dokumen...`);
         const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(apiKey)}`;
         
         const response = await fetch(endpoint, {

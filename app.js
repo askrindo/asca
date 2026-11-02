@@ -7348,6 +7348,20 @@ window.addEventListener('DOMContentLoaded', () => {
   checkAuthAndRoute();
 });
 
+window.addEventListener('load', () => {
+  const asi = document.getElementById('adminUserSearchInput');
+  const sess = getActiveSession();
+  if (asi && !adminSearchManuallyTyped) {
+    const val = (asi.value || '').trim().toLowerCase();
+    if (val === 'admin' || val === '1922' || (sess && val === sess.username.toLowerCase())) {
+      asi.value = '';
+      asi.setAttribute('readonly', 'readonly');
+      const bc = document.getElementById('btnAdminClearSearch');
+      if (bc) bc.style.display = 'none';
+    }
+  }
+});
+
 // ============================================================================
 // 14. AUTHENTICATION & USER MANAGEMENT MODULE (SUPABASE CLOUD SYNC)
 // ============================================================================
@@ -7449,25 +7463,36 @@ async function checkAuthAndRoute() {
 
     // Pastikan kolom pencarian user admin kosong & terlindungi dari autofill browser
     const asi = document.getElementById('adminUserSearchInput');
-    if (asi) asi.value = '';
+    if (asi) {
+      asi.value = '';
+      asi.setAttribute('readonly', 'readonly');
+    }
     const arf = document.getElementById('adminUserRoleFilter');
     if (arf) arf.value = 'ALL';
     const btnClear = document.getElementById('btnAdminClearSearch');
     if (btnClear) btnClear.style.display = 'none';
 
     setupAdminUserSearchProtection();
-    [50, 150, 300, 600, 1200, 2000].forEach((delay) => {
-      setTimeout(() => {
-        const inputEl = document.getElementById('adminUserSearchInput');
-        const sess = getActiveSession();
-        if (inputEl && (inputEl.value.trim().toLowerCase() === 'admin' || inputEl.value.trim().toLowerCase() === '1922' || (sess && inputEl.value.trim().toLowerCase() === sess.username.toLowerCase()))) {
+
+    // Guard interval berkala untuk membersihkan injeksi autofill browser pada saat refresh (0 - 3500ms)
+    let autofillTicks = 0;
+    const guardInterval = setInterval(() => {
+      autofillTicks++;
+      const inputEl = document.getElementById('adminUserSearchInput');
+      const sess = getActiveSession();
+      if (inputEl && !adminSearchManuallyTyped) {
+        const val = inputEl.value.trim().toLowerCase();
+        if (val === 'admin' || val === '1922' || (sess && val === sess.username.toLowerCase())) {
           inputEl.value = '';
           const bc = document.getElementById('btnAdminClearSearch');
           if (bc) bc.style.display = 'none';
           renderAdminUserManagement();
         }
-      }, delay);
-    });
+      }
+      if (autofillTicks >= 35) {
+        clearInterval(guardInterval);
+      }
+    }, 100);
 
     await renderAdminUserManagement();
   } else {
@@ -7535,8 +7560,10 @@ function setupAdminUserSearchProtection() {
   if (asi.__protectionAttached) return;
   asi.__protectionAttached = true;
 
-  asi.addEventListener('keydown', () => {
-    adminSearchManuallyTyped = true;
+  asi.addEventListener('keydown', (e) => {
+    if ((e.key && e.key.length === 1) || e.key === 'Backspace' || e.key === 'Delete') {
+      adminSearchManuallyTyped = true;
+    }
   });
 
   const cleanIfAutofill = () => {
@@ -7554,12 +7581,16 @@ function setupAdminUserSearchProtection() {
   asi.addEventListener('focus', cleanIfAutofill);
   asi.addEventListener('click', cleanIfAutofill);
   asi.addEventListener('change', cleanIfAutofill);
+  asi.addEventListener('input', cleanIfAutofill);
+  asi.addEventListener('animationstart', cleanIfAutofill);
 }
 
 function clearAdminUserSearch() {
   const asi = document.getElementById('adminUserSearchInput');
+  adminSearchManuallyTyped = false;
   if (asi) {
     asi.value = '';
+    asi.setAttribute('readonly', 'readonly');
     const bc = document.getElementById('btnAdminClearSearch');
     if (bc) bc.style.display = 'none';
     renderAdminUserManagement();
@@ -7870,7 +7901,19 @@ let currentResetTargetUsername = null;
 async function renderAdminUserManagement() {
   const users = await fetchUsersFromCloud();
   const filterRole = document.getElementById('adminUserRoleFilter')?.value || 'ALL';
-  const searchKeyword = (document.getElementById('adminUserSearchInput')?.value || '').toLowerCase().trim();
+
+  const asi = document.getElementById('adminUserSearchInput');
+  if (asi && !adminSearchManuallyTyped) {
+    const curVal = (asi.value || '').trim().toLowerCase();
+    const sess = getActiveSession();
+    if (curVal === 'admin' || curVal === '1922' || (sess && curVal === sess.username.toLowerCase())) {
+      asi.value = '';
+      const bc = document.getElementById('btnAdminClearSearch');
+      if (bc) bc.style.display = 'none';
+    }
+  }
+
+  const searchKeyword = (asi?.value || '').toLowerCase().trim();
 
   const total = users.length;
   const active = users.filter((u) => u.status === 'active').length;
@@ -7971,8 +8014,23 @@ async function renderAdminUserManagement() {
 
 function filterAdminUserTable() {
   const asi = document.getElementById('adminUserSearchInput');
+  if (!asi) return;
+
+  // Proteksi autofill browser saat refresh / transisi
+  if (!adminSearchManuallyTyped) {
+    const sess = getActiveSession();
+    const val = (asi.value || '').trim().toLowerCase();
+    if (val === 'admin' || val === '1922' || (sess && val === sess.username.toLowerCase())) {
+      asi.value = '';
+      const bc = document.getElementById('btnAdminClearSearch');
+      if (bc) bc.style.display = 'none';
+      renderAdminUserManagement();
+      return;
+    }
+  }
+
   const bc = document.getElementById('btnAdminClearSearch');
-  if (bc && asi) {
+  if (bc) {
     bc.style.display = asi.value ? 'block' : 'none';
   }
   renderAdminUserManagement();

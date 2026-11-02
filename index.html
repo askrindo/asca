@@ -1319,7 +1319,7 @@
 
         <div class="admin-toolbar">
           <div style="display:flex; gap:0.5rem; align-items:center; flex:1; max-width:400px; position:relative;">
-            <input type="search" id="adminUserSearchInput" name="admin_user_search_query" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-form-type="other" data-lpignore="true" class="form-control" placeholder="Cari username, nama, atau unit kerja..." oninput="filterAdminUserTable()" value="" style="padding-right:2rem;" />
+            <input type="search" id="adminUserSearchInput" name="q_filter_keyword" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-form-type="other" data-lpignore="true" readonly onfocus="this.removeAttribute('readonly');" onblur="if(!this.value) this.setAttribute('readonly', 'readonly');" class="form-control" placeholder="Cari username, nama, atau unit kerja..." oninput="filterAdminUserTable()" value="" style="padding-right:2rem;" />
             <button type="button" id="btnAdminClearSearch" onclick="clearAdminUserSearch()" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1.1rem; line-height:1; display:none; padding:2px 6px;" title="Bersihkan pencarian">&times;</button>
           </div>
           <div style="display:flex; gap:0.5rem; align-items:center;">
@@ -2216,6 +2216,6 @@
   <div class="toast-container" id="toastContainer"></div>
 
   <script src="inaproc-blacklist-db.js?v=1793516000"></script>
-  <script src="app.js?v=1793530000"></script>
+  <script src="app.js?v=1793532000"></script>
 </body>
 </html>

@@ -6728,10 +6728,10 @@ function renderPrintableReport(proj, m) {
               </div>
             </div>
 
-            <!-- LAMPIRAN GLOSARIUM SINGKATAN & INDIKATOR KEUANGAN (UNTUK PEMBACA AWAM) -->
+            <!-- LAMPIRAN GLOSARIUM SINGKATAN & INDIKATOR KEUANGAN (PANDUAN INTERPRETASI PRAKTIS) -->
             <div style="margin-top:1rem; padding-top:0.6rem; border-top:1.5px dashed #cbd5e1; font-size:0.62rem; color:#475569;">
               <div style="font-weight:800; color:var(--askrindo-navy); margin-bottom:0.35rem; display:flex; align-items:center; gap:4px;">
-                <span>📖 Lampiran: Panduan Singkatan &amp; Indikator Analisa Keuangan Underwriting (Untuk Pembaca Awam)</span>
+                <span>📖 Lampiran: Panduan Singkatan &amp; Interpretasi Praktis Indikator Analisa Keuangan</span>
               </div>
               <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:0.4rem; line-height:1.35;">
                 <div style="background:#f8fafc; padding:4px 6px; border-radius:4px; border:1px solid #e2e8f0;">
@@ -10410,7 +10410,7 @@ function showGlossaryTooltip(termKey, targetEl, isSticky = false) {
     <div class="asca-tt-def">${item.definition}</div>
     <div class="asca-tt-formula"><strong>Formula:</strong> ${item.formula}</div>
     <div class="asca-tt-tip">
-      <strong>💡 Cara Baca Orang Awam:</strong><br />${item.laymanTip}
+      <strong>💡 Panduan &amp; Interpretasi Praktis:</strong><br />${item.laymanTip}
     </div>
     <div style="margin-top:0.4rem; text-align:right;">
       <a href="javascript:void(0)" onclick="scrollToGlossaryTerm('${termKey}')" style="font-size:0.65rem; color:#0284c7; font-weight:700; text-decoration:none;">
@@ -10535,7 +10535,7 @@ function filterGlossaryCards() {
       <div>
         <div class="glossary-card-formula"><strong>Rumus:</strong> ${item.formula}</div>
         <div class="glossary-card-tip">
-          <strong>💡 Cara Baca Orang Awam:</strong><br />${item.laymanTip}
+          <strong>💡 Panduan &amp; Interpretasi Praktis:</strong><br />${item.laymanTip}
         </div>
       </div>
     </div>

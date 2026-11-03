@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="favicon.png" />
   <link rel="shortcut icon" href="favicon.ico" />
   <link rel="apple-touch-icon" href="favicon.png" />
-  <link rel="stylesheet" href="styles.css?v=1793656000" />
+  <link rel="stylesheet" href="styles.css?v=1793680000" />
   <style id="login-critical-styles">
     /* Anti-Cache Guarantee for Enterprise Login Interface */
     .login-screen {
@@ -510,6 +510,61 @@
               <div class="form-group">
                 <label>Suku Bunga Efektif <span class="unit-hint">(% p.a.)</span></label>
                 <input type="number" step="0.1" id="inp_interestRate" class="form-control" oninput="syncInputsToModel()" />
+              </div>
+
+              <!-- PARAMETER PROFIL KEMITRAAN ASKRINDO & LEGAL (OTOMATISASI ANALISA 5C) -->
+              <div class="form-group full" style="margin-top:0.4rem; padding-top:0.65rem; border-top:1px dashed #cbd5e1;">
+                <div style="font-weight:700; font-size:0.8rem; color:var(--askrindo-navy); margin-bottom:0.45rem; display:flex; align-items:center; gap:6px;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                  <span>Parameter Profil Kemitraan Askrindo &amp; Legal (Otomatisasi Analisa 5C)</span>
+                </div>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:0.65rem; background:#f0f9ff; border:1px solid #bae6fd; border-radius:6px; padding:0.65rem;">
+                  <div>
+                    <label style="font-size:0.7rem; font-weight:700; color:#0369a1; margin-bottom:2px; display:block;">Hubungan &amp; Riwayat di Askrindo</label>
+                    <select id="inp_askrindoHistory" class="form-control" style="font-size:0.76rem;" onchange="syncInputsToModel()">
+                      <option value="new">Debitur Baru (Belum pernah di Askrindo)</option>
+                      <option value="existing_clean">Customer Eksisting (Tanpa Wanprestasi)</option>
+                      <option value="existing_default">Customer Eksisting (Pernah Wanprestasi)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style="font-size:0.7rem; font-weight:700; color:#0369a1; margin-bottom:2px; display:block;">Lama Menjadi Customer Askrindo (Tahun)</label>
+                    <input type="number" id="inp_askrindoCustYears" class="form-control" style="font-size:0.76rem;" min="0" max="50" placeholder="0 jika baru..." oninput="syncInputsToModel()" />
+                  </div>
+                  <div>
+                    <label style="font-size:0.7rem; font-weight:700; color:#0369a1; margin-bottom:2px; display:block;">Klasifikasi Grup Usaha</label>
+                    <select id="inp_groupCategory" class="form-control" style="font-size:0.76rem;" onchange="syncInputsToModel()">
+                      <option value="none">Bukan One Debtor &amp; One Obligor</option>
+                      <option value="one_debtor">Masuk Kategori One Debtor</option>
+                      <option value="one_obligor">Masuk Kategori One Obligor</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style="font-size:0.7rem; font-weight:700; color:#0369a1; margin-bottom:2px; display:block;">Status Perusahaan &amp; Rating Eksternal</label>
+                    <select id="inp_companyStatus" class="form-control" style="font-size:0.76rem;" onchange="syncInputsToModel()">
+                      <option value="non_public_no_rating">Non Go Public - Tidak Ada Rating Eksternal</option>
+                      <option value="go_public_good">Go Public - Rating Eksternal Baik (AAA - C)</option>
+                      <option value="non_public_good">Non Go Public - Rating Eksternal Baik (AAA - C)</option>
+                      <option value="go_public_bad">Go Public - Rating Eksternal Buruk (Grade D)</option>
+                      <option value="non_public_bad">Non Go Public - Rating Eksternal Buruk (Grade D)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style="font-size:0.7rem; font-weight:700; color:#0369a1; margin-bottom:2px; display:block;">Jenis Fasilitas Kredit Penjaminan</label>
+                    <select id="inp_isTakeOverCredit" class="form-control" style="font-size:0.76rem;" onchange="syncInputsToModel()">
+                      <option value="false">Fasilitas Kredit Baru</option>
+                      <option value="true">Kredit Take Over dari Bank Lain</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style="font-size:0.7rem; font-weight:700; color:#0369a1; margin-bottom:2px; display:block;">Dukungan Reasuransi Askrindo</label>
+                    <select id="inp_reinsuranceSupport" class="form-control" style="font-size:0.76rem;" onchange="syncInputsToModel()">
+                      <option value="treaty">Tersedia Dukungan Automatic Treaty / Fakultatif</option>
+                      <option value="no_info">Tidak Ada Informasi</option>
+                      <option value="none">Belum Ada Dukungan Reasuransi</option>
+                    </select>
+                  </div>
+                </div>
               </div>
               <div class="form-group full" style="margin-top:0.4rem; padding-top:0.65rem; border-top:1px dashed #cbd5e1;">
                 <div style="font-weight:700; font-size:0.8rem; color:var(--askrindo-navy); margin-bottom:0.45rem; display:flex; align-items:center; gap:6px;">
@@ -2779,6 +2834,6 @@
   <div class="toast-container" id="toastContainer"></div>
 
   <script src="inaproc-blacklist-db.js?v=1793516000"></script>
-  <script src="app.js?v=1793657000"></script>
+  <script src="app.js?v=1793680000"></script>
 </body>
 </html>

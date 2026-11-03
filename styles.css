@@ -3227,3 +3227,151 @@ input:-webkit-autofill {
   border-color: var(--askrindo-navy, #003366);
   color: #ffffff;
 }
+
+/* ==========================================================================
+   47-PARAMETER 5C UNDERWRITING MODEL (PT. IDX CONSULTING / ASKRINDO)
+   ========================================================================== */
+.fivec-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.fivec-cat-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.75rem 0.85rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fivec-cat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.fivec-progress-track {
+  width: 100%;
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 99px;
+  overflow: hidden;
+  margin: 6px 0 8px;
+}
+
+.fivec-progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.4s ease;
+}
+
+.filter-pill-5c {
+  padding: 0.28rem 0.65rem;
+  border-radius: 99px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.filter-pill-5c:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+
+.filter-pill-5c.active {
+  background: var(--askrindo-navy, #003366);
+  border-color: var(--askrindo-navy, #003366);
+  color: #ffffff;
+  box-shadow: 0 2px 5px rgba(0, 51, 102, 0.25);
+}
+
+.fivec-param-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.72rem;
+}
+
+.fivec-param-table th {
+  background: #f8fafc;
+  color: var(--askrindo-navy, #003366);
+  font-weight: 800;
+  padding: 7px 9px;
+  border-bottom: 2px solid #cbd5e1;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.fivec-param-table td {
+  padding: 8px 9px;
+  border-bottom: 1px solid #e2e8f0;
+  vertical-align: middle;
+}
+
+.fivec-param-table tr:hover td {
+  background: #f8fafc;
+}
+
+.badge-auto-5c {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.badge-manual-5c {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.badge-cat-pill {
+  font-size: 0.6rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+  display: inline-block;
+  margin-bottom: 2px;
+}
+
+.btn-reset-param-5c {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  transition: all 0.15s ease;
+}
+
+.btn-reset-param-5c:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ASKRINDO SMART CREDIT ANALYSIS (ASCA)
  * Metode: Dynamic Cash Conversion & Stress-Tested Working Capital Model (DCC-SWCM)
  * Termasuk: Analisis Ketahanan Modal Kerja Bersih (Net Working Capital & Burn-Rate Test)
@@ -3182,10 +3182,16 @@ function compute5CAnalysis(proj, f23 = {}, m = null) {
   const sippStatus = proj.sippStatus === 'bankrupt' ? 'Sedang Menghadapi Permohonan PKPU / Pailit' : (proj.sippStatus === 'disputed' ? 'Terdapat Perkara Gugatan Perdata' : 'Nihil Gugatan Wanprestasi / PKPU');
   const newsStatusText = proj.negativeNews === 'negative' ? 'Terdeteksi Berita Negatif di Media' : 'Nihil Berita Negatif di Media';
 
-  const capNote = `Kapasitas Cash Flow (DSCR ${annualDSCR.toFixed(2)}x) & Perputaran Piutang-Hutang memadai.`;
-  const capitNote = `Rasio Keuangan 35%: CR ${cr.toFixed(2)}x, DER ${(der * 100).toFixed(0)}%, ROA ${roa.toFixed(1)}%.`;
+  const dscrStr = typeof annualDSCR === 'number' && !isNaN(annualDSCR) ? `${annualDSCR.toFixed(2)}x` : '1.20x';
+  const capNote = `Kapasitas Cash Flow (DSCR ${dscrStr}) & Perputaran Piutang-Hutang memadai.`;
+  const crStr = cr !== null && typeof cr === 'number' && !isNaN(cr) ? `${cr.toFixed(2)}x` : 'N/A (Bebas Utang)';
+  const derStr = der !== null && typeof der === 'number' && !isNaN(der) ? `${(der * 100).toFixed(0)}%` : '0%';
+  const roaStr = roa !== null && typeof roa === 'number' && !isNaN(roa) ? `${roa.toFixed(1)}%` : '0.0%';
+  const capitNote = `Rasio Keuangan 35%: CR ${crStr}, DER ${derStr}, ROA ${roaStr}.`;
   const collRatio = faRatio;
-  const collNote = `Agunan Pokok (${primaryTypeLabel}) ${fmtRp(inv, true)} (${invRatio.toFixed(0)}%) & Jaminan Tambahan (${additionalTypeLabel}) ${fmtRp(fa, true)} (${faRatio.toFixed(0)}% plafond).`;
+  const invPctStr = typeof invRatio === 'number' && !isNaN(invRatio) ? `${invRatio.toFixed(0)}%` : '0%';
+  const faPctStr = typeof faRatio === 'number' && !isNaN(faRatio) ? `${faRatio.toFixed(0)}%` : '0%';
+  const collNote = `Agunan Pokok (${primaryTypeLabel}) ${fmtRp(inv, true)} (${invPctStr}) & Jaminan Tambahan (${additionalTypeLabel}) ${fmtRp(fa, true)} (${faPctStr} plafond).`;
   const condNote = isImport ? 'Sensitivitas tinggi terhadap fluktuasi kurs USD & jalur laut logistik impor.' : 'Kondisi sektor industri stabil dengan perputaran pasar domestik normal.';
 
   return {

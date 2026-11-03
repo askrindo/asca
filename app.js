@@ -5869,6 +5869,795 @@ function renderSWCMMatrixTable(proj, m) {
   `;
 }
 
+function renderScoreCalculationTab(proj, m) {
+  const container = document.getElementById('scoreCalculationMenuContainer');
+  if (!container) return;
+  if (!m || !m.hasFinancials) {
+    container.innerHTML = getFinEmptyStateHTML('Rincian Skor Kredit Belum Tersedia', 'Perhitungan pembobotan 7 pilar underwriting DCC-SWCM (Total Skor 100) akan tampil setelah data laporan keuangan diinput.');
+    return;
+  }
+
+  const fiveC = m.fiveC || compute5CAnalysis(proj, proj.fin23, m);
+  const s2A = m.scoreComponents.find((c) => c.code === '2A')?.earnedPts || Number(((Math.max(0, Math.min(100, fiveC.totalScore)) / 100) * 10).toFixed(1));
+
+  container.innerHTML = `
+    <div class="card" style="border-left: 4px solid var(--askrindo-blue);">
+      <div class="card-header">
+        <div class="card-title">Menu Rincian Perhitungan Score DCC-SWCM (${proj.companyName})</div>
+        <div style="display:flex; gap:0.35rem; align-items:center;">
+          <span class="grade-badge ${m.gradeMeta.badgeCls}" style="font-size:0.72rem; padding:3px 9px;">
+            Total Score: ${m.score} / 100 (Rating ${m.shortGrade})
+          </span>
+          <button class="btn btn-outline btn-sm" onclick="switchTab('tab-5c')"> Analisa 5C</button>
+          <button class="btn btn-outline btn-sm" onclick="switchTab('tab-grade')"> Indikator Grade</button>
+        </div>
+      </div>
+
+      <!-- 7 SCORE PILLARS SUMMARY (SELARAS DENGAN TAB NAVIGASI ASCA) -->
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:0.5rem; margin-bottom:0.6rem;">
+        ${m.scorePillars.map((p) => {
+          const pctEarned = Math.round((p.earnedPts / p.maxPts) * 100);
+          const barColor = pctEarned >= 70 ? '#10b981' : (pctEarned >= 45 ? '#f59e0b' : '#dc2626');
+          return `
+            <div style="background:#f8fafc; border:1px solid var(--border-color); border-radius:6px; padding:0.45rem 0.6rem;">
+              <div style="display:flex; justify-content:space-between; font-size:0.7rem; font-weight:700; color:var(--askrindo-navy);">
+                <span>${p.name}</span>
+                <span style="color:${barColor};">${fmtNum(p.earnedPts, 1)} / ${p.maxPts} Poin</span>
+              </div>
+              <div class="score-progress-wrap">
+                <div class="score-progress-fill" style="width:${pctEarned}%; background:${barColor};"></div>
+              </div>
+              <div style="display:flex; justify-content:space-between; font-size:0.63rem; color:var(--text-muted); margin-top:2px;">
+                <span>Pencapaian: ${pctEarned}%</span>
+                <span>Pengurang: -${fmtNum(p.lostPts, 1)} Poin</span>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+
+      <div style="background:#fff; border:1px solid var(--border-color); border-radius:6px; padding:0.5rem 0.75rem; margin-bottom:0.6rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+        <div style="font-weight:700; font-size:0.75rem; color:var(--askrindo-navy);">
+          Rumus Rekonsiliasi Score Akhir DCC-SWCM:
+        </div>
+        <div style="font-size:0.72rem; color:#334155; display:flex; gap:0.6rem; align-items:center; background:#f8fafc; padding:0.35rem 0.75rem; border-radius:5px; border:1px solid #e2e8f0;">
+          <span><strong>Skor Dasar:</strong> 100,0 Poin</span>
+          <span>&minus;</span>
+          <span style="color:#dc2626; font-weight:700;">Total Pengurang/Penalti: -${fmtNum(m.totalLostPoints, 1)} Poin</span>
+          <span>=</span>
+          <span style="color:${m.gradeMeta.color}; font-weight:900; font-size:0.86rem;">Skor Komposit: ${m.score} / 100 (Grade ${m.shortGrade})</span>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Kode</th>
+              <th>Pilar &amp; Indikator Penilaian</th>
+              <th>Rumus &amp; Standar Benchmark</th>
+              <th>Nilai Aktual Kasus</th>
+              <th class="num-col">Bobot Maks</th>
+              <th class="num-col">Skor Dapat</th>
+              <th class="num-col">Penalti (Hilang)</th>
+              <th>Penjelasan Perhitungan Skor</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${m.scoreComponents.map((c) => {
+              const rowStatusColor = c.earnedPts >= c.maxPts * 0.7 ? '#166534' : (c.earnedPts >= c.maxPts * 0.4 ? '#92400e' : '#dc2626');
+              return `
+                <tr>
+                  <td><strong>${c.code}</strong></td>
+                  <td>
+                    <div style="font-weight:700; color:var(--askrindo-navy);">${c.name}</div>
+                    <div style="font-size:0.62rem; color:var(--text-muted);">${c.pillarName}</div>
+                  </td>
+                  <td>
+                    <div style="font-weight:600;">${c.benchmark}</div>
+                    <div style="font-size:0.62rem; color:var(--text-muted);">${c.formula}</div>
+                  </td>
+                  <td style="font-weight:700; color:${rowStatusColor};">${c.actualStr}</td>
+                  <td class="num-col"><strong>${c.maxPts}</strong></td>
+                  <td class="num-col" style="color:${rowStatusColor}; font-weight:800;">+${fmtNum(c.earnedPts, 1)}</td>
+                  <td class="num-col" style="color:${c.lostPts > 0 ? '#dc2626' : '#64748b'}; font-weight:700;">
+                    ${c.lostPts > 0 ? `-${fmtNum(c.lostPts, 1)}` : '0'}
+                  </td>
+                  <td style="font-size:0.67rem; color:#334155;">${c.reason}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+          <tfoot>
+            <tr style="background:#e2e8f0; font-weight:800; font-size:0.74rem;">
+              <td colspan="4">TOTAL AKUMULASI PERHITUNGAN SCORE DCC-SWCM (12 INDIKATOR)</td>
+              <td class="num-col">100,0</td>
+              <td class="num-col" style="color:${m.gradeMeta.color};">${fmtNum(m.totalRawScore, 1)} (Dibulatkan: ${m.score})</td>
+              <td class="num-col" style="color:#dc2626;">-${fmtNum(m.totalLostPoints, 1)}</td>
+              <td>Menghasilkan <strong>Rating ${m.riskGrade}</strong></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+
+
+// ============================================================================
+// 10. RENDER DASHBOARD, DCC, STRESS-TEST, MEMO, PORTFOLIO
+// ============================================================================
+function renderDashboardTab(proj, m) {
+  if (!m || !m.hasFinancials) {
+    const kpiCCCActual = document.getElementById('kpiCCCActual');
+    if (kpiCCCActual) kpiCCCActual.textContent = '-';
+    const kpiCCCClaimed = document.getElementById('kpiCCCClaimed');
+    if (kpiCCCClaimed) kpiCCCClaimed.textContent = 'Belum Ada Lap. Keuangan';
+    const cccDiffEl = document.getElementById('kpiCCCDiffBadge');
+    if (cccDiffEl) { cccDiffEl.textContent = '-'; cccDiffEl.style.color = '#64748b'; }
+    const kpiCardCCC = document.getElementById('kpiCardCCC');
+    if (kpiCardCCC) kpiCardCCC.className = 'kpi-card';
+
+    const kpiGrossCycle = document.getElementById('kpiGrossCycle');
+    if (kpiGrossCycle) kpiGrossCycle.textContent = '-';
+    const kpiFacilityTenor = document.getElementById('kpiFacilityTenor');
+    if (kpiFacilityTenor) kpiFacilityTenor.textContent = `Tenor: ${proj.scfTenorDays || 60}h`;
+    const gapEl = document.getElementById('kpiTenorGapBadge');
+    if (gapEl) { gapEl.textContent = '-'; gapEl.style.color = '#64748b'; }
+    const kpiCardTenor = document.getElementById('kpiCardTenor');
+    if (kpiCardTenor) kpiCardTenor.className = 'kpi-card';
+
+    const kpiLabelMargin = document.getElementById('kpiLabelMargin');
+    if (kpiLabelMargin) kpiLabelMargin.textContent = 'Gross Margin & Laba Bersih';
+    const kpiGrossMargin = document.getElementById('kpiGrossMargin');
+    if (kpiGrossMargin) kpiGrossMargin.textContent = '-';
+    const kpiEATValue = document.getElementById('kpiEATValue');
+    if (kpiEATValue) kpiEATValue.textContent = 'EAT: -';
+    const profEl = document.getElementById('kpiProfitStatus');
+    if (profEl) { profEl.textContent = '-'; profEl.style.color = '#64748b'; }
+    const kpiCardMargin = document.getElementById('kpiCardMargin');
+    if (kpiCardMargin) kpiCardMargin.className = 'kpi-card';
+
+    const kpiSustainableLimit = document.getElementById('kpiSustainableLimit');
+    if (kpiSustainableLimit) kpiSustainableLimit.textContent = '-';
+    const kpiRequestedLimit = document.getElementById('kpiRequestedLimit');
+    if (kpiRequestedLimit) kpiRequestedLimit.textContent = `Diajukan: ${fmtRp(proj.requestedPlafond, true)}`;
+    const covEl = document.getElementById('kpiCoverageRatio');
+    if (covEl) { covEl.textContent = '-'; covEl.style.color = '#64748b'; }
+    const kpiCardPlafond = document.getElementById('kpiCardPlafond');
+    if (kpiCardPlafond) kpiCardPlafond.className = 'kpi-card';
+
+    const redFlagsContainer = document.getElementById('redFlagsContainer');
+    if (redFlagsContainer) {
+      redFlagsContainer.innerHTML = '<div style="background:#f8fafc; border:1px dashed #cbd5e1; padding:1.5rem; text-align:center; color:#64748b; border-radius:6px; font-size:0.83rem;">Data laporan keuangan belum diinput. Indikator peringatan dini (Red Flags) dan audit risiko akan tampil setelah Anda melengkapi data keuangan.</div>';
+    }
+    const dashboardTimelineVisual = document.getElementById('dashboardTimelineVisual');
+    if (dashboardTimelineVisual) {
+      dashboardTimelineVisual.innerHTML = '<div style="background:#f8fafc; border:1px dashed #cbd5e1; padding:1.5rem; text-align:center; color:#64748b; border-radius:6px; font-size:0.83rem;">Visualisasi siklus modal kerja (DOI + DOR vs Tenor Fasilitas) akan aktif otomatis setelah laporan keuangan diisi.</div>';
+    }
+    const dashboardSummaryCardTitle = document.getElementById('dashboardSummaryCardTitle');
+    if (dashboardSummaryCardTitle) dashboardSummaryCardTitle.textContent = 'Ringkasan Keuangan (Belum Ada Data)';
+    const dashboardSummaryTable = document.getElementById('dashboardSummaryTable');
+    if (dashboardSummaryTable) {
+      dashboardSummaryTable.innerHTML = '<tbody><tr><td colspan="4" style="text-align:center; padding:2rem; color:#64748b; font-size:0.85rem;">Data laporan keuangan (Neraca & Laba Rugi) belum diisi. Silakan isi form di tab <strong>Input Data</strong> atau gunakan fitur <strong>Pindai AI OCR</strong>.</td></tr></tbody>';
+    }
+    return;
+  }
+
+  document.getElementById('kpiCCCActual').textContent = `${fmtNum(m.ccc23, 1)} Hari`;
+  document.getElementById('kpiCCCClaimed').textContent = `Data Bank: ${m.claimedCCC} Hr`;
+  const cccDiffEl = document.getElementById('kpiCCCDiffBadge');
+  cccDiffEl.textContent = `${m.diffCCC >= 0 ? '+' : ''}${fmtNum(m.diffCCC, 1)} hr`;
+  cccDiffEl.style.color = Math.abs(m.diffCCC) > 30 ? 'var(--askrindo-red)' : 'var(--askrindo-green)';
+  document.getElementById('kpiCardCCC').className = `kpi-card ${Math.abs(m.diffCCC) > 30 ? 'kpi-red' : 'kpi-green'}`;
+
+  document.getElementById('kpiGrossCycle').textContent = `${fmtNum(m.grossCycle23, 1)} Hari`;
+  document.getElementById('kpiFacilityTenor').textContent = `Tenor: ${m.scfTenor}h (+${m.kmkTenor}h)`;
+  const gapEl = document.getElementById('kpiTenorGapBadge');
+  if (m.cashGapAtSCFMaturity_Actual > 0) {
+    gapEl.textContent = `Defisit ${fmtNum(m.cashGapAtSCFMaturity_Actual, 0)} hr!`;
+    gapEl.style.color = 'var(--askrindo-red)';
+    document.getElementById('kpiCardTenor').className = 'kpi-card kpi-red';
+  } else {
+    gapEl.textContent = `Surplus ${fmtNum(Math.abs(m.cashGapAtSCFMaturity_Actual), 0)} hr`;
+    gapEl.style.color = 'var(--askrindo-green)';
+    document.getElementById('kpiCardTenor').className = 'kpi-card kpi-green';
+  }
+
+  document.getElementById('kpiLabelMargin').textContent = `Gross Margin & Laba Bersih (${m.yr2})`;
+  document.getElementById('kpiGrossMargin').textContent = `${fmtPct(m.gpm23, 2)}`;
+  document.getElementById('kpiEATValue').textContent = `EAT: ${fmtRp(m.eat23, true)}`;
+  const profEl = document.getElementById('kpiProfitStatus');
+  if (m.gp23 < 0) {
+    profEl.textContent = 'GROSS LOSS';
+    profEl.style.color = 'var(--askrindo-red)';
+    document.getElementById('kpiCardMargin').className = 'kpi-card kpi-red';
+  } else {
+    profEl.textContent = 'Positif';
+    profEl.style.color = 'var(--askrindo-green)';
+    document.getElementById('kpiCardMargin').className = 'kpi-card kpi-green';
+  }
+
+  document.getElementById('kpiSustainableLimit').textContent =
+    m.sustainableLimitBaseline > 0 ? fmtRp(m.sustainableLimitBaseline, true) : `Rp 0 (Mitigasi)`;
+  document.getElementById('kpiRequestedLimit').textContent = `Diajukan: ${fmtRp(proj.requestedPlafond, true)}`;
+  const covEl = document.getElementById('kpiCoverageRatio');
+  covEl.textContent = m.sustainableLimitBaseline > 0 ? `Cov ${m.recCoveragePct}%` : `Ring-Fenced: ${fmtRp(m.recommendedMitigatedLimit, true)}`;
+  covEl.style.color = m.sustainableLimitBaseline > 0 ? 'var(--askrindo-green)' : 'var(--askrindo-gold)';
+  document.getElementById('kpiCardPlafond').className = `kpi-card ${m.sustainableLimitBaseline > 0 ? 'kpi-green' : 'kpi-gold'}`;
+
+  const insights = buildDynamicCaseInsights(proj, m);
+  const allPoints = [...insights.criticalPointsFin, ...insights.criticalPointsCredit];
+
+  document.getElementById('redFlagsContainer').innerHTML = allPoints.map((f, idx) => {
+    const color = f.severity === 'CRITICAL' ? '#dc2626' : (f.severity === 'HIGH' ? '#b45309' : '#15803d');
+    const bg = f.severity === 'CRITICAL' ? '#fef2f2' : (f.severity === 'HIGH' ? '#fffbeb' : '#f0fdf4');
+    return `
+      <div style="background:${bg}; border-left:3.5px solid ${color}; padding:0.45rem 0.6rem; border-radius:5px;">
+        <div style="font-weight:800; font-size:0.83rem; color:${color}; margin-bottom:0.12rem;">${idx + 1}. ${f.title}</div>
+        <div style="font-size:0.8rem; color:#1e293b; line-height:1.45;">${f.detail}</div>
+      </div>
+    `;
+  }).join('');
+
+  const maxBarDays = Math.max(380, m.grossCycle23 + 20, m.totalMaxTenor + 20);
+  const pct = (d) => Math.min(100, Math.max(3, (d / maxBarDays) * 100)).toFixed(1);
+
+  document.getElementById('dashboardTimelineVisual').innerHTML = `
+    <div class="ccc-visual-box" style="margin-top:0;">
+      <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:700;">
+        <span>A. Sesuai Data Bank (DOI ${proj.claimedDOI} + DOR ${proj.claimedDOR} = ${m.claimedGrossCycle} Hr)</span>
+        <span style="color:#0369a1;">CCC (-DOP ${proj.claimedDOP}): ${m.claimedCCC} Hr</span>
+      </div>
+      <div class="ccc-bar-track">
+        <div class="ccc-seg-dio" style="width:${pct(proj.claimedDOI)}%">DOI ${proj.claimedDOI}h</div>
+        <div class="ccc-seg-dso" style="width:${pct(proj.claimedDOR)}%">DOR ${proj.claimedDOR}h</div>
+      </div>
+    </div>
+
+    <div class="ccc-visual-box">
+      <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:700;">
+        <span>B. Aktual Audited ${m.yr2} (DOI ${fmtNum(m.doi23_365, 0)} + DOR ${fmtNum(m.dor23_365, 0)} = ${fmtNum(m.grossCycle23, 0)} Hr)</span>
+        <span style="color:${m.ccc23 > m.scfTenor ? 'var(--askrindo-red)' : 'var(--askrindo-green)'};">CCC (-DOP ${fmtNum(m.dop23_365, 0)}): ${fmtNum(m.ccc23, 0)} Hr</span>
+      </div>
+      <div class="ccc-bar-track">
+        <div class="ccc-seg-dio" style="width:${pct(m.doi23_365)}%; background:${m.doi23_365 > 150 ? '#dc2626' : '#0284c7'};">DOI ${fmtNum(m.doi23_365, 0)}h</div>
+        <div class="ccc-seg-dso" style="width:${pct(m.dor23_365)}%">DOR ${fmtNum(m.dor23_365, 0)}h</div>
+      </div>
+    </div>
+
+    <div class="ccc-visual-box" style="background:#f0f9ff; border-color:#bae6fd;">
+      <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:700;">
+        <span>C. Tenor Fasilitas ${proj.bankName} (Total: ${m.totalMaxTenor} Hr)</span>
+        <span>PK: ${proj.pkMonths} Bln</span>
+      </div>
+      <div class="ccc-bar-track">
+        <div style="width:${pct(m.scfTenor)}%; background:#005691; display:flex; align-items:center; justify-content:center; white-space:nowrap; overflow:hidden;">
+          Tenor Utama: ${m.scfTenor} Hr
+        </div>
+        ${m.kmkTenor > 0 ? `
+        <div style="width:${pct(m.kmkTenor)}%; background:#f59e0b; display:flex; align-items:center; justify-content:center; white-space:nowrap; overflow:hidden;">
+          +KMK ${m.kmkTenor}h (Total ${m.totalMaxTenor}h)
+        </div>` : ''}
+      </div>
+      <div style="font-size:0.78rem; color:${m.cashGapAtSCFMaturity_Actual > 0 ? '#991b1b' : '#166534'}; font-weight:600; margin-top:0.2rem;">
+        ${m.cashGapAtSCFMaturity_Actual > 0
+          ? `&#9888; Defisit siklus ${fmtNum(m.cashGapAtSCFMaturity_Actual, 0)} hari saat jatuh tempo hari ke-${m.scfTenor} (Memicu klaim / KMK Backup)!`
+          : `&#10003; Siklus operasi masuk di dalam tenor ${m.scfTenor} hari (Surplus waktu ${fmtNum(Math.abs(m.cashGapAtSCFMaturity_Actual), 0)} hari).`}
+      </div>
+    </div>
+  `;
+
+  document.getElementById('dashboardSummaryCardTitle').textContent = `Ringkasan Keuangan (Audited ${m.yr1} vs ${m.yr2})`;
+  document.getElementById('dashboardSummaryTable').innerHTML = `
+    <thead>
+      <tr>
+        <th>Pos Utama</th>
+        <th class="num-col">Audited ${m.yr1}</th>
+        <th class="num-col">Audited ${m.yr2}</th>
+        <th class="num-col">Keterangan</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Penjualan</strong></td>
+        <td class="num-col">${fmtRp(proj.fin22.rev, true)}</td>
+        <td class="num-col">${fmtRp(proj.fin23.rev, true)}</td>
+        <td class="num-col" style="color:var(--askrindo-blue); font-weight:700;">${fmtPct(m.revGrowth, 1)}</td>
+      </tr>
+      <tr>
+        <td><strong>HPP (COGS)</strong></td>
+        <td class="num-col">${fmtRp(proj.fin22.cogs, true)}</td>
+        <td class="num-col">${fmtRp(proj.fin23.cogs, true)}</td>
+        <td class="num-col">${fmtNum((proj.fin23.cogs / proj.fin23.rev) * 100, 1)}% Sales</td>
+      </tr>
+      <tr>
+        <td><strong>Gross Profit</strong></td>
+        <td class="num-col" style="color:${m.gp22 < 0 ? '#dc2626' : '#166534'}; font-weight:700;">${fmtRp(m.gp22, true)}</td>
+        <td class="num-col" style="color:${m.gp23 < 0 ? '#dc2626' : '#166534'}; font-weight:700;">${fmtRp(m.gp23, true)}</td>
+        <td class="num-col" style="font-weight:700;">GPM ${fmtPct(m.gpm23, 1)}</td>
+      </tr>
+      <tr>
+        <td><strong>Laba Bersih (EAT)</strong></td>
+        <td class="num-col" style="color:${m.eat22 < 0 ? '#dc2626' : '#166534'}; font-weight:700;">${fmtRp(m.eat22, true)}</td>
+        <td class="num-col" style="color:${m.eat23 < 0 ? '#dc2626' : '#166534'}; font-weight:700;">${fmtRp(m.eat23, true)}</td>
+        <td class="num-col">NPM ${fmtPct(m.npm23, 1)}</td>
+      </tr>
+      <tr>
+        <td><strong>Persediaan</strong></td>
+        <td class="num-col">${fmtRp(proj.fin22.inv, true)}</td>
+        <td class="num-col">${fmtRp(proj.fin23.inv, true)}</td>
+        <td class="num-col">DOI: ${fmtNum(m.doi23_365, 1)} hr</td>
+      </tr>
+      <tr>
+        <td><strong>Utang Bank Jk. Pendek</strong></td>
+        <td class="num-col">${fmtRp(proj.fin22.stDebt, true)}</td>
+        <td class="num-col" style="color:${m.stDebtGrowth > 50 ? '#dc2626' : '#0f172a'}; font-weight:700;">${fmtRp(proj.fin23.stDebt, true)}</td>
+        <td class="num-col">${fmtPct(m.stDebtGrowth, 1)}</td>
+      </tr>
+      <tr>
+        <td><strong>Likuiditas &amp; Ekuitas</strong></td>
+        <td class="num-col">CR ${fmtNum(m.currentRatio22, 2)}x | QR ${fmtNum(m.quickRatio22, 2)}x</td>
+        <td class="num-col">CR ${fmtNum(m.currentRatio23, 2)}x | QR ${fmtNum(m.quickRatio23, 2)}x</td>
+        <td class="num-col">DER ${fmtNum(m.der23, 2)}x</td>
+      </tr>
+    </tbody>
+  `;
+}
+
+function renderDCCTab(proj, m) {
+  const emptyEl = document.getElementById('dccEmptyState');
+  const activeEl = document.getElementById('dccActiveState');
+  if (!m || !m.hasFinancials) {
+    if (emptyEl) {
+      emptyEl.innerHTML = getFinEmptyStateHTML('Analisa Dynamic CC Belum Aktif', 'Kalkulasi Dynamic Cash Conversion Cycle (DOR, DOI, DOP, dan CCC 360/365 hari) akan aktif setelah Anda mengisi data Neraca & Laba Rugi.');
+      emptyEl.style.display = 'block';
+    }
+    if (activeEl) activeEl.style.display = 'none';
+    return;
+  }
+  if (emptyEl) emptyEl.style.display = 'none';
+  if (activeEl) activeEl.style.display = 'block';
+
+  document.getElementById('dccAuditCardTitle').textContent = `Audit Dynamic Cash Conversion Cycle (Data Bank vs Audited ${m.yr1} & ${m.yr2})`;
+  document.getElementById('dccAuditTable').innerHTML = `
+    <thead>
+      <tr>
+        <th>Komponen Siklus</th>
+        <th>Rumus</th>
+        <th class="num-col">Data Bank</th>
+        <th class="num-col">${m.yr1} (365h)</th>
+        <th class="num-col">${m.yr2} (365h)</th>
+        <th class="num-col">${m.yr2} (360h)</th>
+        <th class="num-col">Deviasi</th>
+        <th>Evaluasi Audit Underwriter</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>DOR / DSO</strong> (Piutang)</td>
+        <td>(AR / Sales) &times; 365</td>
+        <td class="num-col"><strong>${proj.claimedDOR} hr</strong></td>
+        <td class="num-col">${fmtNum(m.dor22_365, 1)} hr</td>
+        <td class="num-col"><strong>${fmtNum(m.dor23_365, 1)} hr</strong></td>
+        <td class="num-col">${fmtNum(m.dor23_360, 1)} hr</td>
+        <td class="num-col">${m.diffDOR >= 0 ? '+' : ''}${fmtNum(m.diffDOR, 1)} hr</td>
+        <td>${Math.abs(m.diffDOR) <= 10 ? 'Sesuai Data Bank (~2 bulan)' : 'Deviasi periode penagihan'}</td>
+      </tr>
+      <tr>
+        <td><strong>DOI / DIO</strong> (Persediaan)</td>
+        <td>(Inv / HPP) &times; 365</td>
+        <td class="num-col"><strong>${proj.claimedDOI} hr</strong></td>
+        <td class="num-col">${fmtNum(m.doi22_365, 1)} hr</td>
+        <td class="num-col" style="color:${m.diffDOI > 30 ? '#dc2626' : '#0f172a'}; font-weight:800;">${fmtNum(m.doi23_365, 1)} hr</td>
+        <td class="num-col">${fmtNum(m.doi23_360, 1)} hr</td>
+        <td class="num-col" style="color:${m.diffDOI > 30 ? '#dc2626' : '#166534'}; font-weight:800;">${m.diffDOI >= 0 ? '+' : ''}${fmtNum(m.diffDOI, 1)} hr</td>
+        <td>${m.diffDOI > 30 ? `<strong style="color:#dc2626;">Stok mengendap ${fmtNum(m.doi23_365, 0)} hr (${fmtRp(proj.fin23.inv, true)})!</strong>` : 'Perputaran persediaan normal'}</td>
+      </tr>
+      <tr>
+        <td><strong>Gross Operating Cycle</strong></td>
+        <td>DOI + DOR</td>
+        <td class="num-col"><strong>${m.claimedGrossCycle} hr</strong></td>
+        <td class="num-col">${fmtNum(m.grossCycle22, 1)} hr</td>
+        <td class="num-col" style="font-weight:800;">${fmtNum(m.grossCycle23, 1)} hr</td>
+        <td class="num-col">${fmtNum(m.doi23_360 + m.dor23_360, 1)} hr</td>
+        <td class="num-col">+${fmtNum(m.grossCycle23 - m.claimedGrossCycle, 1)} hr</td>
+        <td>Tenor Utama: ${m.scfTenor} hr (${m.cashGapAtSCFMaturity_Actual > 0 ? `Defisit ${fmtNum(m.cashGapAtSCFMaturity_Actual, 1)} hr` : 'Memadai'})</td>
+      </tr>
+      <tr>
+        <td><strong>DOP Murni</strong> (Utang Dagang)</td>
+        <td>(AP / HPP) &times; 365</td>
+        <td class="num-col"><strong>${proj.claimedDOP} hr</strong></td>
+        <td class="num-col">${fmtNum(m.dop22_365, 1)} hr</td>
+        <td class="num-col" style="font-weight:800;">${fmtNum(m.dop23_365, 1)} hr</td>
+        <td class="num-col">${fmtNum(m.dop23_360, 1)} hr</td>
+        <td class="num-col">${fmtNum(m.diffDOP, 1)} hr</td>
+        <td>${Math.abs(m.diffDOP) > 20 ? 'Kredit supplier murni jauh lebih pendek dari Data Bank' : 'Sesuai termin supplier'}</td>
+      </tr>
+      <tr>
+        <td><em>DOP Luas (+Utang Lain &amp; YMH)</em></td>
+        <td>((AP+Lain+YMH)/HPP)&times;365</td>
+        <td class="num-col"><em>(${proj.claimedDOP} hr)</em></td>
+        <td class="num-col">${fmtNum(m.dopBroad22_365, 1)} hr</td>
+        <td class="num-col">${fmtNum(m.dopBroad23_365, 1)} hr</td>
+        <td class="num-col">${fmtNum((m.dopBroad23_365 * 360) / 365, 1)} hr</td>
+        <td class="num-col">+${fmtNum(m.dopBroad23_365 - proj.claimedDOP, 1)} hr</td>
+        <td>Termasuk Biaya YMH Dibayar ${fmtRp(proj.fin23.accrued, true)}</td>
+      </tr>
+      <tr style="background:#f0f9ff; font-weight:700;">
+        <td><strong>Cash Conversion Cycle (CCC)</strong></td>
+        <td>DOI + DOR  -  DOP Murni</td>
+        <td class="num-col">${m.claimedCCC} hr</td>
+        <td class="num-col">${fmtNum(m.ccc22, 1)} hr</td>
+        <td class="num-col" style="color:${m.ccc23 > 180 ? '#dc2626' : '#166534'};">${fmtNum(m.ccc23, 1)} hr</td>
+        <td class="num-col">${fmtNum(m.doi23_360 + m.dor23_360 - m.dop23_360, 1)} hr</td>
+        <td class="num-col">${m.diffCCC >= 0 ? '+' : ''}${fmtNum(m.diffCCC, 1)} hr</td>
+        <td>Siklus kas bersih aktual ${fmtNum(m.ccc23, 1)} hari</td>
+      </tr>
+    </tbody>
+  `;
+
+  document.getElementById('tenorMismatchAnalysisBox').innerHTML = `
+    <div style="display:flex; flex-direction:column; gap:0.45rem; font-size:0.73rem;">
+      <div style="padding:0.45rem; background:${m.cashGapAtSCFMaturity_Actual > 0 ? '#fef2f2' : '#f0fdf4'}; border:1px solid ${m.cashGapAtSCFMaturity_Actual > 0 ? '#fecaca' : '#bbf7d0'}; border-radius:6px;">
+        <div style="font-weight:700; color:${m.cashGapAtSCFMaturity_Actual > 0 ? '#991b1b' : '#166534'}; margin-bottom:0.12rem;">
+          1. Evaluasi Jatuh Tempo Fasilitas Utama (Hari ke-${m.scfTenor})
+        </div>
+        <p>Siklus Operasi Gross membutuhkan <strong>${m.claimedGrossCycle} hari (Data Bank)</strong> atau <strong>${fmtNum(m.grossCycle23, 1)} hari (aktual ${m.yr2})</strong>, sedangkan Tenor Pembayaran Kredit adalah <strong>${m.scfTenor} hari</strong> (${m.cashGapAtSCFMaturity_Actual > 0 ? `Defisit waktu <strong>${fmtNum(m.cashGapAtSCFMaturity_Actual, 1)} hari</strong>  -  kas belum terkumpul saat jatuh tempo!` : `Surplus waktu <strong>${fmtNum(Math.abs(m.cashGapAtSCFMaturity_Actual), 1)} hari</strong>  -  aman & self-liquidating.`}).</p>
+      </div>
+
+      <div style="padding:0.45rem; background:#fffbeb; border:1px solid #fde68a; border-radius:6px;">
+        <div style="font-weight:700; color:#92400e; margin-bottom:0.12rem;">
+          2. Evaluasi Fasilitas Tambahan / KMK Backup (+${m.kmkTenor} Hari  +  Total ${m.totalMaxTenor} Hari)
+        </div>
+        <p>${m.kmkTenor > 0
+          ? `Fasilitas KMK Khusus (${m.kmkTenor} hari setelah fasilitas utama jatuh tempo) menjadikan total tenor ${m.totalMaxTenor} hari. Terhadap siklus aktual ${fmtNum(m.grossCycle23, 1)} hari, ${m.cashGapAfterKMK_Actual > 0 ? `masih terdapat <strong>defisit ${fmtNum(m.cashGapAfterKMK_Actual, 1)} hari</strong>!` : `total waktu 270 hari menutup siklus, namun mengonversi trade finance menjadi modal kerja saat default.`}`
+          : `Tidak terdapat fasilitas KMK Backup Default pada skema ini.`}</p>
+      </div>
+
+      <div style="padding:0.45rem; background:#f0f9ff; border:1px solid #bae6fd; border-radius:6px;">
+        <div style="font-weight:700; color:#0369a1; margin-bottom:0.12rem;">
+          3. Eksposur Plafond &amp; Mata Uang (${fmtRp(proj.requestedPlafond)})
+        </div>
+        <p>${proj.usdAmount > 0
+          ? `Fasilitas berdenominasi valas <strong>USD ${proj.usdAmount.toLocaleString('id-ID')}</strong> (Kurs Rp${proj.fxRate.toLocaleString('id-ID')}). Wajib dipisahkan sub-limit Hedging Forex Line.`
+          : `Fasilitas berdenominasi Rupiah penuh (${fmtRp(proj.requestedPlafond)}).`}</p>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('wcVelocityBox').innerHTML = `
+    <table class="data-table">
+      <tbody>
+        <tr>
+          <td><strong>HPP Harian (Daily COGS Burn)</strong></td>
+          <td class="num-col"><strong>${fmtRp(m.dailyCOGS23)} / hari</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Gross Cash Burn Total (COGS+OPEX+Bunga)</strong></td>
+          <td class="num-col" style="color:#0a2540; font-weight:700;"><strong>${fmtRp(m.dailyGrossCashBurn)} / hari</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Operating Working Capital (AR + Inv  -  AP)</strong></td>
+          <td class="num-col"><strong>${fmtRp(m.owc23)}</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Net Working Capital (CA  -  CL)</strong></td>
+          <td class="num-col">${fmtRp(m.nwc23)}</td>
+        </tr>
+        <tr>
+          <td><strong>Kas Terkunci di Kelebihan DOI (+${fmtNum(Math.max(0, m.diffDOI), 1)} hr)</strong></td>
+          <td class="num-col" style="color:#dc2626; font-weight:700;">${fmtRp(m.cashLockedInExcessDOI)}</td>
+        </tr>
+        <tr>
+          <td><strong>Potensi Kas Bebas Jika DOI Ditekan ke ${m.targetSafeDOI} Hari</strong></td>
+          <td class="num-col" style="color:#166534; font-weight:700;">+${fmtRp(m.cashReleasedAtSafeDOI)}</td>
+        </tr>
+      </tbody>
+    </table>
+  `;
+}
+
+function syncSlidersWithCurrentProject(proj, m) {
+  document.querySelectorAll('.lblYear2Ref').forEach((el) => {
+    el.textContent = m.yr2;
+  });
+  document.getElementById('lblCurrGPM').textContent = `${fmtNum(m.gpm23, 1)}%`;
+  document.getElementById('lblCurrDOI').textContent = Math.round(m.doi23_365);
+  document.getElementById('lblCurrDOR').textContent = Math.round(m.dor23_365);
+  document.getElementById('lblCurrDOP').textContent = Math.round(m.dop23_365);
+
+  document.getElementById('rng_simGPM').value = Number(m.gpm23.toFixed(1));
+  document.getElementById('rng_simDOI').value = Math.round(m.doi23_365);
+  document.getElementById('rng_simDOR').value = Math.round(m.dor23_365);
+  document.getElementById('rng_simDOP').value = Math.round(m.dop23_365);
+  document.getElementById('rng_simRevGrowth').value = 0;
+  document.getElementById('rng_simOpexCut').value = 0;
+  document.getElementById('rng_simFxShock').value = 0;
+  document.getElementById('rng_simInvHaircut').value = 0;
+}
+
+function applyStressPreset(presetName, btnEl) {
+  document.querySelectorAll('.preset-pill').forEach((b) => b.classList.remove('active'));
+  if (btnEl) btnEl.classList.add('active');
+
+  const proj = getActiveProject();
+  const m = computeDCCSWCM(proj);
+
+  if (presetName === 'baseline') {
+    syncSlidersWithCurrentProject(proj, m);
+  } else if (presetName === 'claimed') {
+    document.getElementById('rng_simGPM').value = Number(m.gpm23.toFixed(1));
+    document.getElementById('rng_simDOI').value = proj.claimedDOI;
+    document.getElementById('rng_simDOR').value = proj.claimedDOR;
+    document.getElementById('rng_simDOP').value = proj.claimedDOP;
+    document.getElementById('rng_simRevGrowth').value = 10;
+    document.getElementById('rng_simOpexCut').value = 0;
+    document.getElementById('rng_simFxShock').value = 0;
+    document.getElementById('rng_simInvHaircut').value = 0;
+  } else if (presetName === 'fx_commodity_shock') {
+    document.getElementById('rng_simGPM').value = Number((m.gpm23 - 3.5).toFixed(1));
+    document.getElementById('rng_simDOI').value = Math.min(350, Math.round(m.doi23_365 + 20));
+    document.getElementById('rng_simDOR').value = Math.min(150, Math.round(m.dor23_365 + 20));
+    document.getElementById('rng_simDOP').value = Math.max(10, Math.round(m.dop23_365 - 5));
+    document.getElementById('rng_simRevGrowth').value = -10;
+    document.getElementById('rng_simOpexCut').value = 0;
+    document.getElementById('rng_simFxShock').value = 10;
+    document.getElementById('rng_simInvHaircut').value = 10;
+  } else if (presetName === 'severe_stagflation') {
+    document.getElementById('rng_simGPM').value = Number((m.gpm23 - 7.0).toFixed(1));
+    document.getElementById('rng_simDOI').value = Math.min(360, Math.round(m.doi23_365 + 45));
+    document.getElementById('rng_simDOR').value = Math.min(150, Math.round(m.dor23_365 + 40));
+    document.getElementById('rng_simDOP').value = Math.max(10, Math.round(m.dop23_365 - 10));
+    document.getElementById('rng_simRevGrowth').value = -20;
+    document.getElementById('rng_simOpexCut').value = -5;
+    document.getElementById('rng_simFxShock').value = 15;
+    document.getElementById('rng_simInvHaircut').value = 20;
+  } else if (presetName === 'turnaround_mitigated') {
+    document.getElementById('rng_simGPM').value = Number(Math.max(12.5, m.minRequiredGPM).toFixed(1));
+    document.getElementById('rng_simDOI').value = m.targetSafeDOI;
+    document.getElementById('rng_simDOR').value = Math.min(45, Math.round(m.dor23_365));
+    document.getElementById('rng_simDOP').value = Math.max(70, proj.claimedDOP);
+    document.getElementById('rng_simRevGrowth').value = 15;
+    document.getElementById('rng_simOpexCut').value = m.gp23 < 0 ? 55 : 20;
+    document.getElementById('rng_simFxShock').value = 0;
+    document.getElementById('rng_simInvHaircut').value = 0;
+  }
+
+  runStressSimulation();
+}
+
+function evaluateScenarioParams(proj, m, params) {
+  const simRev = proj.fin23.rev * (1 + params.revGrowth / 100);
+  const simGP = simRev * (params.gpm / 100);
+  const simCOGS = simRev - simGP;
+  const simOPEX = proj.fin23.opex * (1 - params.opexCut / 100);
+  const fxExtraLiability = (proj.usdAmount > 0 ? proj.requestedPlafond : 0) * (params.fxShock / 100);
+  const invWriteOff = proj.fin23.inv * (params.invHaircut / 100);
+
+  const simEBITDA = simGP - simOPEX + (proj.fin23.fa * 0.04);
+  const simInterest = (proj.fin23.stDebt + proj.requestedPlafond + fxExtraLiability) * (proj.interestRate / 100);
+  const simEBT = simGP - simOPEX - simInterest - invWriteOff;
+
+  const simAR = (simRev * params.dor) / 365;
+  const simInv = (simCOGS * params.doi) / 365;
+  const simAP = (simCOGS * params.dop) / 365;
+  const simOWC = simAR + simInv - simAP;
+  const deltaOWC = m.owc23 - simOWC;
+
+  const simGrossCycle = params.doi + params.dor;
+  const simCCC = simGrossCycle - params.dop;
+  const operatingCashFlow = simEBITDA + deltaOWC - invWriteOff;
+  const debtServiceRequired = proj.requestedPlafond + fxExtraLiability + simInterest;
+  const simDSCR = debtServiceRequired > 0 ? (simEBITDA + Math.max(0, deltaOWC * 0.5)) / (proj.requestedPlafond * 0.5 + simInterest) : 0;
+
+  const tenorFit = simGrossCycle <= proj.scfTenorDays;
+  const isViable = simGP > 0 && tenorFit && (simEBT > 0 || deltaOWC > 0) && simDSCR >= 1.05;
+
+  return {
+    simRev, simGP, simCOGS, simOPEX, simEBITDA, simEBT,
+    simAR, simInv, simAP, simOWC, deltaOWC,
+    simGrossCycle, simCCC, operatingCashFlow,
+    fxExtraLiability, invWriteOff, simDSCR, tenorFit, isViable
+  };
+}
+
+function runStressSimulation() {
+  const proj = getActiveProject();
+  if (!proj) return;
+  const m = computeDCCSWCM(proj);
+  const emptyEl = document.getElementById('swcmEmptyState');
+  const activeEl = document.getElementById('swcmActiveState');
+
+  if (!m || !m.hasFinancials) {
+    if (emptyEl) {
+      emptyEl.innerHTML = getFinEmptyStateHTML('Modul Stress-Test Belum Aktif', 'Simulasi skenario stress-test modal kerja (shock DOI/DOR/DOP, Margin Drop, Kurs FX, Inventory Haircut) membutuhkan data laporan keuangan.');
+      emptyEl.style.display = 'block';
+    }
+    if (activeEl) activeEl.style.display = 'none';
+    return;
+  }
+  if (emptyEl) emptyEl.style.display = 'none';
+  if (activeEl) activeEl.style.display = 'block';
+
+  const gpm = parseFloat(document.getElementById('rng_simGPM').value);
+  const doi = parseFloat(document.getElementById('rng_simDOI').value);
+  const dor = parseFloat(document.getElementById('rng_simDOR').value);
+  const dop = parseFloat(document.getElementById('rng_simDOP').value);
+  const revGrowth = parseFloat(document.getElementById('rng_simRevGrowth').value);
+  const opexCut = parseFloat(document.getElementById('rng_simOpexCut').value);
+  const fxShock = parseFloat(document.getElementById('rng_simFxShock').value);
+  const invHaircut = parseFloat(document.getElementById('rng_simInvHaircut').value);
+
+  document.getElementById('val_simGPM').textContent = `${gpm >= 0 ? '+' : ''}${gpm.toFixed(1)}%`;
+  document.getElementById('val_simDOI').textContent = `${doi} Hr`;
+  document.getElementById('val_simDOR').textContent = `${dor} Hr`;
+  document.getElementById('val_simDOP').textContent = `${dop} Hr`;
+  document.getElementById('val_simRevGrowth').textContent = `${revGrowth >= 0 ? '+' : ''}${revGrowth}% | -${opexCut}%`;
+  document.getElementById('val_simFxAndHaircut').textContent = `Kurs +${fxShock}% | Rusak ${invHaircut}%`;
+
+  const res = evaluateScenarioParams(proj, m, { gpm, doi, dor, dop, revGrowth, opexCut, fxShock, invHaircut });
+
+  const statusColor = res.isViable ? '#166534' : (res.tenorFit && res.simGP > 0 ? '#0284c7' : (res.simGP > 0 ? '#92400e' : '#991b1b'));
+  const statusBg = res.isViable ? '#f0fdf4' : (res.tenorFit && res.simGP > 0 ? '#f0f9ff' : (res.simGP > 0 ? '#fffbeb' : '#fef2f2'));
+  const statusLabel = res.isViable
+    ? `&#10003; LAYAK &amp; SELF-LIQUIDATING (SIKLUS &le; ${proj.scfTenorDays} HARI &amp; KAS SURPLUS)`
+    : (res.tenorFit && res.simGP > 0
+      ? `&#10003; LAYAK BERSYARAT (SIKLUS &le; ${proj.scfTenorDays} HARI &amp; PELEPASAN KAS SURPLUS)`
+      : (res.simGP > 0
+        ? `&#9888; MISMATCH TENOR (SIKLUS ${res.simGrossCycle}h > ${proj.scfTenorDays}h &ndash; RISIKO DEFAULT SAAT JATUH TEMPO)`
+        : '&#10007; TIDAK LAYAK (GROSS LOSS &amp; DEFISIT KAS OPERASIONAL)'));
+
+  document.getElementById('stressTestResultPanel').innerHTML = `
+    <div style="background:${statusBg}; border:1.5px solid ${statusColor}; border-radius:8px; padding:0.65rem;">
+      <div style="font-size:0.66rem; font-weight:700; text-transform:uppercase; color:${statusColor};">Hasil Simulasi SWCM</div>
+      <div style="font-size:0.8rem; font-weight:800; color:${statusColor}; margin:0.1rem 0 0.45rem;">${statusLabel}</div>
+
+      <div class="grid-2" style="gap:0.35rem; margin-bottom:0.45rem;">
+        <div style="background:#fff; padding:0.35rem 0.5rem; border-radius:5px; border:1px solid var(--border-color);">
+          <div style="font-size:0.64rem; color:var(--text-muted);">Siklus Gross (DOI + DOR)</div>
+          <div style="font-size:0.9rem; font-weight:800; color:${res.tenorFit ? '#166534' : '#dc2626'};">
+            ${res.simGrossCycle} Hr ${res.tenorFit ? `&le; ${proj.scfTenorDays}h` : `> ${proj.scfTenorDays}h!`}
+          </div>
+          <div style="font-size:0.64rem; color:var(--text-muted);">CCC Bersih: <strong>${res.simCCC} Hr</strong></div>
+        </div>
+
+        <div style="background:#fff; padding:0.35rem 0.5rem; border-radius:5px; border:1px solid var(--border-color);">
+          <div style="font-size:0.64rem; color:var(--text-muted);">Pelepasan Kas Modal Kerja (&Delta;OWC)</div>
+          <div style="font-size:0.9rem; font-weight:800; color:${res.deltaOWC >= 0 ? '#166534' : '#dc2626'};">
+            ${res.deltaOWC >= 0 ? '+' : ''}${fmtRp(res.deltaOWC, true)}
+          </div>
+          <div style="font-size:0.64rem; color:var(--text-muted);">OWC: ${fmtRp(res.simOWC, true)}</div>
+        </div>
+
+        <div style="background:#fff; padding:0.35rem 0.5rem; border-radius:5px; border:1px solid var(--border-color);">
+          <div style="font-size:0.64rem; color:var(--text-muted);">Proyeksi Gross Profit &amp; EBT</div>
+          <div style="font-size:0.86rem; font-weight:800; color:${res.simGP >= 0 ? '#166534' : '#dc2626'};">
+            GP: ${fmtRp(res.simGP, true)}
+          </div>
+          <div style="font-size:0.66rem; color:${res.simEBT >= 0 ? '#166534' : '#dc2626'}; font-weight:700;">
+            EBT: ${fmtRp(res.simEBT, true)}
+          </div>
+        </div>
+
+        <div style="background:#fff; padding:0.35rem 0.5rem; border-radius:5px; border:1px solid var(--border-color);">
+          <div style="font-size:0.64rem; color:var(--text-muted);">Arus Kas Operasional &amp; DSCR</div>
+          <div style="font-size:0.86rem; font-weight:800; color:${res.operatingCashFlow >= 0 ? '#166534' : '#dc2626'};">
+            OCF: ${fmtRp(res.operatingCashFlow, true)}
+          </div>
+          <div style="font-size:0.66rem; font-weight:700;">
+            DSCR: <span style="color:${res.simDSCR >= 1.15 ? '#166534' : '#dc2626'};">${fmtNum(res.simDSCR, 2)}x</span>
+          </div>
+        </div>
+      </div>
+
+      <table class="data-table" style="background:#fff; border-radius:5px; overflow:hidden;">
+        <tbody>
+          <tr>
+            <td>Proyeksi Persediaan (${doi} hr) &amp; Piutang (${dor} hr)</td>
+            <td class="num-col">Inv: <strong>${fmtRp(res.simInv, true)}</strong> | AR: <strong>${fmtRp(res.simAR, true)}</strong></td>
+          </tr>
+          <tr>
+            <td>Proyeksi Utang Dagang (${dop} hr)</td>
+            <td class="num-col">AP: <strong>${fmtRp(res.simAP, true)}</strong></td>
+          </tr>
+          <tr>
+            <td>Shock Kurs (+${fxShock}%) &amp; Rusak Stok (${invHaircut}%)</td>
+            <td class="num-col" style="color:#dc2626;">-${fmtRp(res.fxExtraLiability + res.invWriteOff, true)}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  renderSWCMMatrixTable(proj, m);
+  setTimeout(() => {
+    enhanceGlossaryTerms(document.getElementById('tab-swcm'));
+  }, 60);
+}
+
+function renderSWCMMatrixTable(proj, m) {
+  const scenarios = [
+    {
+      name: `1. Baseline Audited ${m.yr2} (Status Quo)`,
+      params: { gpm: m.gpm23, doi: Math.round(m.doi23_365), dor: Math.round(m.dor23_365), dop: Math.round(m.dop23_365), revGrowth: 0, opexCut: 0, fxShock: 0, invHaircut: 0 }
+    },
+    {
+      name: `2. Sesuai Data Bank (${proj.claimedDOR}/${proj.claimedDOI}/${proj.claimedDOP} hr)`,
+      params: { gpm: m.gpm23, doi: proj.claimedDOI, dor: proj.claimedDOR, dop: proj.claimedDOP, revGrowth: 10, opexCut: 0, fxShock: 0, invHaircut: 0 }
+    },
+    {
+      name: '3. Stress Kurs (+10%) & Piutang Melambat',
+      params: { gpm: m.gpm23 - 3.5, doi: Math.min(350, Math.round(m.doi23_365 + 20)), dor: Math.min(150, Math.round(m.dor23_365 + 20)), dop: Math.max(10, Math.round(m.dop23_365 - 5)), revGrowth: -10, opexCut: 0, fxShock: 10, invHaircut: 10 }
+    },
+    {
+      name: '4. Severe Stress (Stok Rusak 20% + Stagflasi)',
+      params: { gpm: m.gpm23 - 7.0, doi: Math.min(360, Math.round(m.doi23_365 + 45)), dor: Math.min(150, Math.round(m.dor23_365 + 40)), dop: Math.max(10, Math.round(m.dop23_365 - 10)), revGrowth: -20, opexCut: -5, fxShock: 15, invHaircut: 20 }
+    },
+    {
+      name: '5. Skenario Turnaround / Mitigasi DCC-SWCM',
+      params: { gpm: Math.max(12.5, m.minRequiredGPM), doi: m.targetSafeDOI, dor: Math.min(45, Math.round(m.dor23_365)), dop: Math.max(70, proj.claimedDOP), revGrowth: 15, opexCut: m.gp23 < 0 ? 55 : 20, fxShock: 0, invHaircut: 0 }
+    }
+  ];
+
+  document.getElementById('swcmMatrixTable').innerHTML = `
+    <thead>
+      <tr>
+        <th>Skenario Simulasi SWCM</th>
+        <th class="num-col">GPM</th>
+        <th class="num-col">DOI+DOR</th>
+        <th class="num-col">CCC</th>
+        <th class="num-col">Gross Profit</th>
+        <th class="num-col">Pelepasan Kas (&Delta;OWC)</th>
+        <th class="num-col">DSCR</th>
+        <th>Status Kelayakan</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${scenarios.map((s) => {
+        const r = evaluateScenarioParams(proj, m, s.params);
+        let statusBadgeText = '';
+        let statusBadgeCls = '';
+        if (r.tenorFit && r.simGP > 0 && r.simDSCR >= 1.05 && (r.simEBT > 0 || r.deltaOWC > 0)) {
+          statusBadgeText = r.simEBT > 0 ? 'LAYAK (SELF-LIQUIDATING)' : 'LAYAK BERSYARAT (KAS SURPLUS)';
+          statusBadgeCls = r.simEBT > 0 ? 'grade-AA' : 'grade-A';
+        } else if (!r.tenorFit) {
+          statusBadgeText = `DEFAULT HARI KE-${proj.scfTenorDays} (MISMATCH TENOR)`;
+          statusBadgeCls = 'grade-C';
+        } else if (r.simGP <= 0) {
+          statusBadgeText = 'TIDAK LAYAK (GROSS LOSS)';
+          statusBadgeCls = 'grade-D';
+        } else {
+          statusBadgeText = 'PERLU PENYESUAIAN SKEMA';
+          statusBadgeCls = 'grade-B';
+        }
+
+        return `
+          <tr>
+            <td><strong>${s.name}</strong></td>
+            <td class="num-col" style="color:${s.params.gpm >= 0 ? '#166534' : '#dc2626'}; font-weight:700;">${fmtPct(s.params.gpm, 1)}</td>
+            <td class="num-col">${r.simGrossCycle}h ${r.tenorFit ? '&#10003;' : '&#10007;'}</td>
+            <td class="num-col">${r.simCCC}h</td>
+            <td class="num-col">${fmtRp(r.simGP, true)}</td>
+            <td class="num-col" style="color:${r.deltaOWC >= 0 ? '#166534' : '#dc2626'}; font-weight:700;">
+              ${r.deltaOWC >= 0 ? '+' : ''}${fmtRp(r.deltaOWC, true)}
+            </td>
+            <td class="num-col" style="font-weight:700;">${fmtNum(r.simDSCR, 2)}x</td>
+            <td>
+              <span class="grade-badge ${statusBadgeCls}">
+                ${statusBadgeText}
+              </span>
+            </td>
+          </tr>
+        `;
+      }).join('')}
+    </tbody>
+  `;
+}
+
+
+
 function renderCaseStudyQATab(proj, m) {
   const container = document.getElementById('caseStudyQAHTML');
   if (!container) return;
@@ -8646,11 +9435,19 @@ function switchTab(tabId) {
   document.querySelectorAll('.tab-pane').forEach((pane) => {
     pane.classList.toggle('active', pane.id === tabId);
   });
-  if (tabId === 'tab-report') {
-    const proj = getActiveProject();
-    if (proj) {
-      const m = computeDCCSWCM(proj);
-      renderPrintableReport(proj, m);
+  const proj = getActiveProject();
+  if (proj) {
+    const m = computeDCCSWCM(proj);
+    if (tabId === 'tab-report') {
+      try { renderPrintableReport(proj, m); } catch (e) { console.error('Error renderPrintableReport:', e); }
+    } else if (tabId === 'tab-case-qa') {
+      try { renderCaseStudyQATab(proj, m); } catch (e) { console.error('Error renderCaseStudyQATab:', e); }
+    } else if (tabId === 'tab-score') {
+      try { renderScoreCalculationTab(proj, m); } catch (e) { console.error('Error renderScoreCalculationTab:', e); }
+    } else if (tabId === 'tab-5c') {
+      try { render5CTab(proj, m); } catch (e) { console.error('Error render5CTab:', e); }
+    } else if (tabId === 'tab-ratios') {
+      try { renderRatiosTab(proj, m); } catch (e) { console.error('Error renderRatiosTab:', e); }
     }
   }
   setTimeout(() => {
@@ -9070,22 +9867,27 @@ function renderAll() {
 
   renderBanner(proj, m);
   populateFormInputs(proj);
-  renderDashboardTab(proj, m);
-  renderRatiosTab(proj, m);
-  renderCashFlowTab(proj, m);
-  renderDCCTab(proj, m);
-  renderBurnRateTab(proj, m);
-  syncSlidersWithCurrentProject(proj, m);
-  runStressSimulation();
-  renderGradeRiskTab(proj, m);
-  render5CTab(proj, m);
-  renderScoreCalculationTab(proj, m);
-  renderCaseStudyQATab(proj, m);
-  renderPrintableReport(proj, m);
-  renderGlobalGlossarySection();
+  try { renderDashboardTab(proj, m); } catch (e) { console.error('Error renderDashboardTab:', e); }
+  try { renderRatiosTab(proj, m); } catch (e) { console.error('Error renderRatiosTab:', e); }
+  try { renderCashFlowTab(proj, m); } catch (e) { console.error('Error renderCashFlowTab:', e); }
+  try { renderDCCTab(proj, m); } catch (e) { console.error('Error renderDCCTab:', e); }
+  try { renderBurnRateTab(proj, m); } catch (e) { console.error('Error renderBurnRateTab:', e); }
+  try { syncSlidersWithCurrentProject(proj, m); } catch (e) { console.error('Error syncSlidersWithCurrentProject:', e); }
+  try { runStressSimulation(); } catch (e) { console.error('Error runStressSimulation:', e); }
+  try { renderGradeRiskTab(proj, m); } catch (e) { console.error('Error renderGradeRiskTab:', e); }
+  try { render5CTab(proj, m); } catch (e) { console.error('Error render5CTab:', e); }
+  try { renderScoreCalculationTab(proj, m); } catch (e) { console.error('Error renderScoreCalculationTab:', e); }
+  try { renderCaseStudyQATab(proj, m); } catch (e) { console.error('Error renderCaseStudyQATab:', e); }
+  try { renderPrintableReport(proj, m); } catch (e) { console.error('Error renderPrintableReport:', e); }
+  try { renderGlobalGlossarySection(); } catch (e) { console.error('Error renderGlobalGlossarySection:', e); }
   setTimeout(() => {
     enhanceGlossaryTerms();
   }, 100);
+}
+
+if (typeof window !== 'undefined') {
+  window.ASKRINDO_5C_CATALOG = typeof ASKRINDO_5C_CATALOG !== 'undefined' ? ASKRINDO_5C_CATALOG : null;
+  window.ASKRINDO_RATIOS_CATALOG = typeof ASKRINDO_RATIOS_CATALOG !== 'undefined' ? ASKRINDO_RATIOS_CATALOG : null;
 }
 
 window.addEventListener('DOMContentLoaded', () => {

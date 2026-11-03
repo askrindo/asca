@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ASKRINDO SMART CREDIT ANALYSIS (ASCA)
  * Metode: Dynamic Cash Conversion & Stress-Tested Working Capital Model (DCC-SWCM)
  * Termasuk: Analisis Ketahanan Modal Kerja Bersih (Net Working Capital & Burn-Rate Test)
@@ -2127,10 +2127,10 @@ function markGoogleNewsItem(idx, targetStatus) {
 }
 
 // ============================================================================
-// 4A. KATALOG & AUTOMATION ENGINE 47-PARAMETER 5C UNDERWRITING ASKRINDO
-// Sumber: Petunjuk Teknis Akseptasi Surety Bond / PT. IDX Consulting - Tabel VII-1
-// Bobot Total: Character (20%), Rasio Keuangan (35%), Capacity (20%), Capability (6%),
-// Condition (9%), Collateral (10%) = 100% (1.000)
+// 4A. KATALOG & AUTOMATION ENGINE 39-PARAMETER KUALITATIF 5C UNDERWRITING ASKRINDO
+// Sumber: Petunjuk Teknis Akseptasi Askrindo / PT. IDX Consulting
+// Bobot Normal 5C: Character (30.8%), Capacity (30.8%), Capability (9.2%), Condition (13.8%), Collateral (15.4%) = 100%
+// Catatan: Rasio Keuangan dikalkulasi mandiri secara komprehensif pada Tab Rasio Keuangan.
 // ============================================================================
 
 const ASKRINDO_5C_CATALOG = [
@@ -2475,195 +2475,12 @@ const ASKRINDO_5C_CATALOG = [
     }
   },
 
-  // --- 2. RASIO KEUANGAN / CAPITAL (8 Parameters, Bobot 35% = 0.350) ---
-  {
-    id: 'r17_current_ratio',
-    num: 17,
-    category: 'rasio',
-    categoryLabel: '2. Rasio Keuangan',
-    weight: 0.040,
-    name: 'Current Ratio %',
-    desc: 'Kemampuan aktiva lancar memenuhi seluruh kewajiban jangka pendek (Aktiva Lancar / Hutang Lancar).',
-    options: [
-      { key: 'A', text: '>= 100%', score: 100 },
-      { key: 'B', text: '>= 75% s/d < 100%', score: 60 },
-      { key: 'C', text: '>= 0.1% s/d < 75%', score: 30 }
-    ],
-    evalAuto: (proj, m, f23, ctx) => {
-      if (ctx.isNoDebtCL) return { key: 'A', score: 100, reason: 'Bebas Hutang Lancar (Prima)' };
-      const crPct = (ctx.cr || 0) * 100;
-      if (crPct >= 100) return { key: 'A', score: 100, reason: `CR ${crPct.toFixed(1)}% (>=100%)` };
-      if (crPct >= 75) return { key: 'B', score: 60, reason: `CR ${crPct.toFixed(1)}% (75%-100%)` };
-      return { key: 'C', score: 30, reason: `CR ${crPct.toFixed(1)}% (<75%)` };
-    }
-  },
-  {
-    id: 'r18_quick_ratio',
-    num: 18,
-    category: 'rasio',
-    categoryLabel: '2. Rasio Keuangan',
-    weight: 0.040,
-    name: 'Quick Ratio %',
-    desc: 'Kemampuan aset paling likuid di luar persediaan memenuhi kewajiban lancar ((Aktiva Lancar - Persediaan) / Hutang Lancar).',
-    options: [
-      { key: 'A', text: '> 70%', score: 100 },
-      { key: 'B', text: '>= 60% s/d <= 70%', score: 80 },
-      { key: 'C', text: '> 50% s/d <= 60%', score: 60 },
-      { key: 'D', text: '> 40% s/d <= 50%', score: 40 },
-      { key: 'E', text: '<= 40%', score: 20 }
-    ],
-    evalAuto: (proj, m, f23, ctx) => {
-      if (ctx.isNoDebtCL) return { key: 'A', score: 100, reason: 'Bebas Hutang Lancar (Prima)' };
-      const qrPct = ctx.qrPct;
-      if (qrPct > 70) return { key: 'A', score: 100, reason: `QR ${qrPct.toFixed(1)}% (>70%)` };
-      if (qrPct >= 60) return { key: 'B', score: 80, reason: `QR ${qrPct.toFixed(1)}% (60%-70%)` };
-      if (qrPct > 50) return { key: 'C', score: 60, reason: `QR ${qrPct.toFixed(1)}% (50%-60%)` };
-      if (qrPct > 40) return { key: 'D', score: 40, reason: `QR ${qrPct.toFixed(1)}% (40%-50%)` };
-      return { key: 'E', score: 20, reason: `QR ${qrPct.toFixed(1)}% (<=40%)` };
-    }
-  },
-  {
-    id: 'r19_cash_ratio',
-    num: 19,
-    category: 'rasio',
-    categoryLabel: '2. Rasio Keuangan',
-    weight: 0.040,
-    name: 'Cash Ratio (total kas / hutang lancar) %',
-    desc: 'Kecukupan kas dan setara kas langsung untuk melunasi hutang lancar.',
-    options: [
-      { key: 'A', text: '> 70%', score: 100 },
-      { key: 'B', text: '>= 55% s/d <= 70%', score: 80 },
-      { key: 'C', text: '> 45% s/d <= 55%', score: 60 },
-      { key: 'D', text: '>= 30% s/d <= 45%', score: 40 },
-      { key: 'E', text: '<= 30%', score: 20 }
-    ],
-    evalAuto: (proj, m, f23, ctx) => {
-      if (ctx.isNoDebtCL) return { key: 'A', score: 100, reason: 'Bebas Hutang Lancar (Prima)' };
-      const cRatioPct = ctx.cashRatioPct;
-      if (cRatioPct > 70) return { key: 'A', score: 100, reason: `Cash Ratio ${cRatioPct.toFixed(1)}% (>70%)` };
-      if (cRatioPct >= 55) return { key: 'B', score: 80, reason: `Cash Ratio ${cRatioPct.toFixed(1)}% (55%-70%)` };
-      if (cRatioPct > 45) return { key: 'C', score: 60, reason: `Cash Ratio ${cRatioPct.toFixed(1)}% (45%-55%)` };
-      if (cRatioPct >= 30) return { key: 'D', score: 40, reason: `Cash Ratio ${cRatioPct.toFixed(1)}% (30%-45%)` };
-      return { key: 'E', score: 20, reason: `Cash Ratio ${cRatioPct.toFixed(1)}% (<=30%)` };
-    }
-  },
-  {
-    id: 'r20_roa',
-    num: 20,
-    category: 'rasio',
-    categoryLabel: '2. Rasio Keuangan',
-    weight: 0.040,
-    name: 'Return on Asset %',
-    desc: 'Efisiensi total aktiva dalam menghasilkan laba bersih setelah pajak.',
-    options: [
-      { key: 'A', text: '>= 3%', score: 100 },
-      { key: 'B', text: '>= 0.5% s/d < 3%', score: 60 },
-      { key: 'C', text: '>= 0.1% s/d < 0.5%', score: 30 }
-    ],
-    evalAuto: (proj, m, f23, ctx) => {
-      const roa = ctx.roa;
-      if (roa >= 3.0) return { key: 'A', score: 100, reason: `ROA ${roa.toFixed(2)}% (>=3%)` };
-      if (roa >= 0.5) return { key: 'B', score: 60, reason: `ROA ${roa.toFixed(2)}% (0.5%-3%)` };
-      return { key: 'C', score: 30, reason: `ROA ${roa.toFixed(2)}% (<0.5%)` };
-    }
-  },
-  {
-    id: 'r21_roe',
-    num: 21,
-    category: 'rasio',
-    categoryLabel: '2. Rasio Keuangan',
-    weight: 0.040,
-    name: 'Return on Equity %',
-    desc: 'Tingkat pengembalian keuntungan atas modal sendiri (ekuitas).',
-    options: [
-      { key: 'A', text: '>= 5%', score: 100 },
-      { key: 'B', text: '> 3% s/d <= 5%', score: 60 },
-      { key: 'C', text: '>= 0.1% s/d <= 3%', score: 30 }
-    ],
-    evalAuto: (proj, m, f23, ctx) => {
-      const roe = ctx.roe;
-      if (roe >= 5.0) return { key: 'A', score: 100, reason: `ROE ${roe.toFixed(2)}% (>=5%)` };
-      if (roe > 3.0) return { key: 'B', score: 60, reason: `ROE ${roe.toFixed(2)}% (3%-5%)` };
-      return { key: 'C', score: 30, reason: `ROE ${roe.toFixed(2)}% (<=3%)` };
-    }
-  },
-  {
-    id: 'r22_npm',
-    num: 22,
-    category: 'rasio',
-    categoryLabel: '2. Rasio Keuangan',
-    weight: 0.040,
-    name: 'Nett Profit Margin',
-    desc: 'Margin keuntungan bersih dari total omzet pendapatan usaha.',
-    options: [
-      { key: 'A', text: '>= 10%', score: 100 },
-      { key: 'B', text: '>= 5% s/d < 10%', score: 80 },
-      { key: 'C', text: '>= 3% s/d < 5%', score: 60 },
-      { key: 'D', text: '>= 1.5% s/d < 3%', score: 40 },
-      { key: 'E', text: '< 1.5%', score: 20 }
-    ],
-    evalAuto: (proj, m, f23, ctx) => {
-      const npm = ctx.npm;
-      if (npm >= 10.0) return { key: 'A', score: 100, reason: `NPM ${npm.toFixed(2)}% (>=10%)` };
-      if (npm >= 5.0) return { key: 'B', score: 80, reason: `NPM ${npm.toFixed(2)}% (5%-10%)` };
-      if (npm >= 3.0) return { key: 'C', score: 60, reason: `NPM ${npm.toFixed(2)}% (3%-5%)` };
-      if (npm >= 1.5) return { key: 'D', score: 40, reason: `NPM ${npm.toFixed(2)}% (1.5%-3%)` };
-      return { key: 'E', score: 20, reason: `NPM ${npm.toFixed(2)}% (<1.5%)` };
-    }
-  },
-  {
-    id: 'r23_der',
-    num: 23,
-    category: 'rasio',
-    categoryLabel: '2. Rasio Keuangan',
-    weight: 0.060,
-    name: 'Debt Equity Ratio (DER) %',
-    desc: 'Rasio leverage solvabilitas total hutang terhadap modal ekuitas.',
-    options: [
-      { key: 'A', text: '< 200%', score: 100 },
-      { key: 'B', text: '>= 200% s/d <= 300%', score: 75 },
-      { key: 'C', text: '> 300% s/d < 350%', score: 50 },
-      { key: 'D', text: '>= 350%', score: 25 }
-    ],
-    evalAuto: (proj, m, f23, ctx) => {
-      if (ctx.isZeroDebt) return { key: 'A', score: 100, reason: 'Bebas Hutang (DER 0,0%)' };
-      const derPct = ctx.der * 100;
-      if (derPct < 200) return { key: 'A', score: 100, reason: `DER ${derPct.toFixed(1)}% (<200%)` };
-      if (derPct <= 300) return { key: 'B', score: 75, reason: `DER ${derPct.toFixed(1)}% (200%-300%)` };
-      if (derPct < 350) return { key: 'C', score: 50, reason: `DER ${derPct.toFixed(1)}% (300%-350%)` };
-      return { key: 'D', score: 25, reason: `DER ${derPct.toFixed(1)}% (>=350%)` };
-    }
-  },
-  {
-    id: 'r24_dar',
-    num: 24,
-    category: 'rasio',
-    categoryLabel: '2. Rasio Keuangan',
-    weight: 0.050,
-    name: 'Rasio Utang terhadap Asset (DAR)',
-    desc: 'Porsi pembiayaan total aktiva yang bersumber dari hutang kewajiban.',
-    options: [
-      { key: 'A', text: '< 100%', score: 100 },
-      { key: 'B', text: '>= 100% s/d < 110%', score: 75 },
-      { key: 'C', text: '>= 110% s/d < 120%', score: 50 },
-      { key: 'D', text: '>= 120%', score: 25 }
-    ],
-    evalAuto: (proj, m, f23, ctx) => {
-      if (ctx.isZeroDebt) return { key: 'A', score: 100, reason: 'Bebas Hutang (DAR 0,0%)' };
-      const darPct = ctx.darPct;
-      if (darPct < 100) return { key: 'A', score: 100, reason: `DAR ${darPct.toFixed(1)}% (<100%)` };
-      if (darPct < 110) return { key: 'B', score: 75, reason: `DAR ${darPct.toFixed(1)}% (100%-110%)` };
-      if (darPct < 120) return { key: 'C', score: 50, reason: `DAR ${darPct.toFixed(1)}% (110%-120%)` };
-      return { key: 'D', score: 25, reason: `DAR ${darPct.toFixed(1)}% (>=120%)` };
-    }
-  },
-
-  // --- 3. CAPACITY (4 Parameters, Bobot 20% = 0.200) ---
+  // --- 2. CAPACITY (4 Parameters, Bobot 30.8% = 0.308) ---
   {
     id: 'cap25_arto_vs_apto',
-    num: 25,
+    num: 17,
     category: 'capacity',
-    categoryLabel: '3. Capacity',
+    categoryLabel: '2. Capacity',
     weight: 0.080,
     name: 'Account Receivable Turnover (ARTO) terhadap Account Payable Turnover (APTO)',
     desc: 'Kecepatan koleksi piutang usaha (DOR) dibandingkan tempo pelunasan hutang dagang supplier (DOP).',
@@ -2682,9 +2499,9 @@ const ASKRINDO_5C_CATALOG = [
   },
   {
     id: 'cap26_self_financing',
-    num: 26,
+    num: 18,
     category: 'capacity',
-    categoryLabel: '3. Capacity',
+    categoryLabel: '2. Capacity',
     weight: 0.010,
     name: 'Self Financing, Modal Internal',
     desc: 'Kekuatan penyertaan modal internal pemegang saham terhadap total aktiva (Ekuitas / Total Aset).',
@@ -2706,9 +2523,9 @@ const ASKRINDO_5C_CATALOG = [
   },
   {
     id: 'cap27_kondisi_keuangan',
-    num: 27,
+    num: 19,
     category: 'capacity',
-    categoryLabel: '3. Capacity',
+    categoryLabel: '2. Capacity',
     weight: 0.010,
     name: 'Kondisi Keuangan',
     desc: 'Stabilitas kesehatan keuangan menyeluruh berbasis profitabilitas dan kecukupan modal kerja riil.',
@@ -2727,9 +2544,9 @@ const ASKRINDO_5C_CATALOG = [
   },
   {
     id: 'cap28_profit_proyek',
-    num: 28,
+    num: 20,
     category: 'capacity',
-    categoryLabel: '3. Capacity',
+    categoryLabel: '2. Capacity',
     weight: 0.100,
     name: 'Apakah proyek/bisnis yg akan dibiayai menghasilkan profit?',
     desc: 'Kapasitas laba proyek menutup seluruh biaya operasional, bunga, dan pokok angsuran bank (DSCR >= 1.0x).',
@@ -2744,12 +2561,12 @@ const ASKRINDO_5C_CATALOG = [
     }
   },
 
-  // --- 4. CAPABILITY (3 Parameters, Bobot 6% = 0.060) ---
+  // --- 3. CAPABILITY (3 Parameters, Bobot 9.2% = 0.092) ---
   {
     id: 'cap29_tenaga_profesional',
-    num: 29,
+    num: 21,
     category: 'capability',
-    categoryLabel: '4. Capability',
+    categoryLabel: '3. Capability',
     weight: 0.020,
     name: 'Kondisi tenaga profesional dalam manajemen perusahaan dan pekerja yang berpengalaman',
     desc: 'Kompetensi tenaga profesional dan keahlian tenaga kerja (pengalaman minimal 2 tahun di bidang sejenis).',
@@ -2773,9 +2590,9 @@ const ASKRINDO_5C_CATALOG = [
   },
   {
     id: 'cap30_dukungan_supplier',
-    num: 30,
+    num: 22,
     category: 'capability',
-    categoryLabel: '4. Capability',
+    categoryLabel: '3. Capability',
     weight: 0.020,
     name: 'Bagaimana dukungan suplier dan ketersediaan bahan baku?',
     desc: 'Kepastian pasokan bahan baku dari supplier tetap dan kemudahan pemenuhan persediaan.',
@@ -2792,9 +2609,9 @@ const ASKRINDO_5C_CATALOG = [
   },
   {
     id: 'cap31_volume_transaksi_2thn',
-    num: 31,
+    num: 23,
     category: 'capability',
-    categoryLabel: '4. Capability',
+    categoryLabel: '3. Capability',
     weight: 0.020,
     name: 'Jumlah transaksi bisnis (volume) yang telah dijalankan atau Jumlah Proyek dalam 2 tahun terakhir',
     desc: 'Volume transaksi bisnis riil atau jumlah kontrak kerja/proyek yang diselesaikan dalam 2 tahun.',
@@ -2813,12 +2630,12 @@ const ASKRINDO_5C_CATALOG = [
     }
   },
 
-  // --- 5. CONDITION (8 Parameters, Bobot 9% = 0.090) ---
+  // --- 4. CONDITION (8 Parameters, Bobot 13.8% = 0.138) ---
   {
     id: 'cnd32_kelangsungan_usaha',
-    num: 32,
+    num: 24,
     category: 'condition',
-    categoryLabel: '5. Condition',
+    categoryLabel: '4. Condition',
     weight: 0.010,
     name: 'Kelangsungan Usaha',
     desc: 'Stabilitas kelangsungan operasional dan ketiadaan friksi ketenagakerjaan.',
@@ -2835,9 +2652,9 @@ const ASKRINDO_5C_CATALOG = [
   },
   {
     id: 'cnd33_strategi_jangka_panjang',
-    num: 33,
+    num: 25,
     category: 'condition',
-    categoryLabel: '5. Condition',
+    categoryLabel: '4. Condition',
     weight: 0.010,
     name: 'Strategi Jangka Panjang',
     desc: 'Keberadaan rencana kerja strategis (Pemasaran, Produksi, Keuangan).',
@@ -2854,9 +2671,9 @@ const ASKRINDO_5C_CATALOG = [
   },
   {
     id: 'cnd34_pengawasan_bisnis',
-    num: 34,
+    num: 26,
     category: 'condition',
-    categoryLabel: '5. Condition',
+    categoryLabel: '4. Condition',
     weight: 0.010,
     name: 'Pengawasan dan Pengendalian Bisnis',
     desc: 'Sistem monitoring pengendalian internal dan keterandalan informasi manajemen.',
@@ -2872,9 +2689,9 @@ const ASKRINDO_5C_CATALOG = [
   },
   {
     id: 'cnd35_perkembangan_usaha',
-    num: 35,
+    num: 27,
     category: 'condition',
-    categoryLabel: '5. Condition',
+    categoryLabel: '4. Condition',
     weight: 0.010,
     name: 'Perkembangan Usaha (jika ada cash flow projection selama 3 tahun kedepan/sesuai jangka waktu kredit)',
     desc: 'Arah tren pertumbuhan penjualan dan arus kas kedepan selama masa kredit.',
@@ -2892,9 +2709,9 @@ const ASKRINDO_5C_CATALOG = [
   },
   {
     id: 'cnd36_segmen_pasar',
-    num: 36,
+    num: 28,
     category: 'condition',
-    categoryLabel: '5. Condition',
+    categoryLabel: '4. Condition',
     weight: 0.010,
     name: 'Segmen Pasar (khusus sektor perdagangan)',
     desc: 'Tingkat kesesuaian target segmen pasar konsumen dengan varian produk debitur.',
@@ -2911,9 +2728,9 @@ const ASKRINDO_5C_CATALOG = [
   },
   {
     id: 'cnd37_kredit_take_over',
-    num: 37,
+    num: 29,
     category: 'condition',
-    categoryLabel: '5. Condition',
+    categoryLabel: '4. Condition',
     weight: 0.020,
     name: 'Apakah Kredit yang akan diasuransikan merupakan kredit take over',
     desc: 'Identifikasi apakah fasilitas kredit merupakan take over dari bank lain atau fasilitas kredit baru.',
@@ -2930,9 +2747,9 @@ const ASKRINDO_5C_CATALOG = [
   },
   {
     id: 'cnd38_npl_sektor_ojk',
-    num: 38,
+    num: 30,
     category: 'condition',
-    categoryLabel: '5. Condition',
+    categoryLabel: '4. Condition',
     weight: 0.010,
     name: 'NPL Sektor Kredit berdasarkan OJK',
     desc: 'Tingkat rasio kredit bermasalah (Non-Performing Loan) industri berdasarkan statistik resmi OJK.',
@@ -2952,9 +2769,9 @@ const ASKRINDO_5C_CATALOG = [
   },
   {
     id: 'cnd39_pangsa_pasar',
-    num: 39,
+    num: 31,
     category: 'condition',
-    categoryLabel: '5. Condition',
+    categoryLabel: '4. Condition',
     weight: 0.010,
     name: 'Pangsa (konsumen) dan persaingan pasar (khusus sektor perdagangan)',
     desc: 'Cakupan jangkauan wilayah distribusi dan penetrasi pasar konsumen debitur.',
@@ -2972,12 +2789,12 @@ const ASKRINDO_5C_CATALOG = [
     }
   },
 
-  // --- 6. COLLATERAL (8 Parameters, Bobot 10% = 0.100) ---
+  // --- 5. COLLATERAL (8 Parameters, Bobot 15.4% = 0.154) ---
   {
     id: 'col40_rasio_agunan',
-    num: 40,
+    num: 32,
     category: 'collateral',
-    categoryLabel: '6. Collateral',
+    categoryLabel: '5. Collateral',
     weight: 0.010,
     name: 'Rasio Agunan Keseluruhan (Fixed asset dan Non Fixed Asset) Dibandingkan Nilai Kredit',
     desc: 'Coverage total agunan pokok dan jaminan tambahan terhadap total plafond kredit.',
@@ -2999,9 +2816,9 @@ const ASKRINDO_5C_CATALOG = [
   },
   {
     id: 'col41_sop_agunan',
-    num: 41,
+    num: 33,
     category: 'collateral',
-    categoryLabel: '6. Collateral',
+    categoryLabel: '5. Collateral',
     weight: 0.020,
     name: 'Nilai Jaminan sesuai dengan ketentuan minimum SOP',
     desc: 'Kesesuaian nilai jaminan terhadap ambang batas batas minimal ketentuan SOP penjaminan.',
@@ -3017,9 +2834,9 @@ const ASKRINDO_5C_CATALOG = [
   },
   {
     id: 'col42_laporan_appraisal',
-    num: 42,
+    num: 34,
     category: 'collateral',
-    categoryLabel: '6. Collateral',
+    categoryLabel: '5. Collateral',
     weight: 0.004,
     name: 'Laporan Penilaian Agunan',
     desc: 'Ketersediaan Laporan Penilaian KJPP independen dan masa berlaku penilaian agunan.',
@@ -3038,9 +2855,9 @@ const ASKRINDO_5C_CATALOG = [
   },
   {
     id: 'col43_kemudahan_likuiditas',
-    num: 43,
+    num: 35,
     category: 'collateral',
-    categoryLabel: '6. Collateral',
+    categoryLabel: '5. Collateral',
     weight: 0.004,
     name: 'Kemudahan Likuiditas, disesuaikan dengan jenis agunan dan lokasi agunan',
     desc: 'Marketabilitas agunan dan kemudahan konversi jaminan menjadi likuiditas tunai.',
@@ -3055,9 +2872,9 @@ const ASKRINDO_5C_CATALOG = [
   },
   {
     id: 'col44_pengikatan_agunan',
-    num: 44,
+    num: 36,
     category: 'collateral',
-    categoryLabel: '6. Collateral',
+    categoryLabel: '5. Collateral',
     weight: 0.004,
     name: 'Pengikatan Agunan sempurna sesuai ketentuan',
     desc: 'Legalitas pengikatan yuridis agunan secara sempurna (Hak Tanggungan Peringkat I / Fidusia Notariil terdaftar Kemenkumham).',
@@ -3071,9 +2888,9 @@ const ASKRINDO_5C_CATALOG = [
   },
   {
     id: 'col45_status_kepemilikan',
-    num: 45,
+    num: 37,
     category: 'collateral',
-    categoryLabel: '6. Collateral',
+    categoryLabel: '5. Collateral',
     weight: 0.004,
     name: 'Status Kepemilikan',
     desc: 'Subjek hukum pemegang hak kepemilikan sertifikat/dokumen agunan.',
@@ -3092,9 +2909,9 @@ const ASKRINDO_5C_CATALOG = [
   },
   {
     id: 'col46_keperluan_agunan_tambahan',
-    num: 46,
+    num: 38,
     category: 'collateral',
-    categoryLabel: '6. Collateral',
+    categoryLabel: '5. Collateral',
     weight: 0.004,
     name: 'Keperluan Agunan Tambahan',
     desc: 'Kecukupan penyerahan fixed asset tambahan terhadap mitigasi risiko penjaminan kredit.',
@@ -3113,9 +2930,9 @@ const ASKRINDO_5C_CATALOG = [
   },
   {
     id: 'col47_dukungan_reasuransi',
-    num: 47,
+    num: 39,
     category: 'collateral',
-    categoryLabel: '6. Collateral',
+    categoryLabel: '5. Collateral',
     weight: 0.050,
     name: 'Apakah terdapat Dukungan Reasuransi (treaty/fakultatif)',
     desc: 'Ketersediaan retrofesi dan kapasitas treaty penjaminan reasuransi PT Askrindo.',
@@ -3217,32 +3034,32 @@ function compute5CAnalysis(proj, f23 = {}, m = null) {
   let totalScoreRaw = 0;
   const categorySums = {
     character: 0,
-    rasio: 0,
     capacity: 0,
     capability: 0,
     condition: 0,
     collateral: 0
   };
   const categoryWeights = {
-    character: 0.20,
-    rasio: 0.35,
-    capacity: 0.20,
-    capability: 0.06,
-    condition: 0.09,
-    collateral: 0.10
+    character: 0.20 / 0.65,
+    capacity: 0.20 / 0.65,
+    capability: 0.06 / 0.65,
+    condition: 0.09 / 0.65,
+    collateral: 0.10 / 0.65
   };
 
   const evaluatedParams = ASKRINDO_5C_CATALOG.map((p) => {
+    // Normalisasi bobot agar 39 parameter 5C kualitatif berjumlah 100% (1.000)
+    const normWeight = p.weight / 0.65;
     const autoRes = p.evalAuto(proj, m, f23, evalContext);
     const isOverridden = overrides[p.id] !== undefined && overrides[p.id] !== null && overrides[p.id] !== '';
     const chosenKey = isOverridden ? overrides[p.id] : autoRes.key;
     const opt = p.options.find((o) => o.key === chosenKey) || p.options[0];
     const score = opt.score;
-    const weightedScore = Number((score * p.weight).toFixed(3));
+    const weightedScore = Number((score * normWeight).toFixed(3));
 
-    totalScoreRaw += score * p.weight;
+    totalScoreRaw += score * normWeight;
     if (categorySums[p.category] !== undefined) {
-      categorySums[p.category] += score * p.weight;
+      categorySums[p.category] += score * normWeight;
     }
 
     return {
@@ -3250,8 +3067,8 @@ function compute5CAnalysis(proj, f23 = {}, m = null) {
       num: p.num,
       category: p.category,
       categoryLabel: p.categoryLabel,
-      weight: p.weight,
-      weightPct: Number((p.weight * 100).toFixed(1)),
+      weight: normWeight,
+      weightPct: Number((normWeight * 100).toFixed(1)),
       name: p.name,
       desc: p.desc,
       options: p.options,
@@ -3271,7 +3088,6 @@ function compute5CAnalysis(proj, f23 = {}, m = null) {
   // Category scores normalized to 100
   const categoryScores = {
     character: Math.round(categorySums.character / categoryWeights.character),
-    rasio: Math.round(categorySums.rasio / categoryWeights.rasio),
     capacity: Math.round(categorySums.capacity / categoryWeights.capacity),
     capability: Math.round(categorySums.capability / categoryWeights.capability),
     condition: Math.round(categorySums.condition / categoryWeights.condition),
@@ -3280,7 +3096,6 @@ function compute5CAnalysis(proj, f23 = {}, m = null) {
 
   const categoryWeighted = {
     character: Number(categorySums.character.toFixed(2)),
-    rasio: Number(categorySums.rasio.toFixed(2)),
     capacity: Number(categorySums.capacity.toFixed(2)),
     capability: Number(categorySums.capability.toFixed(2)),
     condition: Number(categorySums.condition.toFixed(2)),
@@ -3289,7 +3104,7 @@ function compute5CAnalysis(proj, f23 = {}, m = null) {
 
   // Populate legacy backward-compatible properties
   const charScore = categoryScores.character;
-  const capitScore = categoryScores.rasio;
+  const capitScore = 0;
   const capScore = categoryScores.capacity;
   const condScore = categoryScores.condition;
   const collScore = categoryScores.collateral;
@@ -4840,7 +4655,7 @@ function resetAll5CParametersToAuto() {
   proj.fiveCOverrides = {};
   saveProjectsToStorage();
   renderAll();
-  showToast('Seluruh 47 parameter Analisa 5C berhasil dikembalikan ke perhitungan otomatis sistem!');
+  showToast('Seluruh 39 parameter Analisa 5C berhasil dikembalikan ke perhitungan otomatis sistem!');
 }
 
 let active5CCategoryFilter = 'all';
@@ -4873,7 +4688,7 @@ function filter5CTable(category) {
 
   const countBadge = document.getElementById('countVisible5CParams');
   if (countBadge) {
-    countBadge.textContent = `Menampilkan ${visibleCount} dari 47 Parameter`;
+    countBadge.textContent = `Menampilkan ${visibleCount} dari 39 Parameter`;
   }
 }
 
@@ -4906,8 +4721,8 @@ function render5CTab(proj, m) {
   };
 
   const gradeMeta = getGradeMetadataByScore(fiveC.totalScore);
-  const catScores = fiveC.categoryScores || { character: 80, rasio: 80, capacity: 80, capability: 80, condition: 80, collateral: 80 };
-  const catWeighted = fiveC.categoryWeighted || { character: 16, rasio: 28, capacity: 16, capability: 4.8, condition: 7.2, collateral: 8.0 };
+  const catScores = fiveC.categoryScores || { character: 80, capacity: 80, capability: 80, condition: 80, collateral: 80 };
+  const catWeighted = fiveC.categoryWeighted || { character: 24.6, capacity: 24.6, capability: 7.4, condition: 11.1, collateral: 12.3 };
 
   const getScoreColor = (sc) => {
     if (sc >= 80) return '#10b981';
@@ -4922,7 +4737,7 @@ function render5CTab(proj, m) {
         <div>
           <div class="card-title">Modul Analisa 5C Underwriting (${proj.companyName})</div>
           <p style="font-size:0.71rem; color:var(--text-muted); margin:0.15rem 0 0;">
-            Model Evaluasi Resmi 47-Parameter Petunjuk Teknis Akseptasi Askrindo / PT. IDX Consulting (Tabel VII-1 Rating Akseptasi). Perhitungan 100% Otomatis Berbasis Data Riil dengan Opsi Override Analis.
+            Model Evaluasi 39-Parameter Kualitatif &amp; Operasional 5C Underwriting Askrindo (Character, Capacity, Capability, Condition, Collateral). Untuk analisa rasio keuangan, silakan lihat tab Rasio Keuangan.
           </p>
         </div>
         <div style="display:flex; gap:0.4rem; align-items:center; flex-wrap:wrap;">
@@ -4935,24 +4750,24 @@ function render5CTab(proj, m) {
           <span style="font-size:0.7rem; font-weight:800; background:#e0f2fe; color:#0369a1; padding:3px 8px; border-radius:6px; border:1px solid #bae6fd;">
             Pilar 2 ASCA: ${fiveC.totalScore10} / 10 Poin
           </span>
-          <button class="btn btn-outline btn-sm" onclick="resetAll5CParametersToAuto()" title="Reset seluruh 47 parameter ke kalkulasi otomatis data">
+          <button class="btn btn-outline btn-sm" onclick="resetAll5CParametersToAuto()" title="Reset seluruh 39 parameter ke kalkulasi otomatis data">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:4px;"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
             Reset ke Otomatis Sistem
           </button>
         </div>
       </div>
 
-      <!-- 6 CATEGORY EXECUTIVE SUMMARY CARDS -->
+      <!-- 5 CATEGORY EXECUTIVE SUMMARY CARDS -->
       <div class="fivec-summary-grid">
         <!-- 1. Character -->
         <div class="fivec-cat-card" style="border-top: 3.5px solid #0284c7;">
           <div>
             <div style="display:flex; justify-content:space-between; align-items:center;">
-              <span style="font-size:0.76rem; font-weight:800; color:var(--askrindo-navy);">1. Character (20%)</span>
+              <span style="font-size:0.76rem; font-weight:800; color:var(--askrindo-navy);">1. Character (30.8%)</span>
               <span style="font-size:0.78rem; font-weight:800; color:${getScoreColor(catScores.character)};">${catScores.character} / 100</span>
             </div>
             <div style="font-size:0.67rem; color:var(--text-muted); margin-top:2px;">
-              Kontribusi Tertimbang: <strong>${catWeighted.character.toFixed(2)}</strong> / 20.00 Poin (16 Parameter)
+              Kontribusi Tertimbang: <strong>${catWeighted.character.toFixed(2)}</strong> / 30.77 Poin (16 Parameter)
             </div>
             <div class="fivec-progress-track">
               <div class="fivec-progress-fill" style="width:${catScores.character}%; background:${getScoreColor(catScores.character)};"></div>
@@ -4966,37 +4781,15 @@ function render5CTab(proj, m) {
           </div>
         </div>
 
-        <!-- 2. Rasio Keuangan / Capital -->
-        <div class="fivec-cat-card" style="border-top: 3.5px solid #10b981;">
-          <div>
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <span style="font-size:0.76rem; font-weight:800; color:var(--askrindo-navy);">2. Rasio Keuangan (35%)</span>
-              <span style="font-size:0.78rem; font-weight:800; color:${getScoreColor(catScores.rasio)};">${catScores.rasio} / 100</span>
-            </div>
-            <div style="font-size:0.67rem; color:var(--text-muted); margin-top:2px;">
-              Kontribusi Tertimbang: <strong>${catWeighted.rasio.toFixed(2)}</strong> / 35.00 Poin (8 Parameter)
-            </div>
-            <div class="fivec-progress-track">
-              <div class="fivec-progress-fill" style="width:${catScores.rasio}%; background:${getScoreColor(catScores.rasio)};"></div>
-            </div>
-            <div style="font-size:0.64rem; color:#475569; line-height:1.4;">
-              &bull; Current Ratio: <strong>${m.currentRatio23 ? m.currentRatio23.toFixed(2) + 'x' : 'Bebas Hutang'}</strong><br/>
-              &bull; DER: <strong>${m.der23 !== null && m.der23 !== undefined ? (m.der23 * 100).toFixed(0) + '%' : '0%'}</strong><br/>
-              &bull; ROA: <strong>${m.roa23 !== undefined ? m.roa23.toFixed(1) + '%' : '0%'}</strong> &bull; ROE: <strong>${m.roe23 !== undefined ? m.roe23.toFixed(1) + '%' : '0%'}</strong><br/>
-              &bull; Cash Ratio &amp; QR: <strong>Likuiditas Terpenuhi</strong>
-            </div>
-          </div>
-        </div>
-
-        <!-- 3. Capacity -->
+        <!-- 2. Capacity -->
         <div class="fivec-cat-card" style="border-top: 3.5px solid #6366f1;">
           <div>
             <div style="display:flex; justify-content:space-between; align-items:center;">
-              <span style="font-size:0.76rem; font-weight:800; color:var(--askrindo-navy);">3. Capacity (20%)</span>
+              <span style="font-size:0.76rem; font-weight:800; color:var(--askrindo-navy);">2. Capacity (30.8%)</span>
               <span style="font-size:0.78rem; font-weight:800; color:${getScoreColor(catScores.capacity)};">${catScores.capacity} / 100</span>
             </div>
             <div style="font-size:0.67rem; color:var(--text-muted); margin-top:2px;">
-              Kontribusi Tertimbang: <strong>${catWeighted.capacity.toFixed(2)}</strong> / 20.00 Poin (4 Parameter)
+              Kontribusi Tertimbang: <strong>${catWeighted.capacity.toFixed(2)}</strong> / 30.77 Poin (4 Parameter)
             </div>
             <div class="fivec-progress-track">
               <div class="fivec-progress-fill" style="width:${catScores.capacity}%; background:${getScoreColor(catScores.capacity)};"></div>
@@ -5010,15 +4803,15 @@ function render5CTab(proj, m) {
           </div>
         </div>
 
-        <!-- 4. Capability -->
+        <!-- 3. Capability -->
         <div class="fivec-cat-card" style="border-top: 3.5px solid #f59e0b;">
           <div>
             <div style="display:flex; justify-content:space-between; align-items:center;">
-              <span style="font-size:0.76rem; font-weight:800; color:var(--askrindo-navy);">4. Capability (6%)</span>
+              <span style="font-size:0.76rem; font-weight:800; color:var(--askrindo-navy);">3. Capability (9.2%)</span>
               <span style="font-size:0.78rem; font-weight:800; color:${getScoreColor(catScores.capability)};">${catScores.capability} / 100</span>
             </div>
             <div style="font-size:0.67rem; color:var(--text-muted); margin-top:2px;">
-              Kontribusi Tertimbang: <strong>${catWeighted.capability.toFixed(2)}</strong> / 6.00 Poin (3 Parameter)
+              Kontribusi Tertimbang: <strong>${catWeighted.capability.toFixed(2)}</strong> / 9.23 Poin (3 Parameter)
             </div>
             <div class="fivec-progress-track">
               <div class="fivec-progress-fill" style="width:${catScores.capability}%; background:${getScoreColor(catScores.capability)};"></div>
@@ -5031,21 +4824,21 @@ function render5CTab(proj, m) {
           </div>
         </div>
 
-        <!-- 5. Condition -->
+        <!-- 4. Condition -->
         <div class="fivec-cat-card" style="border-top: 3.5px solid #ec4899;">
           <div>
             <div style="display:flex; justify-content:space-between; align-items:center;">
-              <span style="font-size:0.76rem; font-weight:800; color:var(--askrindo-navy);">5. Condition (9%)</span>
+              <span style="font-size:0.76rem; font-weight:800; color:var(--askrindo-navy);">4. Condition (13.8%)</span>
               <span style="font-size:0.78rem; font-weight:800; color:${getScoreColor(catScores.condition)};">${catScores.condition} / 100</span>
             </div>
             <div style="font-size:0.67rem; color:var(--text-muted); margin-top:2px;">
-              Kontribusi Tertimbang: <strong>${catWeighted.condition.toFixed(2)}</strong> / 9.00 Poin (8 Parameter)
+              Kontribusi Tertimbang: <strong>${catWeighted.condition.toFixed(2)}</strong> / 13.85 Poin (8 Parameter)
             </div>
             <div class="fivec-progress-track">
               <div class="fivec-progress-fill" style="width:${catScores.condition}%; background:${getScoreColor(catScores.condition)};"></div>
             </div>
             <div style="font-size:0.64rem; color:#475569; line-height:1.4;">
-              &bull; Kelangsungan: <strong>Nihil Masalah Tenaga Kerja</strong><br/>
+              &bull; Kelangsungan: <strong>Nihil Masalah Ketenagakerjaan</strong><br/>
               &bull; Skema: <strong>${proj.isTakeOverCredit ? 'Kredit Take Over' : 'Kredit Baru'}</strong><br/>
               &bull; NPL Sektor OJK: <strong>${typeof proj.sectorNpl === 'number' ? proj.sectorNpl : '2.4'}% (Sehat)</strong><br/>
               &bull; Cakupan Pasar: <strong>${isMaritimeOrImportRisk(proj) ? 'Impor Valas / Nasional' : 'Distribusi Domestik'}</strong>
@@ -5053,15 +4846,15 @@ function render5CTab(proj, m) {
           </div>
         </div>
 
-        <!-- 6. Collateral -->
+        <!-- 5. Collateral -->
         <div class="fivec-cat-card" style="border-top: 3.5px solid #0d9488;">
           <div>
             <div style="display:flex; justify-content:space-between; align-items:center;">
-              <span style="font-size:0.76rem; font-weight:800; color:var(--askrindo-navy);">6. Collateral (10%)</span>
+              <span style="font-size:0.76rem; font-weight:800; color:var(--askrindo-navy);">5. Collateral (15.4%)</span>
               <span style="font-size:0.78rem; font-weight:800; color:${getScoreColor(catScores.collateral)};">${catScores.collateral} / 100</span>
             </div>
             <div style="font-size:0.67rem; color:var(--text-muted); margin-top:2px;">
-              Kontribusi Tertimbang: <strong>${catWeighted.collateral.toFixed(2)}</strong> / 10.00 Poin (8 Parameter)
+              Kontribusi Tertimbang: <strong>${catWeighted.collateral.toFixed(2)}</strong> / 15.38 Poin (8 Parameter)
             </div>
             <div class="fivec-progress-track">
               <div class="fivec-progress-fill" style="width:${catScores.collateral}%; background:${getScoreColor(catScores.collateral)};"></div>
@@ -5162,38 +4955,35 @@ function render5CTab(proj, m) {
         </div>
       </div>
 
-      <!-- 47-PARAMETER INTERACTIVE EVALUATION TABLE -->
+      <!-- 39-PARAMETER INTERACTIVE EVALUATION TABLE -->
       <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
         <!-- Table Toolbar -->
         <div style="padding:0.65rem 0.85rem; background:#f8fafc; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
           <div style="display:flex; align-items:center; gap:0.35rem; flex-wrap:wrap;">
             <button type="button" class="filter-pill-5c active" data-cat="all" onclick="filter5CTable('all')">
-              Semua (47)
+              Semua (39)
             </button>
             <button type="button" class="filter-pill-5c" data-cat="character" onclick="filter5CTable('character')">
               1. Character (16)
             </button>
-            <button type="button" class="filter-pill-5c" data-cat="rasio" onclick="filter5CTable('rasio')">
-              2. Rasio Keuangan (8)
-            </button>
             <button type="button" class="filter-pill-5c" data-cat="capacity" onclick="filter5CTable('capacity')">
-              3. Capacity (4)
+              2. Capacity (4)
             </button>
             <button type="button" class="filter-pill-5c" data-cat="capability" onclick="filter5CTable('capability')">
-              4. Capability (3)
+              3. Capability (3)
             </button>
             <button type="button" class="filter-pill-5c" data-cat="condition" onclick="filter5CTable('condition')">
-              5. Condition (8)
+              4. Condition (8)
             </button>
             <button type="button" class="filter-pill-5c" data-cat="collateral" onclick="filter5CTable('collateral')">
-              6. Collateral (8)
+              5. Collateral (8)
             </button>
           </div>
 
           <div style="display:flex; align-items:center; gap:0.5rem;">
             <input type="text" id="inp_search5c" class="form-control" style="font-size:0.72rem; padding:3px 8px; width:180px;" placeholder="Cari nama parameter..." oninput="filter5CTable()" />
             <span id="countVisible5CParams" style="font-size:0.68rem; font-weight:700; color:#64748b; white-space:nowrap;">
-              Menampilkan 47 dari 47 Parameter
+              Menampilkan 39 dari 39 Parameter
             </span>
           </div>
         </div>
@@ -6357,6 +6147,340 @@ function saveCustomNotes(val) {
   renderPrintableReport(proj, m);
 }
 
+// ============================================================================
+// 9B. KATALOG & ENGINE SKORING RASIO KEUANGAN ASKRINDO
+// Sumber: Petunjuk Teknis Akseptasi Askrindo / PT. IDX Consulting - Tabel VII-1 (Rasio Keuangan)
+// Komposit Bobot: 8 Rasio Finansial Utama = 100% (1.000)
+// ============================================================================
+
+const ASKRINDO_RATIOS_CATALOG = [
+  {
+    id: 'r_cr',
+    num: 1,
+    name: 'Current Ratio (CR) %',
+    category: 'Likuiditas',
+    formula: '(Aset Lancar / Kewajiban Lancar) × 100%',
+    racStd: '≥ 100,00%',
+    desc: 'Kemampuan aktiva lancar memenuhi seluruh kewajiban jangka pendek.',
+    weight: 0.15,
+    weightPct: 15,
+    options: [
+      { key: 'A', text: '≥ 100% (Memenuhi Standar RAC)', score: 100, passRac: true },
+      { key: 'B', text: '≥ 75% s/d < 100% (Di Bawah Standar RAC)', score: 60, passRac: false },
+      { key: 'C', text: '< 75% (Likuiditas Sangat Ketat)', score: 30, passRac: false }
+    ],
+    evalAuto: (proj, m, f23, ctx) => {
+      if (ctx.isNoDebtCL) return { key: 'A', score: 100, reason: 'Bebas Hutang Lancar (Prima)', val: null, valStr: 'N/A (Bebas Utang)' };
+      const crPct = (ctx.cr || 0) * 100;
+      const valStr = `${crPct.toFixed(2)}%`;
+      if (crPct >= 100) return { key: 'A', score: 100, reason: `CR ${valStr} memenuhi standar RAC (≥ 100%)`, val: crPct, valStr };
+      if (crPct >= 75) return { key: 'B', score: 60, reason: `CR ${valStr} di bawah standar RAC (75%-100%)`, val: crPct, valStr };
+      return { key: 'C', score: 30, reason: `CR ${valStr} sangat ketat (< 75%)`, val: crPct, valStr };
+    }
+  },
+  {
+    id: 'r_qr',
+    num: 2,
+    name: 'Quick Ratio (QR) %',
+    category: 'Likuiditas',
+    formula: '((Aset Lancar - Persediaan) / Kewajiban Lancar) × 100%',
+    racStd: '≥ 60,00%',
+    desc: 'Kemampuan aset paling likuid di luar persediaan memenuhi kewajiban lancar.',
+    weight: 0.15,
+    weightPct: 15,
+    options: [
+      { key: 'A', text: '> 70% (Likuiditas Prima)', score: 100, passRac: true },
+      { key: 'B', text: '≥ 60% s/d ≤ 70% (Memenuhi RAC)', score: 80, passRac: true },
+      { key: 'C', text: '> 50% s/d ≤ 60% (Sedang)', score: 60, passRac: false },
+      { key: 'D', text: '> 40% s/d ≤ 50% (Ketat)', score: 40, passRac: false },
+      { key: 'E', text: '≤ 40% (Sangat Rentan)', score: 20, passRac: false }
+    ],
+    evalAuto: (proj, m, f23, ctx) => {
+      if (ctx.isNoDebtCL) return { key: 'A', score: 100, reason: 'Bebas Hutang Lancar (Prima)', val: null, valStr: 'N/A' };
+      const qrPct = ctx.qrPct;
+      const valStr = `${qrPct.toFixed(2)}%`;
+      if (qrPct > 70) return { key: 'A', score: 100, reason: `QR ${valStr} (> 70%) - Sangat Likuid`, val: qrPct, valStr };
+      if (qrPct >= 60) return { key: 'B', score: 80, reason: `QR ${valStr} (60%-70%) - Cukup`, val: qrPct, valStr };
+      if (qrPct > 50) return { key: 'C', score: 60, reason: `QR ${valStr} (50%-60%) - Agak Ketat`, val: qrPct, valStr };
+      if (qrPct > 40) return { key: 'D', score: 40, reason: `QR ${valStr} (40%-50%) - Ketat`, val: qrPct, valStr };
+      return { key: 'E', score: 20, reason: `QR ${valStr} (≤ 40%) - Sangat Rentan`, val: qrPct, valStr };
+    }
+  },
+  {
+    id: 'r_cash',
+    num: 3,
+    name: 'Cash Ratio %',
+    category: 'Likuiditas',
+    formula: '(Kas & Setara Kas / Kewajiban Lancar) × 100%',
+    racStd: '≥ 30,00%',
+    desc: 'Kecukupan kas langsung untuk melunasi kewajiban jangka pendek tanpa menunggu penjualan stok/piutang.',
+    weight: 0.10,
+    weightPct: 10,
+    options: [
+      { key: 'A', text: '> 70% (Kas Sangat Berlimpah)', score: 100, passRac: true },
+      { key: 'B', text: '≥ 55% s/d ≤ 70%', score: 80, passRac: true },
+      { key: 'C', text: '> 45% s/d ≤ 55%', score: 60, passRac: true },
+      { key: 'D', text: '≥ 30% s/d ≤ 45% (Batas Aman)', score: 40, passRac: true },
+      { key: 'E', text: '< 30% (Penyangga Kas Tipis)', score: 20, passRac: false }
+    ],
+    evalAuto: (proj, m, f23, ctx) => {
+      if (ctx.isNoDebtCL) return { key: 'A', score: 100, reason: 'Bebas Hutang Lancar (Prima)', val: null, valStr: 'N/A' };
+      const cRatioPct = ctx.cashRatioPct;
+      const valStr = `${cRatioPct.toFixed(2)}%`;
+      if (cRatioPct > 70) return { key: 'A', score: 100, reason: `Cash Ratio ${valStr} (> 70%) - Prima`, val: cRatioPct, valStr };
+      if (cRatioPct >= 55) return { key: 'B', score: 80, reason: `Cash Ratio ${valStr} (55%-70%)`, val: cRatioPct, valStr };
+      if (cRatioPct > 45) return { key: 'C', score: 60, reason: `Cash Ratio ${valStr} (45%-55%)`, val: cRatioPct, valStr };
+      if (cRatioPct >= 30) return { key: 'D', score: 40, reason: `Cash Ratio ${valStr} (30%-45%)`, val: cRatioPct, valStr };
+      return { key: 'E', score: 20, reason: `Cash Ratio ${valStr} (< 30%) - Penyangga kas tipis`, val: cRatioPct, valStr };
+    }
+  },
+  {
+    id: 'r_der',
+    num: 4,
+    name: 'Debt to Equity Ratio (DER) %',
+    category: 'Solvabilitas',
+    formula: '(Total Kewajiban / Total Ekuitas) × 100%',
+    racStd: '≤ 400,00%',
+    desc: 'Rasio leverage solvabilitas total hutang terhadap modal ekuitas.',
+    weight: 0.15,
+    weightPct: 15,
+    options: [
+      { key: 'A', text: '< 200% (Leverage Rendah / Prima)', score: 100, passRac: true },
+      { key: 'B', text: '≥ 200% s/d ≤ 300% (Memenuhi RAC)', score: 75, passRac: true },
+      { key: 'C', text: '> 300% s/d ≤ 400% (Batas Toleransi RAC)', score: 50, passRac: true },
+      { key: 'D', text: '> 400% (Melampaui Batas Maksimum RAC)', score: 25, passRac: false }
+    ],
+    evalAuto: (proj, m, f23, ctx) => {
+      if (ctx.isZeroDebt) return { key: 'A', score: 100, reason: 'Bebas Hutang (DER 0,0%)', val: 0, valStr: '0,00%' };
+      const derPct = ctx.der * 100;
+      const valStr = `${derPct.toFixed(2)}%`;
+      if (derPct < 200) return { key: 'A', score: 100, reason: `DER ${valStr} (< 200%) - Solvabilitas Aman`, val: derPct, valStr };
+      if (derPct <= 300) return { key: 'B', score: 75, reason: `DER ${valStr} (200%-300%) - Memenuhi RAC`, val: derPct, valStr };
+      if (derPct <= 400) return { key: 'C', score: 50, reason: `DER ${valStr} (300%-400%) - Batas Ambang RAC`, val: derPct, valStr };
+      return { key: 'D', score: 25, reason: `DER ${valStr} (> 400%) - Melampaui Batas Maksimum RAC`, val: derPct, valStr };
+    }
+  },
+  {
+    id: 'r_dar',
+    num: 5,
+    name: 'Debt to Asset Ratio (DAR) %',
+    category: 'Solvabilitas',
+    formula: '(Total Kewajiban / Total Aset) × 100%',
+    racStd: '< 80,00%',
+    desc: 'Porsi pembiayaan total aktiva perusahaan yang didanai oleh hutang.',
+    weight: 0.10,
+    weightPct: 10,
+    options: [
+      { key: 'A', text: '< 70% (Struktur Aset Sehat)', score: 100, passRac: true },
+      { key: 'B', text: '≥ 70% s/d < 80% (Wajar)', score: 75, passRac: true },
+      { key: 'C', text: '≥ 80% s/d < 100% (Dominasi Utang)', score: 50, passRac: false },
+      { key: 'D', text: '≥ 100% (Kewajiban Melebihi Aset)', score: 25, passRac: false }
+    ],
+    evalAuto: (proj, m, f23, ctx) => {
+      if (ctx.isZeroDebt) return { key: 'A', score: 100, reason: 'Bebas Hutang (DAR 0,0%)', val: 0, valStr: '0,00%' };
+      const darPct = ctx.darPct;
+      const valStr = `${darPct.toFixed(2)}%`;
+      if (darPct < 70) return { key: 'A', score: 100, reason: `DAR ${valStr} (< 70%) - Sehat`, val: darPct, valStr };
+      if (darPct < 80) return { key: 'B', score: 75, reason: `DAR ${valStr} (70%-80%) - Wajar`, val: darPct, valStr };
+      if (darPct < 100) return { key: 'C', score: 50, reason: `DAR ${valStr} (80%-100%) - Dominasi Utang`, val: darPct, valStr };
+      return { key: 'D', score: 25, reason: `DAR ${valStr} (≥ 100%) - Aset di bawah total kewajiban`, val: darPct, valStr };
+    }
+  },
+  {
+    id: 'r_roa',
+    num: 6,
+    name: 'Return on Assets (ROA) %',
+    category: 'Profitabilitas',
+    formula: '(EAT / Total Aset) × 100%',
+    racStd: '≥ 1,00%',
+    desc: 'Efisiensi dan kemampuan total aset menghasilkan laba bersih setelah pajak.',
+    weight: 0.10,
+    weightPct: 10,
+    options: [
+      { key: 'A', text: '≥ 3,00% (Produktivitas Aset Tinggi)', score: 100, passRac: true },
+      { key: 'B', text: '≥ 1,00% s/d < 3,00% (Memenuhi Standar RAC)', score: 70, passRac: true },
+      { key: 'C', text: '≥ 0,10% s/d < 1,00% (Di Bawah Standar RAC)', score: 40, passRac: false },
+      { key: 'D', text: '< 0,10% (Rugi / Nihil)', score: 20, passRac: false }
+    ],
+    evalAuto: (proj, m, f23, ctx) => {
+      const roa = ctx.roa;
+      const valStr = `${roa.toFixed(2)}%`;
+      if (roa >= 3.0) return { key: 'A', score: 100, reason: `ROA ${valStr} (≥ 3%) - Sangat Produktif`, val: roa, valStr };
+      if (roa >= 1.0) return { key: 'B', score: 70, reason: `ROA ${valStr} (1%-3%) - Memenuhi RAC (≥ 1%)`, val: roa, valStr };
+      if (roa >= 0.1) return { key: 'C', score: 40, reason: `ROA ${valStr} di bawah RAC (0,1%-1%)`, val: roa, valStr };
+      return { key: 'D', score: 20, reason: `ROA ${valStr} (< 0,1%) - Profitabilitas defisit`, val: roa, valStr };
+    }
+  },
+  {
+    id: 'r_roe',
+    num: 7,
+    name: 'Return on Equity (ROE) %',
+    category: 'Profitabilitas',
+    formula: '(EAT / Total Ekuitas) × 100%',
+    racStd: '≥ 5,00%',
+    desc: 'Tingkat pengembalian keuntungan bersih atas modal pemegang saham.',
+    weight: 0.10,
+    weightPct: 10,
+    options: [
+      { key: 'A', text: '≥ 10,00% (Imbal Modal Superior)', score: 100, passRac: true },
+      { key: 'B', text: '≥ 5,00% s/d < 10,00% (Memenuhi Standar RAC)', score: 75, passRac: true },
+      { key: 'C', text: '≥ 1,00% s/d < 5,00% (Di Bawah RAC)', score: 40, passRac: false },
+      { key: 'D', text: '< 1,00% (Rugi / Nihil)', score: 20, passRac: false }
+    ],
+    evalAuto: (proj, m, f23, ctx) => {
+      const roe = ctx.roe;
+      const valStr = `${roe.toFixed(2)}%`;
+      if (roe >= 10.0) return { key: 'A', score: 100, reason: `ROE ${valStr} (≥ 10%) - Unggul`, val: roe, valStr };
+      if (roe >= 5.0) return { key: 'B', score: 75, reason: `ROE ${valStr} (5%-10%) - Memenuhi RAC (≥ 5%)`, val: roe, valStr };
+      if (roe >= 1.0) return { key: 'C', score: 40, reason: `ROE ${valStr} di bawah RAC (1%-5%)`, val: roe, valStr };
+      return { key: 'D', score: 20, reason: `ROE ${valStr} (< 1%) - Ekuitas tidak bertumbuh`, val: roe, valStr };
+    }
+  },
+  {
+    id: 'r_npm',
+    num: 8,
+    name: 'Net Profit Margin (NPM) %',
+    category: 'Profitabilitas',
+    formula: '(EAT / Penjualan) × 100%',
+    racStd: '≥ 3,00%',
+    desc: 'Persentase margin laba bersih yang tersisa dari setiap Rupiah omzet penjualan.',
+    weight: 0.15,
+    weightPct: 15,
+    options: [
+      { key: 'A', text: '≥ 8,00% (Margin Sangat Sehat)', score: 100, passRac: true },
+      { key: 'B', text: '≥ 5,00% s/d < 8,00% (Sehat)', score: 80, passRac: true },
+      { key: 'C', text: '≥ 3,00% s/d < 5,00% (Memenuhi Standar)', score: 60, passRac: true },
+      { key: 'D', text: '≥ 1,00% s/d < 3,00% (Margin Tipis)', score: 40, passRac: false },
+      { key: 'E', text: '< 1,00% (Rentan Defisit)', score: 20, passRac: false }
+    ],
+    evalAuto: (proj, m, f23, ctx) => {
+      const npm = ctx.npm;
+      const valStr = `${npm.toFixed(2)}%`;
+      if (npm >= 8.0) return { key: 'A', score: 100, reason: `NPM ${valStr} (≥ 8%) - Sangat Sehat`, val: npm, valStr };
+      if (npm >= 5.0) return { key: 'B', score: 80, reason: `NPM ${valStr} (5%-8%) - Sehat`, val: npm, valStr };
+      if (npm >= 3.0) return { key: 'C', score: 60, reason: `NPM ${valStr} (3%-5%) - Wajar`, val: npm, valStr };
+      if (npm >= 1.0) return { key: 'D', score: 40, reason: `NPM ${valStr} (1%-3%) - Margin Tipis`, val: npm, valStr };
+      return { key: 'E', score: 20, reason: `NPM ${valStr} (< 1%) - Berisiko rugi saat ada shock biaya`, val: npm, valStr };
+    }
+  }
+];
+
+function computeFinancialRatiosAnalysis(proj, f23 = {}, m = null) {
+  const eq = (m && typeof m.eq23 === 'number') ? m.eq23 : ((f23.capital || 0) + (f23.otherCap || 0) + (f23.retEarn || 0) + (f23.re || 0));
+  const tl = (m && typeof m.tl23 === 'number') ? m.tl23 : ((f23.ap || 0) + (f23.stDebt || 0) + (f23.otherAp || 0) + (f23.accrued || 0) + (f23.ltDebt || 0));
+  const isZeroDebt = tl === 0 || (m && m.tl23 === 0) || (typeof m?.der23 === 'number' && m.der23 === 0);
+  const der = isZeroDebt ? 0 : ((m && typeof m.der23 === 'number') ? m.der23 : (eq > 0 ? tl / eq : 99));
+  const cr = (m && typeof m.currentRatio23 === 'number') ? m.currentRatio23 : ((f23.ca || 1) / Math.max(1, f23.cl || 1));
+  const isNoDebtCL = (m && (m.currentRatio23 === null || m.isNoDebt23)) || (f23.cl === 0 || !f23.cl) || isZeroDebt;
+
+  const qrPct = (m && typeof m.quickRatio23 === 'number') ? m.quickRatio23 * 100 : (((f23.ca || 0) - (f23.inv || 0)) / Math.max(1, f23.cl || 1)) * 100;
+  const cashRatioPct = ((f23.cash || 0) / Math.max(1, f23.cl || 1)) * 100;
+  const roa = (m && typeof m.roa23 === 'number') ? m.roa23 : (((f23.eat || f23.netInc || 0) / Math.max(1, f23.ta || 1)) * 100);
+  const roe = (m && typeof m.roe23 === 'number') ? m.roe23 : (((f23.eat || f23.netInc || 0) / Math.max(1, eq || 1)) * 100);
+  const npm = (m && typeof m.npm23 === 'number') ? m.npm23 : (((f23.eat || f23.netInc || 0) / Math.max(1, f23.rev || 1)) * 100);
+  const darPct = (tl / Math.max(1, f23.ta || (tl + eq))) * 100;
+
+  const ctx = {
+    cr,
+    qrPct,
+    cashRatioPct,
+    roa,
+    roe,
+    npm,
+    der,
+    darPct,
+    isZeroDebt,
+    isNoDebtCL
+  };
+
+  const overrides = proj.ratioOverrides || {};
+  let totalScoreRaw = 0;
+  let passRacCount = 0;
+
+  const evaluatedRatios = ASKRINDO_RATIOS_CATALOG.map((r) => {
+    const autoRes = r.evalAuto(proj, m, f23, ctx);
+    const isOverridden = overrides[r.id] !== undefined && overrides[r.id] !== null && overrides[r.id] !== '';
+    const chosenKey = isOverridden ? overrides[r.id] : autoRes.key;
+    const opt = r.options.find((o) => o.key === chosenKey) || r.options[0];
+    const score = opt.score;
+    const weightedScore = Number((score * r.weight).toFixed(2));
+    totalScoreRaw += score * r.weight;
+
+    const isPassRac = opt.passRac === true;
+    if (isPassRac) passRacCount++;
+
+    return {
+      id: r.id,
+      num: r.num,
+      name: r.name,
+      category: r.category,
+      formula: r.formula,
+      racStd: r.racStd,
+      desc: r.desc,
+      weight: r.weight,
+      weightPct: r.weightPct,
+      options: r.options,
+      chosenKey,
+      chosenText: opt.text,
+      score,
+      weightedScore,
+      isOverridden,
+      autoKey: autoRes.key,
+      autoReason: autoRes.reason,
+      valStr: autoRes.valStr,
+      passRac: isPassRac
+    };
+  });
+
+  const totalScore = Math.max(0, Math.min(100, Math.round(totalScoreRaw)));
+  const failRacCount = evaluatedRatios.length - passRacCount;
+  const healthLabel = totalScore >= 80 ? 'Sangat Sehat (Prime)' : (totalScore >= 60 ? 'Sehat (Moderate)' : 'Rentan (High Risk)');
+  const healthColor = totalScore >= 80 ? '#15803d' : (totalScore >= 60 ? '#0284c7' : '#dc2626');
+  const healthBg = totalScore >= 80 ? '#f0fdf4' : (totalScore >= 60 ? '#f0f9ff' : '#fef2f2');
+
+  return {
+    totalScore,
+    healthLabel,
+    healthColor,
+    healthBg,
+    passRacCount,
+    failRacCount,
+    evaluatedRatios
+  };
+}
+
+function updateRatioParameter(paramId, optKey) {
+  const proj = getActiveProject();
+  if (!proj) return;
+  if (!proj.ratioOverrides) proj.ratioOverrides = {};
+  proj.ratioOverrides[paramId] = optKey;
+  saveProjectsToStorage();
+  renderAll();
+  const param = ASKRINDO_RATIOS_CATALOG.find((p) => p.id === paramId);
+  const opt = param ? param.options.find((o) => o.key === optKey) : null;
+  const score = opt ? opt.score : 0;
+  showToast(`Rasio #${param ? param.num : ''} (${param ? param.name : paramId}) disesuaikan: Opsi ${optKey} (${score} Poin)`);
+}
+
+function resetRatioParameterToAuto(paramId) {
+  const proj = getActiveProject();
+  if (!proj || !proj.ratioOverrides) return;
+  delete proj.ratioOverrides[paramId];
+  saveProjectsToStorage();
+  renderAll();
+  const param = ASKRINDO_RATIOS_CATALOG.find((p) => p.id === paramId);
+  showToast(`Rasio #${param ? param.num : ''} (${param ? param.name : paramId}) dikembalikan ke otomatis sistem.`);
+}
+
+function resetAllRatioParametersToAuto() {
+  const proj = getActiveProject();
+  if (!proj) return;
+  proj.ratioOverrides = {};
+  saveProjectsToStorage();
+  renderAll();
+  showToast('Seluruh parameter Rasio Keuangan berhasil dikembalikan ke kalkulasi otomatis neraca!');
+}
+
 function renderRatiosTab(proj, m) {
   const container = document.getElementById('ratiosTableContainer');
   if (!container) return;
@@ -6366,61 +6490,80 @@ function renderRatiosTab(proj, m) {
       <div style="background:#f8fafc; border:1.5px dashed #cbd5e1; border-radius:8px; padding:2.5rem 1.5rem; text-align:center; color:#64748b;">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.8" style="margin:0 auto 0.75rem auto; display:block;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         <h4 style="font-size:1.05rem; font-weight:800; color:#334155; margin-bottom:0.35rem;">Laporan Keuangan Belum Diinput</h4>
-        <p style="font-size:0.82rem; max-width:480px; margin:0 auto 1rem auto; line-height:1.45;">Rasio Keuangan (CR, DER, ROA, ROE, NWC) akan dihitung secara otomatis setelah Anda melengkapi data Neraca &amp; Laba Rugi pada tab "Input Data".</p>
+        <p style="font-size:0.82rem; max-width:480px; margin:0 auto 1rem auto; line-height:1.45;">Rasio Keuangan (CR, QR, Cash Ratio, DER, DAR, ROA, ROE, NPM, NWC) akan dihitung secara otomatis setelah Anda melengkapi data Neraca &amp; Laba Rugi pada tab "Input Data".</p>
         <button type="button" class="btn btn-primary btn-sm" onclick="switchTab('tab-input')">Menuju Tab Input Data &raquo;</button>
       </div>
     `;
     return;
   }
 
+  const f22 = proj.fin22 || {};
+  const f23 = proj.fin23 || {};
   const plafond = proj.requestedPlafond || 0;
 
-  // 1. Current Ratio (CR) - RAC Min 100%
+  // Calculate Ratios for Year 1 & Year 2
   const isNoDebt22 = !m.cl22 || m.cl22 === 0;
   const isNoDebt23 = !m.cl23 || m.cl23 === 0;
   const cr22 = isNoDebt22 ? null : (m.ca22 / m.cl22) * 100;
   const cr23 = isNoDebt23 ? null : (m.ca23 / m.cl23) * 100;
   const passCR = isNoDebt23 ? true : (cr23 >= 100);
 
-  // 2. Debt to Equity Ratio (DER) - RAC Max 400%
+  const qr22 = isNoDebt22 ? null : (((f22.ca || 0) - (f22.inv || 0)) / m.cl22) * 100;
+  const qr23 = isNoDebt23 ? null : (((f23.ca || 0) - (f23.inv || 0)) / m.cl23) * 100;
+  const passQR = isNoDebt23 ? true : (qr23 >= 60);
+
+  const cashRatio22 = isNoDebt22 ? null : ((f22.cash || 0) / m.cl22) * 100;
+  const cashRatio23 = isNoDebt23 ? null : ((f23.cash || 0) / m.cl23) * 100;
+  const passCash = isNoDebt23 ? true : (cashRatio23 >= 30);
+
   const der22 = m.eq22 > 0 ? (m.tl22 / m.eq22) * 100 : 0;
   const der23 = m.eq23 > 0 ? (m.tl23 / m.eq23) * 100 : 0;
   const passDER = der23 <= 400;
 
-  // 3. Return on Assets (ROA) - RAC Min 1.0%
+  const dar22 = m.ta22 > 0 ? (m.tl22 / m.ta22) * 100 : 0;
+  const dar23 = m.ta23 > 0 ? (m.tl23 / m.ta23) * 100 : 0;
+  const passDAR = dar23 < 80;
+
   const roa22 = m.ta22 > 0 ? (m.eat22 / m.ta22) * 100 : 0;
   const roa23 = m.ta23 > 0 ? (m.eat23 / m.ta23) * 100 : 0;
   const passROA = roa23 >= 1.0;
 
-  // 4. Return on Equity (ROE) - RAC Min 5.0%
   const roe22 = m.eq22 > 0 ? (m.eat22 / m.eq22) * 100 : 0;
   const roe23 = m.eq23 > 0 ? (m.eat23 / m.eq23) * 100 : 0;
   const passROE = roe23 >= 5.0;
 
-  // 5. Net Working Capital (NWC) - RAC Hasil Positif (> 0)
+  const npm22 = (f22.rev || 0) > 0 ? ((f22.eat || f22.netInc || 0) / f22.rev) * 100 : 0;
+  const npm23 = (f23.rev || 0) > 0 ? ((f23.eat || f23.netInc || 0) / f23.rev) * 100 : 0;
+  const passNPM = npm23 >= 3.0;
+
   const nwc22 = m.nwc22;
   const nwc23 = m.nwc23;
   const passNWC = nwc23 > 0;
 
-  // 6. NWC terhadap Nilai Kredit (Plafond) - RAC Min 10%
   const nwcToCredit22 = plafond > 0 ? (nwc22 / plafond) * 100 : 0;
   const nwcToCredit23 = plafond > 0 ? (nwc23 / plafond) * 100 : 0;
   const passNWCCredit = plafond > 0 && nwcToCredit23 >= 10;
 
-  const ratios = [
+  const icr23 = (m && typeof m.icr23 === 'number') ? m.icr23 : 1.5;
+
+  // Run official Askrindo Financial Ratio Scoring Model
+  const ratAnalysis = computeFinancialRatiosAnalysis(proj, f23, m);
+
+  // Existing RAC Compliance list
+  const racList = [
     {
       no: 1,
       name: 'Current Ratio (CR)',
       formula: 'Aset Lancar / Liab. Lancar',
       rac: '&ge; 100,00%',
-      v22: isNoDebt22 ? 'N/A (Bebas Utang Lancar)' : `${fmtNum(cr22, 2)}%`,
-      v23: isNoDebt23 ? 'N/A (Bebas Utang Lancar)' : `${fmtNum(cr23, 2)}%`,
+      v22: isNoDebt22 ? 'N/A (Bebas Utang)' : `${fmtNum(cr22, 2)}%`,
+      v23: isNoDebt23 ? 'N/A (Bebas Utang)' : `${fmtNum(cr23, 2)}%`,
       pass: passCR,
       ket: isNoDebt23
-        ? 'Kondisi Likuiditas Sangat Prima (N/A): Perusahaan beroperasi murni dengan modal sendiri / tanpa kewajiban jangka pendek (Hutang Lancar = Rp 0). Seluruh aset lancar bebas beban, sehingga risiko gagal bayar kewajiban lancar nihil.'
+        ? 'Likuiditas Sangat Prima (N/A): Perusahaan beroperasi murni modal sendiri (Hutang Lancar Rp 0). Risiko gagal bayar kewajiban lancar nihil.'
         : (passCR
-          ? `Current Ratio ${fmtNum(cr23, 2)}% memenuhi standar RAC (&ge; 100,00%). Debitur memiliki likuiditas lancar yang cukup untuk melunasi kewajiban jangka pendek.`
-          : `Current Ratio ${fmtNum(cr23, 2)}% di bawah standar RAC (&ge; 100,00%). Likuiditas jangka pendek ketat dan berisiko gagal bayar saat penagihan piutang tertunda.`)
+          ? `Current Ratio ${fmtNum(cr23, 2)}% memenuhi standar RAC (&ge; 100,00%). Debitur memiliki likuiditas lancar memadai untuk melunasi kewajiban jangka pendek.`
+          : `Current Ratio ${fmtNum(cr23, 2)}% di bawah standar RAC (&ge; 100,00%). Likuiditas jangka pendek ketat dan berisiko saat penagihan piutang terlambat.`)
     },
     {
       no: 2,
@@ -6431,8 +6574,8 @@ function renderRatiosTab(proj, m) {
       v23: fmtNum(der23, 2) + '%',
       pass: passDER,
       ket: passDER
-        ? `DER ${fmtNum(der23, 2)}% memenuhi standar RAC (&le; 400,00%). Tingkat leverage permodalan debitur masih dalam ambang batas toleransi risiko wajar.`
-        : `DER ${fmtNum(der23, 2)}% melampaui standar RAC (&le; 400,00%). Beban utang terlalu dominan terhadap modal sendiri, meningkatkan risiko solvabilitas.`
+        ? `DER ${fmtNum(der23, 2)}% memenuhi standar RAC (&le; 400,00%). Tingkat leverage permodalan debitur dalam toleransi risiko wajar.`
+        : `DER ${fmtNum(der23, 2)}% melampaui standar RAC (&le; 400,00%). Beban utang terlalu dominan terhadap modal sendiri.`
     },
     {
       no: 3,
@@ -6443,8 +6586,8 @@ function renderRatiosTab(proj, m) {
       v23: fmtNum(roa23, 2) + '%',
       pass: passROA,
       ket: passROA
-        ? `ROA ${fmtNum(roa23, 2)}% memenuhi standar RAC (&ge; 1,00%). Aset perusahaan bekerja secara produktif dalam menghasilkan laba bersih.`
-        : `ROA ${fmtNum(roa23, 2)}% di bawah standar RAC (&ge; 1,00%). Efisiensi pemanfaatan aset untuk menghasilkan profitabilitas masih perlu ditingkatkan.`
+        ? `ROA ${fmtNum(roa23, 2)}% memenuhi standar RAC (&ge; 1,00%). Aset perusahaan bekerja produktif menghasilkan laba bersih.`
+        : `ROA ${fmtNum(roa23, 2)}% di bawah standar RAC (&ge; 1,00%). Efisiensi pemanfaatan aset masih perlu ditingkatkan.`
     },
     {
       no: 4,
@@ -6455,8 +6598,8 @@ function renderRatiosTab(proj, m) {
       v23: fmtNum(roe23, 2) + '%',
       pass: passROE,
       ket: passROE
-        ? `ROE ${fmtNum(roe23, 2)}% memenuhi standar RAC (&ge; 5,00%). Imbal hasil atas modal debitur mencukupi untuk mendukung pertumbuhan internal.`
-        : `ROE ${fmtNum(roe23, 2)}% di bawah standar RAC (&ge; 5,00%). Kemampuan mencetak keuntungan bagi pemegang saham belum optimal.`
+        ? `ROE ${fmtNum(roe23, 2)}% memenuhi standar RAC (&ge; 5,00%). Imbal hasil modal memadai untuk pertumbuhan internal.`
+        : `ROE ${fmtNum(roe23, 2)}% di bawah standar RAC (&ge; 5,00%). Kemampuan mencetak keuntungan ekuitas belum optimal.`
     },
     {
       no: 5,
@@ -6468,7 +6611,7 @@ function renderRatiosTab(proj, m) {
       pass: passNWC,
       ket: passNWC
         ? `NWC bernilai positif (${fmtRp(nwc23, true)}) memenuhi standar RAC (> Rp 0). Aset lancar surplus terhadap kewajiban jangka pendek.`
-        : `NWC bernilai negatif (${fmtRp(nwc23, true)}) tidak memenuhi standar RAC (> Rp 0). Terjadi defisit modal kerja riil yang memerlukan restrukturisasi utang.`
+        : `NWC bernilai negatif (${fmtRp(nwc23, true)}) tidak memenuhi standar RAC (> Rp 0). Terjadi defisit modal kerja riil.`
     },
     {
       no: 6,
@@ -6479,70 +6622,254 @@ function renderRatiosTab(proj, m) {
       v23: plafond > 0 ? fmtNum(nwcToCredit23, 2) + '%' : 'N/A',
       pass: passNWCCredit,
       ket: passNWCCredit
-        ? `Rasio NWC/Plafond ${fmtNum(nwcToCredit23, 2)}% memenuhi standar RAC (&ge; 10,00%). Debitur memiliki penyangga modal kerja bersih memadai terhadap nilai kredit.`
-        : `Rasio NWC/Plafond ${fmtNum(nwcToCredit23, 2)}% di bawah standar RAC (&ge; 10,00%). Penyangga modal kerja terlalu tipis relatif terhadap nilai fasilitas kredit.`
+        ? `Rasio NWC/Plafond ${fmtNum(nwcToCredit23, 2)}% memenuhi standar RAC (&ge; 10,00%). Debitur memiliki penyangga modal kerja bersih memadai.`
+        : `Rasio NWC/Plafond ${fmtNum(nwcToCredit23, 2)}% di bawah standar RAC (&ge; 10,00%). Penyangga modal kerja terlalu tipis relatif terhadap nilai fasilitas.`
     }
   ];
 
-  const passCount = ratios.filter((r) => r.pass).length;
-  const failCount = ratios.length - passCount;
-  const overallSummary = passCount >= 4
-    ? '<span style="color:#15803d; font-weight:700;">MEMENUHI SEBAGIAN BESAR STANDAR RAC</span>'
-    : '<span style="color:#b91c1c; font-weight:700;">PERLU PERHATIAN KHUSUS &amp; MITIGASI TAMBAHAN</span>';
+  const passRacCount = racList.filter((r) => r.pass).length;
+  const failRacCount = racList.length - passRacCount;
 
   container.innerHTML = `
+    <!-- 1. EXECUTIVE STATUS BANNER -->
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:1rem; padding:0.85rem 1.1rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px;">
       <div>
-        <div style="font-size:0.82rem; font-weight:700; color:var(--askrindo-navy);">Status Kepatuhan Risk Acceptance Criteria (RAC) - Tahun Buku ${m.yr2}:</div>
-        <div style="font-size:0.76rem; color:var(--text-muted); margin-top:0.2rem;">Evaluasi berdasarkan 6 indikator rasio kunci Askrindo: Current Ratio, DER, ROA, ROE, NWC, dan NWC/Plafond.</div>
+        <div style="font-size:0.85rem; font-weight:800; color:var(--askrindo-navy);">
+          Analisis &amp; Skoring Rasio Keuangan Debitur (${proj.companyName})
+        </div>
+        <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.2rem;">
+          Model Evaluasi Resmi Petunjuk Teknis Askrindo / PT. IDX Consulting &amp; Kepatuhan Risk Acceptance Criteria (RAC) - Tahun Evaluasi ${m.yr2}.
+        </div>
       </div>
-      <div style="display:flex; gap:0.5rem; align-items:center;">
-        <span class="badge-rac badge-rac-pass" style="font-size:0.8rem; padding:0.3rem 0.75rem;">${passCount} RAC LULUS</span>
-        <span class="badge-rac badge-rac-fail" style="font-size:0.8rem; padding:0.3rem 0.75rem;">${failCount} TIDAK LULUS</span>
-        <div style="margin-left:0.5rem; font-size:0.78rem;">${overallSummary}</div>
+      <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+        <span style="font-size:0.76rem; font-weight:800; padding:4px 10px; border-radius:6px; border:1px solid ${ratAnalysis.healthColor}; background:${ratAnalysis.healthBg}; color:${ratAnalysis.healthColor};">
+          Skor Rasio: ${ratAnalysis.totalScore} / 100 (${ratAnalysis.healthLabel})
+        </span>
+        <span class="badge-rac badge-rac-pass" style="font-size:0.76rem; padding:4px 8px;">
+          ${passRacCount} RAC LULUS
+        </span>
+        <span class="badge-rac badge-rac-fail" style="font-size:0.76rem; padding:4px 8px;">
+          ${failRacCount} TIDAK LULUS
+        </span>
+        <button type="button" class="btn btn-outline btn-sm" onclick="resetAllRatioParametersToAuto()" title="Reset seluruh pilihan rasio ke hitungan otomatis neraca" style="font-size:0.7rem; padding:3px 8px;">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:3px;"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          Reset ke Otomatis Neraca
+        </button>
       </div>
     </div>
 
-    <div class="table-responsive" style="border:1px solid #e2e8f0; border-radius:8px; background:#ffffff; box-shadow:0 1px 2px rgba(0,0,0,0.03);">
-      <table class="data-table ratios-table">
-        <thead>
-          <tr>
-            <th class="col-no">No</th>
-            <th class="col-indicator">Indikator Rasio</th>
-            <th class="col-formula">Rumus Perhitungan</th>
-            <th class="col-rac">Standar RAC</th>
-            <th class="col-val">Tahun ${m.yr1}</th>
-            <th class="col-eval">Tahun ${m.yr2} (Eval)</th>
-            <th class="col-status">Status RAC</th>
-            <th class="col-notes">Analisis &amp; Keterangan Komparasi</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${ratios.map((r) => `
-            <tr>
-              <td class="col-no">${r.no}</td>
-              <td class="col-indicator">${r.name}</td>
-              <td class="col-formula">${r.formula}</td>
-              <td class="col-rac">${r.rac}</td>
-              <td class="col-val" style="color:var(--text-muted);">${r.v22}</td>
-              <td class="col-eval" style="color:${r.pass ? '#15803d' : '#b91c1c'};">${r.v23}</td>
-              <td class="col-status">
-                <span class="badge-rac ${r.pass ? 'badge-rac-pass' : 'badge-rac-fail'}">
-                  ${r.pass ? 'LULUS' : 'TIDAK LULUS'}
+    <!-- 2. 4 EXECUTIVE KPI CARDS -->
+    <div class="grid-4" style="margin-bottom:1rem;">
+      <!-- Likuiditas -->
+      <div class="kpi-card ${passCR ? 'kpi-green' : 'kpi-red'}">
+        <div class="kpi-label">Likuiditas Lancar (CR &amp; QR)</div>
+        <div class="kpi-value" style="font-size:1.15rem; color:${passCR ? '#15803d' : '#dc2626'};">
+          CR: ${isNoDebt23 ? 'Bebas Utang' : fmtNum(cr23, 1) + '%'}
+        </div>
+        <div class="kpi-sub">
+          <span>QR: ${isNoDebt23 ? 'N/A' : fmtNum(qr23, 1) + '%'} | Cash: ${isNoDebt23 ? 'N/A' : fmtNum(cashRatio23, 1) + '%'}</span>
+          <span style="font-weight:700;">${passCR ? 'Likuid' : 'Ketat'}</span>
+        </div>
+      </div>
+
+      <!-- Solvabilitas -->
+      <div class="kpi-card ${passDER ? 'kpi-green' : 'kpi-red'}">
+        <div class="kpi-label">Solvabilitas &amp; Leverage (DER &amp; DAR)</div>
+        <div class="kpi-value" style="font-size:1.15rem; color:${passDER ? '#15803d' : '#dc2626'};">
+          DER: ${fmtNum(der23, 1)}%
+        </div>
+        <div class="kpi-sub">
+          <span>DAR: ${fmtNum(dar23, 1)}% (Aset ${fmtRp(m.ta23, true)})</span>
+          <span style="font-weight:700;">${passDER ? 'Aman' : 'Tinggi'}</span>
+        </div>
+      </div>
+
+      <!-- Profitabilitas -->
+      <div class="kpi-card ${passROA && passROE ? 'kpi-green' : (roa23 > 0 ? 'kpi-gold' : 'kpi-red')}">
+        <div class="kpi-label">Profitabilitas (ROA &amp; ROE)</div>
+        <div class="kpi-value" style="font-size:1.15rem; color:${roa23 >= 1 ? '#15803d' : '#dc2626'};">
+          ROA: ${fmtNum(roa23, 2)}%
+        </div>
+        <div class="kpi-sub">
+          <span>ROE: ${fmtNum(roe23, 1)}% | NPM: ${fmtNum(npm23, 1)}%</span>
+          <span style="font-weight:700;">EAT: ${fmtRp(m.eat23, true)}</span>
+        </div>
+      </div>
+
+      <!-- Modal Kerja -->
+      <div class="kpi-card ${passNWC ? 'kpi-blue' : 'kpi-red'}">
+        <div class="kpi-label">Modal Kerja Bersih (NWC) &amp; ICR</div>
+        <div class="kpi-value" style="font-size:1.15rem; color:${passNWC ? '#0369a1' : '#dc2626'};">
+          NWC: ${fmtRp(nwc23, true)}
+        </div>
+        <div class="kpi-sub">
+          <span>NWC/Plafond: ${plafond > 0 ? fmtNum(nwcToCredit23, 1) + '%' : 'N/A'}</span>
+          <span style="font-weight:700;">ICR: ${fmtNum(icr23, 1)}x</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. BAGIAN I: TABEL EVALUASI & SKORING RASIO KEUANGAN (PETUNJUK TEKNIS) -->
+    <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.04); margin-bottom:1.25rem;">
+      <div style="padding:0.75rem 1rem; background:#f8fafc; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+        <div>
+          <div style="font-size:0.82rem; font-weight:800; color:var(--askrindo-navy);">
+            I. Tabel Perhitungan &amp; Evaluasi Skoring Rasio Keuangan (Petunjuk Teknis Askrindo / PT. IDX Consulting)
+          </div>
+          <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">
+            8 Rasio Keuangan Inti: Perhitungan otomatis 100% dari data Neraca &amp; Laba Rugi dengan fleksibilitas penyesuaian opsi underwriter.
+          </div>
+        </div>
+        <span style="font-size:0.75rem; font-weight:800; color:#0369a1; background:#e0f2fe; padding:2px 8px; border-radius:4px;">
+          Total Bobot: 100.00%
+        </span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table" style="font-size:0.74rem;">
+          <thead>
+            <tr style="background:#f1f5f9;">
+              <th style="width:36px; text-align:center;">No</th>
+              <th style="min-width:220px;">Indikator Rasio &amp; Formula</th>
+              <th style="width:85px; text-align:center;">Thn ${m.yr1}</th>
+              <th style="width:115px; text-align:center; background:#e0f2fe; color:#0369a1;">Thn ${m.yr2} (Eval)</th>
+              <th style="width:65px; text-align:center;">Bobot</th>
+              <th style="min-width:280px;">Standar Opsi &amp; Pilihan Terpilih</th>
+              <th style="width:65px; text-align:center;">Nilai</th>
+              <th style="width:75px; text-align:right;">Skor Bobot</th>
+              <th style="min-width:180px;">Analisis &amp; Keterangan</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${ratAnalysis.evaluatedRatios.map((r) => {
+              const histVal = r.id === 'r_cr' ? (isNoDebt22 ? 'N/A' : fmtNum(cr22, 2) + '%')
+                : (r.id === 'r_qr' ? (isNoDebt22 ? 'N/A' : fmtNum(qr22, 2) + '%')
+                : (r.id === 'r_cash' ? (isNoDebt22 ? 'N/A' : fmtNum(cashRatio22, 2) + '%')
+                : (r.id === 'r_der' ? fmtNum(der22, 2) + '%'
+                : (r.id === 'r_dar' ? fmtNum(dar22, 2) + '%'
+                : (r.id === 'r_roa' ? fmtNum(roa22, 2) + '%'
+                : (r.id === 'r_roe' ? fmtNum(roe22, 2) + '%'
+                : fmtNum(npm22, 2) + '%'))))));
+
+              return `
+                <tr>
+                  <td style="text-align:center; font-weight:700; color:#64748b;">${r.num}</td>
+                  <td>
+                    <div style="font-weight:800; color:#1e293b;">${r.name}</div>
+                    <div style="font-size:0.65rem; color:#64748b; margin-top:1px;">Formula: <code>${r.formula}</code></div>
+                    <div style="font-size:0.63rem; color:#0284c7; margin-top:2px;">Standar RAC: <strong>${r.racStd}</strong></div>
+                  </td>
+                  <td style="text-align:center; color:#64748b; font-weight:600;">${histVal}</td>
+                  <td style="text-align:center; font-weight:800; background:#f0f9ff; color:${r.passRac ? '#15803d' : '#b91c1c'}; font-size:0.8rem;">
+                    ${r.valStr}
+                  </td>
+                  <td style="text-align:center; font-weight:700; color:var(--askrindo-navy);">
+                    ${r.weightPct}%
+                  </td>
+                  <td>
+                    <select class="form-control" style="font-size:0.72rem; padding:3px 6px; width:100%; border-color:${r.isOverridden ? '#f59e0b' : '#cbd5e1'};" onchange="updateRatioParameter('${r.id}', this.value)">
+                      ${r.options.map((opt) => `
+                        <option value="${opt.key}" ${opt.key === r.chosenKey ? 'selected' : ''}>
+                          [${opt.key}] ${opt.text} (${opt.score} Poin)
+                        </option>
+                      `).join('')}
+                    </select>
+                    ${r.isOverridden ? `
+                      <div style="font-size:0.62rem; color:#b45309; margin-top:2px; display:flex; justify-content:space-between; align-items:center;">
+                        <span>&#9998; Disesuaikan manual (Auto: Opsi ${r.autoKey})</span>
+                        <a href="javascript:void(0)" onclick="resetRatioParameterToAuto('${r.id}')" style="color:#0284c7; text-decoration:none; font-weight:700;">Reset Auto</a>
+                      </div>
+                    ` : ''}
+                  </td>
+                  <td style="text-align:center; font-weight:800; color:${r.score >= 80 ? '#15803d' : (r.score >= 60 ? '#0284c7' : '#dc2626')};">
+                    ${r.score}
+                  </td>
+                  <td style="text-align:right; font-weight:800; color:var(--askrindo-navy);">
+                    ${r.weightedScore.toFixed(2)}
+                  </td>
+                  <td style="font-size:0.68rem; color:${r.passRac ? '#166534' : '#991b1b'}; line-height:1.35;">
+                    ${r.autoReason || r.desc}
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+          <tfoot>
+            <tr style="background:#f8fafc; font-weight:800; border-top:2px solid #cbd5e1;">
+              <td colspan="4" style="text-align:right; padding:0.6rem 0.8rem;">TOTAL SKOR KESEHATAN RASIO KEUANGAN:</td>
+              <td style="text-align:center; color:var(--askrindo-navy);">100%</td>
+              <td style="color:#64748b; font-size:0.7rem;">Komposit Bobot Resmi</td>
+              <td style="text-align:center; font-size:0.85rem; color:${ratAnalysis.healthColor};">${ratAnalysis.totalScore}</td>
+              <td style="text-align:right; font-size:0.85rem; color:${ratAnalysis.healthColor};">${ratAnalysis.totalScore}.00</td>
+              <td>
+                <span class="badge-rac ${ratAnalysis.totalScore >= 70 ? 'badge-rac-pass' : 'badge-rac-fail'}" style="font-size:0.68rem;">
+                  ${ratAnalysis.healthLabel}
                 </span>
               </td>
-              <td class="col-notes" style="color:${r.pass ? '#14532d' : '#7f1d1d'};">
-                ${r.ket}
-              </td>
             </tr>
-          `).join('')}
-        </tbody>
-      </table>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- 4. BAGIAN II: MATRIKS KEPATUHAN STANDAR RISK ACCEPTANCE CRITERIA (RAC) -->
+    <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+      <div style="padding:0.75rem 1rem; background:#f8fafc; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+        <div>
+          <div style="font-size:0.82rem; font-weight:800; color:var(--askrindo-navy);">
+            II. Matriks Kepatuhan Risk Acceptance Criteria (RAC) Askrindo - Tahun Buku ${m.yr2}
+          </div>
+          <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">
+            Evaluasi 6 Rasio Standar Akseptasi Penjaminan Kredit: Current Ratio, DER, ROA, ROE, NWC, dan NWC/Plafond Kredit.
+          </div>
+        </div>
+        <div style="display:flex; gap:0.4rem; align-items:center;">
+          <span class="badge-rac badge-rac-pass" style="font-size:0.75rem; padding:3px 8px;">${passRacCount} RAC LULUS</span>
+          <span class="badge-rac badge-rac-fail" style="font-size:0.75rem; padding:3px 8px;">${failRacCount} TIDAK LULUS</span>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table ratios-table">
+          <thead>
+            <tr>
+              <th class="col-no">No</th>
+              <th class="col-indicator">Indikator Rasio</th>
+              <th class="col-formula">Rumus Perhitungan</th>
+              <th class="col-rac">Standar RAC</th>
+              <th class="col-val">Tahun ${m.yr1}</th>
+              <th class="col-eval">Tahun ${m.yr2} (Eval)</th>
+              <th class="col-status">Status RAC</th>
+              <th class="col-notes">Analisis &amp; Keterangan Komparasi</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${racList.map((r) => `
+              <tr>
+                <td class="col-no">${r.no}</td>
+                <td class="col-indicator">${r.name}</td>
+                <td class="col-formula">${r.formula}</td>
+                <td class="col-rac">${r.rac}</td>
+                <td class="col-val" style="color:var(--text-muted);">${r.v22}</td>
+                <td class="col-eval" style="color:${r.pass ? '#15803d' : '#b91c1c'};">${r.v23}</td>
+                <td class="col-status">
+                  <span class="badge-rac ${r.pass ? 'badge-rac-pass' : 'badge-rac-fail'}">
+                    ${r.pass ? 'LULUS' : 'TIDAK LULUS'}
+                  </span>
+                </td>
+                <td class="col-notes" style="color:${r.pass ? '#14532d' : '#7f1d1d'};">
+                  ${r.ket}
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
     </div>
   `;
 }
 
-// ============================================================================
+
 // 10B. RENDER TAB PROYEKSI CASH FLOW (FORWARD-LOOKING 12-MONTH REPAYMENT ADEQUACY)
 // ============================================================================
 function renderCashFlowTab(proj, m) {
@@ -8771,27 +9098,8 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 window.addEventListener('load', () => {
-  const sess = getActiveSession();
-  const asi = document.getElementById('adminUserSearchInput');
-  if (asi && !adminSearchManuallyTyped) {
-    const val = (asi.value || '').trim().toLowerCase();
-    if (val === 'admin' || val === '1922' || (sess && val === sess.username.toLowerCase())) {
-      asi.value = '';
-      asi.setAttribute('readonly', 'readonly');
-      const bc = document.getElementById('btnAdminClearSearch');
-      if (bc) bc.style.display = 'none';
-    }
-  }
-  const psi = document.getElementById('searchProjectInput');
-  if (psi && !projectSearchManuallyTyped) {
-    const pVal = (psi.value || '').trim().toLowerCase();
-    if (pVal === 'admin' || pVal === '1922' || (sess && pVal === sess.username.toLowerCase())) {
-      psi.value = '';
-      psi.setAttribute('readonly', 'readonly');
-      const pbc = document.getElementById('btnSidebarClearSearch');
-      if (pbc) pbc.style.display = 'none';
-    }
-  }
+  setupSearchProjectInputProtection();
+  setupAdminUserSearchProtection();
 });
 
 // ============================================================================
@@ -8869,6 +9177,20 @@ function setActiveSession(session) {
   }
 }
 
+// ============================================================================
+// REPLACEMENT CODE FOR APP.JS
+// ============================================================================
+
+// --- REGION 1: WINDOW LOAD ---
+// (Replaces window.addEventListener('load') block)
+/*
+window.addEventListener('load', () => {
+  setupSearchProjectInputProtection();
+  setupAdminUserSearchProtection();
+});
+*/
+
+// --- REGION 2: CHECK AUTH & SEARCH PROTECTION ---
 async function checkAuthAndRoute() {
   const session = getActiveSession();
   const loginScreen = document.getElementById('loginScreen');
@@ -8877,14 +9199,30 @@ async function checkAuthAndRoute() {
   const adminLayoutContainer = document.getElementById('adminLayoutContainer');
 
   if (!session) {
-    if (loginScreen) loginScreen.style.display = 'flex';
+    if (loginScreen) {
+      loginScreen.style.display = 'flex';
+      loginScreen.removeAttribute('inert');
+    }
+    const uInput = document.getElementById('loginUsername');
+    const pInput = document.getElementById('loginPassword');
+    if (uInput) uInput.disabled = false;
+    if (pInput) pInput.disabled = false;
     if (appTopNavbar) appTopNavbar.style.display = 'none';
     if (appLayoutContainer) appLayoutContainer.style.display = 'none';
     if (adminLayoutContainer) adminLayoutContainer.style.display = 'none';
     return;
   }
 
-  if (loginScreen) loginScreen.style.display = 'none';
+  // When logged in, mark login screen as inert & disable credentials inputs completely
+  // This prevents browser credential managers from scanning them and matching search inputs
+  if (loginScreen) {
+    loginScreen.style.display = 'none';
+    loginScreen.setAttribute('inert', '');
+  }
+  const uInput = document.getElementById('loginUsername');
+  const pInput = document.getElementById('loginPassword');
+  if (uInput) { uInput.disabled = true; uInput.value = ''; }
+  if (pInput) { pInput.disabled = true; pInput.value = ''; }
 
   if (session.role === 'admin') {
     if (appTopNavbar) appTopNavbar.style.display = 'none';
@@ -8893,39 +9231,15 @@ async function checkAuthAndRoute() {
     const adminUnameEl = document.getElementById('adminSessionUserName');
     if (adminUnameEl) adminUnameEl.textContent = session.username;
 
-    // Pastikan kolom pencarian user admin kosong & terlindungi dari autofill browser
     const asi = document.getElementById('adminUserSearchInput');
-    if (asi) {
-      asi.value = '';
-      asi.setAttribute('readonly', 'readonly');
-    }
+    adminSearchManuallyTyped = false;
+    if (asi) asi.value = '';
     const arf = document.getElementById('adminUserRoleFilter');
     if (arf) arf.value = 'ALL';
     const btnClear = document.getElementById('btnAdminClearSearch');
     if (btnClear) btnClear.style.display = 'none';
 
     setupAdminUserSearchProtection();
-
-    // Guard interval berkala untuk membersihkan injeksi autofill browser pada saat refresh (0 - 3500ms)
-    let autofillTicks = 0;
-    const guardInterval = setInterval(() => {
-      autofillTicks++;
-      const inputEl = document.getElementById('adminUserSearchInput');
-      const sess = getActiveSession();
-      if (inputEl && !adminSearchManuallyTyped) {
-        const val = inputEl.value.trim().toLowerCase();
-        if (val === 'admin' || val === '1922' || (sess && val === sess.username.toLowerCase())) {
-          inputEl.value = '';
-          const bc = document.getElementById('btnAdminClearSearch');
-          if (bc) bc.style.display = 'none';
-          renderAdminUserManagement();
-        }
-      }
-      if (autofillTicks >= 35) {
-        clearInterval(guardInterval);
-      }
-    }, 100);
-
     await renderAdminUserManagement();
   } else {
     if (adminLayoutContainer) adminLayoutContainer.style.display = 'none';
@@ -8941,40 +9255,11 @@ async function checkAuthAndRoute() {
 
     const searchInput = document.getElementById('searchProjectInput');
     projectSearchManuallyTyped = false;
-    if (searchInput) {
-      searchInput.value = '';
-      searchInput.setAttribute('readonly', 'readonly');
-    }
+    if (searchInput) searchInput.value = '';
     const btnClearSidebar = document.getElementById('btnSidebarClearSearch');
     if (btnClearSidebar) btnClearSidebar.style.display = 'none';
 
     setupSearchProjectInputProtection();
-
-    // Guard interval berkala untuk membersihkan injeksi autofill browser pada saat transisi/login (0 - 4500ms)
-    let projectAutofillTicks = 0;
-    const projectGuardInterval = setInterval(() => {
-      projectAutofillTicks++;
-      const si = document.getElementById('searchProjectInput');
-      const sess = getActiveSession();
-      if (si && !projectSearchManuallyTyped) {
-        const val = (si.value || '').trim();
-        if (val) {
-          const lVal = val.toLowerCase();
-          if (lVal === '1922' || lVal === 'admin' || (sess && lVal === sess.username.toLowerCase())) {
-            si.value = '';
-            if (!document.activeElement || document.activeElement !== si) {
-              si.setAttribute('readonly', 'readonly');
-            }
-            const bc = document.getElementById('btnSidebarClearSearch');
-            if (bc) bc.style.display = 'none';
-            renderProjectList();
-          }
-        }
-      }
-      if (projectAutofillTicks >= 45) {
-        clearInterval(projectGuardInterval);
-      }
-    }, 100);
 
     loadProjectsFromStorage();
     renderAll();
@@ -8995,10 +9280,7 @@ let projectSearchManuallyTyped = false;
 function clearProjectSearch() {
   projectSearchManuallyTyped = false;
   const si = document.getElementById('searchProjectInput');
-  if (si) {
-    si.value = '';
-    si.setAttribute('readonly', 'readonly');
-  }
+  if (si) si.value = '';
   const btnClear = document.getElementById('btnSidebarClearSearch');
   if (btnClear) btnClear.style.display = 'none';
   renderProjectList();
@@ -9017,32 +9299,64 @@ function setupSearchProjectInputProtection() {
     }
   });
 
+  const isCredentialsMatch = (val) => {
+    if (!val) return false;
+    const lower = val.trim().toLowerCase();
+    const sess = getActiveSession();
+    return (
+      lower === '1922' ||
+      lower === 'admin' ||
+      (sess && sess.username && lower === sess.username.toLowerCase())
+    );
+  };
+
   const cleanIfAutofill = () => {
     if (projectSearchManuallyTyped) return;
-    const sess = getActiveSession();
-    const val = (si.value || '').trim();
-    if (!val) return;
-    const lower = val.toLowerCase();
-    if (lower === '1922' || lower === 'admin' || (sess && lower === sess.username.toLowerCase())) {
+    if (isCredentialsMatch(si.value)) {
       si.value = '';
-      if (!document.activeElement || document.activeElement !== si) {
-        si.setAttribute('readonly', 'readonly');
-      }
       const bc = document.getElementById('btnSidebarClearSearch');
       if (bc) bc.style.display = 'none';
       renderProjectList();
     }
   };
 
-  si.addEventListener('focus', cleanIfAutofill);
-  si.addEventListener('click', cleanIfAutofill);
-  si.addEventListener('change', cleanIfAutofill);
-  si.addEventListener('input', () => {
-    if (!projectSearchManuallyTyped) {
-      cleanIfAutofill();
+  try {
+    const originalValueDesc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+    if (originalValueDesc && originalValueDesc.set) {
+      Object.defineProperty(si, 'value', {
+        get() {
+          return originalValueDesc.get.call(this);
+        },
+        set(val) {
+          if (!projectSearchManuallyTyped && isCredentialsMatch(val)) {
+            return originalValueDesc.set.call(this, '');
+          }
+          return originalValueDesc.set.call(this, val);
+        },
+        configurable: true
+      });
     }
+  } catch (err) {
+    console.warn('Property descriptor interception not supported:', err);
+  }
+
+  ['animationstart', 'change', 'input', 'focus', 'blur', 'paste'].forEach((evt) => {
+    si.addEventListener(evt, () => {
+      if (!projectSearchManuallyTyped) {
+        cleanIfAutofill();
+      } else if (!si.value) {
+        projectSearchManuallyTyped = false;
+      }
+    });
   });
-  si.addEventListener('animationstart', cleanIfAutofill);
+
+  window.addEventListener('focus', cleanIfAutofill);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') cleanIfAutofill();
+  });
+
+  setInterval(cleanIfAutofill, 500);
+  cleanIfAutofill();
 }
 
 let adminSearchManuallyTyped = false;
@@ -9060,11 +9374,20 @@ function setupAdminUserSearchProtection() {
     }
   });
 
+  const isCredentialsMatch = (val) => {
+    if (!val) return false;
+    const lower = val.trim().toLowerCase();
+    const sess = getActiveSession();
+    return (
+      lower === '1922' ||
+      lower === 'admin' ||
+      (sess && sess.username && lower === sess.username.toLowerCase())
+    );
+  };
+
   const cleanIfAutofill = () => {
     if (adminSearchManuallyTyped) return;
-    const sess = getActiveSession();
-    const val = (asi.value || '').trim().toLowerCase();
-    if (val === 'admin' || val === '1922' || (sess && val === sess.username.toLowerCase())) {
+    if (isCredentialsMatch(asi.value)) {
       asi.value = '';
       const bc = document.getElementById('btnAdminClearSearch');
       if (bc) bc.style.display = 'none';
@@ -9072,11 +9395,43 @@ function setupAdminUserSearchProtection() {
     }
   };
 
-  asi.addEventListener('focus', cleanIfAutofill);
-  asi.addEventListener('click', cleanIfAutofill);
-  asi.addEventListener('change', cleanIfAutofill);
-  asi.addEventListener('input', cleanIfAutofill);
-  asi.addEventListener('animationstart', cleanIfAutofill);
+  try {
+    const originalValueDesc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+    if (originalValueDesc && originalValueDesc.set) {
+      Object.defineProperty(asi, 'value', {
+        get() {
+          return originalValueDesc.get.call(this);
+        },
+        set(val) {
+          if (!adminSearchManuallyTyped && isCredentialsMatch(val)) {
+            return originalValueDesc.set.call(this, '');
+          }
+          return originalValueDesc.set.call(this, val);
+        },
+        configurable: true
+      });
+    }
+  } catch (err) {
+    console.warn('Property descriptor interception not supported:', err);
+  }
+
+  ['animationstart', 'change', 'input', 'focus', 'blur', 'paste'].forEach((evt) => {
+    asi.addEventListener(evt, () => {
+      if (!adminSearchManuallyTyped) {
+        cleanIfAutofill();
+      } else if (!asi.value) {
+        adminSearchManuallyTyped = false;
+      }
+    });
+  });
+
+  window.addEventListener('focus', cleanIfAutofill);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') cleanIfAutofill();
+  });
+
+  setInterval(cleanIfAutofill, 500);
+  cleanIfAutofill();
 }
 
 function clearAdminUserSearch() {
@@ -9084,7 +9439,6 @@ function clearAdminUserSearch() {
   adminSearchManuallyTyped = false;
   if (asi) {
     asi.value = '';
-    asi.setAttribute('readonly', 'readonly');
     const bc = document.getElementById('btnAdminClearSearch');
     if (bc) bc.style.display = 'none';
     renderAdminUserManagement();
@@ -9307,7 +9661,7 @@ async function handleLoginSubmit(event, isForce = false) {
     const finalSearchInput = document.getElementById('searchProjectInput');
     if (finalSearchInput) {
       finalSearchInput.value = '';
-      finalSearchInput.setAttribute('readonly', 'readonly');
+      // finalSearchInput readonly removed
       const pbc = document.getElementById('btnSidebarClearSearch');
       if (pbc) pbc.style.display = 'none';
     }
@@ -9315,7 +9669,7 @@ async function handleLoginSubmit(event, isForce = false) {
     const finalAdminSearch = document.getElementById('adminUserSearchInput');
     if (finalAdminSearch) {
       finalAdminSearch.value = '';
-      finalAdminSearch.setAttribute('readonly', 'readonly');
+      // finalAdminSearch readonly removed
       const bc = document.getElementById('btnAdminClearSearch');
       if (bc) bc.style.display = 'none';
     }
@@ -9421,7 +9775,7 @@ function performActualLogout() {
   const psi = document.getElementById('searchProjectInput');
   if (psi) {
     psi.value = '';
-    psi.setAttribute('readonly', 'readonly');
+    // psi readonly removed
   }
   const pbc = document.getElementById('btnSidebarClearSearch');
   if (pbc) pbc.style.display = 'none';

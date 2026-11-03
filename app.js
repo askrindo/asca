@@ -6727,6 +6727,42 @@ function renderPrintableReport(proj, m) {
                 <div style="color:var(--text-muted);">${proj.approverTitle || 'PT Asuransi Kredit Indonesia'}</div>
               </div>
             </div>
+
+            <!-- LAMPIRAN GLOSARIUM SINGKATAN & INDIKATOR KEUANGAN (UNTUK PEMBACA AWAM) -->
+            <div style="margin-top:1rem; padding-top:0.6rem; border-top:1.5px dashed #cbd5e1; font-size:0.62rem; color:#475569;">
+              <div style="font-weight:800; color:var(--askrindo-navy); margin-bottom:0.35rem; display:flex; align-items:center; gap:4px;">
+                <span>📖 Lampiran: Panduan Singkatan &amp; Indikator Analisa Keuangan Underwriting (Untuk Pembaca Awam)</span>
+              </div>
+              <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:0.4rem; line-height:1.35;">
+                <div style="background:#f8fafc; padding:4px 6px; border-radius:4px; border:1px solid #e2e8f0;">
+                  <strong style="color:var(--askrindo-navy);">GPM (Gross Profit Margin):</strong> Margin Laba Kotor ((Sales - HPP) ÷ Sales). Standar ideal > 10%.
+                </div>
+                <div style="background:#f8fafc; padding:4px 6px; border-radius:4px; border:1px solid #e2e8f0;">
+                  <strong style="color:var(--askrindo-navy);">DSCR (Debt Service Coverage Ratio):</strong> Rasio Bayar Utang Pokok &amp; Bunga Bank (Kas Operasional ÷ Cicilan). Aman ≥ 1.25x.
+                </div>
+                <div style="background:#f8fafc; padding:4px 6px; border-radius:4px; border:1px solid #e2e8f0;">
+                  <strong style="color:var(--askrindo-navy);">DOI (Days of Inventory):</strong> Hari Perputaran Persediaan ((Stok ÷ HPP) × 365). Semakin singkat stok makin cepat laku.
+                </div>
+                <div style="background:#f8fafc; padding:4px 6px; border-radius:4px; border:1px solid #e2e8f0;">
+                  <strong style="color:var(--askrindo-navy);">DOR (Days of Receivables):</strong> Hari Penagihan Piutang ((Piutang ÷ Sales) × 365). Semakin singkat uang kas masuk makin cepat.
+                </div>
+                <div style="background:#f8fafc; padding:4px 6px; border-radius:4px; border:1px solid #e2e8f0;">
+                  <strong style="color:var(--askrindo-navy);">DOP (Days of Payables):</strong> Hari Pembayaran Utang Supplier ((Utang ÷ HPP) × 365). Tempo fasilitas kredit dari pemasok.
+                </div>
+                <div style="background:#f8fafc; padding:4px 6px; border-radius:4px; border:1px solid #e2e8f0;">
+                  <strong style="color:var(--askrindo-navy);">CCC (Cash Conversion Cycle):</strong> Siklus Konversi Kas Bersih (DOI + DOR - DOP). Wajib ≤ Tenor Kredit Bank.
+                </div>
+                <div style="background:#f8fafc; padding:4px 6px; border-radius:4px; border:1px solid #e2e8f0;">
+                  <strong style="color:var(--askrindo-navy);">NWC (Net Working Capital):</strong> Modal Kerja Bersih (Aset Lancar - Utang Lancar). Wajib positif (> Rp 0).
+                </div>
+                <div style="background:#f8fafc; padding:4px 6px; border-radius:4px; border:1px solid #e2e8f0;">
+                  <strong style="color:var(--askrindo-navy);">CBRT (Cash Burn-Rate Test):</strong> Ketahanan Kas Darurat ((Kas) ÷ Kas Keluar Bulanan). Mengukur bulan cadangan kas.
+                </div>
+                <div style="background:#f8fafc; padding:4px 6px; border-radius:4px; border:1px solid #e2e8f0;">
+                  <strong style="color:var(--askrindo-navy);">RAC (Risk Acceptance Criteria):</strong> Standar Parameter Batas Risiko Underwriting Askrindo untuk menerima penjaminan.
+                </div>
+              </div>
+            </div>
           </td>
         </tr>
       </tbody>
@@ -7513,6 +7549,9 @@ function switchTab(tabId) {
       renderPrintableReport(proj, m);
     }
   }
+  setTimeout(() => {
+    enhanceGlossaryTerms();
+  }, 60);
 }
 
 function openNewProjectModal() {
@@ -7939,12 +7978,18 @@ function renderAll() {
   renderScoreCalculationTab(proj, m);
   renderCaseStudyQATab(proj, m);
   renderPrintableReport(proj, m);
+  renderGlobalGlossarySection();
+  setTimeout(() => {
+    enhanceGlossaryTerms();
+  }, 100);
 }
 
 window.addEventListener('DOMContentLoaded', () => {
   setupCustomComboboxes();
   getUsersFromStorage();
   checkAuthAndRoute();
+  initFloatingTooltip();
+  renderGlobalGlossarySection();
 });
 
 window.addEventListener('load', () => {
@@ -9992,3 +10037,607 @@ function toggleAllInputSections(openAll) {
     toggleInputSection(secId, openAll);
   });
 }
+
+// ============================================================================
+// 16. GLOSSARY & INTERACTIVE ABBREVIATION TOOLTIP SYSTEM
+// ============================================================================
+
+const ASCA_GLOSSARY = {
+  GPM: {
+    abbr: 'GPM',
+    fullName: 'Gross Profit Margin',
+    idName: 'Margin Laba Kotor',
+    category: 'Profitabilitas',
+    definition: 'Persentase laba kotor terhadap total penjualan bersih. Mengukur efisiensi biaya produksi atau pembelian barang dibanding harga jual yang dipatok.',
+    formula: '((Penjualan - HPP) ÷ Penjualan) × 100%',
+    laymanTip: 'Semakin tinggi nilainya (> 10%), semakin tebal margin keuntungan dasar perusahaan untuk menutup beban operasional kantor dan cicilan bunga bank.'
+  },
+  DSCR: {
+    abbr: 'DSCR',
+    fullName: 'Debt Service Coverage Ratio',
+    idName: 'Rasio Kemampuan Bayar Pokok & Bunga Utang',
+    category: 'Solvabilitas & Arus Kas',
+    definition: 'Perbandingan arus kas operasional perusahaan dengan total kewajiban cicilan pokok dan bunga utang bank yang jatuh tempo pada periode yang sama.',
+    formula: 'Arus Kas Operasional ÷ Total Kewajiban Utang (Pokok + Bunga)',
+    laymanTip: 'Standar aman minimal perbankan adalah ≥ 1.25x. Jika DSCR < 1.0x, kas debitur tekor dan tidak cukup untuk membayar cicilan bank (berisiko default/macet).'
+  },
+  DOI: {
+    abbr: 'DOI',
+    fullName: 'Days of Inventory',
+    idName: 'Hari Perputaran Persediaan',
+    category: 'Aktivitas Modal Kerja',
+    definition: 'Rata-rata jumlah hari yang dibutuhkan perusahaan sejak membeli persediaan bahan baku hingga barang tersebut laku terjual ke pembeli.',
+    formula: '(Persediaan Barang ÷ HPP) × 365 Hari',
+    laymanTip: 'Semakin sedikit hari (misal 30-60 hari), barang semakin cepat laku berputar. Jika DOI melonjak ratusan hari, barang menumpuk lama atau rusak di gudang.'
+  },
+  DOR: {
+    abbr: 'DOR',
+    fullName: 'Days of Receivables',
+    idName: 'Hari Penagihan Piutang',
+    category: 'Aktivitas Modal Kerja',
+    definition: 'Rata-rata waktu (dalam hari) yang diperlukan perusahaan untuk menagih uang pembayaran dari pelanggan setelah barang dikirim.',
+    formula: '(Piutang Usaha ÷ Penjualan Bersih) × 365 Hari',
+    laymanTip: 'Semakin singkat harinya, uang kas semakin cepat kembali. Jika DOR molor jauh dari kesepakatan tempo, ada indikasi pembeli macet bayar.'
+  },
+  DOP: {
+    abbr: 'DOP',
+    fullName: 'Days of Payables',
+    idName: 'Hari Pembayaran Utang Dagang',
+    category: 'Aktivitas Modal Kerja',
+    definition: 'Rata-rata jangka waktu (dalam hari) yang dinikmati perusahaan untuk melunasi utang pembelian kepada pemasok/supplier.',
+    formula: '(Utang Usaha ÷ Pembelian/HPP) × 365 Hari',
+    laymanTip: 'Menunjukkan fasilitas tempo dari supplier. DOP yang wajar membantu menahan kas keluar, namun jika terlalu lama bisa memicu penghentian pasokan.'
+  },
+  CCC: {
+    abbr: 'CCC',
+    fullName: 'Cash Conversion Cycle',
+    idName: 'Siklus Konversi Kas Bersih',
+    category: 'Aktivitas Modal Kerja',
+    definition: 'Rentang waktu (dalam hari) sejak kas keluar untuk belanja persediaan hingga kas hasil penjualan kembali diterima ke rekening bank.',
+    formula: 'DOI + DOR - DOP (Hari)',
+    laymanTip: 'Siklus perputaran kas riil. Jika CCC (misal 180 hari) lebih lama dari tenor kredit bank (misal 90 hari), terjadi mismatch tenor yang memicu gagal bayar saat jatuh tempo kredit.'
+  },
+  NWC: {
+    abbr: 'NWC',
+    fullName: 'Net Working Capital',
+    idName: 'Modal Kerja Bersih',
+    category: 'Likuiditas',
+    definition: 'Selisih antara total aset lancar (kas, piutang, persediaan) dengan seluruh kewajiban utang jangka pendek yang wajib dilunasi dalam setahun.',
+    formula: 'Total Aset Lancar - Total Liabilitas Jangka Pendek',
+    laymanTip: 'NWC bernilai positif menunjukkan perusahaan punya bantalan dana operasional yang sehat. Jika NWC negatif, terjadi defisit modal kerja (terlalu banyak utang jangka pendek).'
+  },
+  CBRT: {
+    abbr: 'CBRT',
+    fullName: 'Cash Burn-Rate Test',
+    idName: 'Uji Laju Pembakaran Kas',
+    category: 'Ketahanan Likuiditas',
+    definition: 'Uji stres untuk mengukur berapa bulan perusahaan mampu bertahan membiayai operasional rutin jika penjualan mendadak anjlok atau berhenti total.',
+    formula: 'Total Kas & Setara Kas ÷ Rata-Rata Kas Keluar Operasional per Bulan',
+    laymanTip: 'Berapa bulan "napas" cadangan kas perusahaan. Standar aman minimal 3-6 bulan biaya operasional.'
+  },
+  OWC: {
+    abbr: 'OWC',
+    fullName: 'Operating Working Capital',
+    idName: 'Modal Kerja Operasional Riil',
+    category: 'Aktivitas Modal Kerja',
+    definition: 'Jumlah modal kerja yang benar-benar terikat langsung dalam siklus perputaran operasional bisnis harian.',
+    formula: 'Piutang Usaha + Persediaan Barang - Utang Usaha',
+    laymanTip: 'Mengukur modal kerja operasional murni di luar kas menganggur atau utang bank.'
+  },
+  deltaOWC: {
+    abbr: 'ΔOWC',
+    fullName: 'Delta Operating Working Capital',
+    idName: 'Pelepasan / Penyerapan Kas Modal Kerja',
+    category: 'Arus Kas',
+    definition: 'Perubahan kebutuhan modal kerja antara kondisi riil vs kondisi simulasi / perbaikan siklus.',
+    formula: 'OWC Awal - OWC Baru',
+    laymanTip: 'Jika bertanda plus (+), artinya terjadi pelepasan kas surplus (uang terkunci di piutang/stok berhasil dicairkan). Jika minus (-), bisnis butuh tambahan modal.'
+  },
+  EBT: {
+    abbr: 'EBT',
+    fullName: 'Earnings Before Tax',
+    idName: 'Laba Sebelum Pajak Penghasilan',
+    category: 'Profitabilitas',
+    definition: 'Total keuntungan usaha yang dicapai perusahaan setelah dikurangi seluruh beban operasional dan beban bunga pinjaman, sebelum dipotong pajak penghasilan.',
+    formula: 'Laba Operasional (EBIT) - Beban Bunga Pinjaman Bersih',
+    laymanTip: 'Jika EBT positif, bisnis menghasilkan laba bersih nyata. Jika EBT negatif (rugi), modal perusahaan sedang tergerus.'
+  },
+  EBITDA: {
+    abbr: 'EBITDA',
+    fullName: 'Earnings Before Interest, Taxes, Depreciation & Amortization',
+    idName: 'Laba Kas Operasional Murni',
+    category: 'Profitabilitas & Kas',
+    definition: 'Keuntungan murni dari operasional bisnis inti sebelum dikurangi biaya non-kas (penyusutan aset), bunga utang, dan pajak.',
+    formula: 'Laba Operasional + Beban Depresiasi + Beban Amortisasi',
+    laymanTip: 'Ukuran populer di perbankan untuk melihat berapa banyak uang tunai murni yang dicetak oleh operasional perusahaan.'
+  },
+  EBIT: {
+    abbr: 'EBIT',
+    fullName: 'Earnings Before Interest and Taxes',
+    idName: 'Laba Operasional Usaha',
+    category: 'Profitabilitas',
+    definition: 'Laba yang diperoleh murni dari aktivitas usaha inti perusahaan sebelum memperhitungkan beban pembayaran bunga pinjaman dan pajak.',
+    formula: 'Laba Kotor - Beban Operasional (OPEX)',
+    laymanTip: 'Mengukur keberhasilan bisnis inti perusahaan tanpa dipengaruhi oleh struktur utang atau pinjaman bank.'
+  },
+  OPEX: {
+    abbr: 'OPEX',
+    fullName: 'Operating Expenses',
+    idName: 'Beban Operasional Rutin',
+    category: 'Beban Usaha',
+    definition: 'Biaya rutin harian di luar harga modal barang yang harus dibayar perusahaan untuk menjalankan aktivitas bisnis (gaji karyawan, sewa, listrik, promosi).',
+    formula: 'Beban Penjualan + Beban Umum & Administrasi',
+    laymanTip: 'Beban tetap yang harus selalu dibayar perusahaan terlepas dari apakah penjualan sedang sepi atau ramai.'
+  },
+  COGS: {
+    abbr: 'COGS / HPP',
+    fullName: 'Cost of Goods Sold / Harga Pokok Penjualan',
+    idName: 'Harga Pokok Penjualan',
+    category: 'Beban Usaha',
+    definition: 'Total biaya langsung yang dikeluarkan untuk membeli bahan baku atau membeli barang dagangan yang laku terjual.',
+    formula: 'Persediaan Awal + Pembelian Bersih - Persediaan Akhir',
+    laymanTip: 'Harga modal belanja barang. Semakin hemat HPP, margin keuntungan kotor (GPM) semakin besar.'
+  },
+  HPP: {
+    abbr: 'HPP',
+    fullName: 'Harga Pokok Penjualan',
+    idName: 'Harga Pokok Penjualan (COGS)',
+    category: 'Beban Usaha',
+    definition: 'Biaya modal langsung dari produk atau bahan mentah yang terjual pada periode laporan keuangan.',
+    formula: 'Persediaan Awal + Pembelian Bersih - Persediaan Akhir',
+    laymanTip: 'Harga modal barang dagang sebelum ditambah biaya sewa toko, gaji, dan keuntungan.'
+  },
+  RAC: {
+    abbr: 'RAC',
+    fullName: 'Risk Acceptance Criteria',
+    idName: 'Kriteria Penerimaan Risiko Standar Askrindo',
+    category: 'Kebijakan Underwriting',
+    definition: 'Batas toleransi risiko dan indikator rasio finansial minimum yang ditetapkan PT Askrindo sebagai syarat kelayakan akseptasi asuransi kredit.',
+    formula: 'Batas standar: CR > 1.0, DER < 3.5, GPM > 10%, NWC > Rp 0, dll.',
+    laymanTip: 'Rambu-rambu lampu hijau kelayakan penjaminan. Jika banyak kriteria RAC yang dilanggar, fasilitas wajib ditolak atau disyaratkan mitigasi ketat.'
+  },
+  IJP: {
+    abbr: 'IJP',
+    fullName: 'Imbal Jasa Penjaminan',
+    idName: 'Premi Jaminan Asuransi Kredit',
+    category: 'Underwriting Askrindo',
+    definition: 'Tarif premi yang wajib dibayarkan bank penyalur / debitur kepada PT Askrindo atas penerbitan sertifikat jaminan kredit.',
+    formula: 'Tarif % p.a. (per tahun) × Plafon Kredit yang Dijamin',
+    laymanTip: 'Harga premi asuransi kredit yang disesuaikan dengan tingkat risiko debitur (Rating AAA tarif 0,65% s/d Rating D tarif 4,50%).'
+  },
+  CR: {
+    abbr: 'CR',
+    fullName: 'Current Ratio',
+    idName: 'Rasio Lancar Likuiditas',
+    category: 'Likuiditas',
+    definition: 'Rasio perbandingan seluruh aset lancar perusahaan terhadap kewajiban utang jangka pendek.',
+    formula: 'Total Aset Lancar ÷ Total Liabilitas Jangka Pendek',
+    laymanTip: 'Standar aman minimal 1.0x - 1.25x. Jika di bawah 1.0x, aset lancar debitur tidak sanggup menutupi utang yang segera jatuh tempo.'
+  },
+  QR: {
+    abbr: 'QR',
+    fullName: 'Quick Ratio (Acid-Test)',
+    idName: 'Rasio Cepat Likuiditas Murni',
+    category: 'Likuiditas',
+    definition: 'Rasio kesiapan likuiditas super likuid tanpa memasukkan persediaan barang (karena persediaan butuh waktu untuk dijual).',
+    formula: '(Kas + Piutang Usaha) ÷ Liabilitas Jangka Pendek',
+    laymanTip: 'Standar aman ≥ 0.8x. Menguji kesiapan kas debitur jika terjadi krisis dan persediaan di gudang tidak laku terjual.'
+  },
+  DER: {
+    abbr: 'DER',
+    fullName: 'Debt to Equity Ratio',
+    idName: 'Rasio Utang terhadap Modal Sendiri',
+    category: 'Solvabilitas & Leverage',
+    definition: 'Rasio yang membandingkan total utang (kewajiban) perusahaan dengan modal bersih yang disetor para pemegang saham.',
+    formula: 'Total Liabilitas (Utang) ÷ Total Ekuitas (Modal Sendiri)',
+    laymanTip: 'Standar RAC Askrindo umumnya ≤ 3.0x - 4.0x. Jika DER terlalu besar (misal 8.0x), modal perusahaan terlalu tipis dan usahanya hidup dari utang.'
+  },
+  DAR: {
+    abbr: 'DAR',
+    fullName: 'Debt to Asset Ratio',
+    idName: 'Rasio Utang terhadap Total Aset',
+    category: 'Solvabilitas & Leverage',
+    definition: 'Persentase kekayaan/aset perusahaan yang dibiayai dari pinjaman utang pihak ketiga.',
+    formula: '(Total Liabilitas ÷ Total Aset) × 100%',
+    laymanTip: 'Standar aman ≤ 70%-80%. Jika DAR > 85%, hampir seluruh harta perusahaan merupakan milik kreditur/bank.'
+  },
+  ROE: {
+    abbr: 'ROE',
+    fullName: 'Return on Equity',
+    idName: 'Tingkat Imbal Hasil Modal Sendiri',
+    category: 'Profitabilitas',
+    definition: 'Tingkat keuntungan bersih yang mampu dicetak perusahaan dari setiap rupiah modal yang disetor pemilik saham.',
+    formula: '(Laba Bersih ÷ Total Ekuitas) × 100%',
+    laymanTip: 'Mengukur kepiawaian manajemen memutar uang pemilik modal. Nilai ROE di atas bunga deposito/SBN (> 10%) tergolong produktif.'
+  },
+  ROA: {
+    abbr: 'ROA',
+    fullName: 'Return on Assets',
+    idName: 'Tingkat Imbal Hasil Total Aset',
+    category: 'Profitabilitas',
+    definition: 'Efisiensi perusahaan dalam memanfaatkan seluruh aset yang dimilikinya untuk menghasilkan laba bersih.',
+    formula: '(Laba Bersih ÷ Total Aset) × 100%',
+    laymanTip: 'Menunjukkan seberapa produktif harta pabrik/gudang/kendaraan perusahaan menghasilkan laba.'
+  },
+  DCC: {
+    abbr: 'DCC',
+    fullName: 'Dynamic Cash Conversion',
+    idName: 'Metode Konversi Kas Dinamis ASCA',
+    category: 'Metodologi ASCA',
+    definition: 'Metodologi audit siklus perputaran uang kas riil berbasis data laporan keuangan audited untuk membuktikan kesesuaian perputaran dengan tenor pinjaman bank.',
+    formula: 'Audit komparasi DOR, DOI, DOP, dan CCC Audited vs Data Bank',
+    laymanTip: 'Mendeteksi apakah klaim perputaran dari debitur dan bank sesuai fakta di lapangan atau ada manipulasi/mismatch.'
+  },
+  SWCM: {
+    abbr: 'SWCM',
+    fullName: 'Stress-Tested Working Capital Model',
+    idName: 'Model Stres Pengujian Modal Kerja',
+    category: 'Metodologi ASCA',
+    definition: 'Model simulasi ketahanan modal kerja di bawah berbagai skenario tekanan pasar (shock kurs valas, kenaikan harga bahan baku, piutang macet, stok rusak).',
+    formula: 'Simulasi multivariat 5 skenario (Baseline, Data Bank, FX Shock, Severe Stress, Turnaround)',
+    laymanTip: 'Menguji apakah debitur tetap mampu membayar jika terjadi krisis ekonomi, inflasi, atau pelemahan kurs.'
+  },
+  KMK: {
+    abbr: 'KMK',
+    fullName: 'Kredit Modal Kerja',
+    idName: 'Kredit Modal Kerja Bank',
+    category: 'Fasilitas Kredit',
+    definition: 'Fasilitas pinjaman perbankan jangka pendek (biasanya berjangka 1 tahun dan dapat diperpanjang) untuk membiayai modal operasional usaha debitur.',
+    formula: 'Plafon pinjaman bank berbunga berjalan',
+    laymanTip: 'Pinjaman bank untuk modal harian (beli bahan mentah, gaji, talangan tagihan pelanggan).'
+  },
+  SCF: {
+    abbr: 'SCF',
+    fullName: 'Supply Chain Financing',
+    idName: 'Pembiayaan Rantai Pasok',
+    category: 'Fasilitas Kredit',
+    definition: 'Skema pembiayaan modal kerja berbasis transaksi perdagangan nyata (Purchase Order, Surat Jalan, atau Faktur Tagihan Invoice) dengan pembeli/penjual utama.',
+    formula: 'Plafon kredit berjangka (misal 90-180 hari) dicairkan per pesanan barang',
+    laymanTip: 'Pinjaman bank yang langsung dicairkan untuk membiayai pesanan dari pembeli besar yang kredibel.'
+  },
+  PO: {
+    abbr: 'PO',
+    fullName: 'Purchase Order',
+    idName: 'Surat Pesanan Pembelian Resmi',
+    category: 'Dokumen Transaksi',
+    definition: 'Dokumen kontrak resmi pemesanan barang yang diterbitkan pembeli (buyer) kepada debitur dengan kuantum dan harga mengikat.',
+    formula: 'Surat pesanan resmi yang menjadi dasar pencairan fasilitas modal kerja',
+    laymanTip: 'Bukti sahih bahwa debitur memiliki pembeli pasti sebelum modal kerja dicairkan.'
+  },
+  NPL: {
+    abbr: 'NPL',
+    fullName: 'Non-Performing Loan',
+    idName: 'Kredit Bermasalah / Macet',
+    category: 'Risiko Kredit',
+    definition: 'Pinjaman bank yang cicilannya tertunggak lebih dari 90 hari kalender (Kolektibilitas 3 Kurang Lancar, 4 Diragukan, atau 5 Macet).',
+    formula: 'Status tunggakan kredit berdasarkan data Sistem Layanan Informasi Keuangan (SLIK OJK)',
+    laymanTip: 'Lampu merah bagi penjaminan kredit; menandakan debitur memiliki rekam jejak gagal bayar kewajiban.'
+  },
+  LTV: {
+    abbr: 'LTV',
+    fullName: 'Loan to Value Ratio',
+    idName: 'Rasio Plafon terhadap Nilai Agunan',
+    category: 'Agunan & Mitigasi',
+    definition: 'Persentase perbandingan antara jumlah kredit yang diberikan bank terhadap nilai wajar/taksasi agunan jaminan yang diserahkan debitur.',
+    formula: '(Plafon Kredit ÷ Nilai Taksasi Agunan) × 100%',
+    laymanTip: 'Semakin kecil persentase LTV (misal < 70%), agunan penjaminan semakin tebal dan aman.'
+  },
+  SLIK: {
+    abbr: 'SLIK / OJK',
+    fullName: 'Sistem Layanan Informasi Keuangan',
+    idName: 'Laporan Riwayat Kredit Perbankan (OJK)',
+    category: 'Integritas & Karakter',
+    definition: 'Sistem database resmi Otoritas Jasa Keuangan (OJK) yang mencatat seluruh riwayat pinjaman dan kelancaran pembayaran debitur di seluruh bank/lembaga keuangan se-Indonesia.',
+    formula: 'Kolektibilitas 1 (Lancar) s/d Kolektibilitas 5 (Macet)',
+    laymanTip: 'Catatan rekam jejak kejujuran dan kedisiplinan debitur dalam membayar pinjaman bank di masa lalu.'
+  },
+  RingFenced: {
+    abbr: 'Ring-Fenced',
+    fullName: 'Ring-Fenced Escrow Cash Account',
+    idName: 'Penguncian Rekening Penampungan Kas',
+    category: 'Mitigasi Underwriting',
+    definition: 'Skema mitigasi di mana seluruh pembayaran dari pembeli (buyer) wajib ditransfer langsung ke rekening khusus (escrow/virtual account) di bank mitra dan didebet otomatis untuk melunasi pinjaman sebelum sisanya dapat ditarik debitur.',
+    formula: 'Covenant Penjaminan Askrindo (Condition Precedent)',
+    laymanTip: 'Uang pembayaran pembeli dikunci di bank sehingga debitur tidak bisa menyalahgunakan atau melarikan uang kas untuk keperluan lain.'
+  }
+};
+
+let activeGlossaryCategory = 'ALL';
+let glossaryTooltipTimer = null;
+
+function initFloatingTooltip() {
+  if (document.getElementById('ascaGlossaryTooltip')) return;
+
+  const tt = document.createElement('div');
+  tt.id = 'ascaGlossaryTooltip';
+  tt.className = 'asca-floating-tooltip';
+  document.body.appendChild(tt);
+
+  // Delegated Hover & Click Events
+  document.addEventListener('mouseover', (e) => {
+    const target = e.target.closest('.abbr-term');
+    if (!target) return;
+    const termKey = target.dataset.term;
+    if (termKey && ASCA_GLOSSARY[termKey]) {
+      clearTimeout(glossaryTooltipTimer);
+      showGlossaryTooltip(termKey, target);
+    }
+  });
+
+  document.addEventListener('mouseout', (e) => {
+    const target = e.target.closest('.abbr-term');
+    if (!target) return;
+    glossaryTooltipTimer = setTimeout(() => {
+      hideGlossaryTooltip();
+    }, 120);
+  });
+
+  document.addEventListener('click', (e) => {
+    const target = e.target.closest('.abbr-term');
+    if (target) {
+      const termKey = target.dataset.term;
+      if (termKey && ASCA_GLOSSARY[termKey]) {
+        e.preventDefault();
+        showGlossaryTooltip(termKey, target, true);
+      }
+    } else {
+      if (!e.target.closest('#ascaGlossaryTooltip')) {
+        hideGlossaryTooltip();
+      }
+    }
+  });
+}
+
+function showGlossaryTooltip(termKey, targetEl, isSticky = false) {
+  const item = ASCA_GLOSSARY[termKey];
+  if (!item) return;
+
+  let tt = document.getElementById('ascaGlossaryTooltip');
+  if (!tt) {
+    initFloatingTooltip();
+    tt = document.getElementById('ascaGlossaryTooltip');
+  }
+
+  tt.innerHTML = `
+    <div class="asca-tt-header">
+      <div>
+        <div class="asca-tt-abbr">${item.abbr}</div>
+        <div class="asca-tt-fullname">${item.fullName}</div>
+      </div>
+      <span class="asca-tt-badge">${item.category}</span>
+    </div>
+    <div class="asca-tt-idname">${item.idName}</div>
+    <div class="asca-tt-def">${item.definition}</div>
+    <div class="asca-tt-formula"><strong>Formula:</strong> ${item.formula}</div>
+    <div class="asca-tt-tip">
+      <strong>💡 Cara Baca Orang Awam:</strong><br />${item.laymanTip}
+    </div>
+    <div style="margin-top:0.4rem; text-align:right;">
+      <a href="javascript:void(0)" onclick="scrollToGlossaryTerm('${termKey}')" style="font-size:0.65rem; color:#0284c7; font-weight:700; text-decoration:none;">
+        Buka di Kamus Lengkap &darr;
+      </a>
+    </div>
+  `;
+
+  // Position calculation
+  const rect = targetEl.getBoundingClientRect();
+  const ttWidth = Math.min(330, window.innerWidth - 24);
+  tt.style.width = ttWidth + 'px';
+
+  let top = rect.bottom + 8;
+  let left = rect.left + (rect.width / 2) - (ttWidth / 2);
+
+  tt.classList.add('show');
+  const ttHeight = tt.offsetHeight || 180;
+
+  if (top + ttHeight > window.innerHeight - 12) {
+    top = Math.max(12, rect.top - ttHeight - 8);
+  }
+
+  if (left + ttWidth > window.innerWidth - 12) {
+    left = window.innerWidth - ttWidth - 12;
+  }
+  if (left < 12) left = 12;
+
+  tt.style.top = top + 'px';
+  tt.style.left = left + 'px';
+}
+
+function hideGlossaryTooltip() {
+  const tt = document.getElementById('ascaGlossaryTooltip');
+  if (tt) {
+    tt.classList.remove('show');
+  }
+}
+
+function renderGlobalGlossarySection() {
+  const container = document.getElementById('glossaryCardsGrid');
+  const badgeEl = document.getElementById('glossaryCountBadge');
+  const pillsEl = document.getElementById('glossaryCategoryPills');
+  if (!container || !pillsEl) return;
+
+  const categories = [
+    { id: 'ALL', label: 'Semua Istilah' },
+    { id: 'Aktivitas Modal Kerja', label: 'Aktivitas Modal Kerja (DOI, DOR, DOP, CCC)' },
+    { id: 'Likuiditas', label: 'Likuiditas & Kas (CR, QR, NWC, CBRT)' },
+    { id: 'Profitabilitas', label: 'Profitabilitas (GPM, EBT, EBITDA, OPEX)' },
+    { id: 'Solvabilitas & Arus Kas', label: 'Solvabilitas & Arus Kas (DSCR, DER, DAR)' },
+    { id: 'Underwriting Askrindo', label: 'Underwriting Askrindo (RAC, IJP, DCC, SWCM)' }
+  ];
+
+  pillsEl.innerHTML = categories.map(cat => `
+    <button type="button" class="glossary-filter-pill ${activeGlossaryCategory === cat.id ? 'active' : ''}" onclick="selectGlossaryCategory('${cat.id}')">
+      ${cat.label}
+    </button>
+  `).join('');
+
+  filterGlossaryCards();
+}
+
+function selectGlossaryCategory(catId) {
+  activeGlossaryCategory = catId;
+  const pills = document.querySelectorAll('.glossary-filter-pill');
+  pills.forEach((p, idx) => {
+    p.classList.toggle('active', p.getAttribute('onclick')?.includes(`'${catId}'`));
+  });
+  filterGlossaryCards();
+}
+
+function filterGlossaryCards() {
+  const container = document.getElementById('glossaryCardsGrid');
+  const badgeEl = document.getElementById('glossaryCountBadge');
+  const inputEl = document.getElementById('inputSearchGlossary');
+  if (!container) return;
+
+  const query = (inputEl ? inputEl.value : '').toLowerCase().trim();
+  const allTerms = Object.values(ASCA_GLOSSARY);
+
+  const filtered = allTerms.filter(item => {
+    const matchesCat = activeGlossaryCategory === 'ALL' || item.category.toLowerCase().includes(activeGlossaryCategory.toLowerCase()) || activeGlossaryCategory.toLowerCase().includes(item.category.toLowerCase());
+    if (!matchesCat) return false;
+    if (!query) return true;
+    return (
+      item.abbr.toLowerCase().includes(query) ||
+      item.fullName.toLowerCase().includes(query) ||
+      item.idName.toLowerCase().includes(query) ||
+      item.definition.toLowerCase().includes(query) ||
+      item.laymanTip.toLowerCase().includes(query)
+    );
+  });
+
+  if (badgeEl) {
+    badgeEl.textContent = `${filtered.length} dari ${allTerms.length} Istilah Tersedia`;
+  }
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div style="grid-column:1/-1; text-align:center; padding:2rem 1rem; color:#64748b; font-size:0.8rem; background:#f8fafc; border-radius:8px; border:1px dashed #cbd5e1;">
+        Tidak ada singkatan yang cocok dengan kata kunci "<strong>${query}</strong>".<br />
+        Silakan coba singkatan lain seperti <em>GPM, DSCR, DOI, NWC, atau IJP</em>.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = filtered.map(item => `
+    <div class="glossary-card" id="glossary-card-${item.abbr.replace(/[^a-zA-Z0-9]/g, '')}">
+      <div>
+        <div class="glossary-card-top">
+          <div>
+            <span class="glossary-card-abbr">${item.abbr}</span>
+            <div class="glossary-card-fullname">${item.fullName}</div>
+          </div>
+          <span class="asca-tt-badge">${item.category}</span>
+        </div>
+        <div class="glossary-card-idname">${item.idName}</div>
+        <div class="glossary-card-def">${item.definition}</div>
+      </div>
+      <div>
+        <div class="glossary-card-formula"><strong>Rumus:</strong> ${item.formula}</div>
+        <div class="glossary-card-tip">
+          <strong>💡 Cara Baca Orang Awam:</strong><br />${item.laymanTip}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleGlossarySection() {
+  const body = document.getElementById('glossarySectionBody');
+  const txt = document.getElementById('txtToggleGlossary');
+  if (!body) return;
+  const isHidden = body.style.display === 'none';
+  body.style.display = isHidden ? 'block' : 'none';
+  if (txt) {
+    txt.textContent = isHidden ? 'Tutup / Minimize' : 'Buka / Tampilkan';
+  }
+}
+
+function scrollToGlossarySection() {
+  const sec = document.getElementById('sectionGlobalGlossary');
+  const body = document.getElementById('glossarySectionBody');
+  const txt = document.getElementById('txtToggleGlossary');
+  if (body && body.style.display === 'none') {
+    body.style.display = 'block';
+    if (txt) txt.textContent = 'Tutup / Minimize';
+  }
+  if (sec) {
+    sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    sec.style.outline = '3px solid #0284c7';
+    setTimeout(() => {
+      sec.style.outline = 'none';
+    }, 2000);
+  }
+}
+
+function scrollToGlossaryTerm(termKey) {
+  scrollToGlossarySection();
+  setTimeout(() => {
+    const cardId = 'glossary-card-' + termKey.replace(/[^a-zA-Z0-9]/g, '');
+    const cardEl = document.getElementById(cardId);
+    if (cardEl) {
+      cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      cardEl.style.boxShadow = '0 0 0 3px #f59e0b, 0 10px 25px rgba(245, 158, 11, 0.2)';
+      cardEl.style.borderColor = '#f59e0b';
+      setTimeout(() => {
+        cardEl.style.boxShadow = '';
+        cardEl.style.borderColor = '';
+      }, 2500);
+    }
+  }, 350);
+}
+
+const GLOSSARY_REGEX = /\b(GPM|DSCR|DOI|DOR|DOP|CCC|NWC|CBRT|EBT|EBITDA|EBIT|OPEX|COGS|HPP|OWC|ΔOWC|RAC|IJP|CR|QR|DER|DAR|ROE|ROA|DCC|SWCM|KMK|SCF|PO|NPL|LTV|SLIK)\b/g;
+
+function enhanceGlossaryTerms(root) {
+  if (!root) root = document.getElementById('projectWorkspaceView') || document.body;
+  if (!root) return;
+
+  const targetSelector = 'th, .slider-top span, .kpi-label, .case-decision-desc, .term-desc, .audit-note, .table-summary, .status-desc';
+  const candidates = root.querySelectorAll(targetSelector);
+
+  candidates.forEach(el => {
+    if (el.dataset.glossaryProcessed || el.closest('.no-glossary') || el.closest('#sectionGlobalGlossary') || el.closest('#printableMemoContainer')) return;
+    el.dataset.glossaryProcessed = 'true';
+
+    const textNodes = [];
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null, false);
+    let n;
+    while ((n = walker.nextNode())) {
+      if (n.nodeValue && GLOSSARY_REGEX.test(n.nodeValue) && n.parentNode && !n.parentNode.closest('.abbr-term')) {
+        textNodes.push(n);
+      }
+    }
+
+    textNodes.forEach(node => {
+      const parent = node.parentNode;
+      if (!parent || parent.closest('.abbr-term')) return;
+      const val = node.nodeValue;
+      const frag = document.createDocumentFragment();
+      let lastIdx = 0;
+
+      val.replace(GLOSSARY_REGEX, (match, term, offset) => {
+        if (offset > lastIdx) {
+          frag.appendChild(document.createTextNode(val.substring(lastIdx, offset)));
+        }
+        const span = document.createElement('span');
+        span.className = 'abbr-term';
+        span.dataset.term = term;
+        span.tabIndex = 0;
+        span.textContent = match;
+        const gItem = ASCA_GLOSSARY[term];
+        if (gItem) {
+          span.title = `${gItem.abbr} (${gItem.fullName}) - ${gItem.idName}`;
+        }
+        frag.appendChild(span);
+        lastIdx = offset + match.length;
+      });
+
+      if (lastIdx < val.length) {
+        frag.appendChild(document.createTextNode(val.substring(lastIdx)));
+      }
+      parent.replaceChild(frag, node);
+    });
+  });
+}
+

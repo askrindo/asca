@@ -2973,3 +2973,251 @@ input:-webkit-autofill {
   position: relative;
   width: 100%;
 }
+
+/* ============================================================================
+   INTERACTIVE GLOSSARY & HOVER TOOLTIP SYSTEM
+   ============================================================================ */
+.abbr-term {
+  border-bottom: 1.5px dotted #0284c7;
+  cursor: help;
+  position: relative;
+  display: inline-block;
+  color: inherit;
+  font-weight: inherit;
+  transition: all 0.15s ease-in-out;
+  text-decoration: none;
+}
+
+.abbr-term:hover,
+.abbr-term:focus {
+  color: #0369a1;
+  background-color: rgba(2, 132, 199, 0.1);
+  border-radius: 3px;
+  outline: none;
+}
+
+/* Floating Tooltip Card */
+.asca-floating-tooltip {
+  position: fixed;
+  z-index: 999999;
+  width: 330px;
+  max-width: 90vw;
+  background: #ffffff;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  box-shadow: 0 12px 28px -4px rgba(15, 23, 42, 0.22), 0 4px 10px -2px rgba(15, 23, 42, 0.1);
+  font-size: 0.76rem;
+  line-height: 1.45;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(6px);
+  transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+.asca-floating-tooltip.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.asca-tt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin-bottom: 0.35rem;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 0.35rem;
+}
+
+.asca-tt-abbr {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--askrindo-navy, #003366);
+  line-height: 1.2;
+}
+
+.asca-tt-fullname {
+  font-size: 0.72rem;
+  color: #64748b;
+  font-style: italic;
+  display: block;
+}
+
+.asca-tt-badge {
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 99px;
+  background: #e0f2fe;
+  color: #0369a1;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.asca-tt-idname {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.3rem;
+}
+
+.asca-tt-def {
+  font-size: 0.74rem;
+  color: #334155;
+  margin-bottom: 0.45rem;
+  line-height: 1.4;
+}
+
+.asca-tt-formula {
+  background: #f8fafc;
+  border-left: 3px solid #0284c7;
+  padding: 0.3rem 0.5rem;
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.68rem;
+  color: #0f172a;
+  margin-bottom: 0.45rem;
+  word-break: break-all;
+}
+
+.asca-tt-tip {
+  background: #fefce8;
+  border: 1px solid #fef08a;
+  border-radius: 6px;
+  padding: 0.4rem 0.55rem;
+  font-size: 0.71rem;
+  color: #854d0e;
+  line-height: 1.35;
+}
+
+/* Global Bottom Glossary Section */
+.global-glossary-section {
+  margin-top: 2rem;
+  margin-bottom: 3.5rem;
+}
+
+.glossary-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.glossary-card:hover {
+  border-color: #93c5fd;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.08);
+  transform: translateY(-2px);
+}
+
+.glossary-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+.glossary-card-abbr {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--askrindo-navy, #003366);
+}
+
+.glossary-card-fullname {
+  font-size: 0.74rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.glossary-card-idname {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 0.35rem;
+}
+
+.glossary-card-def {
+  font-size: 0.75rem;
+  color: #334155;
+  line-height: 1.45;
+  margin-bottom: 0.5rem;
+  flex: 1;
+}
+
+.glossary-card-formula {
+  background: #f1f5f9;
+  border-radius: 4px;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.68rem;
+  font-family: monospace;
+  color: #334155;
+  margin-bottom: 0.5rem;
+}
+
+.glossary-card-tip {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  padding: 0.4rem 0.55rem;
+  font-size: 0.71rem;
+  color: #166534;
+  line-height: 1.35;
+}
+
+/* Floating Quick Button */
+.btn-floating-glossary {
+  position: fixed;
+  bottom: 22px;
+  right: 24px;
+  z-index: 999;
+  background: var(--askrindo-navy, #003366);
+  color: #ffffff;
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  border-radius: 99px;
+  padding: 0.55rem 1.05rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 51, 102, 0.35);
+  transition: all 0.2s ease;
+}
+
+.btn-floating-glossary:hover {
+  background: #002244;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 51, 102, 0.45);
+}
+
+.glossary-filter-pill {
+  padding: 0.3rem 0.75rem;
+  border-radius: 99px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.glossary-filter-pill:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.glossary-filter-pill.active {
+  background: var(--askrindo-navy, #003366);
+  border-color: var(--askrindo-navy, #003366);
+  color: #ffffff;
+}

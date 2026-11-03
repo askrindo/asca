@@ -21,7 +21,7 @@ const SUPABASE_CONFIG = {
 async function supabaseFetch(endpoint, options = {}) {
   const url = `${SUPABASE_CONFIG.url}/rest/v1/${endpoint}`;
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 4000);
+  const timeoutId = setTimeout(() => controller.abort(), 12000);
 
   const headers = {
     'apikey': SUPABASE_CONFIG.key,
@@ -616,6 +616,9 @@ async function fetchProjectsFromCloud(username) {
     } catch (err) {
       if (err.message && (err.message.includes('PGRST205') || err.message.includes('404') || err.message.includes('schema cache'))) {
         isUserProjectsTableAvailable = false;
+      } else {
+        console.warn('[ASCA Cloud] Gagal query user_projects (timeout/network):', err);
+        return null;
       }
     }
   }
@@ -636,7 +639,10 @@ async function fetchProjectsFromCloud(username) {
           console.warn('[ASCA Cloud] Gagal decode base64 projects payload:', pe);
         }
       }
-      return [];
+      if (isUserProjectsTableAvailable === false) {
+        return [];
+      }
+      return null;
     }
   } catch (err) {
     console.warn('[ASCA Cloud] Gagal memuat projects dari database cloud:', err);
@@ -761,6 +767,11 @@ async function syncProjectsWithCloud(username) {
           localStorage.setItem(userKey, JSON.stringify(projects));
         }
 
+        const syncProj = getActiveProject();
+        if (syncProj) {
+          populateFormInputs(syncProj);
+        }
+
         renderAll();
         renderWelcomeHub();
 
@@ -818,11 +829,40 @@ function loadProjectsFromStorage() {
         }
       }
     }
+
+    // 2. Fallback darurat jika cache lokal pengguna kosong
+    if (projects.length === 0) {
+      const backupKeys = [STORAGE_KEY, 'ASKRINDO_ASCA_PROJECTS_V1', 'ASCA_DRAFT_PROJECT'];
+      for (const k of backupKeys) {
+        try {
+          const rawB = localStorage.getItem(k);
+          if (rawB) {
+            const parsedB = JSON.parse(rawB);
+            if (Array.isArray(parsedB) && parsedB.length > 0) {
+              projects = parsedB.map(sanitizeProjectData);
+              activeProjectId = projects[0]?.id || null;
+              break;
+            }
+          }
+        } catch (eb) {}
+      }
+    }
+
+    // 3. Fallback awal khusus 1922 jika sama sekali belum ada cache di browser ini
+    if (projects.length === 0 && uname === '1922') {
+      projects = getDefaultProjects();
+      activeProjectId = projects[0]?.id || null;
+    }
+
+    const curP = getActiveProject();
+    if (curP) {
+      populateFormInputs(curP);
+    }
   } catch (e) {
     console.warn('Gagal memuat localStorage:', e);
   }
 
-  // 2. Sinkronkan dari Cloud Database Supabase (Cloud adalah Master untuk akun ini)
+  // 4. Sinkronkan dari Cloud Database Supabase (Cloud adalah Master untuk akun ini)
   syncProjectsWithCloud(uname);
 }
 
@@ -1142,7 +1182,7 @@ function renderWelcomeHub() {
           <div class="hub-step-num">1</div>
           <div>
             <div style="font-weight:700; font-size:0.78rem; color:#0f172a; margin-bottom:2px;">Verifikasi Legalitas &amp; Karakter</div>
-            <div style="font-size:0.7rem; color:#64748b; line-height:1.35;">Pengecekan otomatis Daftar Hitam INAPROC LKPP, perkara perdata SIPP Pengadilan Negeri, dan sentimen media Google News.</div>
+            <div style="font-size:0.7rem; color:#64748b; line-height:1.35;">Pengecekan otomatis Daftar Hitam INAPROC LKPP, perkara perdata SIPP Pengadilan Negeri, dan screening pemberitaan negatif media.</div>
           </div>
         </div>
         <div class="hub-step-item">
@@ -1859,6 +1899,21 @@ function openDirectPutusanMAPortal(name) {
   window.open(`https://putusan3.mahkamahagung.go.id/search.html?q=${q}`, '_blank');
 }
 
+function openCustomSippPortal() {
+  const proj = getActiveProject();
+  const currentCity = (proj ? proj.city : '') || '';
+  const customCity = prompt('Masukkan nama Kabupaten / Kota Pengadilan Negeri yang ingin dibuka SIPP-nya (contoh: Jakarta Pusat, Jakarta Selatan, Surabaya, Medan, Bandung, dll):', currentCity);
+  if (!customCity || !customCity.trim()) return;
+  const cleanCompName = (proj ? proj.companyName : '') || '';
+  const info = getSippPnInfo(customCity.trim(), cleanCompName);
+
+  if (cleanCompName && navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(cleanCompName).catch(() => {});
+  }
+  window.open(info.baseUrl, '_blank');
+  showToast(`⚖️ Membuka web ${info.pnName} (${info.baseUrl}). Nama entitas "${cleanCompName}" telah disalin ke clipboard.`);
+}
+
 function setSippResult(status, compName) {
   updateCharacterParam('sippStatus', status);
   const statusLabel = status === 'clean' 
@@ -1914,7 +1969,7 @@ function runAutoGoogleNewsCheckSync(proj, notifyToast = false) {
   proj.googleNewsLiveVersion = 'REAL_LIVE_V2';
   proj.negativeNews = 'clean'; // Jika belum/tidak ditemukan berita negatif, perusahaan bersih (20/20 Poin)
   if (notifyToast) {
-    showToast(`📰 Memindai berita riil Google News untuk "${cleanName}"...`);
+    showToast(`📰 Memindai screening pemberitaan negatif untuk "${cleanName}"...`);
   }
 }
 
@@ -2092,14 +2147,14 @@ async function fetchGoogleNewsForProject(isManualClick = false, isAutoInputTrigg
   if (isAutoInputTrigger) {
     const inaprocTxt = proj.inaprocStatus === 'blacklisted' ? `BLACKLIST LKPP (SK: ${proj.inaprocAutoResult?.skNumber || '-'})` : 'INAPROC Bersih (15/15)';
     const newsTxt = proj.googleNewsItems.length === 0
-      ? 'Nihil Berita di Google News (Citra Bersih 20/20)'
+      ? 'Nihil Pemberitaan Negatif (Citra Bersih 20/20 Poin)'
       : (proj.negativeNews === 'negative' ? `Terdeteksi Berita Negatif (0/20)` : `${proj.googleNewsItems.length} Berita Ditemukan (20/20)`);
     showToast(`🔍 Auto-Screening 5C "${cleanName}": ${inaprocTxt} | ${newsTxt}.`);
   } else if (isManualClick) {
     if (proj.googleNewsItems.length === 0) {
-      showToast(`Google News "${cleanName}": Tidak ditemukan berita (0 artikel) — Tidak memiliki citra negatif (20/20 Poin).`);
+      showToast(`Screening Berita "${cleanName}": Tidak ditemukan pemberitaan negatif (0 artikel) — Citra Bersih (20/20 Poin).`);
     } else {
-      showToast(`Google News "${cleanName}": Ditemukan ${proj.googleNewsItems.length} artikel berita riil.`);
+      showToast(`Screening Berita "${cleanName}": Ditemukan ${proj.googleNewsItems.length} artikel berita riil.`);
     }
   }
 }
@@ -2230,19 +2285,23 @@ const ASKRINDO_5C_CATALOG = [
     category: 'character',
     categoryLabel: '1. Character',
     weight: 0.010,
-    name: 'Reputasi Bisnis',
-    desc: 'Rekam jejak hubungan bisnis dengan mitra kerja, supplier, konsumen, sengketa perdata SIPP, dan blacklist INAPROC LKPP.',
+    name: 'Reputasi Bisnis & Screening Pemberitaan Negatif',
+    desc: 'Rekam jejak hubungan bisnis dengan mitra kerja, supplier, konsumen, sengketa perdata SIPP, blacklist INAPROC LKPP, dan hasil screening pemberitaan negatif media massa (20 Poin).',
     options: [
-      { key: 'A', text: 'Memiliki reputasi bisnis baik atau tidak terdapat informasi negatif dari supplier, konsumen, dan perusahaan sejenis dalam 2 tahun terakhir', score: 100 },
+      { key: 'A', text: 'Memiliki reputasi bisnis baik, tidak terdapat informasi negatif dari supplier/konsumen, dan nihil pemberitaan negatif media (20 Poin Penuh)', score: 100 },
       { key: 'B', text: 'Informasi tentang hubungan bisnis tidak dimiliki karena debitur merupakan pemain baru', score: 50 },
-      { key: 'C', text: 'Terdapat informasi negatif dari supplier/pelanggan/perusahaan sejenis, hutang piutang bermasalah atau terkait kasus hukum', score: 0 }
+      { key: 'C', text: 'Terdapat informasi negatif dari supplier/pelanggan, hutang piutang bermasalah, sengketa hukum, atau terdeteksi pemberitaan negatif media (0 Poin)', score: 0 }
     ],
     evalAuto: (proj, m, f23, ctx) => {
       if (proj.negativeNews === 'negative' || proj.inaprocStatus === 'blacklisted' || proj.sippStatus === 'bankrupt' || proj.sippStatus === 'disputed') {
-        return { key: 'C', score: 0, reason: 'Terdeteksi sengketa hukum / blacklist LKPP / isu negatif media' };
+        const issues = [];
+        if (proj.negativeNews === 'negative') issues.push('pemberitaan negatif media (0/20 Poin)');
+        if (proj.inaprocStatus === 'blacklisted') issues.push('blacklist LKPP');
+        if (proj.sippStatus === 'bankrupt' || proj.sippStatus === 'disputed') issues.push('sengketa perdata SIPP');
+        return { key: 'C', score: 0, reason: `Terdeteksi ${issues.join(', ')}` };
       }
       if (ctx.businessAge < 2) return { key: 'B', score: 50, reason: `Debitur pemain baru (${ctx.businessAge} thn)` };
-      return { key: 'A', score: 100, reason: 'Reputasi bisnis baik & nihil informasi negatif' };
+      return { key: 'A', score: 100, reason: 'Reputasi bisnis baik & nihil pemberitaan negatif media (20/20 Poin)' };
     }
   },
   {
@@ -3172,7 +3231,19 @@ function compute5CAnalysis(proj, f23 = {}, m = null) {
     additionalDesc: proj.collateralAdditionalDesc || '',
     liquidationVal: proj.collateralAdditionalLiquidationVal || 0,
     isImport,
-    charBreakdown: { agePts: 20, maxAgePts: 25, creditPts: 30, maxCreditPts: 30, inaprocPts: 15, maxInaprocPts: 15, sippPts: 10, maxSippPts: 10, newsPts: 20, maxNewsPts: 20, total: charScore },
+    charBreakdown: {
+      agePts: businessAge >= 5 ? 25 : (businessAge >= 2 ? 20 : 10),
+      maxAgePts: 25,
+      creditPts: (proj.slikStatus === 'kol3_5' || proj.defaultHistory === 'defaulted') ? 0 : (proj.slikStatus === 'kol2' ? 15 : 30),
+      maxCreditPts: 30,
+      inaprocPts: proj.inaprocStatus === 'blacklisted' ? 0 : 15,
+      maxInaprocPts: 15,
+      sippPts: (proj.sippStatus === 'bankrupt' || proj.sippStatus === 'disputed') ? 0 : 10,
+      maxSippPts: 10,
+      newsPts: proj.negativeNews === 'negative' ? 0 : 20,
+      maxNewsPts: 20,
+      total: charScore
+    },
     capBreakdown: { gpmPts: 28, maxGpmPts: 35, tenorPts: 20, maxTenorPts: 30, icrPts: 15, maxIcrPts: 20, runwayPts: 10, maxRunwayPts: 15, icrVal: icr, total: capScore },
     capitBreakdown: { derPts: 28, maxDerPts: 35, crPts: 20, maxCrPts: 25, nwcPts: 15, maxNwcPts: 20, eqPts: 15, maxEqPts: 20, total: capitScore },
     collBreakdown: { invPts: 40, maxInvPts: 50, faPts: 40, maxFaPts: 50, total: collScore },
@@ -4643,7 +4714,7 @@ function updateCharacterParam(paramKey, val) {
   renderAll();
   const labelMap = {
     defaultHistory: 'Riwayat Wanprestasi',
-    negativeNews: 'Pemberitaan Media',
+    negativeNews: 'Screening Pemberitaan Negatif',
     inaprocStatus: 'INAPROC LKPP',
     sippStatus: 'SIPP Pengadilan',
     slikStatus: 'SLIK OJK'
@@ -4800,10 +4871,11 @@ function render5CTab(proj, m) {
               <div class="fivec-progress-fill" style="width:${catScores.character}%; background:${getScoreColor(catScores.character)};"></div>
             </div>
             <div style="font-size:0.64rem; color:#475569; line-height:1.4;">
-              &bull; Usaha: <strong>${fiveC.businessAge} Thn (${fiveC.estYr})</strong><br/>
-              &bull; SLIK: <strong>${fiveC.slikStatus}</strong><br/>
-              &bull; LKPP: <strong style="color:${proj.inaprocStatus === 'blacklisted' ? '#dc2626' : '#166534'};">${fiveC.inaprocStatus}</strong><br/>
-              &bull; SIPP: <strong>${fiveC.sippStatus}</strong>
+              &bull; Usaha: <strong>${fiveC.businessAge} Thn (${fiveC.estYr})</strong> (${fiveC.charBreakdown?.agePts ?? 20}/25 Poin)<br/>
+              &bull; SLIK OJK: <strong>${fiveC.slikStatus}</strong> (${fiveC.charBreakdown?.creditPts ?? 30}/30 Poin)<br/>
+              &bull; INAPROC LKPP: <strong style="color:${proj.inaprocStatus === 'blacklisted' ? '#dc2626' : '#166534'};">${fiveC.inaprocStatus}</strong> (${fiveC.charBreakdown?.inaprocPts ?? 15}/15 Poin)<br/>
+              &bull; SIPP MA: <strong>${fiveC.sippStatus}</strong> (${fiveC.charBreakdown?.sippPts ?? 10}/10 Poin)<br/>
+              &bull; Pemberitaan Negatif: <strong style="color:${proj.negativeNews === 'negative' ? '#dc2626' : '#166534'};">${proj.negativeNews === 'negative' ? 'Terdeteksi Isu Negatif' : 'Nihil Berita Negatif'}</strong> (${fiveC.charBreakdown?.newsPts ?? (proj.negativeNews === 'negative' ? 0 : 20)}/20 Poin)
             </div>
           </div>
         </div>
@@ -4918,20 +4990,26 @@ function render5CTab(proj, m) {
           </div>
         </div>
 
-        <!-- 2. GOOGLE NEWS CARD -->
+        <!-- 2. SCREENING PEMBERITAAN NEGATIF CARD -->
         <div style="background:#ffffff; border:1.5px solid ${proj.negativeNews === 'negative' ? '#fca5a5' : '#cbd5e1'}; border-radius:8px; padding:0.6rem 0.75rem; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
             <div style="font-size:0.75rem; font-weight:800; color:#1e293b; display:flex; align-items:center; gap:5px;">
               <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${proj.negativeNews === 'negative' ? '#dc2626' : '#16a34a'};"></span>
-              Google News Screening
+              Screening Pemberitaan Negatif
             </div>
             <button type="button" onclick="fetchGoogleNewsForProject(true)" style="background:#f1f5f9; border:1px solid #cbd5e1; border-radius:4px; font-size:0.62rem; padding:2px 6px; cursor:pointer; font-weight:700;">
-              Update Berita
+              Update Screening
             </button>
           </div>
           <div style="font-size:0.66rem; color:#475569; line-height:1.4;">
             <div>Pencarian: <strong>${cleanCompName}</strong></div>
-            <div>Hasil: <strong style="color:${proj.negativeNews === 'negative' ? '#dc2626' : '#166534'};">${proj.negativeNews === 'negative' ? 'Terdeteksi Isu Berita Negatif' : 'Nihil Berita Negatif'}</strong></div>
+            <div>Status: <strong style="color:${proj.negativeNews === 'negative' ? '#dc2626' : '#166534'};">${proj.negativeNews === 'negative' ? 'Terdeteksi Berita Negatif (0/20 Poin)' : 'Nihil Berita Negatif (20/20 Poin)'}</strong></div>
+            <div style="margin-top:3px;">
+              <select class="form-control" style="font-size:0.68rem; padding:2px 6px;" onchange="updateCharacterParam('negativeNews', this.value)">
+                <option value="clean" ${proj.negativeNews !== 'negative' ? 'selected' : ''}>Nihil Pemberitaan Negatif (20 Poin Penuh)</option>
+                <option value="negative" ${proj.negativeNews === 'negative' ? 'selected' : ''}>Terdeteksi Isu Berita Negatif (0 Poin)</option>
+              </select>
+            </div>
             <div style="margin-top:4px; font-size:0.62rem; color:#64748b;">
               Diakses: ${accessedAt} &bull; ${newsItems.length} artikel terindeks.
             </div>
@@ -4948,13 +5026,27 @@ function render5CTab(proj, m) {
             <span style="font-size:0.62rem; font-weight:700; color:#64748b;">${proj.city || 'Yurisdiksi Domisili'}</span>
           </div>
           <div style="font-size:0.66rem; color:#475569; line-height:1.4;">
-            <div>Status Hukum: <strong style="color:${proj.sippStatus === 'clean' ? '#166534' : '#dc2626'};">${fiveC.sippStatus}</strong></div>
+            <div>Status Hukum: <strong style="color:${proj.sippStatus === 'clean' ? '#166534' : '#dc2626'};">${fiveC.sippStatus}</strong> (${fiveC.charBreakdown?.sippPts ?? 10}/10 Poin)</div>
             <div style="margin-top:3px;">
               <select class="form-control" style="font-size:0.68rem; padding:2px 6px;" onchange="updateCharacterParam('sippStatus', this.value)">
                 <option value="clean" ${proj.sippStatus === 'clean' ? 'selected' : ''}>Nihil Gugatan Perdata / PKPU</option>
                 <option value="disputed" ${proj.sippStatus === 'disputed' ? 'selected' : ''}>Sengketa Gugatan Perdata</option>
                 <option value="bankrupt" ${proj.sippStatus === 'bankrupt' ? 'selected' : ''}>Permohonan Kepailitan / PKPU</option>
               </select>
+            </div>
+            <div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:6px;">
+              <button type="button" class="btn btn-outline btn-xs" onclick="openSippPortal('${safeCompName}', '${proj.city || ''}')" title="Buka website portal SIPP Pengadilan Negeri domisili debitur (${proj.city || 'Setempat'})" style="font-size:0.62rem; padding:2px 6px; font-weight:700; color:#0369a1; border-color:#bae6fd; background:#f0f9ff; cursor:pointer;">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px; vertical-align:middle;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                Buka SIPP ${proj.city ? proj.city : 'Domisili'}
+              </button>
+              <button type="button" class="btn btn-outline btn-xs" onclick="openCustomSippPortal()" title="Buka portal SIPP Pengadilan Negeri daerah lain (di luar domisili)" style="font-size:0.62rem; padding:2px 6px; font-weight:700; color:#475569; border-color:#cbd5e1; background:#f8fafc; cursor:pointer;">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px; vertical-align:middle;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                SIPP Daerah Lain
+              </button>
+              <button type="button" class="btn btn-outline btn-xs" onclick="openDirectPutusanMAPortal('${safeCompName}')" title="Buka Direktori Putusan Mahkamah Agung RI (putusan3.mahkamahagung.go.id)" style="font-size:0.62rem; padding:2px 6px; font-weight:700; color:#7c3aed; border-color:#ddd6fe; background:#f5f3ff; cursor:pointer;">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px; vertical-align:middle;"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                Web Putusan MA
+              </button>
             </div>
           </div>
         </div>
@@ -7657,8 +7749,8 @@ function renderPrintableReport(proj, m) {
                     &bull; Lama Usaha: Usia ${fiveC.businessAge} Thn (${fiveC.charBreakdown?.agePts || 20}/25 Poin)<br/>
                     &bull; SLIK OJK: ${fiveC.slikStatus} (${fiveC.charBreakdown?.creditPts || 30}/30 Poin)<br/>
                     &bull; INAPROC LKPP: ${fiveC.inaprocStatus} (${fiveC.charBreakdown?.inaprocPts || 10}/15 Poin)<br/>
-                    &bull; SIPP MA: ${fiveC.sippStatus} (${fiveC.charBreakdown?.sippPts || 10}/10 Poin)<br/>
-                    &bull; Google News: Nihil Berita Negatif (${fiveC.charBreakdown?.newsPts || 20}/20 Poin)
+                    &bull; SIPP MA: ${fiveC.sippStatus} (${fiveC.charBreakdown?.sippPts ?? 10}/10 Poin)<br/>
+                    &bull; Screening Pemberitaan Negatif: ${proj.negativeNews === 'negative' ? 'Terdeteksi Isu Berita Negatif' : 'Nihil Berita Negatif'} (${fiveC.charBreakdown?.newsPts ?? (proj.negativeNews === 'negative' ? 0 : 20)}/20 Poin)
                   </td>
                   <td style="color:${fiveC.charScore >= 80 ? '#166534' : '#d97706'}; font-weight:700;">
                     ${fiveC.charScore >= 90 ? 'Sangat Baik (Reputasi Mapan)' : (fiveC.charScore >= 70 ? 'Baik / Standar' : 'Perhatian Khusus')}
@@ -8364,7 +8456,7 @@ function syncInputsToModel() {
   proj.companyName = getStr('inp_companyName');
   proj.city = getStr('inp_city') || '';
   if (proj.companyName.trim() !== oldCompName) {
-    // Otomatis memicu pencarian Daftar Hitam INAPROC LKPP & Berita Google News 1x setelah user selesai mengetik nama perusahaan
+    // Otomatis memicu pencarian Daftar Hitam INAPROC LKPP & Screening Pemberitaan Negatif 1x setelah user selesai mengetik nama perusahaan
     runAutoInaprocCheckSync(proj, false);
     runAutoGoogleNewsCheckSync(proj, false);
     if (inaprocAutoTriggerTimer) clearTimeout(inaprocAutoTriggerTimer);
@@ -8575,7 +8667,7 @@ function saveAllInputsAndRecalculate() {
   runAutoGoogleNewsCheckSync(proj, false);
   saveProjectsToStorage();
   renderAll();
-  showToast('Perubahan data input berhasil disimpan & memindai ulang Daftar Hitam + Berita Google News...');
+  showToast('Perubahan data input berhasil disimpan & memindai ulang Daftar Hitam + Screening Pemberitaan Negatif...');
   // Langsung jalankan pencarian baru Daftar Hitam & Google News saat tombol Simpan diklik
   triggerLiveInaprocCheck(false);
   fetchGoogleNewsForProject(true, true);

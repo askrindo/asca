@@ -1263,8 +1263,9 @@ function renderProjectList() {
 
   container.innerHTML = filtered
     .map((p) => {
-      const m = computeDCCSWCM(p);
-      const isActive = !isHubActive && p.id === activeProjectId;
+      try {
+        const m = computeDCCSWCM(p);
+        const isActive = !isHubActive && p.id === activeProjectId;
       return `
         <div class="project-item ${isActive ? 'active' : ''}" onclick="selectProject('${p.id}')">
           <div class="project-item-top">
@@ -1290,6 +1291,21 @@ function renderProjectList() {
           </div>
         </div>
       `;
+      } catch (errProj) {
+        console.error(`[ASCA] Gagal merender card debitur ${p.companyName}:`, errProj);
+        const isActive = !isHubActive && p.id === activeProjectId;
+        return `
+          <div class="project-item ${isActive ? 'active' : ''}" onclick="selectProject('${p.id}')">
+            <div class="project-item-top">
+              <span class="project-name" title="${p.companyName || 'Tanpa Nama'}">${p.companyName || 'Tanpa Nama'}</span>
+              <span class="grade-badge grade-pending">-</span>
+            </div>
+            <div class="project-meta">
+              <span>${p.bankName || '-'}</span> &bull; <span>${fmtRp(p.requestedPlafond || 0, true)}</span>
+            </div>
+          </div>
+        `;
+      }
     })
     .join('');
 }
@@ -2614,9 +2630,10 @@ const ASKRINDO_5C_CATALOG = [
       { key: 'B', text: 'Tidak', score: 0 }
     ],
     evalAuto: (proj, m, f23, ctx) => {
-      if (ctx.annualDSCR >= 1.0 && (f23.eat || f23.netInc || 0) >= 0) return { key: 'A', score: 100, reason: `DSCR ${ctx.annualDSCR.toFixed(2)}x (>=1.0x)` };
+      const dscrVal = (typeof ctx.annualDSCR === 'number' && !isNaN(ctx.annualDSCR)) ? ctx.annualDSCR : 1.2;
+      if (dscrVal >= 1.0 && (f23.eat || f23.netInc || 0) >= 0) return { key: 'A', score: 100, reason: `DSCR ${dscrVal.toFixed(2)}x (>=1.0x)` };
       if (ctx.f23Ebit > ctx.f23Int) return { key: 'A', score: 100, reason: 'EBIT menutup beban bunga' };
-      return { key: 'B', score: 0, reason: `DSCR ${ctx.annualDSCR.toFixed(2)}x (<1.0x / defisit)` };
+      return { key: 'B', score: 0, reason: `DSCR ${dscrVal.toFixed(2)}x (<1.0x / defisit)` };
     }
   },
 
@@ -2981,9 +2998,11 @@ const ASKRINDO_5C_CATALOG = [
       { key: 'D', text: 'Tidak memberikan agunan tambahan pada kasus yang memerlukan agunan tambahan', score: 25 }
     ],
     evalAuto: (proj, m, f23, ctx) => {
-      if (ctx.faRatio >= 100) return { key: 'A', score: 100, reason: `Jaminan tambahan ${ctx.faRatio.toFixed(0)}% (melebihi keperluan)` };
-      if (ctx.faRatio >= 50 || (ctx.invRatio + ctx.faRatio) >= 100) return { key: 'B', score: 75, reason: 'Jaminan tambahan mencukupi keperluan' };
-      if (ctx.faRatio > 0) return { key: 'C', score: 50, reason: 'Jaminan tambahan di bawah nilai plafon' };
+      const faRatioVal = (typeof ctx.faRatio === 'number' && !isNaN(ctx.faRatio)) ? ctx.faRatio : 0;
+      const invRatioVal = (typeof ctx.invRatio === 'number' && !isNaN(ctx.invRatio)) ? ctx.invRatio : 0;
+      if (faRatioVal >= 100) return { key: 'A', score: 100, reason: `Jaminan tambahan ${faRatioVal.toFixed(0)}% (melebihi keperluan)` };
+      if (faRatioVal >= 50 || (invRatioVal + faRatioVal) >= 100) return { key: 'B', score: 75, reason: 'Jaminan tambahan mencukupi keperluan' };
+      if (faRatioVal > 0) return { key: 'C', score: 50, reason: 'Jaminan tambahan di bawah nilai plafon' };
       return { key: 'D', score: 25, reason: 'Tidak ada jaminan tambahan' };
     }
   },
@@ -4965,9 +4984,9 @@ function render5CTab(proj, m) {
               <div class="fivec-progress-fill" style="width:${catScores.collateral}%; background:${getScoreColor(catScores.collateral)};"></div>
             </div>
             <div style="font-size:0.64rem; color:#475569; line-height:1.4;">
-              &bull; Agunan Pokok (Inv): <strong>${fiveC.invRatio.toFixed(0)}%</strong> &bull; Jaminan FA: <strong>${fiveC.faRatio.toFixed(0)}%</strong><br/>
-              &bull; Total Coverage: <strong>${(fiveC.invRatio + fiveC.faRatio).toFixed(0)}% Plafond</strong><br/>
-              &bull; Pengikatan Yuridis: <strong>${fiveC.primaryBinding}</strong><br/>
+              &bull; Agunan Pokok (Inv): <strong>${(typeof fiveC.invRatio === 'number' && !isNaN(fiveC.invRatio) ? fiveC.invRatio : 0).toFixed(0)}%</strong> &bull; Jaminan FA: <strong>${(typeof fiveC.faRatio === 'number' && !isNaN(fiveC.faRatio) ? fiveC.faRatio : 0).toFixed(0)}%</strong><br/>
+              &bull; Total Coverage: <strong>${((typeof fiveC.invRatio === 'number' ? fiveC.invRatio : 0) + (typeof fiveC.faRatio === 'number' ? fiveC.faRatio : 0)).toFixed(0)}% Plafond</strong><br/>
+              &bull; Pengikatan Yuridis: <strong>${fiveC.primaryBinding || '-'}</strong><br/>
               &bull; Reasuransi: <strong>${proj.reinsuranceSupport === 'none' ? 'Belum Ada' : 'Treaty Askrindo'}</strong>
             </div>
           </div>
@@ -7715,20 +7734,20 @@ function renderPrintableReport(proj, m) {
                 </tr>
                 <tr>
                   <td><strong>Debt to Equity Ratio (DER)</strong></td>
-                  <td class="num-col">${m.der22.toFixed(2)}x</td>
-                  <td class="num-col"><strong>${m.der23.toFixed(2)}x</strong></td>
+                  <td class="num-col">${typeof m.der22 === 'number' && !isNaN(m.der22) ? m.der22.toFixed(2) + 'x' : '-'}</td>
+                  <td class="num-col"><strong>${typeof m.der23 === 'number' && !isNaN(m.der23) ? m.der23.toFixed(2) + 'x' : (m.isNoDebt23 ? 'N/A (Bebas Utang)' : '-')}</strong></td>
                   <td>&le; 2.50x (Batas Solvabilitas Sehat)</td>
-                  <td style="color:${m.der23 <= 2.5 ? '#166534' : '#dc2626'}; font-weight:700;">
-                    ${m.der23 === 0 ? '&#10003; Memenuhi RAC (Bebas Utang)' : (m.der23 <= 2.5 ? '&#10003; Memenuhi RAC' : '&#9888; Deviasi (Leverage Berlebih / Utang Tinggi)')}
+                  <td style="color:${(typeof m.der23 === 'number' && m.der23 <= 2.5) || m.isNoDebt23 ? '#166534' : '#dc2626'}; font-weight:700;">
+                    ${m.isNoDebt23 || m.der23 === 0 ? '&#10003; Memenuhi RAC (Bebas Utang)' : ((typeof m.der23 === 'number' && m.der23 <= 2.5) ? '&#10003; Memenuhi RAC' : '&#9888; Deviasi (Leverage Berlebih / Utang Tinggi)')}
                   </td>
                 </tr>
                 <tr>
                   <td><strong>Debt Service Coverage Ratio (DSCR)</strong></td>
                   <td class="num-col">-</td>
-                  <td class="num-col"><strong>${m.dscr23.toFixed(2)}x</strong></td>
+                  <td class="num-col"><strong>${typeof m.dscr23 === 'number' && !isNaN(m.dscr23) ? m.dscr23.toFixed(2) + 'x' : '-'}</strong></td>
                   <td>&ge; 1.25x (Ketahanan Pelunasan Utang)</td>
-                  <td style="color:${m.dscr23 >= 1.25 ? '#166534' : '#dc2626'}; font-weight:700;">
-                    ${m.dscr23 >= 1.25 ? '&#10003; Memenuhi RAC' : '&#9888; Deviasi (Kapasitas Angsuran Tertekan)'}
+                  <td style="color:${typeof m.dscr23 === 'number' && m.dscr23 >= 1.25 ? '#166534' : '#dc2626'}; font-weight:700;">
+                    ${typeof m.dscr23 === 'number' && m.dscr23 >= 1.25 ? '&#10003; Memenuhi RAC' : '&#9888; Deviasi (Kapasitas Angsuran Tertekan)'}
                   </td>
                 </tr>
               </tbody>
@@ -7792,8 +7811,8 @@ function renderPrintableReport(proj, m) {
                   <td><strong>4. Collateral (20%)</strong></td>
                   <td class="num-col"><strong style="color:${fiveC.collScore >= 70 ? '#166534' : '#dc2626'};">${fiveC.collScore} / 100</strong></td>
                   <td>
-                    &bull; Agunan Pokok (${fiveC.primaryTypeLabel || 'Persediaan'}): ${fmtRp(fiveC.invVal, true)} (${fiveC.invRatio.toFixed(0)}% plafond &mdash; ${fiveC.collBreakdown?.invPts ?? 0}/50 Poin)<br/>
-                    &bull; Jaminan Tambahan (${fiveC.additionalTypeLabel || 'Fixed Assets'}): ${fmtRp(fiveC.faVal, true)} (${fiveC.faRatio.toFixed(0)}% plafond &mdash; ${fiveC.collBreakdown?.faPts ?? 0}/50 Poin)
+                    &bull; Agunan Pokok (${fiveC.primaryTypeLabel || 'Persediaan'}): ${fmtRp(fiveC.invVal, true)} (${(typeof fiveC.invRatio === 'number' && !isNaN(fiveC.invRatio) ? fiveC.invRatio : 0).toFixed(0)}% plafond &mdash; ${fiveC.collBreakdown?.invPts ?? 0}/50 Poin)<br/>
+                    &bull; Jaminan Tambahan (${fiveC.additionalTypeLabel || 'Fixed Assets'}): ${fmtRp(fiveC.faVal, true)} (${(typeof fiveC.faRatio === 'number' && !isNaN(fiveC.faRatio) ? fiveC.faRatio : 0).toFixed(0)}% plafond &mdash; ${fiveC.collBreakdown?.faPts ?? 0}/50 Poin)
                   </td>
                   <td style="color:${fiveC.collScore >= 70 ? '#166534' : '#d97706'}; font-weight:700;">
                     ${fiveC.collScore >= 80 ? 'Sangat Memadai (HT &ge; 120%)' : (fiveC.collScore >= 60 ? 'Cukup / Standar' : 'Agunan Kurang')}
@@ -7982,7 +8001,7 @@ function renderPrintableReport(proj, m) {
                   <td><strong>Pilar 5: Kecukupan Agunan Pokok &amp; Jaminan Tambahan</strong></td>
                   <td class="num-col">15 Poin</td>
                   <td class="num-col"><strong style="color:${(m.scorePillars[4]?.earnedPts || 0) >= 10 ? '#166534' : '#dc2626'};">${m.scorePillars[4]?.earnedPts || 0} Poin</strong></td>
-                  <td>Agunan Pokok Persediaan (${fiveC.invRatio.toFixed(0)}%) &amp; Jaminan Tambahan Fixed Assets (${fiveC.faRatio.toFixed(0)}% vs HT &ge;120%)</td>
+                  <td>Agunan Pokok Persediaan (${(typeof fiveC.invRatio === 'number' && !isNaN(fiveC.invRatio) ? fiveC.invRatio : 0).toFixed(0)}%) &amp; Jaminan Tambahan Fixed Assets (${(typeof fiveC.faRatio === 'number' && !isNaN(fiveC.faRatio) ? fiveC.faRatio : 0).toFixed(0)}% vs HT &ge;120%)</td>
                 </tr>
                 <tr>
                   <td><strong>Pilar 6: Solvabilitas &amp; Struktur Modal</strong></td>
@@ -9213,7 +9232,11 @@ function printUnderwritingReport() {
 // ============================================================================
 function renderAll() {
   const proj = getActiveProject();
-  renderProjectList();
+  try {
+    renderProjectList();
+  } catch (eList) {
+    console.error('[ASCA] Error renderProjectList:', eList);
+  }
 
   const emptyStateEl = document.getElementById('dashboardEmptyState');
   const activeStateEl = document.getElementById('dashboardActiveState');
@@ -9333,7 +9356,13 @@ function renderAll() {
   if (emptyStateEl) emptyStateEl.style.display = 'none';
   if (activeStateEl) activeStateEl.style.display = 'block';
 
-  const m = computeDCCSWCM(proj);
+  let m = null;
+  try {
+    m = computeDCCSWCM(proj);
+  } catch (eM) {
+    console.error('[ASCA] Error computeDCCSWCM:', eM);
+  }
+  if (!m) return;
 
   const y1El = document.getElementById('thLabelYear1');
   const y2El = document.getElementById('thLabelYear2');
@@ -9342,8 +9371,8 @@ function renderAll() {
   if (y2El) y2El.textContent = m.yr2;
   if (bYEl) bYEl.textContent = `${m.yr1} & ${m.yr2}`;
 
-  renderBanner(proj, m);
-  populateFormInputs(proj);
+  try { renderBanner(proj, m); } catch (e) { console.error('Error renderBanner:', e); }
+  try { populateFormInputs(proj); } catch (e) { console.error('Error populateFormInputs:', e); }
   try { renderDashboardTab(proj, m); } catch (e) { console.error('Error renderDashboardTab:', e); }
   try { renderRatiosTab(proj, m); } catch (e) { console.error('Error renderRatiosTab:', e); }
   try { renderCashFlowTab(proj, m); } catch (e) { console.error('Error renderCashFlowTab:', e); }
@@ -9540,9 +9569,21 @@ async function checkAuthAndRoute() {
 
     setupSearchProjectInputProtection();
 
-    loadProjectsFromStorage();
-    renderAll();
-    showWelcomeHub();
+    try {
+      loadProjectsFromStorage();
+    } catch (eLoad) {
+      console.error('[ASCA] Error loadProjectsFromStorage:', eLoad);
+    }
+    try {
+      renderAll();
+    } catch (eRender) {
+      console.error('[ASCA] Error renderAll:', eRender);
+    }
+    try {
+      showWelcomeHub();
+    } catch (eHub) {
+      console.error('[ASCA] Error showWelcomeHub:', eHub);
+    }
     // Trigger 1x saat aplikasi pertama kali dibuka
     setTimeout(() => {
       const initProj = getActiveProject();

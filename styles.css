@@ -1819,40 +1819,125 @@ input[type="range"] {
 
 /* VISUAL CYCLE BARS */
 .ccc-visual-box {
-  padding: 0.45rem 0.6rem;
+  padding: 0.5rem 0.65rem;
   background: var(--bg-subtle);
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-color);
   margin-top: 0.35rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ccc-visual-box:hover {
+  border-color: #94a3b8;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
 }
 
 .ccc-bar-track {
-  height: 22px;
+  height: 26px;
   background: #e2e8f0;
-  border-radius: 4px;
+  border-radius: 6px;
   display: flex;
   overflow: hidden;
-  margin: 0.3rem 0;
+  margin: 0.35rem 0 0.25rem;
   font-size: 0.74rem;
   font-weight: 700;
   color: #fff;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15);
+  position: relative;
+}
+
+.ccc-bar-seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 4px;
+  cursor: pointer;
+  position: relative;
+  transition: filter 0.15s ease, transform 0.12s ease;
+  user-select: none;
+}
+
+.ccc-bar-seg:hover {
+  filter: brightness(1.18);
+  z-index: 5;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
 }
 
 .ccc-seg-dio {
   background: #0284c7;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  white-space: nowrap;
-  overflow: hidden;
 }
 .ccc-seg-dso {
   background: #f59e0b;
+}
+
+.timeline-hover-hint {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f1f5f9;
+  padding: 2px 7px;
+  border-radius: 99px;
+  border: 1px solid #e2e8f0;
+}
+
+/* FLOATING TIMELINE TOOLTIP */
+.timeline-floating-tooltip {
+  position: fixed;
+  z-index: 999999;
+  display: none;
+  pointer-events: none;
+  background: #ffffff;
+  color: #1e293b;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  box-shadow: 0 14px 30px -4px rgba(0, 51, 102, 0.25), 0 8px 12px -4px rgba(0, 0, 0, 0.12);
+  padding: 0.65rem 0.85rem;
+  max-width: 320px;
+  width: max-content;
+  font-size: 0.72rem;
+  line-height: 1.42;
+  transition: opacity 0.1s ease;
+}
+
+.timeline-floating-tooltip.show {
+  display: block;
+}
+
+.timeline-tt-header {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.timeline-tt-title {
+  font-weight: 800;
+  font-size: 0.78rem;
+  color: var(--askrindo-navy, #003366);
+}
+
+.timeline-tt-badge {
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
   white-space: nowrap;
-  overflow: hidden;
+}
+
+.timeline-tt-val {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 2px 0 4px;
 }
 
 /* SCENARIO PRESET PILLS */

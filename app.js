@@ -5437,46 +5437,134 @@ function renderDashboardTab(proj, m) {
   }).join('');
 
   const maxBarDays = Math.max(380, m.grossCycle23 + 20, m.totalMaxTenor + 20);
-  const pct = (d) => Math.min(100, Math.max(3, (d / maxBarDays) * 100)).toFixed(1);
+  const pct = (d) => Math.min(100, Math.max(4, (d / maxBarDays) * 100)).toFixed(1);
 
   document.getElementById('dashboardTimelineVisual').innerHTML = `
+    <!-- BAR A: KLAIM DATA BANK -->
     <div class="ccc-visual-box" style="margin-top:0;">
-      <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:700;">
+      <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:700; align-items:center;">
         <span>A. Sesuai Data Bank (DOI ${proj.claimedDOI} + DOR ${proj.claimedDOR} = ${m.claimedGrossCycle} Hr)</span>
-        <span style="color:#0369a1;">CCC (-DOP ${proj.claimedDOP}): ${m.claimedCCC} Hr</span>
+        <span style="color:#0369a1; font-size:0.75rem;">CCC (-DOP ${proj.claimedDOP}): ${m.claimedCCC} Hr</span>
       </div>
       <div class="ccc-bar-track">
-        <div class="ccc-seg-dio" style="width:${pct(proj.claimedDOI)}%">DOI ${proj.claimedDOI}h</div>
-        <div class="ccc-seg-dso" style="width:${pct(proj.claimedDOR)}%">DOR ${proj.claimedDOR}h</div>
+        <div class="ccc-bar-seg ccc-seg-dio"
+          style="width:${pct(proj.claimedDOI)}%; background:#0284c7;"
+          data-tt-title="DOI &bull; Days of Inventory (Klaim Bank)"
+          data-tt-category="Klaim Bank"
+          data-tt-days="${proj.claimedDOI} Hari"
+          data-tt-pct="${((proj.claimedDOI / Math.max(1, m.claimedGrossCycle)) * 100).toFixed(0)}% dari Gross Cycle"
+          data-tt-formula="Asumsi perputaran persediaan barang yang diajukan bank mitra"
+          data-tt-evaluation="Estimasi bank: Perputaran stok persediaan barang diasumsikan berjalan lancar selama ${proj.claimedDOI} hari sebelum terjual."
+          data-tt-status-bg="#e0f2fe"
+          data-tt-status-color="#0369a1"
+          title="DOI Klaim Bank: ${proj.claimedDOI} Hari (Sorot kursor untuk rincian lengkap)">
+          DOI ${proj.claimedDOI}h
+        </div>
+        <div class="ccc-bar-seg ccc-seg-dso"
+          style="width:${pct(proj.claimedDOR)}%; background:#f59e0b;"
+          data-tt-title="DOR &bull; Days of Receivables (Klaim Bank)"
+          data-tt-category="Klaim Bank"
+          data-tt-days="${proj.claimedDOR} Hari"
+          data-tt-pct="${((proj.claimedDOR / Math.max(1, m.claimedGrossCycle)) * 100).toFixed(0)}% dari Gross Cycle"
+          data-tt-formula="Asumsi periode penagihan piutang dari pembeli yang diajukan bank mitra"
+          data-tt-evaluation="Estimasi bank: Piutang usaha diasumsikan tertagih lancar dalam tempo ${proj.claimedDOR} hari (~${Math.round(proj.claimedDOR / 30)} bulan)."
+          data-tt-status-bg="#fef3c7"
+          data-tt-status-color="#b45309"
+          title="DOR Klaim Bank: ${proj.claimedDOR} Hari (Sorot kursor untuk rincian lengkap)">
+          DOR ${proj.claimedDOR}h
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; margin-top:3px; font-size:0.68rem; color:#64748b;">
+        <span>&bull; DOI: <strong>${proj.claimedDOI} hr</strong></span>
+        <span>&bull; DOR: <strong>${proj.claimedDOR} hr</strong></span>
+        <span>&bull; Gross Cycle: <strong>${m.claimedGrossCycle} hr</strong></span>
       </div>
     </div>
 
+    <!-- BAR B: AKTUAL AUDITED -->
     <div class="ccc-visual-box">
-      <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:700;">
+      <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:700; align-items:center;">
         <span>B. Aktual Audited ${m.yr2} (DOI ${fmtNum(m.doi23_365, 0)} + DOR ${fmtNum(m.dor23_365, 0)} = ${fmtNum(m.grossCycle23, 0)} Hr)</span>
-        <span style="color:${m.ccc23 > m.scfTenor ? 'var(--askrindo-red)' : 'var(--askrindo-green)'};">CCC (-DOP ${fmtNum(m.dop23_365, 0)}): ${fmtNum(m.ccc23, 0)} Hr</span>
+        <span style="color:${m.ccc23 > m.scfTenor ? 'var(--askrindo-red)' : 'var(--askrindo-green)'}; font-size:0.75rem;">CCC (-DOP ${fmtNum(m.dop23_365, 0)}): ${fmtNum(m.ccc23, 0)} Hr</span>
       </div>
       <div class="ccc-bar-track">
-        <div class="ccc-seg-dio" style="width:${pct(m.doi23_365)}%; background:${m.doi23_365 > 150 ? '#dc2626' : '#0284c7'};">DOI ${fmtNum(m.doi23_365, 0)}h</div>
-        <div class="ccc-seg-dso" style="width:${pct(m.dor23_365)}%">DOR ${fmtNum(m.dor23_365, 0)}h</div>
+        <div class="ccc-bar-seg ccc-seg-dio"
+          style="width:${pct(m.doi23_365)}%; background:${m.doi23_365 > 150 ? '#dc2626' : '#0284c7'};"
+          data-tt-title="DOI &bull; Days of Inventory (Aktual Audited ${m.yr2})"
+          data-tt-category="Aktual Audited"
+          data-tt-days="${fmtNum(m.doi23_365, 1)} Hari (${fmtNum(m.doi23_360, 1)}h basis 360)"
+          data-tt-pct="${((m.doi23_365 / Math.max(1, m.grossCycle23)) * 100).toFixed(0)}% dari Gross Cycle"
+          data-tt-nominal="Persediaan: ${fmtRp(proj.fin23?.inv || 0, true)} &bull; HPP (COGS): ${fmtRp(proj.fin23?.cogs || 0, true)}"
+          data-tt-formula="(Persediaan / HPP) &times; 365 = ${fmtNum(m.doi23_365, 1)} Hari"
+          data-tt-evaluation="${m.diffDOI > 30 ? '&#9888; <strong>Peringatan Risiko:</strong> Stok mengendap sangat lama (deviasi +' + fmtNum(m.diffDOI, 1) + ' hari di atas klaim bank)! Beban bunga berjalan dan barang berisiko susut/rusak.' : 'Perputaran stok persediaan barang relatif normal dan wajar.'}"
+          data-tt-status-bg="${m.doi23_365 > 150 ? '#fee2e2' : '#e0f2fe'}"
+          data-tt-status-color="${m.doi23_365 > 150 ? '#dc2626' : '#0369a1'}"
+          title="DOI Aktual: ${fmtNum(m.doi23_365, 1)} Hari (Sorot kursor untuk rincian lengkap)">
+          DOI ${fmtNum(m.doi23_365, 0)}h
+        </div>
+        <div class="ccc-bar-seg ccc-seg-dso"
+          style="width:${pct(m.dor23_365)}%; background:#f59e0b;"
+          data-tt-title="DOR &bull; Days of Receivables (Aktual Audited ${m.yr2})"
+          data-tt-category="Aktual Audited"
+          data-tt-days="${fmtNum(m.dor23_365, 1)} Hari (${fmtNum(m.dor23_360, 1)}h basis 360)"
+          data-tt-pct="${((m.dor23_365 / Math.max(1, m.grossCycle23)) * 100).toFixed(0)}% dari Gross Cycle"
+          data-tt-nominal="Piutang Usaha: ${fmtRp(proj.fin23?.ar || 0, true)} &bull; Penjualan: ${fmtRp(proj.fin23?.rev || 0, true)}"
+          data-tt-formula="(Piutang Usaha / Penjualan) &times; 365 = ${fmtNum(m.dor23_365, 1)} Hari"
+          data-tt-evaluation="${Math.abs(m.diffDOR) <= 10 ? 'Periode penagihan piutang dari pembeli sejalan dengan data bank (~2 bulan).' : 'Terdapat deviasi periode penagihan piutang ' + (m.diffDOR >= 0 ? '+' : '') + fmtNum(m.diffDOR, 1) + ' hari dari data bank.'}"
+          data-tt-status-bg="#fef3c7"
+          data-tt-status-color="#b45309"
+          title="DOR Aktual: ${fmtNum(m.dor23_365, 1)} Hari (Sorot kursor untuk rincian lengkap)">
+          DOR ${fmtNum(m.dor23_365, 0)}h
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; margin-top:3px; font-size:0.68rem; color:#64748b;">
+        <span style="color:${m.doi23_365 > 150 ? '#dc2626' : '#0369a1'};">&bull; DOI: <strong>${fmtNum(m.doi23_365, 0)} hr</strong> ${m.diffDOI > 30 ? '&#9888;' : ''}</span>
+        <span>&bull; DOR: <strong>${fmtNum(m.dor23_365, 0)} hr</strong></span>
+        <span style="font-weight:700; color:var(--askrindo-navy);">&bull; Gross Cycle: <strong>${fmtNum(m.grossCycle23, 0)} hr</strong></span>
       </div>
     </div>
 
+    <!-- BAR C: TENOR FASILITAS BANK -->
     <div class="ccc-visual-box" style="background:#f0f9ff; border-color:#bae6fd;">
-      <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:700;">
+      <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:700; align-items:center;">
         <span>C. Tenor Fasilitas ${proj.bankName} (Total: ${m.totalMaxTenor} Hr)</span>
-        <span>PK: ${proj.pkMonths} Bln</span>
+        <span style="font-size:0.75rem; color:#0369a1;">PK: ${proj.pkMonths} Bln</span>
       </div>
       <div class="ccc-bar-track">
-        <div style="width:${pct(m.scfTenor)}%; background:#005691; display:flex; align-items:center; justify-content:center; white-space:nowrap; overflow:hidden;">
+        <div class="ccc-bar-seg"
+          style="width:${pct(m.scfTenor)}%; background:#005691;"
+          data-tt-title="Tenor Fasilitas Pembayaran Utama"
+          data-tt-category="Fasilitas Bank"
+          data-tt-days="${m.scfTenor} Hari"
+          data-tt-pct="${((m.scfTenor / Math.max(1, m.totalMaxTenor)) * 100).toFixed(0)}% dari Total Tenor"
+          data-tt-formula="Jatuh tempo fasilitas kredit modal kerja / SCF utama (${proj.bankName})"
+          data-tt-evaluation="${m.cashGapAtSCFMaturity_Actual > 0 ? '&#9888; <strong>Defisit Siklus Kas ' + fmtNum(m.cashGapAtSCFMaturity_Actual, 0) + ' Hari!</strong> Siklus operasi gross (' + fmtNum(m.grossCycle23, 0) + ' hari) melampaui tenor utama (' + m.scfTenor + ' hari). Piutang belum tertagih saat kewajiban jatuh tempo.' : '&#10003; <strong>Surplus Waktu ' + fmtNum(Math.abs(m.cashGapAtSCFMaturity_Actual), 0) + ' Hari.</strong> Siklus konversi kas selesai sebelum jatuh tempo fasilitas utama.'}"
+          data-tt-status-bg="${m.cashGapAtSCFMaturity_Actual > 0 ? '#fee2e2' : '#dcfce7'}"
+          data-tt-status-color="${m.cashGapAtSCFMaturity_Actual > 0 ? '#dc2626' : '#15803d'}"
+          title="Tenor Utama: ${m.scfTenor} Hari (Sorot kursor untuk rincian lengkap)">
           Tenor Utama: ${m.scfTenor} Hr
         </div>
         ${m.kmkTenor > 0 ? `
-        <div style="width:${pct(m.kmkTenor)}%; background:#f59e0b; display:flex; align-items:center; justify-content:center; white-space:nowrap; overflow:hidden;">
+        <div class="ccc-bar-seg"
+          style="width:${pct(m.kmkTenor)}%; background:#f59e0b;"
+          data-tt-title="KMK Khusus (Backup Default SCF)"
+          data-tt-category="Fasilitas Tambahan"
+          data-tt-days="+${m.kmkTenor} Hari (Total ${m.totalMaxTenor} Hari)"
+          data-tt-pct="${((m.kmkTenor / Math.max(1, m.totalMaxTenor)) * 100).toFixed(0)}% dari Total Tenor"
+          data-tt-formula="Fasilitas talangan modal kerja khusus saat SCF gagal bayar pada hari ke-${m.scfTenor}"
+          data-tt-evaluation="${m.cashGapAfterKMK_Actual > 0 ? '&#9888; Masih terdapat defisit ' + fmtNum(m.cashGapAfterKMK_Actual, 0) + ' hari setelah KMK Khusus!' : 'Menutup defisit siklus operasi, namun mengonversi pembiayaan dagang yang default menjadi kredit bermasalah.'}"
+          data-tt-status-bg="#fef3c7"
+          data-tt-status-color="#b45309"
+          title="KMK Backup: +${m.kmkTenor} Hari (Total: ${m.totalMaxTenor} Hari)">
           +KMK ${m.kmkTenor}h (Total ${m.totalMaxTenor}h)
         </div>` : ''}
       </div>
-      <div style="font-size:0.78rem; color:${m.cashGapAtSCFMaturity_Actual > 0 ? '#991b1b' : '#166534'}; font-weight:600; margin-top:0.2rem;">
+      <div style="display:flex; justify-content:space-between; margin-top:3px; font-size:0.68rem; color:#64748b;">
+        <span>&bull; Tenor Utama: <strong>${m.scfTenor} hr</strong></span>
+        ${m.kmkTenor > 0 ? `<span>&bull; KMK Backup: <strong>+${m.kmkTenor} hr</strong></span>` : ''}
+        <span>&bull; Total Tenor: <strong>${m.totalMaxTenor} hr</strong></span>
+      </div>
+      <div style="font-size:0.77rem; color:${m.cashGapAtSCFMaturity_Actual > 0 ? '#991b1b' : '#166534'}; font-weight:600; margin-top:0.35rem; line-height:1.35;">
         ${m.cashGapAtSCFMaturity_Actual > 0
           ? `&#9888; Defisit siklus ${fmtNum(m.cashGapAtSCFMaturity_Actual, 0)} hari saat jatuh tempo hari ke-${m.scfTenor} (Memicu klaim / KMK Backup)!`
           : `&#10003; Siklus operasi masuk di dalam tenor ${m.scfTenor} hari (Surplus waktu ${fmtNum(Math.abs(m.cashGapAtSCFMaturity_Actual), 0)} hari).`}
@@ -8678,6 +8766,7 @@ window.addEventListener('DOMContentLoaded', () => {
   getUsersFromStorage();
   checkAuthAndRoute();
   initFloatingTooltip();
+  initTimelineTooltip();
   renderGlobalGlossarySection();
 });
 
@@ -11460,6 +11549,119 @@ function showGlossaryTooltip(termKey, targetEl, isSticky = false) {
 
 function hideGlossaryTooltip() {
   const tt = document.getElementById('ascaGlossaryTooltip');
+  if (tt) {
+    tt.classList.remove('show');
+  }
+}
+
+// ============================================================================
+// 16B. TIMELINE CYCLE BARS FLOATING TOOLTIP ENGINE
+// ============================================================================
+
+let timelineTooltipTimer = null;
+
+function initTimelineTooltip() {
+  let tt = document.getElementById('ascaTimelineTooltip');
+  if (!tt) {
+    tt = document.createElement('div');
+    tt.id = 'ascaTimelineTooltip';
+    tt.className = 'timeline-floating-tooltip';
+    document.body.appendChild(tt);
+
+    tt.addEventListener('mouseenter', () => {
+      clearTimeout(timelineTooltipTimer);
+    });
+    tt.addEventListener('mouseleave', () => {
+      timelineTooltipTimer = setTimeout(() => {
+        hideTimelineTooltip();
+      }, 150);
+    });
+  }
+
+  // Delegated Hover & Click Events on timeline bars
+  document.addEventListener('mouseover', (e) => {
+    const target = e.target.closest('.ccc-bar-seg');
+    if (!target) return;
+    clearTimeout(timelineTooltipTimer);
+    showTimelineTooltip(target);
+  });
+
+  document.addEventListener('mouseout', (e) => {
+    const target = e.target.closest('.ccc-bar-seg');
+    if (!target) return;
+    timelineTooltipTimer = setTimeout(() => {
+      hideTimelineTooltip();
+    }, 150);
+  });
+
+  document.addEventListener('click', (e) => {
+    const target = e.target.closest('.ccc-bar-seg');
+    if (target) {
+      clearTimeout(timelineTooltipTimer);
+      showTimelineTooltip(target);
+    } else if (!e.target.closest('#ascaTimelineTooltip')) {
+      hideTimelineTooltip();
+    }
+  });
+}
+
+function showTimelineTooltip(targetEl) {
+  let tt = document.getElementById('ascaTimelineTooltip');
+  if (!tt) {
+    initTimelineTooltip();
+    tt = document.getElementById('ascaTimelineTooltip');
+  }
+
+  const title = targetEl.getAttribute('data-tt-title') || 'Indikator Siklus Modal Kerja';
+  const category = targetEl.getAttribute('data-tt-category') || 'Siklus Operasi';
+  const days = targetEl.getAttribute('data-tt-days') || '-';
+  const pct = targetEl.getAttribute('data-tt-pct') || '';
+  const nominal = targetEl.getAttribute('data-tt-nominal') || '';
+  const formula = targetEl.getAttribute('data-tt-formula') || '';
+  const evalText = targetEl.getAttribute('data-tt-evaluation') || '';
+  const statusBg = targetEl.getAttribute('data-tt-status-bg') || '#f1f5f9';
+  const statusColor = targetEl.getAttribute('data-tt-status-color') || '#0f172a';
+
+  tt.innerHTML = `
+    <div class="timeline-tt-header">
+      <div class="timeline-tt-title">${title}</div>
+      <span class="timeline-tt-badge" style="background:${statusBg}; color:${statusColor};">${category}</span>
+    </div>
+    <div class="timeline-tt-val">
+      ${days}
+      ${pct ? `<span style="font-size:0.72rem; font-weight:600; color:#64748b; margin-left:4px;">(${pct})</span>` : ''}
+    </div>
+    ${nominal ? `<div style="font-size:0.69rem; color:#475569; margin-bottom:4px; padding:3px 6px; background:#f8fafc; border-radius:4px; border:1px solid #e2e8f0;">${nominal}</div>` : ''}
+    ${formula ? `<div style="font-size:0.69rem; color:#334155; margin-bottom:4px;"><strong>Formula:</strong> ${formula}</div>` : ''}
+    ${evalText ? `<div style="font-size:0.7rem; color:${statusColor}; background:${statusBg}; padding:4px 7px; border-radius:5px; line-height:1.35; margin-top:4px;">${evalText}</div>` : ''}
+  `;
+
+  // Calculate position
+  const rect = targetEl.getBoundingClientRect();
+  const ttWidth = Math.min(320, window.innerWidth - 24);
+  tt.style.width = ttWidth + 'px';
+
+  let top = rect.bottom + 8;
+  let left = rect.left + (rect.width / 2) - (ttWidth / 2);
+
+  tt.classList.add('show');
+  const ttHeight = tt.offsetHeight || 140;
+
+  if (top + ttHeight > window.innerHeight - 12) {
+    top = Math.max(12, rect.top - ttHeight - 8);
+  }
+
+  if (left + ttWidth > window.innerWidth - 12) {
+    left = window.innerWidth - ttWidth - 12;
+  }
+  if (left < 12) left = 12;
+
+  tt.style.top = top + 'px';
+  tt.style.left = left + 'px';
+}
+
+function hideTimelineTooltip() {
+  const tt = document.getElementById('ascaTimelineTooltip');
   if (tt) {
     tt.classList.remove('show');
   }

@@ -1,4 +1,4 @@
-﻿# USER MANUAL
+# USER MANUAL
 # ASKRINDO SMART CREDIT ANALYSIS (ASCA)
 
 | **PT ASURANSI KREDIT INDONESIA** | **USER MANUAL APLIKASI** | **No. Dok:** ASCA-UM-UW-2026-001 |
@@ -350,10 +350,10 @@ Modul ini mengkalkulasi efisiensi arus siklus kas operasional debitur dari saat 
 ### Tabel 6. Rumus & Parameter DCC
 | Parameter | Formula Komputasi | Interpretasi Underwriting |
 |:---|:---|:---|
-| **Days Sales Outstanding (DSO)** | $\text{DSO} = \frac{\text{Piutang Usaha}}{\text{Penjualan Tahunan}} \times 365$ | Rata-rata hari yang dibutuhkan debitur untuk menagih piutang dari pembeli. |
-| **Days Inventory Outstanding (DIO)** | $\text{DIO} = \frac{\text{Persediaan}}{\text{HPP Tahunan}} \times 365$ | Rata-rata hari lamanya barang mengendap di gudang sebelum berhasil terjual. |
-| **Days Payable Outstanding (DPO)** | $\text{DPO} = \frac{\text{Hutang Usaha}}{\text{HPP Tahunan}} \times 365$ | Rata-rata tempo pembayaran yang diperoleh debitur dari pemasok/supplier. |
-| **DCC Net Cycle (Hari)** | $\text{DCC} = \text{DSO} + \text{DIO} - \text{DPO}$ | Kesenjangan waktu (*cash gap*) di mana debitur membutuhkan talangan modal kerja. Siklus yang memanjang mengindikasikan risiko likuiditas tinggi. |
+| **Days Sales Outstanding (DSO)** | DSO = (Piutang Usaha / Penjualan Tahunan) × 365 | Rata-rata hari yang dibutuhkan debitur untuk menagih piutang dari pembeli. |
+| **Days Inventory Outstanding (DIO)** | DIO = (Persediaan / HPP Tahunan) × 365 | Rata-rata hari lamanya barang mengendap di gudang sebelum berhasil terjual. |
+| **Days Payable Outstanding (DPO)** | DPO = (Hutang Usaha / HPP Tahunan) × 365 | Rata-rata tempo pembayaran yang diperoleh debitur dari pemasok/supplier. |
+| **DCC Net Cycle (Hari)** | DCC = DSO + DIO - DPO | Kesenjangan waktu (*cash gap*) di mana debitur membutuhkan talangan modal kerja. Siklus yang memanjang mengindikasikan risiko likuiditas tinggi. |
 
 ---
 
@@ -366,7 +366,7 @@ Menguji ketahanan kinerja debitur apabila terjadi kondisi makroekonomi dan opera
 ### 4 Variabel Shock Skenario:
 1. **Shock Penurunan Omzet (Sales Shock):** Menyimulasikan penurunan omzet 10% s/d 30% akibat kontraksi pasar.
 2. **Shock Kenaikan HPP (COGS Shock):** Menyimulasikan kenaikan harga bahan baku impor sebesar 10% s/d 25%.
-3. **Shock Fluktuasi Kurs (FX USD/IDR Shock):** Menyimulasikan depresiasi Rupiah (misal Rp 15.500 $\rightarrow$ Rp 17.500 per USD).
+3. **Shock Fluktuasi Kurs (FX USD/IDR Shock):** Menyimulasikan depresiasi Rupiah (misal Rp 15.500 → Rp 17.500 per USD).
 4. **Shock Suku Bunga (Interest Rate Shock):** Menyimulasikan kenaikan suku bunga kredit bank 200 s/d 500 bps.
 
 ---
@@ -380,9 +380,9 @@ Menghitung ketersediaan modal kerja riil dan berapa lama kas debitur mampu berta
 ### Tabel 7. Indikator NWC & CBRT
 | Metrik | Formula | Standar Ambang Batas |
 |:---|:---|:---|
-| **Net Working Capital (NWC)** | $\text{NWC} = \text{Aset Lancar} - \text{Kewajiban Lancar}$ | Harus bernilai positif ($> 0$). Jika negatif, debitur berisiko gagal bayar jangka pendek. |
-| **Monthly Cash Burn Rate (CBR)** | $\text{CBR} = \frac{\text{Beban Operasional Tahunan} + \text{Beban Bunga}}{12}$ | Kebutuhan kas bulanan untuk membiayai operasional tetap debitur. |
-| **Cash Burn Rate Time (CBRT)** | $\text{CBRT} = \frac{\text{Kas \& Setara Kas}}{\text{Monthly CBR}}$ | Waktu bertahan kas (dalam bulan). Minimum sehat adalah $\ge 3$ bulan. |
+| **Net Working Capital (NWC)** | NWC = Aset Lancar - Kewajiban Lancar | Harus bernilai positif (> 0). Jika negatif, debitur berisiko gagal bayar jangka pendek. |
+| **Monthly Cash Burn Rate (CBR)** | Monthly CBR = (Beban Operasional Tahunan + Beban Bunga) / 12 | Kebutuhan kas bulanan untuk membiayai operasional tetap debitur. |
+| **Cash Burn Rate Time (CBRT)** | CBRT = Kas & Setara Kas / Monthly CBR | Waktu bertahan kas (dalam bulan). Minimum sehat adalah ≥ 3 bulan. |
 
 ---
 
@@ -393,10 +393,12 @@ Memproyeksikan arus kas bulanan selama 12 bulan ke depan untuk menguji kemampuan
 *Gambar 11. Tab 6 - Proyeksi Cash Flow & DSCR*
 
 ### Rumus Debt Service Coverage Ratio (DSCR):
-$$\text{DSCR} = \frac{\text{Cash Flow Available for Debt Service (CFADS)}}{\text{Angsuran Pokok Pinjaman} + \text{Beban Bunga Pinjaman}}$$
-- **DSCR $\ge 1.30\times$:** Sangat Layak (*Prime/Superior*).
-- **$1.00\times \le \text{DSCR} < 1.30\times$:** Layak Bersyarat (*Moderate*).
-- **DSCR $< 1.00\times$:** Defisit Arus Kas (*Inadequate / High Risk*).
+```
+DSCR = Cash Flow Available for Debt Service (CFADS) / (Angsuran Pokok Pinjaman + Beban Bunga Pinjaman)
+```
+- **DSCR ≥ 1.30×:** Sangat Layak (*Prime/Superior*).
+- **1.00× ≤ DSCR < 1.30×:** Layak Bersyarat (*Moderate*).
+- **DSCR < 1.00×:** Defisit Arus Kas (*Inadequate / High Risk*).
 
 ---
 
@@ -410,16 +412,16 @@ Menetapkan peringkat rating akseptasi resmi Askrindo berdasarkan tabel standardi
 *(Mengacu pada Tabel VI.1 Petunjuk Teknis Suretyship Askrindo / Standar PT IDX Consulting)*
 | Rating Grade | Rentang Skor | Kategori Risiko | Rekomendasi Akseptasi Askrindo | Porsi Coverage Maks. |
 |:---:|:---:|:---|:---|:---:|
-| **AAA** | $91 - 100$ | Risiko Sangat Rendah | Disetujui Penuh (Tanpa Syarat Khusus) | $90\%$ |
-| **AA** | $81 - 90$ | Risiko Rendah | Disetujui Penuh (Fasilitas Standar) | $85\%$ |
-| **A** | $71 - 80$ | Risiko Terkendali Baik | Disetujui Penuh | $80\%$ |
-| **BBB** | $61 - 70$ | Risiko Sedang (*Investment Grade*) | Disetujui dengan Pemantauan Berkala | $75\%$ |
-| **BB** | $51 - 60$ | Risiko Cukup Tinggi | Persetujuan Bersyarat (*Covenants Ketat*) | $70\%$ |
-| **B** | $41 - 50$ | Risiko Tinggi | Persetujuan Bersyarat (*Cash Collateral*) | $60\%$ |
-| **CCC** | $31 - 40$ | Risiko Sangat Rentan | Pembatasan Ketat (*Escrow Account*) | $55\%$ |
-| **CC** | $21 - 30$ | Risiko Sangat Tinggi / Defisit | Tolak Skema Awal (Restrukturisasi Wajib) | $50\%$ |
-| **C** | $11 - 20$ | Kerugian Kronis / Insolvensi | **Tolak Akseptasi Penjaminan** | Opsi Maks $55\%$ |
-| **DDD** | $0 - 10$ | Default / Uninsurable | **Tolak Mutlak (*Uninsurable*)** | $0\%$ |
+| **AAA** | 91 - 100 | Risiko Sangat Rendah | Disetujui Penuh (Tanpa Syarat Khusus) | 90% |
+| **AA** | 81 - 90 | Risiko Rendah | Disetujui Penuh (Fasilitas Standar) | 85% |
+| **A** | 71 - 80 | Risiko Terkendali Baik | Disetujui Penuh | 80% |
+| **BBB** | 61 - 70 | Risiko Sedang (*Investment Grade*) | Disetujui dengan Pemantauan Berkala | 75% |
+| **BB** | 51 - 60 | Risiko Cukup Tinggi | Persetujuan Bersyarat (*Covenants Ketat*) | 70% |
+| **B** | 41 - 50 | Risiko Tinggi | Persetujuan Bersyarat (*Cash Collateral*) | 60% |
+| **CCC** | 31 - 40 | Risiko Sangat Rentan | Pembatasan Ketat (*Escrow Account*) | 55% |
+| **CC** | 21 - 30 | Risiko Sangat Tinggi / Defisit | Tolak Skema Awal (Restrukturisasi Wajib) | 50% |
+| **C** | 11 - 20 | Kerugian Kronis / Insolvensi | **Tolak Akseptasi Penjaminan** | Opsi Maks 55% |
+| **DDD** | 0 - 10 | Default / Uninsurable | **Tolak Mutlak (*Uninsurable*)** | 0% |
 
 ---
 
@@ -432,11 +434,11 @@ Menyajikan pembobotan matematis transparan dari prinsip analisa kredit 5C Askrin
 ### Tabel 9. Pembobotan Aspek 5C DCC-SWCM
 | Pilar 5C | Bobot | Parameter Evaluasi Utama |
 |:---|:---:|:---|
-| **Character (Watak)** | $15\%$ | Riwayat kolektibilitas BI Checking / SLIK OJK, integritas manajemen, blacklist INAPROC. |
-| **Capacity (Kapasitas)** | $30\%$ | Siklus DCC, rasio DSCR, pertumbuhan omzet, perputaran piutang & persediaan. |
-| **Capital (Permodalan)** | $25\%$ | Modal Kerja Bersih (NWC), Debt-to-Equity Ratio (DER), profitabilitas (GPM & NPM). |
-| **Collateral (Agunan)** | $15\%$ | Nilai taksasi agunan *fixed assets*, pengikatan hak tanggungan, agunan likuid (*Cash/Deposito*). |
-| **Condition (Kondisi Makro)**| $15\%$ | Ketahanan terhadap shock valas, ketergantungan impor, prospek industri debitur. |
+| **Character (Watak)** | 15% | Riwayat kolektibilitas BI Checking / SLIK OJK, integritas manajemen, blacklist INAPROC. |
+| **Capacity (Kapasitas)** | 30% | Siklus DCC, rasio DSCR, pertumbuhan omzet, perputaran piutang & persediaan. |
+| **Capital (Permodalan)** | 25% | Modal Kerja Bersih (NWC), Debt-to-Equity Ratio (DER), profitabilitas (GPM & NPM). |
+| **Collateral (Agunan)** | 15% | Nilai taksasi agunan *fixed assets*, pengikatan hak tanggungan, agunan likuid (*Cash/Deposito*). |
+| **Condition (Kondisi Makro)**| 15% | Ketahanan terhadap shock valas, ketergantungan impor, prospek industri debitur. |
 
 ---
 

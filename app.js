@@ -5217,7 +5217,7 @@ function renderSWCMMatrixTable(proj, m) {
       params: { gpm: m.gpm23, doi: proj.claimedDOI, dor: proj.claimedDOR, dop: proj.claimedDOP, revGrowth: 10, opexCut: 0, fxShock: 0, invHaircut: 0 }
     },
     {
-      name: '3. Stress Kurs (+10%) & Koleksi Melambat',
+      name: '3. Stress Kurs (+10%) & Piutang Melambat',
       params: { gpm: m.gpm23 - 3.5, doi: Math.min(350, Math.round(m.doi23_365 + 20)), dor: Math.min(150, Math.round(m.dor23_365 + 20)), dop: Math.max(10, Math.round(m.dop23_365 - 5)), revGrowth: -10, opexCut: 0, fxShock: 10, invHaircut: 10 }
     },
     {
@@ -5225,7 +5225,7 @@ function renderSWCMMatrixTable(proj, m) {
       params: { gpm: m.gpm23 - 7.0, doi: Math.min(360, Math.round(m.doi23_365 + 45)), dor: Math.min(150, Math.round(m.dor23_365 + 40)), dop: Math.max(10, Math.round(m.dop23_365 - 10)), revGrowth: -20, opexCut: -5, fxShock: 15, invHaircut: 20 }
     },
     {
-      name: '5.  Skenario Turnaround / Mitigasi DCC-SWCM',
+      name: '5. Skenario Turnaround / Mitigasi DCC-SWCM',
       params: { gpm: Math.max(12.5, m.minRequiredGPM), doi: m.targetSafeDOI, dor: Math.min(45, Math.round(m.dor23_365)), dop: Math.max(70, proj.claimedDOP), revGrowth: 15, opexCut: m.gp23 < 0 ? 55 : 20, fxShock: 0, invHaircut: 0 }
     }
   ];

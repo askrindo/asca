@@ -49,16 +49,6 @@ async function supabaseFetch(endpoint, options = {}) {
 
 const DEFAULT_USERS = [
   {
-    username: '1922',
-    password: '123',
-    fullName: 'Analis Kredit 1922',
-    role: 'analyst',
-    unit: 'Divisi Underwriting Komersial',
-    status: 'active',
-    createdAt: '2026-10-25T08:00:00.000Z',
-    lastLogin: null
-  },
-  {
     username: 'admin',
     password: 'admin',
     fullName: 'Super Administrator',
@@ -9429,11 +9419,10 @@ async function fetchUsersFromCloud() {
         lastLogin: u.last_login
       }));
       
-      // Pastikan akun default admin & 1922 selalu ada sebagai jaminan fallback
-      for (const def of DEFAULT_USERS) {
-        if (!mapped.some(m => m.username.toLowerCase() === def.username.toLowerCase())) {
-          mapped.push(def);
-        }
+      // Pastikan akun Super Admin utama 'admin' selalu ada sebagai jaminan fallback
+      const adminDef = DEFAULT_USERS.find(d => d.username.toLowerCase() === 'admin');
+      if (adminDef && !mapped.some(m => m.username.toLowerCase() === 'admin')) {
+        mapped.unshift(adminDef);
       }
 
       localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(mapped));
@@ -10319,7 +10308,16 @@ async function saveNewUserFromModal() {
     return;
   }
 
-  let users = getUsersFromStorage();
+  let users = [];
+  try {
+    users = await fetchUsersFromCloud();
+  } catch (e) {
+    users = getUsersFromStorage();
+  }
+  if (!users || users.length === 0) {
+    users = getUsersFromStorage();
+  }
+
   if (users.some((u) => u.username.toLowerCase() === uname.toLowerCase())) {
     alert(`Username "${uname}" sudah terdaftar! Gunakan username lain.`);
     return;
@@ -10610,26 +10608,42 @@ async function toggleUserStatus(username) {
 }
 
 async function confirmDeleteUser(username) {
-  if (username.toLowerCase() === 'admin') {
-    alert('AkunSuper Admin utama tidak boleh dihapus!');
+  if (!username) return;
+  const cleanUname = username.trim();
+  if (cleanUname.toLowerCase() === 'admin') {
+    alert('Akun Super Admin utama tidak boleh dihapus!');
     return;
   }
-  if (!confirm(`Apakah Anda yakin ingin menghapus akun pengguna "${username}" secara permanen dari server cloud?`)) {
+  if (!confirm(`Apakah Anda yakin ingin menghapus akun pengguna "${cleanUname}" secara permanen dari server database?`)) {
     return;
   }
 
   try {
-    await supabaseFetch(`users?username=eq.${encodeURIComponent(username)}`, {
+    // 1. Hapus dari Supabase Cloud tabel users
+    await supabaseFetch(`users?username=eq.${encodeURIComponent(cleanUname)}`, {
       method: 'DELETE'
     });
+
+    // 2. Hapus juga dari user_projects jika ada
     try {
-      await supabaseFetch(`user_projects?username=eq.${encodeURIComponent(username)}`, {
+      await supabaseFetch(`user_projects?username=eq.${encodeURIComponent(cleanUname)}`, {
         method: 'DELETE'
       });
     } catch (pe) {}
-    localStorage.removeItem(USER_PROJECTS_KEY_PREFIX + username);
+
+    // 3. Bersihkan dari cache lokal USERS_STORAGE_KEY
+    try {
+      let localUsers = getUsersFromStorage();
+      localUsers = localUsers.filter(u => u.username.toLowerCase() !== cleanUname.toLowerCase());
+      saveUsersToStorage(localUsers);
+    } catch (le) {}
+
+    // 4. Bersihkan cache berkas analisa debitur akun tersebut
+    localStorage.removeItem(USER_PROJECTS_KEY_PREFIX + cleanUname);
+
+    // 5. Render ulang tabel manajemen pengguna
     await renderAdminUserManagement();
-    showToast(`Pengguna "${username}" telah dihapus dari server cloud.`);
+    showToast(`Pengguna "${cleanUname}" berhasil dihapus secara permanen.`);
   } catch (err) {
     alert('Gagal menghapus pengguna dari server: ' + err.message);
   }

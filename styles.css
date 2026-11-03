@@ -2005,8 +2005,14 @@ input[type="range"] {
     color: #000000 !important;
     font-size: 11pt !important;
   }
-  .top-navbar, .sidebar, .nav-tabs, .no-print, .login-screen, .admin-layout, .case-banner {
+  .top-navbar, .sidebar, .nav-tabs, .no-print, .login-screen, .admin-layout, .case-banner, .global-glossary-section, .btn-floating-glossary, .asca-floating-tooltip, #sectionGlobalGlossary, #ascaGlossaryTooltip {
     display: none !important;
+  }
+  .abbr-term {
+    border-bottom: none !important;
+    text-decoration: none !important;
+    color: inherit !important;
+    background: transparent !important;
   }
   .app-layout, .app-layout.sidebar-collapsed {
     display: block !important;

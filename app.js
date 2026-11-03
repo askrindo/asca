@@ -6727,42 +6727,6 @@ function renderPrintableReport(proj, m) {
                 <div style="color:var(--text-muted);">${proj.approverTitle || 'PT Asuransi Kredit Indonesia'}</div>
               </div>
             </div>
-
-            <!-- LAMPIRAN GLOSARIUM SINGKATAN & INDIKATOR KEUANGAN (PANDUAN INTERPRETASI PRAKTIS) -->
-            <div style="margin-top:1rem; padding-top:0.6rem; border-top:1.5px dashed #cbd5e1; font-size:0.62rem; color:#475569;">
-              <div style="font-weight:800; color:var(--askrindo-navy); margin-bottom:0.35rem; display:flex; align-items:center; gap:4px;">
-                <span>📖 Lampiran: Panduan Singkatan &amp; Interpretasi Praktis Indikator Analisa Keuangan</span>
-              </div>
-              <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:0.4rem; line-height:1.35;">
-                <div style="background:#f8fafc; padding:4px 6px; border-radius:4px; border:1px solid #e2e8f0;">
-                  <strong style="color:var(--askrindo-navy);">GPM (Gross Profit Margin):</strong> Margin Laba Kotor ((Sales - HPP) ÷ Sales). Standar ideal > 10%.
-                </div>
-                <div style="background:#f8fafc; padding:4px 6px; border-radius:4px; border:1px solid #e2e8f0;">
-                  <strong style="color:var(--askrindo-navy);">DSCR (Debt Service Coverage Ratio):</strong> Rasio Bayar Utang Pokok &amp; Bunga Bank (Kas Operasional ÷ Cicilan). Aman ≥ 1.25x.
-                </div>
-                <div style="background:#f8fafc; padding:4px 6px; border-radius:4px; border:1px solid #e2e8f0;">
-                  <strong style="color:var(--askrindo-navy);">DOI (Days of Inventory):</strong> Hari Perputaran Persediaan ((Stok ÷ HPP) × 365). Semakin singkat stok makin cepat laku.
-                </div>
-                <div style="background:#f8fafc; padding:4px 6px; border-radius:4px; border:1px solid #e2e8f0;">
-                  <strong style="color:var(--askrindo-navy);">DOR (Days of Receivables):</strong> Hari Penagihan Piutang ((Piutang ÷ Sales) × 365). Semakin singkat uang kas masuk makin cepat.
-                </div>
-                <div style="background:#f8fafc; padding:4px 6px; border-radius:4px; border:1px solid #e2e8f0;">
-                  <strong style="color:var(--askrindo-navy);">DOP (Days of Payables):</strong> Hari Pembayaran Utang Supplier ((Utang ÷ HPP) × 365). Tempo fasilitas kredit dari pemasok.
-                </div>
-                <div style="background:#f8fafc; padding:4px 6px; border-radius:4px; border:1px solid #e2e8f0;">
-                  <strong style="color:var(--askrindo-navy);">CCC (Cash Conversion Cycle):</strong> Siklus Konversi Kas Bersih (DOI + DOR - DOP). Wajib ≤ Tenor Kredit Bank.
-                </div>
-                <div style="background:#f8fafc; padding:4px 6px; border-radius:4px; border:1px solid #e2e8f0;">
-                  <strong style="color:var(--askrindo-navy);">NWC (Net Working Capital):</strong> Modal Kerja Bersih (Aset Lancar - Utang Lancar). Wajib positif (> Rp 0).
-                </div>
-                <div style="background:#f8fafc; padding:4px 6px; border-radius:4px; border:1px solid #e2e8f0;">
-                  <strong style="color:var(--askrindo-navy);">CBRT (Cash Burn-Rate Test):</strong> Ketahanan Kas Darurat ((Kas) ÷ Kas Keluar Bulanan). Mengukur bulan cadangan kas.
-                </div>
-                <div style="background:#f8fafc; padding:4px 6px; border-radius:4px; border:1px solid #e2e8f0;">
-                  <strong style="color:var(--askrindo-navy);">RAC (Risk Acceptance Criteria):</strong> Standar Parameter Batas Risiko Underwriting Askrindo untuk menerima penjaminan.
-                </div>
-              </div>
-            </div>
           </td>
         </tr>
       </tbody>

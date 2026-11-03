@@ -9560,20 +9560,24 @@ async function handleLoginSubmit(event, isForce = false) {
   }
 
   try {
-    let cloudUsers = [];
-    try {
-      cloudUsers = await fetchUsersFromCloud();
-    } catch (e) {
-      console.warn('Gagal fetch cloud, fallback ke storage:', e);
-    }
-
-    let user = cloudUsers.find((u) => u.username.toLowerCase() === uname.toLowerCase());
+    // 1. Cek penyimpanan lokal terlebih dahulu untuk login super cepat (instan 0 ms)
+    const localUsers = getUsersFromStorage();
+    let user = localUsers.find((u) => u.username.toLowerCase() === uname.toLowerCase() && u.password === pwd);
+    // 2. Jika tidak cocok di lokal (misal akun baru dibuat di perangkat lain), baru ambil dari cloud
     if (!user) {
-      const localUsers = getUsersFromStorage();
-      user = localUsers.find((u) => u.username.toLowerCase() === uname.toLowerCase());
+      let cloudUsers = [];
+      try {
+        cloudUsers = await fetchUsersFromCloud();
+      } catch (e) {
+        console.warn('Gagal fetch cloud, fallback ke storage:', e);
+      }
+      user = cloudUsers.find((u) => u.username.toLowerCase() === uname.toLowerCase());
+    } else {
+      // Sinkronkan data pengguna cloud di latar belakang tanpa menahan login pengguna
+      fetchUsersFromCloud().catch(() => {});
     }
 
-    if (!user || user.password !== pwd) {
+        if (!user || user.password !== pwd) {
       if (alertBox) alertBox.style.display = 'flex';
       if (alertMsg) alertMsg.textContent = 'Username atau kata sandi tidak valid!';
       if (btnSubmit) {

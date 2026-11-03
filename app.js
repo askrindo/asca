@@ -2958,29 +2958,36 @@ function compute5CAnalysis(proj, f23 = {}, m = null) {
   const businessAge = Math.max(0, curYr - estYr);
 
   // Financial ratios & context
-  const gpm = m ? m.gpm23 : (f23.rev > 0 ? ((f23.rev - f23.cogs) / f23.rev) * 100 : 0);
+  const gpm = m && typeof m.gpm23 === 'number' ? m.gpm23 : (f23.rev > 0 ? ((f23.rev - f23.cogs) / f23.rev) * 100 : 0);
   const f23Ebit = (f23.rev || 0) - (f23.cogs || 0) - (f23.opex || 0) + (f23.otherInc || 0) - (f23.otherExp || 0);
   const f23Int = f23.intExp || f23.finCost || (((f23.stDebt || 0) + (proj.requestedPlafond || 0)) * ((proj.interestRate || 10) / 100));
   const icr = (m && typeof m.icr23 === 'number') ? m.icr23 : (f23Int > 0 ? f23Ebit / f23Int : 1.5);
   const runwayDays = m ? m.pureCashRunwayDays : 30;
 
+  const cl = (m && typeof m.cl23 === 'number') ? m.cl23 : ((f23.stDebt || 0) + (f23.ap || 0) + (f23.otherAp || 0) + (f23.accrued || 0));
+  const ca = (m && typeof m.ca23 === 'number') ? m.ca23 : ((f23.cash || 0) + (f23.ar || 0) + (f23.otherAr || 0) + (f23.inv || 0) + (f23.otherCa || 0) + (f23.prepaid || 0));
+  const tl = (m && typeof m.tl23 === 'number') ? m.tl23 : (cl + (f23.ltDebt || 0));
   const eq = (m && typeof m.eq23 === 'number') ? m.eq23 : ((f23.capital || 0) + (f23.otherCap || 0) + (f23.retEarn || 0) + (f23.re || 0));
-  const tl = (m && typeof m.tl23 === 'number') ? m.tl23 : ((f23.ap || 0) + (f23.stDebt || 0) + (f23.otherAp || 0) + (f23.accrued || 0) + (f23.ltDebt || 0));
+  const ta = (m && typeof m.ta23 === 'number') ? m.ta23 : (ca + (f23.fa || 0) - Math.abs(f23.depr || 0) + (f23.invest || 0) + (f23.taxAsset || 0));
+  const eat = (m && typeof m.eat23 === 'number') ? m.eat23 : ((f23.rev || 0) - (f23.cogs || 0) - (f23.opex || 0) + (f23.otherInc || 0) - (f23.otherExp || 0) - (f23.intExp || 0) - (f23.tax || 0) - (f23.div || 0));
+  const rev = (m && typeof m.rev23 === 'number') ? m.rev23 : (f23.rev || 0);
+
   const isZeroDebt = tl === 0 || (m && m.tl23 === 0) || (typeof m?.der23 === 'number' && m.der23 === 0);
+  const isNoDebtCL = (m && typeof m.isNoDebt23 === 'boolean') ? m.isNoDebt23 : (cl === 0);
+
   const der = isZeroDebt ? 0 : ((m && typeof m.der23 === 'number') ? m.der23 : (eq > 0 ? tl / eq : 99));
-  const cr = (m && typeof m.currentRatio23 === 'number') ? m.currentRatio23 : ((f23.ca || 1) / Math.max(1, f23.cl || 1));
-  const isNoDebtCL = (m && (m.currentRatio23 === null || m.isNoDebt23)) || (f23.cl === 0 || !f23.cl) || isZeroDebt;
-  const nwcVal = (m && typeof m.nwc23 === 'number') ? m.nwc23 : ((f23.cash || 0) + (f23.ar || 0) + (f23.inv || 0) - (f23.ap || 0) - (f23.stDebt || 0));
+  const cr = isNoDebtCL ? null : ((m && typeof m.currentRatio23 === 'number') ? m.currentRatio23 : (cl > 0 ? ca / cl : null));
+  const nwcVal = (m && typeof m.nwc23 === 'number') ? m.nwc23 : (ca - cl);
   const reTotal = (f23.retEarn || 0) + (f23.re || 0);
   const reErosion = (m && typeof m.reErosionPct23 === 'number') ? m.reErosionPct23 : ((f23.capital > 0 && reTotal < 0) ? (Math.abs(reTotal) / f23.capital) * 100 : 0);
 
-  const qrPct = (m && typeof m.quickRatio23 === 'number') ? m.quickRatio23 * 100 : (((f23.ca || 0) - (f23.inv || 0)) / Math.max(1, f23.cl || 1)) * 100;
-  const cashRatioPct = ((f23.cash || 0) / Math.max(1, f23.cl || 1)) * 100;
-  const roa = (m && typeof m.roa23 === 'number') ? m.roa23 : (((f23.eat || f23.netInc || 0) / Math.max(1, f23.ta || 1)) * 100);
-  const roe = (m && typeof m.roe23 === 'number') ? m.roe23 : (((f23.eat || f23.netInc || 0) / Math.max(1, eq || 1)) * 100);
-  const npm = (m && typeof m.npm23 === 'number') ? m.npm23 : (((f23.eat || f23.netInc || 0) / Math.max(1, f23.rev || 1)) * 100);
-  const darPct = (tl / Math.max(1, f23.ta || (tl + eq))) * 100;
-  const selfFinPct = (eq / Math.max(1, f23.ta || (tl + eq))) * 100;
+  const qrPct = isNoDebtCL ? null : ((m && typeof m.quickRatio23 === 'number') ? m.quickRatio23 * 100 : (cl > 0 ? ((ca - (f23.inv || 0)) / cl) * 100 : null));
+  const cashRatioPct = isNoDebtCL ? null : ((m && typeof m.cashRatio23 === 'number') ? m.cashRatio23 * 100 : (cl > 0 ? ((f23.cash || 0) / cl) * 100 : null));
+  const roa = (m && typeof m.roa23 === 'number') ? m.roa23 : (ta > 0 ? (eat / ta) * 100 : 0);
+  const roe = (m && typeof m.roe23 === 'number') ? m.roe23 : (eq > 0 ? (eat / eq) * 100 : 0);
+  const npm = (m && typeof m.npm23 === 'number') ? m.npm23 : (rev > 0 ? (eat / rev) * 100 : 0);
+  const darPct = (m && typeof m.dar23 === 'number') ? m.dar23 : (ta > 0 ? (tl / ta) * 100 : 0);
+  const selfFinPct = ta > 0 ? (eq / ta) * 100 : 0;
 
   const hasCustomPrimary = typeof proj.collateralPrimaryVal === 'number' && proj.collateralPrimaryVal > 0;
   const hasCustomAdditional = typeof proj.collateralAdditionalVal === 'number' && proj.collateralAdditionalVal > 0;
@@ -3388,9 +3395,10 @@ function computeDCCSWCM(proj) {
       ca22: 0, ca23: 0, nca22: 0, nca23: 0, ta22: 0, ta23: 0,
       cl22: 0, cl23: 0, tl22: 0, tl23: 0, eq22: 0, eq23: 0, tlEq22: 0, tlEq23: 0,
       nwc22: 0, nwc23: 0, owc22: 0, owc23: 0, isNWCDeficit: false,
+      rev22: 0, rev23: 0,
       currentRatio22: null, currentRatio23: null,
-      quickRatio22: null, quickRatio23: null, cashRatio23: null,
-      der22: null, der23: null, invToCA23: 0, reErosionPct23: 0,
+      quickRatio22: null, quickRatio23: null, cashRatio22: null, cashRatio23: null,
+      der22: null, der23: null, dar22: 0, dar23: 0, roa22: 0, roa23: 0, roe22: 0, roe23: 0, invToCA23: 0, reErosionPct23: 0,
       dor22_365: 0, doi22_365: 0, dop22_365: 0, dopBroad22_365: 0,
       dor23_365: 0, doi23_365: 0, dop23_365: 0, dor23_360: 0, doi23_360: 0, dop23_360: 0, dopBroad23_365: 0,
       grossCycle22: 0, ccc22: 0, grossCycle23: 0, ccc23: 0,
@@ -3498,9 +3506,16 @@ function computeDCCSWCM(proj) {
   const currentRatio23 = isNoDebt23 ? null : (cl23 > 0 ? ca23 / cl23 : 0);
   const quickRatio22 = isNoDebt22 ? null : (cl22 > 0 ? (ca22 - (f22.inv || 0)) / cl22 : 0);
   const quickRatio23 = isNoDebt23 ? null : (cl23 > 0 ? (ca23 - (f23.inv || 0)) / cl23 : 0);
+  const cashRatio22 = isNoDebt22 ? null : (cl22 > 0 ? (f22.cash || 0) / cl22 : 0);
   const cashRatio23 = isNoDebt23 ? null : (cl23 > 0 ? (f23.cash || 0) / cl23 : 0);
   const der22 = tl22 === 0 ? 0 : (eq22 > 0 ? tl22 / eq22 : 99);
   const der23 = tl23 === 0 ? 0 : (eq23 > 0 ? tl23 / eq23 : 99);
+  const dar22 = ta22 > 0 ? (tl22 / ta22) * 100 : 0;
+  const dar23 = ta23 > 0 ? (tl23 / ta23) * 100 : 0;
+  const roa22 = ta22 > 0 ? (eat22 / ta22) * 100 : 0;
+  const roa23 = ta23 > 0 ? (eat23 / ta23) * 100 : 0;
+  const roe22 = eq22 > 0 ? (eat22 / eq22) * 100 : 0;
+  const roe23 = eq23 > 0 ? (eat23 / eq23) * 100 : 0;
   const invToCA23 = ca23 > 0 ? (f23.inv / ca23) * 100 : 0;
   const reErosionPct23 = f23.capital > 0 && f23.re < 0 ? (Math.abs(f23.re) / f23.capital) * 100 : 0;
 
@@ -3653,8 +3668,19 @@ function computeDCCSWCM(proj) {
     pureCashRunwayDays,
     eq23,
     tl23,
+    cl23,
+    ca23,
+    ta23,
+    eat23,
+    rev23: f23.rev || 0,
     der23,
+    dar23,
+    roa23,
+    roe23,
+    npm23,
     currentRatio23,
+    quickRatio23,
+    cashRatio23,
     isNoDebt23,
     nwc23,
     isNWCDeficit,
@@ -4007,8 +4033,9 @@ function computeDCCSWCM(proj) {
     diffDOR, diffDOI, diffDOP, diffCCC,
     scfTenor, kmkTenor, totalMaxTenor,
     cashGapAtSCFMaturity_Claimed, cashGapAtSCFMaturity_Actual, cashGapAfterKMK_Actual,
-    currentRatio22, currentRatio23, quickRatio22, quickRatio23, cashRatio23,
-    der22, der23, invToCA23, reErosionPct23,
+    rev22: f22.rev || 0, rev23: f23.rev || 0,
+    currentRatio22, currentRatio23, quickRatio22, quickRatio23, cashRatio22, cashRatio23,
+    der22, der23, dar22, dar23, roa22, roa23, roe22, roe23, invToCA23, reErosionPct23,
     nwc22, nwc23, owc22, owc23,
     dailyCOGS23, dailyRev23, dailyOPEX23, dailyInterest23,
     dailyGrossCashBurn, monthlyGrossCashBurn,
@@ -6289,8 +6316,8 @@ const ASKRINDO_RATIOS_CATALOG = [
     ],
     evalAuto: (proj, m, f23, ctx) => {
       if (ctx.isNoDebtCL) return { key: 'A', score: 100, reason: 'Bebas Hutang Lancar (Prima)', val: null, valStr: 'N/A (Bebas Utang)' };
-      const crPct = (ctx.cr || 0) * 100;
-      const valStr = `${crPct.toFixed(2)}%`;
+      const crPct = ctx.crPct;
+      const valStr = `${fmtNum(crPct, 2)}%`;
       if (crPct >= 100) return { key: 'A', score: 100, reason: `CR ${valStr} memenuhi standar RAC (≥ 100%)`, val: crPct, valStr };
       if (crPct >= 75) return { key: 'B', score: 60, reason: `CR ${valStr} di bawah standar RAC (75%-100%)`, val: crPct, valStr };
       return { key: 'C', score: 30, reason: `CR ${valStr} sangat ketat (< 75%)`, val: crPct, valStr };
@@ -6314,9 +6341,9 @@ const ASKRINDO_RATIOS_CATALOG = [
       { key: 'E', text: '≤ 40% (Sangat Rentan)', score: 20, passRac: false }
     ],
     evalAuto: (proj, m, f23, ctx) => {
-      if (ctx.isNoDebtCL) return { key: 'A', score: 100, reason: 'Bebas Hutang Lancar (Prima)', val: null, valStr: 'N/A' };
+      if (ctx.isNoDebtCL) return { key: 'A', score: 100, reason: 'Bebas Hutang Lancar (Prima)', val: null, valStr: 'N/A (Bebas Utang)' };
       const qrPct = ctx.qrPct;
-      const valStr = `${qrPct.toFixed(2)}%`;
+      const valStr = `${fmtNum(qrPct, 2)}%`;
       if (qrPct > 70) return { key: 'A', score: 100, reason: `QR ${valStr} (> 70%) - Sangat Likuid`, val: qrPct, valStr };
       if (qrPct >= 60) return { key: 'B', score: 80, reason: `QR ${valStr} (60%-70%) - Cukup`, val: qrPct, valStr };
       if (qrPct > 50) return { key: 'C', score: 60, reason: `QR ${valStr} (50%-60%) - Agak Ketat`, val: qrPct, valStr };
@@ -6342,9 +6369,9 @@ const ASKRINDO_RATIOS_CATALOG = [
       { key: 'E', text: '< 30% (Penyangga Kas Tipis)', score: 20, passRac: false }
     ],
     evalAuto: (proj, m, f23, ctx) => {
-      if (ctx.isNoDebtCL) return { key: 'A', score: 100, reason: 'Bebas Hutang Lancar (Prima)', val: null, valStr: 'N/A' };
+      if (ctx.isNoDebtCL) return { key: 'A', score: 100, reason: 'Bebas Hutang Lancar (Prima)', val: null, valStr: 'N/A (Bebas Utang)' };
       const cRatioPct = ctx.cashRatioPct;
-      const valStr = `${cRatioPct.toFixed(2)}%`;
+      const valStr = `${fmtNum(cRatioPct, 2)}%`;
       if (cRatioPct > 70) return { key: 'A', score: 100, reason: `Cash Ratio ${valStr} (> 70%) - Prima`, val: cRatioPct, valStr };
       if (cRatioPct >= 55) return { key: 'B', score: 80, reason: `Cash Ratio ${valStr} (55%-70%)`, val: cRatioPct, valStr };
       if (cRatioPct > 45) return { key: 'C', score: 60, reason: `Cash Ratio ${valStr} (45%-55%)`, val: cRatioPct, valStr };
@@ -6369,9 +6396,9 @@ const ASKRINDO_RATIOS_CATALOG = [
       { key: 'D', text: '> 400% (Melampaui Batas Maksimum RAC)', score: 25, passRac: false }
     ],
     evalAuto: (proj, m, f23, ctx) => {
-      if (ctx.isZeroDebt) return { key: 'A', score: 100, reason: 'Bebas Hutang (DER 0,0%)', val: 0, valStr: '0,00%' };
-      const derPct = ctx.der * 100;
-      const valStr = `${derPct.toFixed(2)}%`;
+      if (ctx.isZeroDebt) return { key: 'A', score: 100, reason: 'Bebas Hutang (DER 0,00%)', val: 0, valStr: '0,00%' };
+      const derPct = ctx.derPct;
+      const valStr = `${fmtNum(derPct, 2)}%`;
       if (derPct < 200) return { key: 'A', score: 100, reason: `DER ${valStr} (< 200%) - Solvabilitas Aman`, val: derPct, valStr };
       if (derPct <= 300) return { key: 'B', score: 75, reason: `DER ${valStr} (200%-300%) - Memenuhi RAC`, val: derPct, valStr };
       if (derPct <= 400) return { key: 'C', score: 50, reason: `DER ${valStr} (300%-400%) - Batas Ambang RAC`, val: derPct, valStr };
@@ -6397,7 +6424,7 @@ const ASKRINDO_RATIOS_CATALOG = [
     evalAuto: (proj, m, f23, ctx) => {
       if (ctx.isZeroDebt) return { key: 'A', score: 100, reason: 'Bebas Hutang (DAR 0,0%)', val: 0, valStr: '0,00%' };
       const darPct = ctx.darPct;
-      const valStr = `${darPct.toFixed(2)}%`;
+      const valStr = `${fmtNum(darPct, 2)}%`;
       if (darPct < 70) return { key: 'A', score: 100, reason: `DAR ${valStr} (< 70%) - Sehat`, val: darPct, valStr };
       if (darPct < 80) return { key: 'B', score: 75, reason: `DAR ${valStr} (70%-80%) - Wajar`, val: darPct, valStr };
       if (darPct < 100) return { key: 'C', score: 50, reason: `DAR ${valStr} (80%-100%) - Dominasi Utang`, val: darPct, valStr };
@@ -6422,7 +6449,7 @@ const ASKRINDO_RATIOS_CATALOG = [
     ],
     evalAuto: (proj, m, f23, ctx) => {
       const roa = ctx.roa;
-      const valStr = `${roa.toFixed(2)}%`;
+      const valStr = `${fmtNum(roa, 2)}%`;
       if (roa >= 3.0) return { key: 'A', score: 100, reason: `ROA ${valStr} (≥ 3%) - Sangat Produktif`, val: roa, valStr };
       if (roa >= 1.0) return { key: 'B', score: 70, reason: `ROA ${valStr} (1%-3%) - Memenuhi RAC (≥ 1%)`, val: roa, valStr };
       if (roa >= 0.1) return { key: 'C', score: 40, reason: `ROA ${valStr} di bawah RAC (0,1%-1%)`, val: roa, valStr };
@@ -6447,7 +6474,7 @@ const ASKRINDO_RATIOS_CATALOG = [
     ],
     evalAuto: (proj, m, f23, ctx) => {
       const roe = ctx.roe;
-      const valStr = `${roe.toFixed(2)}%`;
+      const valStr = `${fmtNum(roe, 2)}%`;
       if (roe >= 10.0) return { key: 'A', score: 100, reason: `ROE ${valStr} (≥ 10%) - Unggul`, val: roe, valStr };
       if (roe >= 5.0) return { key: 'B', score: 75, reason: `ROE ${valStr} (5%-10%) - Memenuhi RAC (≥ 5%)`, val: roe, valStr };
       if (roe >= 1.0) return { key: 'C', score: 40, reason: `ROE ${valStr} di bawah RAC (1%-5%)`, val: roe, valStr };
@@ -6473,7 +6500,7 @@ const ASKRINDO_RATIOS_CATALOG = [
     ],
     evalAuto: (proj, m, f23, ctx) => {
       const npm = ctx.npm;
-      const valStr = `${npm.toFixed(2)}%`;
+      const valStr = `${fmtNum(npm, 2)}%`;
       if (npm >= 8.0) return { key: 'A', score: 100, reason: `NPM ${valStr} (≥ 8%) - Sangat Sehat`, val: npm, valStr };
       if (npm >= 5.0) return { key: 'B', score: 80, reason: `NPM ${valStr} (5%-8%) - Sehat`, val: npm, valStr };
       if (npm >= 3.0) return { key: 'C', score: 60, reason: `NPM ${valStr} (3%-5%) - Wajar`, val: npm, valStr };
@@ -6484,28 +6511,35 @@ const ASKRINDO_RATIOS_CATALOG = [
 ];
 
 function computeFinancialRatiosAnalysis(proj, f23 = {}, m = null) {
+  const cl = (m && typeof m.cl23 === 'number') ? m.cl23 : ((f23.stDebt || 0) + (f23.ap || 0) + (f23.otherAp || 0) + (f23.accrued || 0));
+  const ca = (m && typeof m.ca23 === 'number') ? m.ca23 : ((f23.cash || 0) + (f23.ar || 0) + (f23.otherAr || 0) + (f23.inv || 0) + (f23.otherCa || 0) + (f23.prepaid || 0));
+  const tl = (m && typeof m.tl23 === 'number') ? m.tl23 : (cl + (f23.ltDebt || 0));
   const eq = (m && typeof m.eq23 === 'number') ? m.eq23 : ((f23.capital || 0) + (f23.otherCap || 0) + (f23.retEarn || 0) + (f23.re || 0));
-  const tl = (m && typeof m.tl23 === 'number') ? m.tl23 : ((f23.ap || 0) + (f23.stDebt || 0) + (f23.otherAp || 0) + (f23.accrued || 0) + (f23.ltDebt || 0));
-  const isZeroDebt = tl === 0 || (m && m.tl23 === 0) || (typeof m?.der23 === 'number' && m.der23 === 0);
-  const der = isZeroDebt ? 0 : ((m && typeof m.der23 === 'number') ? m.der23 : (eq > 0 ? tl / eq : 99));
-  const cr = (m && typeof m.currentRatio23 === 'number') ? m.currentRatio23 : ((f23.ca || 1) / Math.max(1, f23.cl || 1));
-  const isNoDebtCL = (m && (m.currentRatio23 === null || m.isNoDebt23)) || (f23.cl === 0 || !f23.cl) || isZeroDebt;
+  const ta = (m && typeof m.ta23 === 'number') ? m.ta23 : (ca + (f23.fa || 0) - Math.abs(f23.depr || 0) + (f23.invest || 0) + (f23.taxAsset || 0));
+  const eat = (m && typeof m.eat23 === 'number') ? m.eat23 : ((f23.rev || 0) - (f23.cogs || 0) - (f23.opex || 0) + (f23.otherInc || 0) - (f23.otherExp || 0) - (f23.intExp || 0) - (f23.tax || 0) - (f23.div || 0));
+  const rev = (m && typeof m.rev23 === 'number') ? m.rev23 : (f23.rev || 0);
 
-  const qrPct = (m && typeof m.quickRatio23 === 'number') ? m.quickRatio23 * 100 : (((f23.ca || 0) - (f23.inv || 0)) / Math.max(1, f23.cl || 1)) * 100;
-  const cashRatioPct = ((f23.cash || 0) / Math.max(1, f23.cl || 1)) * 100;
-  const roa = (m && typeof m.roa23 === 'number') ? m.roa23 : (((f23.eat || f23.netInc || 0) / Math.max(1, f23.ta || 1)) * 100);
-  const roe = (m && typeof m.roe23 === 'number') ? m.roe23 : (((f23.eat || f23.netInc || 0) / Math.max(1, eq || 1)) * 100);
-  const npm = (m && typeof m.npm23 === 'number') ? m.npm23 : (((f23.eat || f23.netInc || 0) / Math.max(1, f23.rev || 1)) * 100);
-  const darPct = (tl / Math.max(1, f23.ta || (tl + eq))) * 100;
+  const isZeroDebt = tl === 0 || (m && m.tl23 === 0) || (typeof m?.der23 === 'number' && m.der23 === 0);
+  const isNoDebtCL = (m && typeof m.isNoDebt23 === 'boolean') ? m.isNoDebt23 : (cl === 0);
+
+  const crPct = isNoDebtCL ? null : ((m && typeof m.currentRatio23 === 'number') ? m.currentRatio23 * 100 : (cl > 0 ? (ca / cl) * 100 : null));
+  const qrPct = isNoDebtCL ? null : ((m && typeof m.quickRatio23 === 'number') ? m.quickRatio23 * 100 : (cl > 0 ? ((ca - (f23.inv || 0)) / cl) * 100 : null));
+  const cashRatioPct = isNoDebtCL ? null : ((m && typeof m.cashRatio23 === 'number') ? m.cashRatio23 * 100 : (cl > 0 ? ((f23.cash || 0) / cl) * 100 : null));
+
+  const derPct = isZeroDebt ? 0 : ((m && typeof m.der23 === 'number') ? m.der23 * 100 : (eq > 0 ? (tl / eq) * 100 : 9900));
+  const darPct = (m && typeof m.dar23 === 'number') ? m.dar23 : (ta > 0 ? (tl / ta) * 100 : 0);
+  const roa = (m && typeof m.roa23 === 'number') ? m.roa23 : (ta > 0 ? (eat / ta) * 100 : 0);
+  const roe = (m && typeof m.roe23 === 'number') ? m.roe23 : (eq > 0 ? (eat / eq) * 100 : 0);
+  const npm = (m && typeof m.npm23 === 'number') ? m.npm23 : (rev > 0 ? (eat / rev) * 100 : 0);
 
   const ctx = {
-    cr,
+    crPct,
     qrPct,
     cashRatioPct,
     roa,
     roe,
     npm,
-    der,
+    derPct,
     darPct,
     isZeroDebt,
     isNoDebtCL
@@ -6626,8 +6660,8 @@ function renderRatiosTab(proj, m) {
   const cr23 = isNoDebt23 ? null : (m.ca23 / m.cl23) * 100;
   const passCR = isNoDebt23 ? true : (cr23 >= 100);
 
-  const qr22 = isNoDebt22 ? null : (((f22.ca || 0) - (f22.inv || 0)) / m.cl22) * 100;
-  const qr23 = isNoDebt23 ? null : (((f23.ca || 0) - (f23.inv || 0)) / m.cl23) * 100;
+  const qr22 = isNoDebt22 ? null : (((m.ca22 || 0) - (f22.inv || 0)) / m.cl22) * 100;
+  const qr23 = isNoDebt23 ? null : (((m.ca23 || 0) - (f23.inv || 0)) / m.cl23) * 100;
   const passQR = isNoDebt23 ? true : (qr23 >= 60);
 
   const cashRatio22 = isNoDebt22 ? null : ((f22.cash || 0) / m.cl22) * 100;
@@ -6650,8 +6684,8 @@ function renderRatiosTab(proj, m) {
   const roe23 = m.eq23 > 0 ? (m.eat23 / m.eq23) * 100 : 0;
   const passROE = roe23 >= 5.0;
 
-  const npm22 = (f22.rev || 0) > 0 ? ((f22.eat || f22.netInc || 0) / f22.rev) * 100 : 0;
-  const npm23 = (f23.rev || 0) > 0 ? ((f23.eat || f23.netInc || 0) / f23.rev) * 100 : 0;
+  const npm22 = m.rev22 > 0 ? (m.eat22 / m.rev22) * 100 : ((f22.rev || 0) > 0 ? (m.eat22 / f22.rev) * 100 : 0);
+  const npm23 = m.rev23 > 0 ? (m.eat23 / m.rev23) * 100 : ((f23.rev || 0) > 0 ? (m.eat23 / f23.rev) * 100 : 0);
   const passNPM = npm23 >= 3.0;
 
   const nwc22 = m.nwc22;
@@ -6782,10 +6816,10 @@ function renderRatiosTab(proj, m) {
       <div class="kpi-card ${passCR ? 'kpi-green' : 'kpi-red'}">
         <div class="kpi-label">Likuiditas Lancar (CR &amp; QR)</div>
         <div class="kpi-value" style="font-size:1.15rem; color:${passCR ? '#15803d' : '#dc2626'};">
-          CR: ${isNoDebt23 ? 'Bebas Utang' : fmtNum(cr23, 1) + '%'}
+          CR: ${isNoDebt23 ? 'N/A (Bebas Utang)' : fmtNum(cr23, 2) + '%'}
         </div>
         <div class="kpi-sub">
-          <span>QR: ${isNoDebt23 ? 'N/A' : fmtNum(qr23, 1) + '%'} | Cash: ${isNoDebt23 ? 'N/A' : fmtNum(cashRatio23, 1) + '%'}</span>
+          <span>QR: ${isNoDebt23 ? 'N/A' : fmtNum(qr23, 2) + '%'} | Cash: ${isNoDebt23 ? 'N/A' : fmtNum(cashRatio23, 2) + '%'}</span>
           <span style="font-weight:700;">${passCR ? 'Likuid' : 'Ketat'}</span>
         </div>
       </div>
@@ -6794,10 +6828,10 @@ function renderRatiosTab(proj, m) {
       <div class="kpi-card ${passDER ? 'kpi-green' : 'kpi-red'}">
         <div class="kpi-label">Solvabilitas &amp; Leverage (DER &amp; DAR)</div>
         <div class="kpi-value" style="font-size:1.15rem; color:${passDER ? '#15803d' : '#dc2626'};">
-          DER: ${fmtNum(der23, 1)}%
+          DER: ${fmtNum(der23, 2)}%
         </div>
         <div class="kpi-sub">
-          <span>DAR: ${fmtNum(dar23, 1)}% (Aset ${fmtRp(m.ta23, true)})</span>
+          <span>DAR: ${fmtNum(dar23, 2)}% (Aset ${fmtRp(m.ta23, true)})</span>
           <span style="font-weight:700;">${passDER ? 'Aman' : 'Tinggi'}</span>
         </div>
       </div>
@@ -6809,7 +6843,7 @@ function renderRatiosTab(proj, m) {
           ROA: ${fmtNum(roa23, 2)}%
         </div>
         <div class="kpi-sub">
-          <span>ROE: ${fmtNum(roe23, 1)}% | NPM: ${fmtNum(npm23, 1)}%</span>
+          <span>ROE: ${fmtNum(roe23, 2)}% | NPM: ${fmtNum(npm23, 2)}%</span>
           <span style="font-weight:700;">EAT: ${fmtRp(m.eat23, true)}</span>
         </div>
       </div>
@@ -6860,9 +6894,9 @@ function renderRatiosTab(proj, m) {
           </thead>
           <tbody>
             ${ratAnalysis.evaluatedRatios.map((r) => {
-              const histVal = r.id === 'r_cr' ? (isNoDebt22 ? 'N/A' : fmtNum(cr22, 2) + '%')
-                : (r.id === 'r_qr' ? (isNoDebt22 ? 'N/A' : fmtNum(qr22, 2) + '%')
-                : (r.id === 'r_cash' ? (isNoDebt22 ? 'N/A' : fmtNum(cashRatio22, 2) + '%')
+              const histVal = r.id === 'r_cr' ? (isNoDebt22 ? 'N/A (Bebas Utang)' : fmtNum(cr22, 2) + '%')
+                : (r.id === 'r_qr' ? (isNoDebt22 ? 'N/A (Bebas Utang)' : fmtNum(qr22, 2) + '%')
+                : (r.id === 'r_cash' ? (isNoDebt22 ? 'N/A (Bebas Utang)' : fmtNum(cashRatio22, 2) + '%')
                 : (r.id === 'r_der' ? fmtNum(der22, 2) + '%'
                 : (r.id === 'r_dar' ? fmtNum(dar22, 2) + '%'
                 : (r.id === 'r_roa' ? fmtNum(roa22, 2) + '%'

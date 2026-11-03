@@ -128,6 +128,9 @@ function getDefaultProjects() {
       auditorOpinion: 'Wajar Tanpa Pengecualian (WTP)',
       auditReportDate: '28 Maret 2024',
       auditDetectionReason: 'Laporan Auditor Independen KAP Heliantono & Rekan (Opini WTP)',
+      sippStatus: 'clean',
+      inaprocStatus: 'clean',
+      negativeNews: 'clean',
       qualitative5CScore: 6,
       manualGradeOverride: 'AUTO',
       overrideReason: '',
@@ -210,6 +213,9 @@ function getDefaultProjects() {
       auditorOpinion: 'Wajar Tanpa Pengecualian (WTP)',
       auditReportDate: '28 Maret 2024',
       auditDetectionReason: 'Laporan Auditor Independen KAP Heliantono & Rekan (Opini WTP)',
+      sippStatus: 'clean',
+      inaprocStatus: 'clean',
+      negativeNews: 'clean',
       qualitative5CScore: 8.5,
       manualGradeOverride: 'AUTO',
       overrideReason: '',
@@ -292,6 +298,9 @@ function getDefaultProjects() {
       auditorOpinion: 'Wajar Tanpa Pengecualian (WTP)',
       auditReportDate: '15 April 2024',
       auditDetectionReason: 'Laporan Auditor Independen BDO Tanubrata (Opini WTP)',
+      sippStatus: 'clean',
+      inaprocStatus: 'clean',
+      negativeNews: 'clean',
       qualitative5CScore: 9.0,
       manualGradeOverride: 'AUTO',
       overrideReason: '',
@@ -583,7 +592,7 @@ let cloudSaveDebounceTimer = null;
 let isCloudSyncInProgress = false;
 
 function sanitizeProjectData(p) {
-  return {
+  const merged = {
     year1: p.year1 || 2022,
     year2: p.year2 || 2023,
     qualitative5CScore: typeof p.qualitative5CScore === 'number' ? p.qualitative5CScore : 6,
@@ -594,6 +603,12 @@ function sanitizeProjectData(p) {
     procurementMethod: p.procurementMethod || (isMaritimeOrImportRisk(p) ? 'import_sea' : 'none'),
     ...p
   };
+  if (!merged.sippStatus || (merged.sippStatus !== 'disputed' && merged.sippStatus !== 'bankrupt')) {
+    merged.sippStatus = 'clean';
+  }
+  if (!merged.inaprocStatus) merged.inaprocStatus = 'clean';
+  if (!merged.negativeNews) merged.negativeNews = 'clean';
+  return merged;
 }
 
 function getCurrentProjectStorageKey() {
@@ -3293,6 +3308,9 @@ const ASKRINDO_5C_CATALOG = [
 function compute5CAnalysis(proj, f23 = {}, m = null) {
   ensureInaprocAutoChecked(proj);
   ensureGoogleNewsInitialized(proj);
+  if (!proj.sippStatus || (proj.sippStatus !== 'disputed' && proj.sippStatus !== 'bankrupt')) {
+    proj.sippStatus = 'clean';
+  }
 
   const curYr = proj.year2 || new Date().getFullYear();
   const estYr = proj.estYear || (curYr - 5);
@@ -5089,7 +5107,9 @@ function render5CTab(proj, m) {
 
   ensureInaprocAutoChecked(proj);
   ensureGoogleNewsInitialized(proj);
-  if (!proj.sippStatus) proj.sippStatus = 'clean';
+  if (!proj.sippStatus || (proj.sippStatus !== 'disputed' && proj.sippStatus !== 'bankrupt')) {
+    proj.sippStatus = 'clean';
+  }
   const isSippClean = proj.sippStatus !== 'disputed' && proj.sippStatus !== 'bankrupt';
   const fiveC = m.fiveC || compute5CAnalysis(proj, proj.fin23, m);
 
@@ -5298,7 +5318,7 @@ function render5CTab(proj, m) {
             <div>Pencarian: <strong>${cleanCompName}</strong></div>
             <div>Status: <strong style="color:${proj.negativeNews === 'negative' ? '#dc2626' : '#166534'};">${proj.negativeNews === 'negative' ? 'Terdeteksi Berita Negatif (0/20 Poin)' : 'Nihil Berita Negatif (20/20 Poin)'}</strong></div>
             <div style="margin-top:3px;">
-              <select class="form-control" style="font-size:0.68rem; padding:2px 6px;" onchange="updateCharacterParam('negativeNews', this.value)">
+              <select class="form-control" style="font-size:0.68rem; padding:2px 6px; font-weight:700; color:${proj.negativeNews === 'negative' ? '#dc2626' : '#166534'}; border-color:${proj.negativeNews === 'negative' ? '#fca5a5' : '#86efac'}; background:${proj.negativeNews === 'negative' ? '#fff1f2' : '#f0fdf4'};" onchange="updateCharacterParam('negativeNews', this.value)">
                 <option value="clean" ${proj.negativeNews !== 'negative' ? 'selected' : ''}>Nihil Pemberitaan Negatif (20 Poin Penuh)</option>
                 <option value="negative" ${proj.negativeNews === 'negative' ? 'selected' : ''}>Terdeteksi Isu Berita Negatif (0 Poin)</option>
               </select>
@@ -5368,7 +5388,7 @@ function render5CTab(proj, m) {
         </div>
 
         <!-- 3. SIPP PENGADILAN MA -->
-        <div style="background:#ffffff; border:1.5px solid ${isSippClean ? '#bbf7d0' : '#fca5a5'}; border-radius:8px; padding:0.6rem 0.75rem; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+        <div style="background:#ffffff; border:1.5px solid ${isSippClean ? '#86efac' : '#fca5a5'}; border-radius:8px; padding:0.6rem 0.75rem; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
             <div style="font-size:0.75rem; font-weight:800; color:#1e293b; display:flex; align-items:center; gap:5px;">
               <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${isSippClean ? '#16a34a' : '#dc2626'};"></span>
@@ -5377,9 +5397,9 @@ function render5CTab(proj, m) {
             <span style="font-size:0.62rem; font-weight:700; color:#64748b;">${proj.city || 'Yurisdiksi Domisili'}</span>
           </div>
           <div style="font-size:0.66rem; color:#475569; line-height:1.4;">
-            <div>Status Hukum: <strong style="color:${isSippClean ? '#166534' : '#dc2626'};">${fiveC.sippStatus}</strong> (${fiveC.charBreakdown?.sippPts ?? 10}/10 Poin)</div>
+            <div>Status Hukum: <strong style="color:${isSippClean ? '#166534' : '#dc2626'};">${isSippClean ? 'Nihil Gugatan Wanprestasi / PKPU' : fiveC.sippStatus}</strong> (${isSippClean ? '10/10 Poin' : (fiveC.charBreakdown?.sippPts ?? 0) + '/10 Poin'})</div>
             <div style="margin-top:3px;">
-              <select class="form-control" style="font-size:0.68rem; padding:2px 6px;" onchange="updateCharacterParam('sippStatus', this.value)">
+              <select class="form-control" style="font-size:0.68rem; padding:2px 6px; font-weight:700; color:${isSippClean ? '#166534' : '#dc2626'}; border-color:${isSippClean ? '#86efac' : '#fca5a5'}; background:${isSippClean ? '#f0fdf4' : '#fff1f2'};" onchange="updateCharacterParam('sippStatus', this.value)">
                 <option value="clean" ${isSippClean ? 'selected' : ''}>Nihil Gugatan Perdata / PKPU</option>
                 <option value="disputed" ${proj.sippStatus === 'disputed' ? 'selected' : ''}>Sengketa Gugatan Perdata</option>
                 <option value="bankrupt" ${proj.sippStatus === 'bankrupt' ? 'selected' : ''}>Permohonan Kepailitan / PKPU</option>

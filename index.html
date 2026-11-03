@@ -332,7 +332,7 @@
         <button class="tab-btn" data-tab="tab-cashflow" onclick="switchTab('tab-cashflow')" title="Proyeksi Arus Kas 12 Bulan ke Depan &amp; Debt Service Coverage">
           Proyeksi Cash Flow
         </button>
-        <button class="tab-btn" data-tab="tab-grade" onclick="switchTab('tab-grade')" title="Rating Akseptasi &amp; Indikator Penilaian (Tabel VI.1 Petunjuk Teknis Askrindo)">
+        <button class="tab-btn" data-tab="tab-grade" onclick="switchTab('tab-grade')" title="Rating Akseptasi &amp; Indikator Penilaian (Tabel VI.1 Rating Akseptasi)">
           Rating Akseptasi
         </button>
         <button class="tab-btn" data-tab="tab-score" onclick="switchTab('tab-score')" title="Rincian Perhitungan Skor 7 Pilar DCC-SWCM ASCA">
@@ -840,7 +840,7 @@
         <div class="card" style="margin-top:0.85rem;" id="cardInputSecD">
           <div class="card-header card-header-collapsible" onclick="handleCardHeaderToggle('secD', event)" title="Klik untuk Sembunyikan / Tampilkan Bagian D" style="flex-wrap:wrap; gap:0.5rem; justify-content:space-between; align-items:center;">
             <div style="flex:1; min-width:300px;">
-              <div class="card-title">📊 D. Perhitungan Analisa Keuangan &mdash; Template Neraca &amp; Laba Rugi Audited (dalam Rupiah)</div>
+              <div class="card-title">📊 D. Perhitungan Analisa Keuangan &mdash; Template Neraca &amp; Laba Rugi <span id="secDAuditTitleStatus" style="font-weight:800; color:#15803d; background:#dcfce7; padding:2px 8px; border-radius:6px; border:1px solid #86efac; font-size:0.75rem;">Audited</span> (dalam Rupiah)</div>
               <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;">
                 Template standar Neraca (Aktiva &amp; Passiva) serta Laporan Laba Rugi (R/L). Baris subtotal, total, persentase common-size (%), dan pertumbuhan (Growth %) dihitung otomatis secara real-time.
               </div>
@@ -850,11 +850,22 @@
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                 <span>📤 Upload &amp; Pindai Lapkeu (AI OCR)</span>
               </button>
+              <!-- ADJUSTMENT JENIS LAPORAN KEUANGAN (AUDITED / UNAUDITED) -->
+              <div style="display:inline-flex; align-items:center; gap:0.35rem; font-size:0.72rem; background:#f8fafc; padding:3px 8px; border-radius:6px; border:1px solid var(--border-color);" onclick="event.stopPropagation()">
+                <span style="color:var(--text-muted); font-weight:600;" title="Status terdeteksi otomatis dari AI OCR, dapat disesuaikan jika jenis laporan berbeda">Jenis Lapkeu:</span>
+                <select id="sel_auditStatus" class="form-control" style="font-size:0.72rem; padding:2px 6px; font-weight:700; border-radius:4px; height:24px; cursor:pointer;" onchange="handleAuditStatusChange(this.value)" title="Pilih jenis laporan keuangan untuk penyesuaian (Otomatis menghubungkan poin 5C)">
+                  <option value="audited">⚡ Audited KAP (100 Poin 5C)</option>
+                  <option value="unaudited">📄 In-House / Unaudited (60 Poin 5C)</option>
+                </select>
+              </div>
+              <div id="finAuditStatusBadge" style="font-size:0.7rem; font-weight:700; padding:3px 9px; border-radius:999px; background:#dcfce7; color:#166534; border:1px solid #86efac; display:inline-flex; align-items:center; gap:4px;" title="Status laporan keuangan terdeteksi otomatis dari hasil AI OCR (Terhubung ke Analisa 5C)">
+                ⚡ Hasil OCR
+              </div>
               <div id="finBalanceStatusBadge" style="font-size:0.7rem; font-weight:700; padding:3px 10px; border-radius:999px; background:#dcfce7; color:#166534; border:1px solid #86efac;">
                 &#10003; Neraca Balance (Aktiva = Passiva)
               </div>
               <div style="display:flex; align-items:center; gap:0.35rem; font-size:0.72rem; background:#f8fafc; padding:3px 8px; border-radius:6px; border:1px solid var(--border-color);" onclick="event.stopPropagation()">
-                <span style="color:var(--text-muted); font-weight:600;">Tahun Audited:</span>
+                <span style="color:var(--text-muted); font-weight:600;" id="lblYearAudited">Tahun Buku:</span>
                 <input type="number" id="inp_year1" class="form-control" style="width:68px; padding:2px 5px; font-weight:700; text-align:center;" oninput="syncInputsToModel()" title="Tahun Periode 1" />
                 <span>&amp;</span>
                 <input type="number" id="inp_year2" class="form-control" style="width:68px; padding:2px 5px; font-weight:700; text-align:center;" oninput="syncInputsToModel()" title="Tahun Periode 2" />
@@ -872,9 +883,9 @@
                 <tr>
                   <th style="width:30%;">Uraian Neraca &amp; Laba Rugi</th>
                   <th style="width:6%; text-align:center;">Kode</th>
-                  <th class="num-col" style="width:21%;">Tahun <span id="thLabelYear1">2022</span> Audited (Rp)</th>
+                  <th class="num-col" style="width:21%;">Tahun <span id="thLabelYear1">2022</span> <span id="thLabelStatusYear1">Audited</span> (Rp)</th>
                   <th class="num-col" style="width:7%;">%</th>
-                  <th class="num-col" style="width:21%;">Tahun <span id="thLabelYear2">2023</span> Audited (Rp)</th>
+                  <th class="num-col" style="width:21%;">Tahun <span id="thLabelYear2">2023</span> <span id="thLabelStatusYear2">Audited</span> (Rp)</th>
                   <th class="num-col" style="width:7%;">%</th>
                   <th class="num-col" style="width:8%;">Growth (%)</th>
                 </tr>
@@ -1118,7 +1129,7 @@
                   <td class="num-col" id="grw_otherCap" style="font-size:0.7rem; font-weight:600;">-</td>
                 </tr>
                 <tr>
-                  <td>Laba (Rugi) Ditahan</td>
+                  <td>Laba (Rugi) Ditahan Periode Lalu</td>
                   <td style="text-align:center; font-weight:700; color:#475569;">q1</td>
                   <td><input type="text" inputmode="numeric" id="inp_retEarn22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
                   <td class="num-col" id="pct_retEarn22" style="font-size:0.7rem; color:#475569;">-</td>
@@ -1127,7 +1138,7 @@
                   <td class="num-col" id="grw_retEarn" style="font-size:0.7rem; font-weight:600;">-</td>
                 </tr>
                 <tr>
-                  <td>Laba (Rugi) Tahun Berjalan / Saldo Laba (Akumulasi Rugi)</td>
+                  <td>Laba (Rugi) Tahun Berjalan <span style="font-size:0.67rem; color:#64748b; font-weight:normal;">(Total Saldo Laba Neraca = q1 + q2)</span></td>
                   <td style="text-align:center; font-weight:700; color:#475569;">q2</td>
                   <td><input type="text" inputmode="numeric" id="inp_re22" class="form-control num-col fmt-dots" oninput="handleDotInput(this); syncInputsToModel()" onblur="handleDotBlur(this); syncInputsToModel()" /></td>
                   <td class="num-col" id="pct_re22" style="font-size:0.7rem; color:#475569;">-</td>
@@ -2815,6 +2826,39 @@
     </div>
   </div>
 
+  <!-- MODAL DAFTAR SCREENING PEMBERITAAN NEGATIF MEDIA -->
+  <div class="modal-backdrop" id="modalGoogleNewsList" style="display:none; align-items:center; justify-content:center; z-index:9999;" onclick="if(event.target === this) closeGoogleNewsModal()">
+    <div class="modal-content" style="max-width:840px; max-height:90vh; width:95%; display:flex; flex-direction:column; padding:0; overflow:hidden; border-radius:12px; box-shadow:0 20px 45px rgba(0,0,0,0.3); border:1px solid #cbd5e1;">
+      <!-- Header -->
+      <div style="background:linear-gradient(135deg, #0c345c 0%, #1e40af 100%); color:#ffffff; padding:1rem 1.25rem; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
+        <div>
+          <div style="font-weight:800; font-size:0.95rem; display:flex; align-items:center; gap:8px;">
+            <span>📰</span> Daftar Screening Pemberitaan Media (Google News)
+          </div>
+          <div id="modalNewsSubtitle" style="font-size:0.72rem; color:#bfdbfe; margin-top:2px;">
+            Daftar artikel hasil pemantauan media massa &amp; reputasi publik debitur
+          </div>
+        </div>
+        <button type="button" onclick="closeGoogleNewsModal()" style="background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.4); color:#ffffff; width:30px; height:30px; border-radius:6px; cursor:pointer; font-size:1.2rem; font-weight:700; line-height:1; display:flex; align-items:center; justify-content:center;" title="Tutup (Esc)">&times;</button>
+      </div>
+
+      <!-- Body -->
+      <div id="modalNewsBody" style="padding:1rem 1.25rem; overflow-y:auto; flex-grow:1; background:#f8fafc;">
+        <!-- Dynamically rendered by renderGoogleNewsModalContent() -->
+      </div>
+
+      <!-- Footer -->
+      <div style="padding:0.75rem 1.25rem; background:#ffffff; border-top:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; flex-shrink:0;">
+        <button type="button" class="btn btn-outline btn-sm" onclick="fetchGoogleNewsForProject(true)" style="font-size:0.72rem; font-weight:700;">
+          🔄 Refresh / Update Screening Online
+        </button>
+        <button type="button" class="btn btn-primary btn-sm" onclick="closeGoogleNewsModal()" style="font-size:0.72rem; font-weight:700; background:#0c345c; border:none; padding:5px 16px;">
+          Selesai &amp; Tutup
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL KONFIRMASI LOGOUT -->
   <div class="modal-backdrop" id="logoutConfirmModal" style="display:none; align-items:center; justify-content:center; z-index:9999;" onclick="if(event.target === this) closeLogoutModal()">
     <div class="modal-content" style="max-width:440px; border-radius:12px; box-shadow:0 20px 45px rgba(0,0,0,0.3); border:1px solid #cbd5e1; overflow:hidden; padding:0;">
@@ -2853,6 +2897,6 @@
   <div class="toast-container" id="toastContainer"></div>
 
   <script src="inaproc-blacklist-db.js?v=1793516000"></script>
-  <script src="app.js?v=1793704200"></script>
+  <script src="app.js?v=1793706600"></script>
 </body>
 </html>

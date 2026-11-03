@@ -123,6 +123,11 @@ function getDefaultProjects() {
       approverTitle: 'PT Asuransi Kredit Indonesia',
       year1: 2022,
       year2: 2023,
+      auditStatus: 'audited',
+      auditorKapName: 'KAP Heliantono & Rekan',
+      auditorOpinion: 'Wajar Tanpa Pengecualian (WTP)',
+      auditReportDate: '28 Maret 2024',
+      auditDetectionReason: 'Laporan Auditor Independen KAP Heliantono & Rekan (Opini WTP)',
       qualitative5CScore: 6,
       manualGradeOverride: 'AUTO',
       overrideReason: '',
@@ -200,6 +205,11 @@ function getDefaultProjects() {
       approverTitle: 'PT Asuransi Kredit Indonesia',
       year1: 2023,
       year2: 2024,
+      auditStatus: 'audited',
+      auditorKapName: 'KAP Heliantono & Rekan',
+      auditorOpinion: 'Wajar Tanpa Pengecualian (WTP)',
+      auditReportDate: '28 Maret 2024',
+      auditDetectionReason: 'Laporan Auditor Independen KAP Heliantono & Rekan (Opini WTP)',
       qualitative5CScore: 8.5,
       manualGradeOverride: 'AUTO',
       overrideReason: '',
@@ -277,6 +287,11 @@ function getDefaultProjects() {
       approverTitle: 'PT Asuransi Kredit Indonesia',
       year1: 2022,
       year2: 2023,
+      auditStatus: 'audited',
+      auditorKapName: 'KAP Tanubrata Sutanto Fahmi Bambang & Rekan',
+      auditorOpinion: 'Wajar Tanpa Pengecualian (WTP)',
+      auditReportDate: '15 April 2024',
+      auditDetectionReason: 'Laporan Auditor Independen BDO Tanubrata (Opini WTP)',
       qualitative5CScore: 9.0,
       manualGradeOverride: 'AUTO',
       overrideReason: '',
@@ -335,7 +350,7 @@ function getDefaultProjects() {
 
 // ============================================================================
 // 2. RISK GRADE DEFINITIONS TABLE (TABEL VI.1 RATING AKSEPTASI ASKRINDO)
-// Sumber: Petunjuk Teknis Akseptasi Surety Bond | ASKRINDO Insurance (PT IDX Consulting)
+// Standar Rating Akseptasi & Klasifikasi Risiko Askrindo
 // ============================================================================
 const ASKRINDO_GRADE_CATALOG = [
   {
@@ -2165,6 +2180,57 @@ async function fetchGoogleNewsForProject(isManualClick = false, isAutoInputTrigg
   }
 }
 
+let currentNewsModalFilter = 'all'; // 'all' | 'negative' | 'clean'
+
+function getNegativeKeywordsMatched(title) {
+  if (!title) return [];
+  const keywords = [
+    'cilaka', 'dihentikan', 'pembohong', 'tipu', 'penipuan', 'korupsi',
+    'pailit', 'pkpu', 'wanprestasi', 'sengketa', 'gugatan', 'daftar hitam',
+    'blacklist', 'macet', 'gagal bayar', 'tersangka', 'kejaksaan', 'kpk',
+    'pidana', 'sanksi', 'fiktif', 'mangkrak', 'rugikan', 'gelapkan',
+    'bodong', 'ilegal', 'bermasalah'
+  ];
+  const t = String(title).toLowerCase();
+  return keywords.filter((k) => t.includes(k));
+}
+
+function openGoogleNewsModal(filter = 'all') {
+  currentNewsModalFilter = filter;
+  const modal = document.getElementById('modalGoogleNewsList');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  renderGoogleNewsModalContent();
+}
+
+function closeGoogleNewsModal() {
+  const modal = document.getElementById('modalGoogleNewsList');
+  if (modal) modal.style.display = 'none';
+}
+
+function setNewsModalFilter(filter) {
+  currentNewsModalFilter = filter;
+  renderGoogleNewsModalContent();
+}
+
+function openExternalGoogleNewsSearch(compName) {
+  const clean = normalizeNewsSearchQuery(compName || 'Perusahaan');
+  const url = `https://news.google.com/search?q=${encodeURIComponent(clean)}&hl=id&gl=ID&ceid=ID:id`;
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+function toggleCardNewsList(event) {
+  if (event) event.stopPropagation();
+  const el = document.getElementById('cardNewsInlineList');
+  const btn = document.getElementById('btnToggleCardNewsList');
+  if (!el) return;
+  const isHidden = el.style.display === 'none' || !el.style.display;
+  el.style.display = isHidden ? 'block' : 'none';
+  if (btn) {
+    btn.innerHTML = isHidden ? '▲ Tutup' : '▼ Rincian';
+  }
+}
+
 function markGoogleNewsItem(idx, targetStatus) {
   const proj = getActiveProject();
   if (!proj || !Array.isArray(proj.googleNewsItems) || !proj.googleNewsItems[idx]) return;
@@ -2178,13 +2244,170 @@ function markGoogleNewsItem(idx, targetStatus) {
   saveProjectsToStorage();
   renderAll();
 
+  // Jika modal rincian berita sedang terbuka, refresh konten modalnya
+  const modal = document.getElementById('modalGoogleNewsList');
+  if (modal && modal.style.display !== 'none') {
+    renderGoogleNewsModalContent();
+  }
+
   if (proj.googleNewsItems[idx].status === 'negative') {
     showToast(`Berita ditandai NEGATIF. Skor Screening Media otomatis menjadi 0/20 Poin.`);
   } else if (proj.googleNewsItems[idx].status === 'clean') {
-    showToast(`Berita ditandai BUKAN NEGATIF. Skor Karakter telah diperbarui.`);
+    showToast(`Berita diverifikasi BUKAN NEGATIF. Skor Karakter telah diperbarui (${proj.negativeNews === 'clean' ? '20/20 Poin Penuh' : '0/20 Poin'}).`);
   } else {
     showToast(`Status penandaan berita direset menjadi Belum Ditandai.`);
   }
+}
+
+function renderGoogleNewsModalContent() {
+  const proj = getActiveProject();
+  const body = document.getElementById('modalNewsBody');
+  const subtitle = document.getElementById('modalNewsSubtitle');
+  if (!proj || !body) return;
+
+  const cleanCompName = (proj.companyName || 'Perusahaan').replace(/\s*\([^)]*\)/g, '').trim().toUpperCase();
+  const safeCompName = (proj.companyName || 'Perusahaan').replace(/'/g, "\\'");
+  const newsItems = Array.isArray(proj.googleNewsItems) ? proj.googleNewsItems : [];
+  const negItems = newsItems.filter((it) => it.status === 'negative');
+  const accessedAt = proj.googleNewsAccessedAt || formatGoogleNewsAccessedDate(new Date());
+
+  if (subtitle) {
+    subtitle.textContent = `Entitas: ${cleanCompName} • ${newsItems.length} artikel terindeks per ${accessedAt}`;
+  }
+
+  const cleanItems = newsItems.filter((it) => it.status !== 'negative');
+  const isNegativeStatus = proj.negativeNews === 'negative';
+
+  let filteredItems = newsItems;
+  if (currentNewsModalFilter === 'negative') filteredItems = negItems;
+  else if (currentNewsModalFilter === 'clean') filteredItems = cleanItems;
+
+  body.innerHTML = `
+    <!-- SUMMARY BANNER -->
+    <div style="background:#ffffff; border:1px solid ${isNegativeStatus ? '#fca5a5' : '#bbf7d0'}; border-radius:8px; padding:0.85rem 1rem; margin-bottom:0.85rem; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.6rem;">
+        <div>
+          <div style="font-weight:800; font-size:0.85rem; color:${isNegativeStatus ? '#dc2626' : '#166534'}; display:flex; align-items:center; gap:6px;">
+            <span>${isNegativeStatus ? '⚠️' : '✅'}</span>
+            Status Screening: <strong>${isNegativeStatus ? `Terdeteksi ${negItems.length} Berita Negatif (0/20 Poin)` : 'Nihil Berita Negatif (20/20 Poin Penuh)'}</strong>
+          </div>
+          <div style="font-size:0.7rem; color:#64748b; margin-top:3px;">
+            Entitas: <strong>"${cleanCompName}"</strong> &bull; Total Artikel Terindeks: <strong>${newsItems.length} Artikel</strong> &bull; Waktu Scan: ${accessedAt}
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+          <div style="display:flex; align-items:center; gap:0.35rem; font-size:0.72rem;">
+            <span style="font-weight:700; color:#334155;">Status 5C:</span>
+            <select class="form-control" style="font-size:0.72rem; padding:2px 6px; font-weight:700; width:auto; height:26px;" onchange="updateCharacterParam('negativeNews', this.value)">
+              <option value="clean" ${!isNegativeStatus ? 'selected' : ''}>Nihil Negatif (20 Poin)</option>
+              <option value="negative" ${isNegativeStatus ? 'selected' : ''}>Terdeteksi Negatif (0 Poin)</option>
+            </select>
+          </div>
+          <button type="button" class="btn btn-outline btn-xs" onclick="openExternalGoogleNewsSearch('${safeCompName}')" style="font-size:0.70rem; padding:3px 8px; font-weight:700; color:#0369a1; border-color:#bae6fd; background:#f0f9ff; cursor:pointer;" title="Buka pencarian langsung di situs Google News">
+            🌐 Buka Google News Tab Baru ↗
+          </button>
+        </div>
+      </div>
+      <div style="margin-top:0.6rem; padding-top:0.6rem; border-top:1px dashed #e2e8f0; font-size:0.67rem; color:#475569; line-height:1.4;">
+        💡 <strong>Petunjuk Analis:</strong> Jika sistem menandai suatu artikel sebagai "Negatif" padahal subjeknya adalah perusahaan lain (homonim) atau bukan isu wanprestasi/hukum yang relevan, klik tombol <strong>"Bukan Isu Negatif (False Alarm)"</strong> pada artikel terkait untuk mengembalikan skor menjadi 20 Poin penuh.
+      </div>
+    </div>
+
+    <!-- FILTER TABS -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; flex-wrap:wrap; gap:0.5rem;">
+      <div style="display:inline-flex; background:#e2e8f0; border-radius:6px; padding:2px; gap:2px;">
+        <button type="button" class="btn btn-xs" onclick="setNewsModalFilter('all')" style="font-size:0.70rem; font-weight:700; padding:3px 10px; border-radius:4px; border:none; cursor:pointer; background:${currentNewsModalFilter === 'all' ? '#0c345c' : 'transparent'}; color:${currentNewsModalFilter === 'all' ? '#ffffff' : '#475569'};">
+          Semua Artikel (${newsItems.length})
+        </button>
+        <button type="button" class="btn btn-xs" onclick="setNewsModalFilter('negative')" style="font-size:0.70rem; font-weight:700; padding:3px 10px; border-radius:4px; border:none; cursor:pointer; background:${currentNewsModalFilter === 'negative' ? '#dc2626' : 'transparent'}; color:${currentNewsModalFilter === 'negative' ? '#ffffff' : '#475569'};">
+          🔴 Terdeteksi Negatif (${negItems.length})
+        </button>
+        <button type="button" class="btn btn-xs" onclick="setNewsModalFilter('clean')" style="font-size:0.70rem; font-weight:700; padding:3px 10px; border-radius:4px; border:none; cursor:pointer; background:${currentNewsModalFilter === 'clean' ? '#16a34a' : 'transparent'}; color:${currentNewsModalFilter === 'clean' ? '#ffffff' : '#475569'};">
+          🟢 Bersih / Netral (${cleanItems.length})
+        </button>
+      </div>
+      <div style="font-size:0.68rem; color:#64748b;">
+        Menampilkan <strong>${filteredItems.length}</strong> dari <strong>${newsItems.length}</strong> artikel
+      </div>
+    </div>
+
+    <!-- ARTICLE LIST -->
+    ${newsItems.length === 0 ? `
+      <div style="background:#ffffff; border:1px dashed #cbd5e1; border-radius:8px; padding:2rem 1rem; text-align:center; color:#64748b;">
+        <div style="font-size:1.8rem; margin-bottom:0.5rem;">📰</div>
+        <div style="font-weight:700; font-size:0.85rem; color:#334155; margin-bottom:4px;">Tidak Ada Artikel Berita Terindeks</div>
+        <div style="font-size:0.72rem; max-width:440px; margin:0 auto; line-height:1.4;">
+          Pencarian di Google News untuk "${cleanCompName}" tidak menemukan berita negatif aktif. Entitas berstatus Bersih (20/20 Poin Penuh).
+        </div>
+        <div style="margin-top:1rem; display:flex; justify-content:center; gap:0.5rem;">
+          <button type="button" class="btn btn-outline btn-sm" onclick="openExternalGoogleNewsSearch('${safeCompName}')" style="font-size:0.72rem; font-weight:700;">
+            🌐 Cek Langsung di Google News ↗
+          </button>
+          <button type="button" class="btn btn-primary btn-sm" onclick="fetchGoogleNewsForProject(true)" style="font-size:0.72rem; font-weight:700;">
+            🔄 Pindai Ulang Sekarang
+          </button>
+        </div>
+      </div>
+    ` : filteredItems.length === 0 ? `
+      <div style="background:#ffffff; border:1px dashed #cbd5e1; border-radius:8px; padding:1.5rem 1rem; text-align:center; color:#64748b; font-size:0.75rem;">
+        Tidak ada artikel pada filter ini (${currentNewsModalFilter}). Silakan pilih filter tab lain di atas.
+      </div>
+    ` : `
+      <div style="display:flex; flex-direction:column; gap:0.6rem;">
+        ${filteredItems.map((item, idx) => {
+          const realIdx = newsItems.findIndex((it) => it.title === item.title && it.link === item.link);
+          const isItemNeg = item.status === 'negative';
+          const matchedKw = getNegativeKeywordsMatched(item.title);
+
+          return `
+            <div style="background:#ffffff; border:1.5px solid ${isItemNeg ? '#fca5a5' : '#e2e8f0'}; border-left:4.5px solid ${isItemNeg ? '#dc2626' : '#16a34a'}; border-radius:8px; padding:0.75rem 0.9rem; box-shadow:0 1px 3px rgba(0,0,0,0.03); transition:all 0.2s;">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:0.75rem; flex-wrap:wrap;">
+                <div style="flex:1; min-width:280px;">
+                  <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:4px;">
+                    <span style="font-size:0.65rem; font-weight:800; padding:2px 7px; border-radius:999px; ${isItemNeg ? 'background:#fee2e2; color:#991b1b; border:1px solid #fca5a5;' : 'background:#dcfce7; color:#166534; border:1px solid #86efac;'}">
+                      ${isItemNeg ? '🔴 Berindikasi Isu Negatif (0 Poin)' : '🟢 Bersih / Bukan Masalah'}
+                    </span>
+                    <span style="font-size:0.65rem; font-weight:700; color:#0369a1; background:#e0f2fe; padding:2px 7px; border-radius:4px; border:1px solid #bae6fd;">
+                      ${item.source || 'Media Publik'}
+                    </span>
+                    <span style="font-size:0.65rem; color:#64748b;">
+                      📅 ${item.pubDate || 'Baru-baru ini'}
+                    </span>
+                  </div>
+
+                  <a href="${item.link}" target="_blank" rel="noopener noreferrer" style="font-size:0.80rem; font-weight:800; color:#1e293b; text-decoration:none; line-height:1.35; display:inline-flex; align-items:center; gap:4px;" onmouseover="this.style.color='#0284c7';" onmouseout="this.style.color='#1e293b';" title="Klik untuk membuka dan membaca artikel lengkap di situs penerbit">
+                    <span>${item.title}</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                  </a>
+
+                  ${isItemNeg && matchedKw.length > 0 ? `
+                    <div style="margin-top:5px; font-size:0.65rem; color:#b91c1c; background:#fef2f2; border:1px solid #fee2e2; border-radius:4px; padding:3px 7px; display:inline-flex; align-items:center; gap:4px;">
+                      <span>⚠️</span> Kata kunci pemicu: <strong>${matchedKw.join(', ')}</strong>
+                    </div>
+                  ` : ''}
+                </div>
+
+                <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-end;">
+                  ${isItemNeg ? `
+                    <button type="button" class="btn btn-outline btn-xs" onclick="markGoogleNewsItem(${realIdx >= 0 ? realIdx : idx}, 'clean')" style="font-size:0.68rem; font-weight:700; color:#166534; border-color:#86efac; background:#f0fdf4; padding:3px 9px; cursor:pointer;" title="Tandai artikel ini bukan isu negatif / bukan tentang debitur (False Alarm)">
+                      ✓ Bukan Isu Negatif (False Alarm)
+                    </button>
+                  ` : `
+                    <button type="button" class="btn btn-outline btn-xs" onclick="markGoogleNewsItem(${realIdx >= 0 ? realIdx : idx}, 'negative')" style="font-size:0.68rem; font-weight:700; color:#dc2626; border-color:#fca5a5; background:#fff1f2; padding:3px 9px; cursor:pointer;" title="Tandai artikel ini memuat isu negatif debitur">
+                      ⚠️ Tandai sebagai Negatif
+                    </button>
+                  `}
+                  <a href="${item.link}" target="_blank" rel="noopener noreferrer" style="font-size:0.65rem; color:#0284c7; text-decoration:none; font-weight:600; display:inline-flex; align-items:center; gap:2px; margin-top:2px;">
+                    <span>Baca Berita ↗</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `}
+  `;
 }
 
 // ============================================================================
@@ -2337,16 +2560,54 @@ const ASKRINDO_5C_CATALOG = [
     categoryLabel: '1. Character',
     weight: 0.010,
     name: 'Ketersediaan Laporan Keuangan',
-    desc: 'Tingkat akuntabilitas dan audit laporan keuangan yang diserahkan debitur.',
+    desc: 'Tingkat akuntabilitas dan audit laporan keuangan debitur (Otomatis ditentukan oleh hasil OCR).',
     options: [
       { key: 'A', text: 'Tersedia laporan keuangan audited', score: 100 },
       { key: 'B', text: 'Tersedianya laporan keuangan inhouse statement/Unaudited', score: 60 },
       { key: 'C', text: 'Tidak tersedia laporan keuangan', score: 30 }
     ],
     evalAuto: (proj, m, f23, ctx) => {
-      if (proj.auditStatus === 'unaudited' || proj.auditStatus === 'inhouse') return { key: 'B', score: 60, reason: 'Laporan keuangan inhouse/unaudited' };
-      if (!m || !m.hasFinancials) return { key: 'C', score: 30, reason: 'Tidak tersedia laporan keuangan' };
-      return { key: 'A', score: 100, reason: 'Tersedia laporan keuangan audited KAP' };
+      const hasFinData = Boolean(
+        (m && m.hasFinancials) ||
+        (f23 && ((f23.rev || 0) > 0 || (f23.cash || 0) > 0 || (f23.ar || 0) > 0 || (f23.inv || 0) > 0 || (f23.fa || 0) > 0 || (f23.capital || 0) > 0)) ||
+        (proj.fin23 && Object.values(proj.fin23).some((v) => typeof v === 'number' && v > 0)) ||
+        (proj.fin22 && Object.values(proj.fin22).some((v) => typeof v === 'number' && v > 0))
+      );
+
+      const status = (proj.auditStatus || (typeof autoDetectAuditStatus === 'function' ? autoDetectAuditStatus(proj) : '') || '').toLowerCase();
+      const isUnaudited = status === 'unaudited' || status === 'inhouse';
+      const isAdjusted = proj.auditDetectionReason && proj.auditDetectionReason.includes('Disesuaikan');
+      const prefix = isAdjusted ? 'Penyesuaian Analis' : 'Hasil OCR / Input Data';
+
+      // Jika analis/sistem secara eksplisit mendeteksi status unaudited
+      if (isUnaudited) {
+        return {
+          key: 'B',
+          score: 60,
+          reason: `${prefix}: Laporan keuangan In-House / Unaudited internal manajemen (Otomatis 60 Poin)`
+        };
+      }
+
+      // Jika sama sekali tidak ada data keuangan dan tidak ada nama auditor
+      if (!hasFinData && !proj.auditorKapName) {
+        return { key: 'C', score: 30, reason: 'Tidak tersedia data laporan keuangan' };
+      }
+
+      if (status === 'audited') {
+        const kap = proj.auditorKapName ? ` (${proj.auditorKapName.replace(/^kap\s+/i, 'KAP ')})` : '';
+        const op = proj.auditorOpinion && proj.auditorOpinion !== '-' ? ` &bull; Opini ${proj.auditorOpinion}` : '';
+        return {
+          key: 'A',
+          score: 100,
+          reason: `${prefix}: Laporan keuangan Audited KAP${kap}${op} (Otomatis 100 Poin)`
+        };
+      }
+
+      return {
+        key: 'B',
+        score: 60,
+        reason: `${prefix}: Laporan keuangan internal manajemen / Unaudited (Otomatis 60 Poin)`
+      };
     }
   },
   {
@@ -2742,15 +3003,27 @@ const ASKRINDO_5C_CATALOG = [
     categoryLabel: '4. Condition',
     weight: 0.010,
     name: 'Pengawasan dan Pengendalian Bisnis',
-    desc: 'Sistem monitoring pengendalian internal dan keterandalan informasi manajemen.',
+    desc: 'Sistem monitoring pengendalian internal dan keterandalan informasi manajemen (Otomatis terhubung dari status audit hasil OCR).',
     options: [
       { key: 'A', text: 'Debitur Tertanggung memiliki sistem pengendalian/monitoring yang up-to-date, relevan dan rinci untuk seluruh area bisnis', score: 100 },
       { key: 'B', text: 'Debitur Tertanggung memiliki sistem pengendalian handal namun ketersediaan informasi penting sering terlambat', score: 60 },
       { key: 'C', text: 'Debitur Tertanggung tidak memiliki sistem pengendalian/monitoring yang handal', score: 30 }
     ],
     evalAuto: (proj, m, f23, ctx) => {
-      if (m && m.hasFinancials && proj.auditStatus !== 'unaudited') return { key: 'A', score: 100, reason: 'Sistem pengawasan terverifikasi KAP audited' };
-      return { key: 'B', score: 60, reason: 'Sistem pengendalian internal standar' };
+      const status = (proj.auditStatus || (typeof autoDetectAuditStatus === 'function' ? autoDetectAuditStatus(proj) : '') || '').toLowerCase();
+      const isUnaudited = status === 'unaudited' || status === 'inhouse';
+      const isAdjusted = proj.auditDetectionReason && proj.auditDetectionReason.includes('Disesuaikan');
+      const prefix = isAdjusted ? 'Penyesuaian Analis' : 'Hasil OCR / Input Data';
+      const hasFin = Boolean(
+        (m && m.hasFinancials) ||
+        (f23 && ((f23.rev || 0) > 0 || (f23.cash || 0) > 0 || (f23.capital || 0) > 0)) ||
+        (proj.fin23 && Object.values(proj.fin23).some((v) => typeof v === 'number' && v > 0))
+      );
+      if (hasFin && !isUnaudited) {
+        const kap = proj.auditorKapName ? ` (Verifikasi ${proj.auditorKapName})` : '';
+        return { key: 'A', score: 100, reason: `${prefix}: Sistem pengawasan & pelaporan terverifikasi KAP Audited${kap} (Otomatis 100 Poin)` };
+      }
+      return { key: 'B', score: 60, reason: `${prefix}: Sistem pengendalian internal standar manajemen / Laporan In-House (Otomatis 60 Poin)` };
     }
   },
   {
@@ -3748,6 +4021,7 @@ function computeDCCSWCM(proj) {
   // PILAR 2: ANALISA KUALITATIF 5C UNDERWRITING (BOBOT MAKS: 10 POIN)
   // Evaluasi 5C Komprehensif Berbasis Karakter & Data Riil
   const fiveC = compute5CAnalysis(proj, f23, {
+    hasFinancials,
     gpm23,
     cashGapAtSCFMaturity_Actual,
     icr23: f23.finCost > 0 ? (f23.rev - f23.cogs - f23.opex) / f23.finCost : 1,
@@ -4519,7 +4793,7 @@ function renderGradeRiskTab(proj, m) {
   const container = document.getElementById('gradeRiskMenuContainer');
   if (!container) return;
   if (!m || !m.hasFinancials) {
-    container.innerHTML = getFinEmptyStateHTML('Penentuan Rating Akseptasi Belum Tersedia', 'Rating Akseptasi Askrindo (AAA hingga DDD - Petunjuk Teknis Akseptasi Surety Bond / PT IDX Consulting) dan skor kelayakan kredit akan dikalkulasikan secara otomatis setelah Anda melengkapi data laporan keuangan.');
+    container.innerHTML = getFinEmptyStateHTML('Penentuan Rating Akseptasi Belum Tersedia', 'Rating Akseptasi Askrindo (AAA hingga DDD) dan skor kelayakan kredit akan dikalkulasikan secara otomatis setelah Anda melengkapi data laporan keuangan.');
     return;
   }
 
@@ -4649,8 +4923,8 @@ function renderGradeRiskTab(proj, m) {
     <div class="card">
       <div class="card-header">
         <div>
-          <div class="card-title">Tabel VI.1 Rating Akseptasi (Petunjuk Teknis Akseptasi Surety Bond | ASKRINDO Insurance)</div>
-          <div style="font-size:0.68rem; color:var(--text-muted); margin-top:2px;">Sumber: Internal Credit Rating PT. IDX Consulting</div>
+          <div class="card-title">Tabel VI.1 Rating Akseptasi</div>
+          <div style="font-size:0.68rem; color:var(--text-muted); margin-top:2px;">Matriks Penilaian Kelayakan Penjaminan &amp; Klasifikasi Risiko Rating Akseptasi</div>
         </div>
         <span style="font-size:0.66rem; color:var(--text-muted);">Baris berwarna menunjukkan posisi Rating kasus aktif</span>
       </div>
@@ -4815,11 +5089,14 @@ function render5CTab(proj, m) {
 
   ensureInaprocAutoChecked(proj);
   ensureGoogleNewsInitialized(proj);
+  if (!proj.sippStatus) proj.sippStatus = 'clean';
+  const isSippClean = proj.sippStatus !== 'disputed' && proj.sippStatus !== 'bankrupt';
   const fiveC = m.fiveC || compute5CAnalysis(proj, proj.fin23, m);
 
   const cleanCompName = (proj.companyName || 'PT').replace(/\s*\([^)]*\)/g, '').trim().toUpperCase();
   const safeCompName = (proj.companyName || 'PT').replace(/'/g, "\\'");
   const newsItems = Array.isArray(proj.googleNewsItems) ? proj.googleNewsItems : [];
+  const negItems = newsItems.filter((it) => it.status === 'negative');
   const accessedAt = proj.googleNewsAccessedAt || formatGoogleNewsAccessedDate(new Date());
   const inaprocRes = proj.inaprocAutoResult || {
     status: proj.inaprocStatus || 'clean',
@@ -4887,10 +5164,11 @@ function render5CTab(proj, m) {
             </div>
             <div style="font-size:0.64rem; color:#475569; line-height:1.4;">
               &bull; Usaha: <strong>${fiveC.businessAge} Thn (${fiveC.estYr})</strong> (${fiveC.charBreakdown?.agePts ?? 20}/25 Poin)<br/>
-              &bull; SLIK OJK: <strong>${fiveC.slikStatus}</strong> (${fiveC.charBreakdown?.creditPts ?? 30}/30 Poin)<br/>
+              &bull; SLIK OJK: <strong style="color:${(proj.slikStatus === 'kol1' || !proj.slikStatus) ? '#166534' : '#dc2626'};">${fiveC.slikStatus}</strong> (${fiveC.charBreakdown?.creditPts ?? 30}/30 Poin)<br/>
               &bull; INAPROC LKPP: <strong style="color:${proj.inaprocStatus === 'blacklisted' ? '#dc2626' : '#166534'};">${fiveC.inaprocStatus}</strong> (${fiveC.charBreakdown?.inaprocPts ?? 15}/15 Poin)<br/>
-              &bull; SIPP MA: <strong>${fiveC.sippStatus}</strong> (${fiveC.charBreakdown?.sippPts ?? 10}/10 Poin)<br/>
-              &bull; Pemberitaan Negatif: <strong style="color:${proj.negativeNews === 'negative' ? '#dc2626' : '#166534'};">${proj.negativeNews === 'negative' ? 'Terdeteksi Isu Negatif' : 'Nihil Berita Negatif'}</strong> (${fiveC.charBreakdown?.newsPts ?? (proj.negativeNews === 'negative' ? 0 : 20)}/20 Poin)
+              &bull; SIPP MA: <strong style="color:${isSippClean ? '#166534' : '#dc2626'};">${fiveC.sippStatus}</strong> (${fiveC.charBreakdown?.sippPts ?? 10}/10 Poin)<br/>
+              &bull; Pemberitaan Negatif: <strong style="color:${proj.negativeNews === 'negative' ? '#dc2626' : '#166534'};">${proj.negativeNews === 'negative' ? 'Terdeteksi Isu Negatif' : 'Nihil Berita Negatif'}</strong> (${fiveC.charBreakdown?.newsPts ?? (proj.negativeNews === 'negative' ? 0 : 20)}/20 Poin)<br/>
+              &bull; Status Lapkeu: <strong style="color:${(proj.auditStatus !== 'unaudited' && proj.auditStatus !== 'inhouse') ? '#166534' : '#b45309'};">${(proj.auditStatus !== 'unaudited' && proj.auditStatus !== 'inhouse') ? 'Audited KAP' : 'In-House / Unaudited'}</strong> (${(proj.auditStatus !== 'unaudited' && proj.auditStatus !== 'inhouse') ? '100 Poin' : '60 Poin'})
             </div>
           </div>
         </div>
@@ -5006,7 +5284,7 @@ function render5CTab(proj, m) {
         </div>
 
         <!-- 2. SCREENING PEMBERITAAN NEGATIF CARD -->
-        <div style="background:#ffffff; border:1.5px solid ${proj.negativeNews === 'negative' ? '#fca5a5' : '#cbd5e1'}; border-radius:8px; padding:0.6rem 0.75rem; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+        <div style="background:#ffffff; border:1.5px solid ${proj.negativeNews === 'negative' ? '#fca5a5' : '#bbf7d0'}; border-radius:8px; padding:0.6rem 0.75rem; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
             <div style="font-size:0.75rem; font-weight:800; color:#1e293b; display:flex; align-items:center; gap:5px;">
               <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${proj.negativeNews === 'negative' ? '#dc2626' : '#16a34a'};"></span>
@@ -5028,23 +5306,81 @@ function render5CTab(proj, m) {
             <div style="margin-top:4px; font-size:0.62rem; color:#64748b;">
               Diakses: ${accessedAt} &bull; ${newsItems.length} artikel terindeks.
             </div>
+
+            <!-- HIGHLIGHT TEMUAN ISU NEGATIF JIKA TERDETEKSI -->
+            ${negItems.length > 0 ? `
+              <div style="margin-top:5px; background:#fef2f2; border:1px solid #fecaca; border-radius:6px; padding:5px 8px; font-size:0.63rem;">
+                <div style="font-weight:800; color:#dc2626; display:flex; align-items:center; gap:4px; margin-bottom:2px;">
+                  <span>⚠️</span> Terdeteksi ${negItems.length} artikel berindikasi negatif:
+                </div>
+                ${negItems.slice(0, 2).map((it) => `
+                  <div style="color:#991b1b; line-height:1.3; margin-top:2px; font-weight:600; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;" title="${it.title}">
+                    &bull; <a href="${it.link}" target="_blank" rel="noopener noreferrer" style="color:#b91c1c; text-decoration:underline;">${it.title}</a>
+                  </div>
+                `).join('')}
+              </div>
+            ` : ''}
+
+            <!-- ACTION BUTTONS UNTUK LIHAT DAFTAR & VERIFIKASI -->
+            <div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:6px;">
+              <button type="button" class="btn btn-outline btn-xs" onclick="openGoogleNewsModal()" title="Buka modal daftar lengkap dan verifikasi seluruh artikel berita" style="font-size:0.62rem; padding:2px 7px; font-weight:700; color:${proj.negativeNews === 'negative' ? '#dc2626' : '#0369a1'}; border-color:${proj.negativeNews === 'negative' ? '#fca5a5' : '#bae6fd'}; background:${proj.negativeNews === 'negative' ? '#fff1f2' : '#f0f9ff'}; cursor:pointer;">
+                📋 Lihat &amp; Verifikasi ${newsItems.length} Berita ${negItems.length > 0 ? `(${negItems.length} Negatif)` : ''}
+              </button>
+              <button type="button" class="btn btn-outline btn-xs" onclick="openExternalGoogleNewsSearch('${safeCompName}')" title="Buka hasil pencarian Google News langsung di browser" style="font-size:0.62rem; padding:2px 6px; font-weight:700; color:#475569; border-color:#cbd5e1; background:#f8fafc; cursor:pointer;">
+                🌐 Google News ↗
+              </button>
+              <button type="button" class="btn btn-outline btn-xs" id="btnToggleCardNewsList" onclick="toggleCardNewsList(event)" style="font-size:0.62rem; padding:2px 6px; font-weight:600; color:#475569; border-color:#cbd5e1; background:#f8fafc; cursor:pointer;" title="Buka daftar artikel langsung di kartu ini">
+                ▼ Rincian
+              </button>
+            </div>
+
+            <!-- INLINE EXPANDABLE NEWS LIST -->
+            <div id="cardNewsInlineList" style="display:none; margin-top:6px; max-height:180px; overflow-y:auto; border:1px solid #cbd5e1; border-radius:6px; background:#f8fafc; padding:4px 6px;">
+              ${newsItems.length === 0 ? `
+                <div style="font-size:0.62rem; color:#64748b; text-align:center; padding:6px 0;">Tidak ada artikel terindeks.</div>
+              ` : `
+                <div style="display:flex; flex-direction:column; gap:4px;">
+                  ${newsItems.map((item, idx) => `
+                    <div style="font-size:0.62rem; background:#ffffff; border:1px solid ${item.status === 'negative' ? '#fca5a5' : '#e2e8f0'}; border-left:3px solid ${item.status === 'negative' ? '#dc2626' : '#16a34a'}; border-radius:4px; padding:3px 6px;">
+                      <div style="display:flex; justify-content:space-between; align-items:center; gap:4px;">
+                        <span style="font-weight:700; color:#0369a1; font-size:0.59rem;">${item.source || 'Media'}</span>
+                        <span style="font-size:0.58rem; color:#64748b;">${item.pubDate || ''}</span>
+                      </div>
+                      <div style="margin-top:2px;">
+                        <a href="${item.link}" target="_blank" rel="noopener noreferrer" style="font-weight:600; color:${item.status === 'negative' ? '#991b1b' : '#1e293b'}; text-decoration:none;" onmouseover="this.style.textDecoration='underline';" onmouseout="this.style.textDecoration='none';">
+                          ${item.title}
+                        </a>
+                      </div>
+                      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:3px;">
+                        <span style="font-size:0.58rem; font-weight:700; color:${item.status === 'negative' ? '#dc2626' : '#16a34a'};">
+                          ${item.status === 'negative' ? '🔴 Negatif' : '🟢 Bersih'}
+                        </span>
+                        <button type="button" class="btn btn-outline btn-xs" onclick="markGoogleNewsItem(${idx}, '${item.status === 'negative' ? 'clean' : 'negative'}')" style="font-size:0.56rem; padding:1px 5px; font-weight:700; color:${item.status === 'negative' ? '#166534' : '#dc2626'}; border-color:${item.status === 'negative' ? '#86efac' : '#fca5a5'}; background:${item.status === 'negative' ? '#f0fdf4' : '#fff1f2'};">
+                          ${item.status === 'negative' ? '✓ Bukan Negatif' : '⚠️ Tandai Negatif'}
+                        </button>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              `}
+            </div>
           </div>
         </div>
 
         <!-- 3. SIPP PENGADILAN MA -->
-        <div style="background:#ffffff; border:1.5px solid ${proj.sippStatus === 'clean' ? '#bbf7d0' : '#fca5a5'}; border-radius:8px; padding:0.6rem 0.75rem; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+        <div style="background:#ffffff; border:1.5px solid ${isSippClean ? '#bbf7d0' : '#fca5a5'}; border-radius:8px; padding:0.6rem 0.75rem; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
             <div style="font-size:0.75rem; font-weight:800; color:#1e293b; display:flex; align-items:center; gap:5px;">
-              <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${proj.sippStatus === 'clean' ? '#16a34a' : '#dc2626'};"></span>
+              <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${isSippClean ? '#16a34a' : '#dc2626'};"></span>
               SIPP Pengadilan Negeri (MA RI)
             </div>
             <span style="font-size:0.62rem; font-weight:700; color:#64748b;">${proj.city || 'Yurisdiksi Domisili'}</span>
           </div>
           <div style="font-size:0.66rem; color:#475569; line-height:1.4;">
-            <div>Status Hukum: <strong style="color:${proj.sippStatus === 'clean' ? '#166534' : '#dc2626'};">${fiveC.sippStatus}</strong> (${fiveC.charBreakdown?.sippPts ?? 10}/10 Poin)</div>
+            <div>Status Hukum: <strong style="color:${isSippClean ? '#166534' : '#dc2626'};">${fiveC.sippStatus}</strong> (${fiveC.charBreakdown?.sippPts ?? 10}/10 Poin)</div>
             <div style="margin-top:3px;">
               <select class="form-control" style="font-size:0.68rem; padding:2px 6px;" onchange="updateCharacterParam('sippStatus', this.value)">
-                <option value="clean" ${proj.sippStatus === 'clean' ? 'selected' : ''}>Nihil Gugatan Perdata / PKPU</option>
+                <option value="clean" ${isSippClean ? 'selected' : ''}>Nihil Gugatan Perdata / PKPU</option>
                 <option value="disputed" ${proj.sippStatus === 'disputed' ? 'selected' : ''}>Sengketa Gugatan Perdata</option>
                 <option value="bankrupt" ${proj.sippStatus === 'bankrupt' ? 'selected' : ''}>Permohonan Kepailitan / PKPU</option>
               </select>
@@ -5168,6 +5504,13 @@ function render5CTab(proj, m) {
                         ${p.autoReason ? `
                           <div style="font-size:0.63rem; color:#0369a1; margin-top:3px; display:flex; align-items:center; gap:3px;">
                             <span>&bull; Data ASCA:</span> <em>${p.autoReason}</em>
+                          </div>
+                        ` : ''}
+                        ${p.id === 'c7_ketersediaan_lapkeu' ? `
+                          <div style="margin-top:4px;">
+                            <a href="javascript:void(0)" onclick="switchTab('tab-input'); setTimeout(()=>{ const el = document.getElementById('cardInputSecD'); if(el) el.scrollIntoView({behavior:'smooth'}); }, 100);" style="font-size:0.65rem; color:#0284c7; text-decoration:none; font-weight:700; display:inline-flex; align-items:center; gap:3px;">
+                              <span>📤 Pindai Laporan Keuangan (AI OCR) di Tab Input Data &raquo;</span>
+                            </a>
                           </div>
                         ` : ''}
                       </div>
@@ -5496,13 +5839,15 @@ function renderDashboardTab(proj, m) {
     </div>
   `;
 
-  document.getElementById('dashboardSummaryCardTitle').textContent = `Ringkasan Keuangan (Audited ${m.yr1} vs ${m.yr2})`;
+  const isAuditedStatus = (proj.auditStatus || autoDetectAuditStatus(proj)).toLowerCase() !== 'unaudited';
+  const auditLabelText = isAuditedStatus ? 'Audited' : 'In-House';
+  document.getElementById('dashboardSummaryCardTitle').textContent = `Ringkasan Keuangan (${isAuditedStatus ? 'Audited' : 'In-House / Unaudited'} ${m.yr1} vs ${m.yr2})`;
   document.getElementById('dashboardSummaryTable').innerHTML = `
     <thead>
       <tr>
         <th>Pos Utama</th>
-        <th class="num-col">Audited ${m.yr1}</th>
-        <th class="num-col">Audited ${m.yr2}</th>
+        <th class="num-col">${auditLabelText} ${m.yr1}</th>
+        <th class="num-col">${auditLabelText} ${m.yr2}</th>
         <th class="num-col">Keterangan</th>
       </tr>
     </thead>
@@ -6401,7 +6746,7 @@ function saveCustomNotes(val) {
 
 // ============================================================================
 // 9B. KATALOG & ENGINE SKORING RASIO KEUANGAN ASKRINDO
-// Sumber: Petunjuk Teknis Akseptasi Askrindo / PT. IDX Consulting - Tabel VII-1 (Rasio Keuangan)
+// Standar Evaluasi Rasio Keuangan - Tabel VII-1
 // Komposit Bobot: 8 Rasio Finansial Utama = 100% (1.000)
 // ============================================================================
 
@@ -6897,7 +7242,7 @@ function renderRatiosTab(proj, m) {
           Analisis &amp; Skoring Rasio Keuangan Debitur (${proj.companyName})
         </div>
         <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.2rem;">
-          Model Evaluasi Resmi Petunjuk Teknis Askrindo / PT. IDX Consulting &amp; Kepatuhan Risk Acceptance Criteria (RAC) - Tahun Evaluasi ${m.yr2}.
+          Model Evaluasi Standar Rasio Keuangan &amp; Kepatuhan Risk Acceptance Criteria (RAC) - Tahun Evaluasi ${m.yr2}.
         </div>
       </div>
       <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
@@ -6968,12 +7313,12 @@ function renderRatiosTab(proj, m) {
       </div>
     </div>
 
-    <!-- 3. BAGIAN I: TABEL EVALUASI & SKORING RASIO KEUANGAN (PETUNJUK TEKNIS) -->
+    <!-- 3. BAGIAN I: TABEL EVALUASI & SKORING RASIO KEUANGAN -->
     <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.04); margin-bottom:1.25rem;">
       <div style="padding:0.75rem 1rem; background:#f8fafc; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
         <div>
           <div style="font-size:0.82rem; font-weight:800; color:var(--askrindo-navy);">
-            I. Tabel Perhitungan &amp; Evaluasi Skoring Rasio Keuangan (Petunjuk Teknis Askrindo / PT. IDX Consulting)
+            I. Tabel Perhitungan &amp; Evaluasi Skoring Rasio Keuangan
           </div>
           <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">
             8 Rasio Keuangan Inti: Perhitungan otomatis 100% dari data Neraca &amp; Laba Rugi dengan fleksibilitas penyesuaian opsi underwriter.
@@ -7966,43 +8311,43 @@ function renderPrintableReport(proj, m) {
                 <tr>
                   <td><strong>Pilar 1: Ketepatan Perputaran Kas &amp; Siklus CCC</strong></td>
                   <td class="num-col">20 Poin</td>
-                  <td class="num-col"><strong style="color:${(m.scorePillars[0]?.earnedPts || 0) >= 14 ? '#166534' : '#dc2626'};">${m.scorePillars[0]?.earnedPts || 0} Poin</strong></td>
+                  <td class="num-col"><strong style="color:${(m.scorePillars[0]?.earnedPts || 0) >= 14 ? '#166534' : '#dc2626'};">${fmtNum(m.scorePillars[0]?.earnedPts || 0, 1)} Poin</strong></td>
                   <td>Deviasi DOR (${m.diffDOR >= 0 ? '+' : ''}${fmtNum(m.diffDOR, 1)} hr), DOI (${m.diffDOI >= 0 ? '+' : ''}${fmtNum(m.diffDOI, 1)} hr), Tenor Mismatch (${Math.round(m.cashGapAtSCFMaturity_Actual)} hr)</td>
                 </tr>
                 <tr>
                   <td><strong>Pilar 2: Evaluasi Kualitatif 5C Underwriting</strong></td>
                   <td class="num-col">10 Poin</td>
-                  <td class="num-col"><strong style="color:${(m.scorePillars[1]?.earnedPts || 0) >= 7 ? '#166534' : '#dc2626'};">${m.scorePillars[1]?.earnedPts || 0} Poin</strong></td>
+                  <td class="num-col"><strong style="color:${(m.scorePillars[1]?.earnedPts || 0) >= 7 ? '#166534' : '#dc2626'};">${fmtNum(m.scorePillars[1]?.earnedPts || 0, 1)} Poin</strong></td>
                   <td>Skor 5C Terpadu: ${fiveC.totalScore}/100 (Character, Capacity, Capital, Collateral, Condition)</td>
                 </tr>
                 <tr>
                   <td><strong>Pilar 3: Sensitivitas NWC Burn-Rate &amp; Runway</strong></td>
                   <td class="num-col">20 Poin</td>
-                  <td class="num-col"><strong style="color:${(m.scorePillars[2]?.earnedPts || 0) >= 14 ? '#166534' : '#dc2626'};">${m.scorePillars[2]?.earnedPts || 0} Poin</strong></td>
+                  <td class="num-col"><strong style="color:${(m.scorePillars[2]?.earnedPts || 0) >= 14 ? '#166534' : '#dc2626'};">${fmtNum(m.scorePillars[2]?.earnedPts || 0, 1)} Poin</strong></td>
                   <td>Pure Cash Runway (${fmtNum(m.pureCashRunwayMonths, 1)} bln) &amp; Defisit Kas saat jatuh tempo SCF</td>
                 </tr>
                 <tr>
                   <td><strong>Pilar 4: Profitabilitas Operasional &amp; Margin HPP</strong></td>
                   <td class="num-col">15 Poin</td>
-                  <td class="num-col"><strong style="color:${(m.scorePillars[3]?.earnedPts || 0) >= 10 ? '#166534' : '#dc2626'};">${m.scorePillars[3]?.earnedPts || 0} Poin</strong></td>
+                  <td class="num-col"><strong style="color:${(m.scorePillars[3]?.earnedPts || 0) >= 10 ? '#166534' : '#dc2626'};">${fmtNum(m.scorePillars[3]?.earnedPts || 0, 1)} Poin</strong></td>
                   <td>GPM Audited (${m.gpm23.toFixed(2)}% vs Standar Sehat &ge;10%) &amp; EBT Operasional</td>
                 </tr>
                 <tr>
                   <td><strong>Pilar 5: Kecukupan Agunan Pokok &amp; Jaminan Tambahan</strong></td>
                   <td class="num-col">15 Poin</td>
-                  <td class="num-col"><strong style="color:${(m.scorePillars[4]?.earnedPts || 0) >= 10 ? '#166534' : '#dc2626'};">${m.scorePillars[4]?.earnedPts || 0} Poin</strong></td>
+                  <td class="num-col"><strong style="color:${(m.scorePillars[4]?.earnedPts || 0) >= 10 ? '#166534' : '#dc2626'};">${fmtNum(m.scorePillars[4]?.earnedPts || 0, 1)} Poin</strong></td>
                   <td>Agunan Pokok Persediaan (${(typeof fiveC.invRatio === 'number' && !isNaN(fiveC.invRatio) ? fiveC.invRatio : 0).toFixed(0)}%) &amp; Jaminan Tambahan Fixed Assets (${(typeof fiveC.faRatio === 'number' && !isNaN(fiveC.faRatio) ? fiveC.faRatio : 0).toFixed(0)}% vs HT &ge;120%)</td>
                 </tr>
                 <tr>
                   <td><strong>Pilar 6: Solvabilitas &amp; Struktur Modal</strong></td>
                   <td class="num-col">10 Poin</td>
-                  <td class="num-col"><strong style="color:${(m.scorePillars[5]?.earnedPts || 0) >= 7 ? '#166534' : '#dc2626'};">${m.scorePillars[5]?.earnedPts || 0} Poin</strong></td>
+                  <td class="num-col"><strong style="color:${(m.scorePillars[5]?.earnedPts || 0) >= 7 ? '#166534' : '#dc2626'};">${fmtNum(m.scorePillars[5]?.earnedPts || 0, 1)} Poin</strong></td>
                   <td>DER (${m.der23 !== null ? m.der23.toFixed(2) + 'x' : '-'} vs Batas &le;2.50x) &amp; Rasio Lancar Current Ratio (${m.currentRatio23 !== null ? m.currentRatio23.toFixed(2) + 'x' : 'N/A (Bebas Utang)'})</td>
                 </tr>
                 <tr>
                   <td><strong>Pilar 7: Proyeksi Arus Kas &amp; Debt Service 12 Bulan</strong></td>
                   <td class="num-col">10 Poin</td>
-                  <td class="num-col"><strong style="color:${(m.scorePillars[6]?.earnedPts || 0) >= 7 ? '#166534' : '#dc2626'};">${m.scorePillars[6]?.earnedPts || 0} Poin</strong></td>
+                  <td class="num-col"><strong style="color:${(m.scorePillars[6]?.earnedPts || 0) >= 7 ? '#166534' : '#dc2626'};">${fmtNum(m.scorePillars[6]?.earnedPts || 0, 1)} Poin</strong></td>
                   <td>Projected DSCR 12 Bulan (${annualDSCR.toFixed(2)}x vs Target &ge;1.25x) &amp; Ketahanan Saldo Kas Akhir</td>
                 </tr>
                 <tr style="background:#f1f5f9; font-weight:800;">
@@ -8215,9 +8560,17 @@ function populateFormInputs(proj) {
   setVal('inp_collateralAdditionalBinding', proj.collateralAdditionalBinding || '');
   setVal('inp_collateralAdditionalDesc', proj.collateralAdditionalDesc || '');
 
+  // Status Audit Laporan Keuangan (Otomatis dari hasil AI OCR, dapat disesuaikan)
+  autoDetectAuditStatus(proj);
+  const selAuditPop = document.getElementById('sel_auditStatus');
+  if (selAuditPop) {
+    selAuditPop.value = (proj.auditStatus !== 'unaudited' && proj.auditStatus !== 'inhouse') ? 'audited' : 'unaudited';
+  }
+
   const m = computeDCCSWCM(proj);
   updateFinancialStatementTableComputed(proj, m);
   updateCollateralCardDisplay(proj);
+  updateAuditStatusBar(proj, m);
 }
 
 function updateCollateralCardDisplay(proj) {
@@ -8275,6 +8628,138 @@ function updateCollateralCardDisplay(proj) {
       bSummary.style.borderColor = '#86efac';
     }
   }
+}
+
+// ============================================================================
+// PEMBACAAN OTOMATIS STATUS AUDIT LAPORAN KEUANGAN & SINKRONISASI 5C
+// ============================================================================
+function autoDetectAuditStatus(proj) {
+  if (!proj) return 'audited';
+  if (proj.auditStatus === 'unaudited' || proj.auditStatus === 'inhouse') return 'unaudited';
+  if (proj.auditStatus === 'audited') return 'audited';
+
+  // Smart heuristic based on notes, desc, or KAP
+  const textBlob = `${proj.customNotes || ''} ${proj.businessDesc || ''} ${proj.companyName || ''}`.toLowerCase();
+  if (textBlob.includes('unaudited') || textBlob.includes('inhouse') || textBlob.includes('in-house') || textBlob.includes('internal manajemen')) {
+    proj.auditStatus = 'unaudited';
+    proj.auditDetectionReason = 'Terdeteksi dari catatan berkas: Laporan In-House / Unaudited';
+    return 'unaudited';
+  }
+
+  if (proj.auditorKapName && proj.auditorKapName.trim() !== '') {
+    proj.auditStatus = 'audited';
+    proj.auditDetectionReason = `Terverifikasi Laporan Auditor Independen: ${proj.auditorKapName}`;
+    return 'audited';
+  }
+
+  // Default untuk kasus riil ASCA adalah audited
+  proj.auditStatus = 'audited';
+  if (!proj.auditorOpinion) proj.auditorOpinion = 'Wajar Tanpa Pengecualian (WTP)';
+  return 'audited';
+}
+
+function handleAuditStatusChange(val) {
+  const proj = getActiveProject();
+  if (!proj) return;
+  const isAudited = (val === 'audited');
+  const selAudit = document.getElementById('sel_auditStatus');
+  if (selAudit) {
+    selAudit.value = isAudited ? 'audited' : 'unaudited';
+  }
+  proj.auditStatus = isAudited ? 'audited' : 'unaudited';
+  proj.auditDetectionReason = isAudited
+    ? 'Disesuaikan oleh Analis: Audited KAP (100 Poin)'
+    : 'Disesuaikan oleh Analis: In-House / Unaudited (60 Poin)';
+
+  // Reset override di 5C agar langsung menyesuaikan dengan jenis yang dipilih
+  if (proj.fiveCOverrides) {
+    delete proj.fiveCOverrides['c7_ketersediaan_lapkeu'];
+    delete proj.fiveCOverrides['cnd34_pengawasan_bisnis'];
+  }
+
+  syncInputsToModel();
+
+  showToast(isAudited
+    ? '⚡ Penyesuaian berhasil: Laporan Keuangan diubah ke AUDITED KAP. Skor Analisa 5C otomatis menjadi 100 Poin!'
+    : '📄 Penyesuaian berhasil: Laporan Keuangan diubah ke IN-HOUSE / UNAUDITED. Skor Analisa 5C otomatis menjadi 60 Poin!');
+}
+
+function setAuditStatus(status, userTriggered = true) {
+  handleAuditStatusChange(status);
+}
+
+function toggleAuditorDetailsSection() {
+  const sec = document.getElementById('auditorDetailsSection');
+  const icon = document.getElementById('iconToggleAuditorFields');
+  if (!sec) return;
+  const isHidden = sec.style.display === 'none' || !sec.style.display;
+  sec.style.display = isHidden ? 'block' : 'none';
+  if (icon) icon.innerHTML = isHidden ? '&#9650;' : '&#9660;';
+}
+
+function updateAuditStatusBar(proj, m) {
+  if (!proj) return;
+  autoDetectAuditStatus(proj);
+  const isAudited = proj.auditStatus !== 'unaudited' && proj.auditStatus !== 'inhouse';
+  const hasFin = m && m.hasFinancials;
+
+  // Update adjustment select in Section D header: #sel_auditStatus
+  const selAudit = document.getElementById('sel_auditStatus');
+  if (selAudit) {
+    selAudit.value = isAudited ? 'audited' : 'unaudited';
+    if (isAudited) {
+      selAudit.style.color = '#15803d';
+      selAudit.style.borderColor = '#86efac';
+      selAudit.style.background = '#f0fdf4';
+    } else {
+      selAudit.style.color = '#b45309';
+      selAudit.style.borderColor = '#fde68a';
+      selAudit.style.background = '#fffbeb';
+    }
+  }
+
+  // Header Badge in Section D: #finAuditStatusBadge
+  const auditBadge = document.getElementById('finAuditStatusBadge');
+  if (auditBadge) {
+    const isAdjusted = proj.auditDetectionReason && proj.auditDetectionReason.includes('Disesuaikan');
+    if (!hasFin) {
+      auditBadge.innerHTML = '⚡ Status: <strong>Menunggu OCR</strong>';
+      auditBadge.style.background = '#f1f5f9';
+      auditBadge.style.color = '#64748b';
+      auditBadge.style.borderColor = '#cbd5e1';
+      auditBadge.title = 'Upload dan pindai laporan keuangan dengan AI OCR untuk deteksi otomatis status audit dan nilai 5C';
+    } else if (isAudited) {
+      const kapName = proj.auditorKapName ? ` (${proj.auditorKapName})` : '';
+      const tagText = isAdjusted ? '✏️ Disesuaikan' : '⚡ Hasil OCR';
+      auditBadge.innerHTML = `${tagText}${kapName ? `<span style="font-size:0.67rem; font-weight:600; opacity:0.85;">${kapName}</span>` : ''}`;
+      auditBadge.style.background = '#dcfce7';
+      auditBadge.style.color = '#166534';
+      auditBadge.style.borderColor = '#86efac';
+      auditBadge.title = `${isAdjusted ? 'Disesuaikan oleh Analis' : 'Terdeteksi dari AI OCR'}: Laporan Keuangan Audited KAP. Terhubung ke Analisa 5C: Param #7 (100 Poin) & Param #26 (100 Poin)`;
+    } else {
+      const tagText = isAdjusted ? '✏️ Disesuaikan' : '📄 Hasil OCR';
+      auditBadge.innerHTML = `${tagText}`;
+      auditBadge.style.background = '#fef3c7';
+      auditBadge.style.color = '#b45309';
+      auditBadge.style.borderColor = '#fde68a';
+      auditBadge.title = `${isAdjusted ? 'Disesuaikan oleh Analis' : 'Terdeteksi dari AI OCR'}: Laporan In-House / Unaudited. Terhubung ke Analisa 5C: Param #7 (60 Poin) & Param #26 (60 Poin)`;
+    }
+  }
+
+  // Update Section D Title status
+  const titleStatus = document.getElementById('secDAuditTitleStatus');
+  if (titleStatus) {
+    titleStatus.textContent = isAudited ? 'Audited' : 'In-House / Unaudited';
+    titleStatus.style.color = isAudited ? '#15803d' : '#b45309';
+    titleStatus.style.background = isAudited ? '#dcfce7' : '#fef3c7';
+    titleStatus.style.borderColor = isAudited ? '#86efac' : '#fde68a';
+  }
+
+  // Update table headers in Section D
+  const thS1 = document.getElementById('thLabelStatusYear1');
+  const thS2 = document.getElementById('thLabelStatusYear2');
+  if (thS1) thS1.textContent = isAudited ? 'Audited' : 'In-House';
+  if (thS2) thS2.textContent = isAudited ? 'Audited' : 'In-House';
 }
 
 function updateFinancialStatementTableComputed(proj, m) {
@@ -8547,6 +9032,22 @@ function syncInputsToModel() {
   proj.collateralAdditionalBinding = getStr('inp_collateralAdditionalBinding');
   proj.collateralAdditionalDesc = getStr('inp_collateralAdditionalDesc');
 
+  // Status Audit Laporan Keuangan (Otomatis dari hasil AI OCR, dapat disesuaikan)
+  const selAuditSync = document.getElementById('sel_auditStatus');
+  if (selAuditSync && (selAuditSync.value === 'unaudited' || selAuditSync.value === 'audited')) {
+    proj.auditStatus = selAuditSync.value;
+  }
+  if (document.getElementById('inp_auditorKapName')) {
+    proj.auditorKapName = getStr('inp_auditorKapName');
+  }
+  if (document.getElementById('inp_auditorOpinion')) {
+    proj.auditorOpinion = getStr('inp_auditorOpinion') || 'Wajar Tanpa Pengecualian (WTP)';
+  }
+  if (document.getElementById('inp_auditReportDate')) {
+    proj.auditReportDate = getStr('inp_auditReportDate');
+  }
+  autoDetectAuditStatus(proj);
+
   proj.year1 = getPlainNum('inp_year1') || 2022;
   proj.year2 = getPlainNum('inp_year2') || 2023;
 
@@ -8566,6 +9067,7 @@ function syncInputsToModel() {
   const m = computeDCCSWCM(proj);
   updateFinancialStatementTableComputed(proj, m);
   updateCollateralCardDisplay(proj);
+  updateAuditStatusBar(proj, m);
 
   // Update dynamic year labels
   const y1El = document.getElementById('thLabelYear1');
@@ -9025,6 +9527,11 @@ function createNewProjectFromModal() {
       year1: yr1,
       year2: yr2,
       estYear: estYear,
+      auditStatus: 'audited',
+      auditorKapName: '',
+      auditorOpinion: 'Wajar Tanpa Pengecualian (WTP)',
+      auditReportDate: '',
+      auditDetectionReason: 'Mode Input Manual Standar (Audited KAP)',
       fin22: {},
       fin23: {},
       qualitative5CScore: null,
@@ -10922,6 +11429,10 @@ document.addEventListener('keydown', (e) => {
     if (modal && modal.classList.contains('open')) {
       closeAiFinUploadModal();
     }
+    const newsModal = document.getElementById('modalGoogleNewsList');
+    if (newsModal && newsModal.style.display !== 'none') {
+      closeGoogleNewsModal();
+    }
   }
 });
 
@@ -11124,12 +11635,37 @@ ATURAN EKSTRAKSI PENTING:
 1. Seluruh nilai nominal harus dalam angka bulat murni mata uang Rupiah (integer atau float, hilangkan simbol "Rp", koma/titik ribuan). Contoh: 21352397620.
 2. Perhatikan satuan penyajian! Jika dokumen mencantumkan "dalam jutaan Rupiah" atau "in millions", kalikan seluruh angka dengan 1.000.000. Jika "dalam ribuan", kalikan dengan 1.000.
 3. Pos yang bernilai kurung (minus/rugi) seperti Laba Bersih yang Rugi atau Akumulasi Rugi harus bertanda negatif (-).
-4. Petakan secara presisi ke dalam struktur JSON berikut:
+
+ATURAN KRUSIAL KESEIMBANGAN NERACA & PEMETAAN SALDO LABA (WAJIB BALANCE!):
+- Di sistem ASCA, Total Ekuitas dihitung dengan rumus:
+  Total Ekuitas = capital + otherCap + retEarn + re
+  Dan Neraca HARUS Seimbang: Total Aktiva = Total Liabilitas + Total Ekuitas.
+- "re": Wajib diisi LABA (RUGI) BERSIH TAHUN BERJALAN (Net Income / EAT dari Laporan Laba Rugi). Jika perusahaan rugi, beri tanda minus (-).
+- "retEarn": Wajib diisi SALDO LABA DITAHAN PERIODE LALU / AWAL (Retained Earnings Beginning of Period).
+- PENTING (JANGAN DOUBLE COUNTING!):
+  Di lembar Neraca (Laporan Posisi Keuangan), akun "Saldo Laba" atau "Saldo Laba (Akumulasi Rugi)" umumnya merupakan SALDO AKHIR (yang sudah mengakumulasikan laba tahun berjalan).
+  Maka untuk menghindari terhitung 2x (double counting yang membuat Neraca tidak seimbang):
+  * "re" = Laba Bersih Tahun Berjalan dari Laporan Laba Rugi.
+  * "retEarn" = (Total Saldo Laba Akhir di Neraca) dikurangi ("re").
+  * Jika di Neraca sudah disajikan 2 baris terpisah ("Saldo Laba Tahun Lalu" dan "Laba Tahun Berjalan"), petakan masing-masing ke "retEarn" dan "re".
+  * Jika hanya ada 1 akun Saldo Laba di Neraca dan Laporan Laba Rugi nihil/tidak ada, masukkan seluruh Saldo Laba ke "re" dan isi "retEarn": 0.
+- ASET TETAP & DEPRESIASI:
+  * Jika nilai Aset Tetap ("fa") di Neraca sudah disajikan Nilai Buku Bersih (Net Book Value), maka isi "depr": 0.
+  * Hanya isi "depr" jika Aset Tetap disajikan Nilai Perolehan Bruto.
+- VALIDASI KESEIMBANGAN:
+  * Total Aktiva (cash + otherCa + ar + inv + otherAr + prepaid + fa - depr + invest + taxAsset) HARUS PERSIS SAMA dengan Total Liabilitas & Ekuitas (ap + stDebt + otherAp + accrued + ltDebt + capital + otherCap + retEarn + re).
+
+Petakan secara presisi ke dalam struktur JSON berikut:
 
 {
   "company_name": "Nama PT / Debitur di dokumen (jika tertera)",
   "year1": ${targetYr1},
   "year2": ${targetYr2},
+  "audit_status": "audited atau unaudited",
+  "auditor_kap_name": "Nama Kantor Akuntan Publik (contoh: KAP Heliantono & Rekan, atau -)",
+  "auditor_opinion": "Wajar Tanpa Pengecualian (WTP) / Wajar Dengan Pengecualian (WDP) / Tidak Wajar / Disclaimer / -",
+  "audit_report_date": "Tanggal laporan auditor (contoh: 28 Maret 2024 atau -)",
+  "audit_detection_reason": "Ringkasan bukti pembacaan audit di dokumen",
   "data_year1": {
     "cash": 0,
     "otherCa": 0,
@@ -11203,13 +11739,13 @@ Kamus Pemetaan Akun ASCA:
 - taxAsset: Tagihan Pajak / Aset Pajak Tangguhan / Aset Tidak Lancar Lainnya
 - ap: Utang Usaha / Utang Dagang (Trade Accounts Payable)
 - stDebt: Utang Bank Jangka Pendek
-- otherAp: Utang Lain-lain / Liabilitas Lancar Lainnya
+- otherAp: Utang Lain-lain / Liabilitas Lancar Lainnya / Utang Pajak
 - accrued: Beban Akrual / Biaya YMH Dibayar
 - ltDebt: Utang Bank Jangka Panjang
 - capital: Modal Saham / Modal Disetor
 - otherCap: Tambahan Modal Disetor / Agio Saham / Modal Lainnya
-- retEarn: Saldo Laba Ditahan (Retained Earnings) periode lalu
-- re: Laba (Rugi) Bersih Tahun Berjalan
+- retEarn: Saldo Laba Ditahan (Retained Earnings) periode lalu / awal
+- re: Laba (Rugi) Bersih Tahun Berjalan (EAT dari Laba Rugi)
 - rev: Pendapatan Usaha Netto / Penjualan Bersih
 - cogs: Beban Pokok Penjualan / Harga Pokok Produksi (HPP)
 - opex: Beban Operasional / Beban Usaha / Beban Umum & Administrasi
@@ -11218,6 +11754,11 @@ Kamus Pemetaan Akun ASCA:
 - intExp: Biaya Bunga / Keuangan
 - tax: Beban Pajak Penghasilan
 - div: Dividen
+
+ATURAN DETEKSI STATUS AUDIT LAPORAN KEUANGAN:
+- Tentukan "audit_status": "audited" jika dokumen memuat lembar "Laporan Auditor Independen", opini audit KAP, nama Kantor Akuntan Publik, tanda tangan Akuntan Publik (AP), nomor registrasi KAP/AP, atau kop resmi KAP.
+- Tentukan "audit_status": "unaudited" jika dokumen tidak memuat opini auditor independen / berupa kompilasi pembukuan inhouse internal manajemen.
+- Jika "audited", baca nama KAP ("auditor_kap_name"), opini auditor ("auditor_opinion": WTP/WDP/dll), tanggal laporan audit ("audit_report_date"), dan alasan pembacaan ("audit_detection_reason").
 
 Balas HANYA format JSON valid tanpa tanda kutip markdown (\`\`\`json) atau teks pengantar apapun.`;
 
@@ -11279,6 +11820,8 @@ Balas HANYA format JSON valid tanpa tanda kutip markdown (\`\`\`json) atau teks 
       parsed = JSON.parse(cleaned);
     }
 
+    reconcileExtractedFinancialData(parsed);
+
     currentExtractedFinData = parsed;
     renderAiFinReviewTable(parsed);
 
@@ -11298,7 +11841,82 @@ Balas HANYA format JSON valid tanpa tanda kutip markdown (\`\`\`json) atau teks 
   }
 }
 
+function reconcileExtractedFinancialData(parsed) {
+  if (!parsed) return;
+  ['data_year1', 'data_year2'].forEach((yearKey) => {
+    const d = parsed[yearKey];
+    if (!d) return;
+
+    Object.keys(d).forEach((k) => {
+      if (typeof d[k] !== 'number' || isNaN(d[k])) {
+        d[k] = parseFloat(d[k]) || 0;
+      }
+    });
+
+    const rev = d.rev || 0;
+    const cogs = d.cogs || 0;
+    const opex = d.opex || 0;
+    const otherInc = d.otherInc || 0;
+    const otherExp = d.otherExp || 0;
+    const intExp = d.intExp || 0;
+    const tax = d.tax || 0;
+    const div = d.div || 0;
+    const isHasIncomeStatement = (rev !== 0 || cogs !== 0 || opex !== 0);
+    const computedEat = (rev - cogs - opex + otherInc - otherExp - intExp - tax - div);
+
+    const act = (d.cash || 0) + (d.otherCa || 0) + (d.ar || 0) + (d.inv || 0) + (d.otherAr || 0) + (d.prepaid || 0) + (d.fa || 0) - Math.abs(d.depr || 0) + (d.invest || 0) + (d.taxAsset || 0);
+    const liab = (d.ap || 0) + (d.stDebt || 0) + (d.otherAp || 0) + (d.accrued || 0) + (d.ltDebt || 0);
+    const cap = (d.capital || 0) + (d.otherCap || 0);
+    let pass = liab + cap + (d.retEarn || 0) + (d.re || 0);
+    let diff = Math.round(pass - act);
+
+    if (Math.abs(diff) > 100) {
+      // Kasus 1: Double-counting Laba Bersih Tahun Berjalan
+      // Saldo Laba Akhir Neraca masuk ke retEarn, Laba Rugi masuk ke re.
+      // Selisih Passiva - Aktiva persis sebesar re
+      if (d.re !== 0 && Math.abs(diff - d.re) < 1000) {
+        d.retEarn = (d.retEarn || 0) - d.re;
+      }
+      // Kasus 2: Nilai depr (Penyusutan) sudah dipotong dari Aset Tetap di dokumen tapi depr diisi lagi
+      else if (d.depr !== 0 && Math.abs(diff - Math.abs(d.depr)) < 1000) {
+        d.depr = 0;
+      }
+      // Kasus 3: Tanda minus pada Laba Bersih Rugi terlewat (Rugi dibaca Positif)
+      else if (d.re !== 0 && Math.abs(diff - 2 * d.re) < 1000) {
+        d.re = -Math.abs(d.re);
+      }
+      // Kasus 4: Tanda minus pada Akumulasi Rugi / Defisit terlewat
+      else if (d.retEarn !== 0 && Math.abs(diff - 2 * d.retEarn) < 1000) {
+        d.retEarn = -Math.abs(d.retEarn);
+      }
+      // Kasus 5: re bernilai 0 dan retEarn menampung total Saldo Laba Neraca, namun di Laba Rugi ada computedEat
+      else if (d.re === 0 && d.retEarn !== 0 && isHasIncomeStatement && computedEat !== 0) {
+        d.re = computedEat;
+        d.retEarn = d.retEarn - computedEat;
+      }
+      // Kasus 6: Rekonsiliasi Saldo Laba terhadap Total Aktiva
+      // Total Ekuitas target = Total Aktiva - Total Liabilitas
+      // Total Saldo Laba target = Target Ekuitas - Total Modal
+      // retEarn = Total Saldo Laba target - re
+      else if (act > 0 && (d.retEarn !== 0 || d.re !== 0)) {
+        const targetEquity = act - liab;
+        const targetTotalRetEarn = targetEquity - cap;
+        if (isHasIncomeStatement && computedEat !== 0) {
+          d.re = computedEat;
+          d.retEarn = targetTotalRetEarn - d.re;
+        } else if (d.re !== 0) {
+          d.retEarn = targetTotalRetEarn - d.re;
+        } else {
+          d.re = targetTotalRetEarn;
+          d.retEarn = 0;
+        }
+      }
+    }
+  });
+}
+
 function renderAiFinReviewTable(data) {
+  currentExtractedFinData = data;
   const loadingSec = document.getElementById('aiOcrLoadingSection');
   const reviewSec = document.getElementById('aiOcrReviewSection');
 
@@ -11312,10 +11930,10 @@ function renderAiFinReviewTable(data) {
   const d2 = data.data_year2 || {};
 
   // Hitung total aset & liabilitas+ekuitas untuk check balance
-  const calcAct1 = (d1.cash||0) + (d1.otherCa||0) + (d1.ar||0) + (d1.inv||0) + (d1.otherAr||0) + (d1.prepaid||0) + (d1.fa||0) - (d1.depr||0) + (d1.invest||0) + (d1.taxAsset||0);
+  const calcAct1 = (d1.cash||0) + (d1.otherCa||0) + (d1.ar||0) + (d1.inv||0) + (d1.otherAr||0) + (d1.prepaid||0) + (d1.fa||0) - Math.abs(d1.depr||0) + (d1.invest||0) + (d1.taxAsset||0);
   const calcPass1 = (d1.ap||0) + (d1.stDebt||0) + (d1.otherAp||0) + (d1.accrued||0) + (d1.ltDebt||0) + (d1.capital||0) + (d1.otherCap||0) + (d1.retEarn||0) + (d1.re||0);
 
-  const calcAct2 = (d2.cash||0) + (d2.otherCa||0) + (d2.ar||0) + (d2.inv||0) + (d2.otherAr||0) + (d2.prepaid||0) + (d2.fa||0) - (d2.depr||0) + (d2.invest||0) + (d2.taxAsset||0);
+  const calcAct2 = (d2.cash||0) + (d2.otherCa||0) + (d2.ar||0) + (d2.inv||0) + (d2.otherAr||0) + (d2.prepaid||0) + (d2.fa||0) - Math.abs(d2.depr||0) + (d2.invest||0) + (d2.taxAsset||0);
   const calcPass2 = (d2.ap||0) + (d2.stDebt||0) + (d2.otherAp||0) + (d2.accrued||0) + (d2.ltDebt||0) + (d2.capital||0) + (d2.otherCap||0) + (d2.retEarn||0) + (d2.re||0);
 
   const diff1 = Math.abs(calcAct1 - calcPass1);
@@ -11342,10 +11960,10 @@ function renderAiFinReviewTable(data) {
     { k: 'otherAp', label: 'Hutang Lancar Lainnya' },
     { k: 'accrued', label: 'Biaya YMH Dibayar (Accrued)' },
     { k: 'ltDebt', label: 'Hutang Jk. Panjang (Long Term Debt)' },
-    { k: 'capital', label: 'Modal Saham Disetor' },
-    { k: 'otherCap', label: 'Setoran Modal Lainnya / Agio' },
-    { k: 'retEarn', label: 'Laba (Rugi) Ditahan Periode Lalu' },
-    { k: 're', label: 'Laba (Rugi) Tahun Berjalan' },
+    { k: 'capital', label: 'Modal Saham Disetor (p)' },
+    { k: 'otherCap', label: 'Setoran Modal Lainnya / Agio (q)' },
+    { k: 'retEarn', label: 'Laba (Rugi) Ditahan Periode Lalu (q1)' },
+    { k: 're', label: 'Laba (Rugi) Tahun Berjalan / EAT (q2)' },
 
     { section: 'III. LAPORAN LABA RUGI (INCOME STATEMENT)' },
     { k: 'rev', label: 'Pendapatan Netto (Penjualan / Sales)' },
@@ -11358,8 +11976,13 @@ function renderAiFinReviewTable(data) {
     { k: 'div', label: 'Dividen' }
   ];
 
+  const isExtAudited = (data.audit_status || 'audited').toLowerCase() !== 'unaudited';
+  const extKap = data.auditor_kap_name && data.auditor_kap_name !== '-' ? data.auditor_kap_name : (isExtAudited ? 'KAP Terdaftar' : '-');
+  const extOpinion = data.auditor_opinion && data.auditor_opinion !== '-' ? data.auditor_opinion : (isExtAudited ? 'Wajar Tanpa Pengecualian (WTP)' : '-');
+  const extDate = data.audit_report_date && data.audit_report_date !== '-' ? data.audit_report_date : '';
+
   reviewSec.innerHTML = `
-    <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:0.75rem 1rem; margin-bottom:0.85rem;">
+    <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:0.75rem 1rem; margin-bottom:0.75rem;">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
         <div>
           <div style="font-weight:800; font-size:0.85rem; color:#166534; display:flex; align-items:center; gap:6px;">
@@ -11370,18 +11993,48 @@ function renderAiFinReviewTable(data) {
           </div>
         </div>
         <div style="display:flex; gap:0.5rem; align-items:center;">
-          <span style="font-size:0.70rem; padding:3px 8px; border-radius:999px; font-weight:700; ${isBal1 ? 'background:#dcfce7; color:#15803d; border:1px solid #86efac;' : 'background:#fee2e2; color:#991b1b; border:1px solid #fca5a5;'}">
+          <span id="previewBalanceBadge1" style="font-size:0.70rem; padding:3px 8px; border-radius:999px; font-weight:700; ${isBal1 ? 'background:#dcfce7; color:#15803d; border:1px solid #86efac;' : 'background:#fee2e2; color:#991b1b; border:1px solid #fca5a5;'}">
             Th ${y1}: ${isBal1 ? '✓ Neraca Balance' : `Selisih ${fmtRp(diff1, true)}`}
           </span>
-          <span style="font-size:0.70rem; padding:3px 8px; border-radius:999px; font-weight:700; ${isBal2 ? 'background:#dcfce7; color:#15803d; border:1px solid #86efac;' : 'background:#fee2e2; color:#991b1b; border:1px solid #fca5a5;'}">
+          <span id="previewBalanceBadge2" style="font-size:0.70rem; padding:3px 8px; border-radius:999px; font-weight:700; ${isBal2 ? 'background:#dcfce7; color:#15803d; border:1px solid #86efac;' : 'background:#fee2e2; color:#991b1b; border:1px solid #fca5a5;'}">
             Th ${y2}: ${isBal2 ? '✓ Neraca Balance' : `Selisih ${fmtRp(diff2, true)}`}
           </span>
         </div>
       </div>
     </div>
 
-    <div style="font-size:0.72rem; color:#64748b; margin-bottom:0.4rem;">
-      Silakan tinjau dan koreksi angka hasil ekstraksi di bawah jika diperlukan, lalu klik <strong>Terapkan ke Laporan Keuangan</strong>.
+    <!-- PREVIEW STATUS AUDIT HASIL PEMBACAAN AI & PENYESUAIAN -->
+    <div style="background:#f8fafc; border:1px solid #cbd5e1; border-left:4px solid ${isExtAudited ? '#16a34a' : '#d97706'}; border-radius:6px; padding:0.6rem 0.9rem; margin-bottom:0.75rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.6rem;">
+      <div style="flex:1; min-width:240px;">
+        <div style="font-weight:800; font-size:0.75rem; color:#1e293b; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+          <span>⚡ Status Audit Terdeteksi AI:</span>
+          <span id="previewAiAuditBadge" style="padding:2px 8px; border-radius:999px; font-weight:800; font-size:0.70rem; ${isExtAudited ? 'background:#dcfce7; color:#15803d; border:1px solid #86efac;' : 'background:#fef3c7; color:#b45309; border:1px solid #fde68a;'}">
+            ${isExtAudited ? `AUDITED (${extKap})` : 'IN-HOUSE / UNAUDITED'}
+          </span>
+          ${isExtAudited ? `<span id="previewAiAuditOpini" style="font-size:0.70rem; font-weight:700; color:#15803d;">&bull; Opini: ${extOpinion}</span>` : ''}
+        </div>
+        <div id="previewAiAuditReason" style="font-size:0.67rem; color:#64748b; margin-top:2px;">
+          ${data.audit_detection_reason || (isExtAudited ? `Terverifikasi Laporan Auditor Independen${extDate ? ' per ' + extDate : ''}` : 'Laporan pembukuan intern manajemen tanpa lembar opini auditor independen.')}
+        </div>
+      </div>
+      
+      <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+        <div style="display:flex; align-items:center; gap:0.35rem; background:#ffffff; padding:3px 8px; border-radius:6px; border:1px solid #cbd5e1;">
+          <label for="aiReviewAuditAdjustSelect" style="font-size:0.70rem; font-weight:700; color:#334155; margin:0; white-space:nowrap;">Penyesuaian Jenis:</label>
+          <select id="aiReviewAuditAdjustSelect" class="form-control" style="font-size:0.72rem; padding:2px 6px; font-weight:700; width:auto; height:26px; cursor:pointer;" onchange="handleAiReviewAuditStatusChange(this.value)" title="Gunakan jika jenis laporan yang terbaca oleh OCR berbeda">
+            <option value="audited" ${isExtAudited ? 'selected' : ''}>⚡ Audited KAP (100 Poin 5C)</option>
+            <option value="unaudited" ${!isExtAudited ? 'selected' : ''}>📄 In-House / Unaudited (60 Poin 5C)</option>
+          </select>
+        </div>
+        <div id="previewAiAudit5CLink" style="font-size:0.68rem; color:#0369a1; background:#e0f2fe; border:1px solid #bae6fd; padding:3px 8px; border-radius:4px; font-weight:700;">
+          🔗 Auto-Link 5C: Skor ${isExtAudited ? '100 (Audited)' : '60 (Unaudited)'}
+        </div>
+      </div>
+    </div>
+
+    <div style="font-size:0.72rem; color:#64748b; margin-bottom:0.4rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.3rem;">
+      <span>Silakan tinjau dan koreksi angka hasil ekstraksi di bawah jika diperlukan, lalu klik <strong>Terapkan ke Laporan Keuangan</strong>.</span>
+      <span style="font-size:0.68rem; color:#0369a1; font-weight:700;">💡 Total Saldo Laba Neraca = q1 (Periode Lalu) + q2 (Tahun Berjalan)</span>
     </div>
 
     <div style="max-height:360px; overflow-y:auto; border:1px solid #cbd5e1; border-radius:6px; margin-bottom:1rem; background:#fff;">
@@ -11408,10 +12061,10 @@ function renderAiFinReviewTable(data) {
               <tr style="border-bottom:1px solid #f1f5f9;">
                 <td style="padding:4px 8px; font-weight:600; color:#334155;">${r.label}</td>
                 <td style="padding:3px 6px;">
-                  <input type="text" inputmode="numeric" id="ai_rev_${r.k}_1" class="form-control num-col fmt-dots" value="${formatNumberWithDots(val1)}" oninput="handleDotInput(this)" onblur="handleDotBlur(this)" style="font-size:0.74rem; padding:3px 6px;" />
+                  <input type="text" inputmode="numeric" id="ai_rev_${r.k}_1" class="form-control num-col fmt-dots" value="${formatNumberWithDots(val1)}" oninput="handleDotInput(this); recalculateAiReviewBalances()" onblur="handleDotBlur(this); recalculateAiReviewBalances()" style="font-size:0.74rem; padding:3px 6px;" />
                 </td>
                 <td style="padding:3px 6px;">
-                  <input type="text" inputmode="numeric" id="ai_rev_${r.k}_2" class="form-control num-col fmt-dots" value="${formatNumberWithDots(val2)}" oninput="handleDotInput(this)" onblur="handleDotBlur(this)" style="font-size:0.74rem; padding:3px 6px;" />
+                  <input type="text" inputmode="numeric" id="ai_rev_${r.k}_2" class="form-control num-col fmt-dots" value="${formatNumberWithDots(val2)}" oninput="handleDotInput(this); recalculateAiReviewBalances()" onblur="handleDotBlur(this); recalculateAiReviewBalances()" style="font-size:0.74rem; padding:3px 6px;" />
                 </td>
               </tr>
             `;
@@ -11421,9 +12074,14 @@ function renderAiFinReviewTable(data) {
     </div>
 
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; padding-top:0.5rem; border-top:1px solid #e2e8f0;">
-      <button type="button" class="btn btn-outline" onclick="resetAiFinUploadState()" style="font-size:0.75rem;">
-        &larr; Pindai Berkas Lain
-      </button>
+      <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+        <button type="button" class="btn btn-outline" onclick="resetAiFinUploadState()" style="font-size:0.75rem;">
+          &larr; Pindai Berkas Lain
+        </button>
+        <button type="button" class="btn btn-outline" onclick="autoBalanceAiReviewRetainedEarnings()" style="font-size:0.75rem; color:#0369a1; border-color:#bae6fd; background:#f0f9ff; font-weight:700;" title="Menyesuaikan Saldo Laba Ditahan (retEarn) agar Neraca seimbang sempurna dengan Aktiva">
+          ⚖ Seimbangkan Saldo Laba Otomatis
+        </button>
+      </div>
       <div style="display:flex; gap:0.5rem;">
         <button type="button" class="btn btn-outline" onclick="closeAiFinUploadModal()" style="font-size:0.75rem;">
           Batal
@@ -11434,6 +12092,93 @@ function renderAiFinReviewTable(data) {
       </div>
     </div>
   `;
+}
+
+function recalculateAiReviewBalances() {
+  const getVal = (k, yr) => parseFormattedNumber(document.getElementById(`ai_rev_${k}_${yr}`)?.value) || 0;
+  const y1 = currentExtractedFinData?.year1 || 2022;
+  const y2 = currentExtractedFinData?.year2 || 2023;
+
+  const act1 = getVal('cash', 1) + getVal('otherCa', 1) + getVal('ar', 1) + getVal('inv', 1) + getVal('otherAr', 1) + getVal('prepaid', 1) + getVal('fa', 1) - Math.abs(getVal('depr', 1)) + getVal('invest', 1) + getVal('taxAsset', 1);
+  const pass1 = getVal('ap', 1) + getVal('stDebt', 1) + getVal('otherAp', 1) + getVal('accrued', 1) + getVal('ltDebt', 1) + getVal('capital', 1) + getVal('otherCap', 1) + getVal('retEarn', 1) + getVal('re', 1);
+  const diff1 = Math.round(act1 - pass1);
+  const isBal1 = Math.abs(diff1) < 10000;
+
+  const act2 = getVal('cash', 2) + getVal('otherCa', 2) + getVal('ar', 2) + getVal('inv', 2) + getVal('otherAr', 2) + getVal('prepaid', 2) + getVal('fa', 2) - Math.abs(getVal('depr', 2)) + getVal('invest', 2) + getVal('taxAsset', 2);
+  const pass2 = getVal('ap', 2) + getVal('stDebt', 2) + getVal('otherAp', 2) + getVal('accrued', 2) + getVal('ltDebt', 2) + getVal('capital', 2) + getVal('otherCap', 2) + getVal('retEarn', 2) + getVal('re', 2);
+  const diff2 = Math.round(act2 - pass2);
+  const isBal2 = Math.abs(diff2) < 10000;
+
+  const badge1 = document.getElementById('previewBalanceBadge1');
+  const badge2 = document.getElementById('previewBalanceBadge2');
+
+  if (badge1) {
+    badge1.style.background = isBal1 ? '#dcfce7' : '#fee2e2';
+    badge1.style.color = isBal1 ? '#15803d' : '#991b1b';
+    badge1.style.borderColor = isBal1 ? '#86efac' : '#fca5a5';
+    badge1.textContent = `Th ${y1}: ${isBal1 ? '✓ Neraca Balance' : `Selisih ${fmtRp(Math.abs(diff1), true)}`}`;
+  }
+  if (badge2) {
+    badge2.style.background = isBal2 ? '#dcfce7' : '#fee2e2';
+    badge2.style.color = isBal2 ? '#15803d' : '#991b1b';
+    badge2.style.borderColor = isBal2 ? '#86efac' : '#fca5a5';
+    badge2.textContent = `Th ${y2}: ${isBal2 ? '✓ Neraca Balance' : `Selisih ${fmtRp(Math.abs(diff2), true)}`}`;
+  }
+}
+
+function autoBalanceAiReviewRetainedEarnings() {
+  const getVal = (k, yr) => parseFormattedNumber(document.getElementById(`ai_rev_${k}_${yr}`)?.value) || 0;
+  const setVal = (k, yr, v) => {
+    const el = document.getElementById(`ai_rev_${k}_${yr}`);
+    if (el) el.value = formatNumberWithDots(Math.round(v));
+  };
+
+  [1, 2].forEach((yr) => {
+    const act = getVal('cash', yr) + getVal('otherCa', yr) + getVal('ar', yr) + getVal('inv', yr) + getVal('otherAr', yr) + getVal('prepaid', yr) + getVal('fa', yr) - Math.abs(getVal('depr', yr)) + getVal('invest', yr) + getVal('taxAsset', yr);
+    const liab = getVal('ap', yr) + getVal('stDebt', yr) + getVal('otherAp', yr) + getVal('accrued', yr) + getVal('ltDebt', yr);
+    const cap = getVal('capital', yr) + getVal('otherCap', yr);
+    const re = getVal('re', yr);
+    
+    // Total Ekuitas = Total Aktiva - Total Liabilitas
+    // Total Saldo Laba = Total Ekuitas - Total Modal
+    // retEarn = Total Saldo Laba - re
+    const targetEquity = act - liab;
+    const neededRetEarn = targetEquity - cap - re;
+    setVal('retEarn', yr, neededRetEarn);
+  });
+
+  recalculateAiReviewBalances();
+  showToast('✓ Saldo Laba berhasil diseimbangkan otomatis (Aktiva = Passiva)!');
+}
+
+function handleAiReviewAuditStatusChange(val) {
+  if (!currentExtractedFinData) return;
+  const isAudited = val === 'audited';
+  currentExtractedFinData.audit_status = isAudited ? 'audited' : 'unaudited';
+  currentExtractedFinData.audit_detection_reason = isAudited
+    ? 'Disesuaikan oleh Analis: Laporan Keuangan Audited KAP'
+    : 'Disesuaikan oleh Analis: Laporan Keuangan In-House / Unaudited';
+
+  const badgeEl = document.getElementById('previewAiAuditBadge');
+  const opEl = document.getElementById('previewAiAuditOpini');
+  const reasonEl = document.getElementById('previewAiAuditReason');
+  const linkEl = document.getElementById('previewAiAudit5CLink');
+  
+  if (badgeEl) {
+    badgeEl.textContent = isAudited ? 'AUDITED KAP (Penyesuaian)' : 'IN-HOUSE / UNAUDITED (Penyesuaian)';
+    badgeEl.style.background = isAudited ? '#dcfce7' : '#fef3c7';
+    badgeEl.style.color = isAudited ? '#15803d' : '#b45309';
+    badgeEl.style.borderColor = isAudited ? '#86efac' : '#fde68a';
+  }
+  if (opEl) {
+    opEl.style.display = isAudited ? 'inline' : 'none';
+  }
+  if (reasonEl) {
+    reasonEl.textContent = currentExtractedFinData.audit_detection_reason;
+  }
+  if (linkEl) {
+    linkEl.textContent = `🔗 Auto-Link 5C: Skor ${isAudited ? '100 (Audited)' : '60 (Unaudited)'}`;
+  }
 }
 
 function applyExtractedFinDataToForm() {
@@ -11486,6 +12231,40 @@ function applyExtractedFinDataToForm() {
     proj.fin23[k] = val2;
   });
 
+  // Ekstrak & Terapkan Status Audit Laporan Keuangan ke Model Proyek
+  const revSelect = document.getElementById('aiReviewAuditAdjustSelect');
+  const auditStatusToApply = revSelect ? revSelect.value : (currentExtractedFinData.audit_status || 'audited');
+  const isExtAudited = auditStatusToApply.toLowerCase() !== 'unaudited';
+  proj.auditStatus = isExtAudited ? 'audited' : 'unaudited';
+  if (currentExtractedFinData.auditor_kap_name && currentExtractedFinData.auditor_kap_name !== '-') {
+    proj.auditorKapName = currentExtractedFinData.auditor_kap_name;
+  }
+  if (currentExtractedFinData.auditor_opinion && currentExtractedFinData.auditor_opinion !== '-') {
+    proj.auditorOpinion = currentExtractedFinData.auditor_opinion;
+  }
+  if (currentExtractedFinData.audit_report_date && currentExtractedFinData.audit_report_date !== '-') {
+    proj.auditReportDate = currentExtractedFinData.audit_report_date;
+  }
+  if (currentExtractedFinData.audit_detection_reason) {
+    proj.auditDetectionReason = currentExtractedFinData.audit_detection_reason;
+  } else {
+    proj.auditDetectionReason = isExtAudited
+      ? `Terbaca otomatis oleh AI OCR: Laporan Audited KAP (${proj.auditorKapName || 'KAP Terdaftar'})`
+      : 'Terbaca otomatis oleh AI OCR: Laporan In-House / Unaudited';
+  }
+
+  // Update dropdown jenis lapkeu di header Bagian D jika ada
+  const selAudit = document.getElementById('sel_auditStatus');
+  if (selAudit) {
+    selAudit.value = isExtAudited ? 'audited' : 'unaudited';
+  }
+
+  // Bersihkan manual override parameter 5C (#7 & #26) agar hasil deteksi AI OCR langsung terhubung ke skor 5C
+  if (proj.fiveCOverrides) {
+    delete proj.fiveCOverrides['c7_ketersediaan_lapkeu'];
+    delete proj.fiveCOverrides['cnd34_pengawasan_bisnis'];
+  }
+
   // Jalankan sinkronisasi penuh & render ulang kalkulasi seluruh modul
   syncInputsToModel();
   closeAiFinUploadModal();
@@ -11493,7 +12272,7 @@ function applyExtractedFinDataToForm() {
   // Pastikan Bagian D terbuka agar data ekstraksi langsung terlihat
   toggleInputSection('secD', true);
 
-  showToast(`🎉 Laporan Keuangan Th ${y1} & ${y2} berhasil diekstrak dan diterapkan!`);
+  showToast(`🎉 Laporan Keuangan Th ${y1} & ${y2} (${isExtAudited ? 'Audited KAP' : 'In-House'}) berhasil diekstrak dan terhubung ke 5C!`);
 }
 
 // ============================================================================

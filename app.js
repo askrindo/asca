@@ -10277,16 +10277,33 @@ function openModalAddUser() {
   if (fn) fn.value = '';
   if (ut) ut.value = 'Divisi Underwriting Komersial';
   if (rl) rl.value = 'analyst';
-  if (pw) pw.value = '';
+  if (pw) {
+    pw.value = '';
+    pw.disabled = false;
+    pw.removeAttribute('disabled');
+    pw.readOnly = false;
+    pw.type = 'password';
+  }
   if (st) st.value = 'active';
 
   const modal = document.getElementById('modalAddUser');
-  if (modal) modal.classList.add('open');
+  if (modal) {
+    modal.classList.add('open');
+    modal.querySelectorAll('.login-toggle-pwd').forEach(btn => {
+      btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
+      btn.title = 'Tampilkan Password';
+    });
+  }
+  setTimeout(() => {
+    if (un) un.focus();
+  }, 100);
 }
 
 function closeModalAddUser() {
   const modal = document.getElementById('modalAddUser');
   if (modal) modal.classList.remove('open');
+  const pw = document.getElementById('adminNewPassword');
+  if (pw) pw.value = '';
 }
 
 async function saveNewUserFromModal() {
@@ -10323,6 +10340,19 @@ async function saveNewUserFromModal() {
       method: 'POST',
       body: JSON.stringify(newUserObj)
     });
+
+    // Simpan juga ke cache lokal
+    users.push({
+      username: uname,
+      password: pwd,
+      fullName: fullName,
+      unit: unit,
+      role: role,
+      status: status,
+      createdAt: new Date().toISOString(),
+      lastLogin: null
+    });
+    saveUsersToStorage(users);
 
     closeModalAddUser();
     await renderAdminUserManagement();
@@ -10500,11 +10530,27 @@ function openModalResetPassword(username) {
   if (targetEl) targetEl.textContent = username;
   const pw1 = document.getElementById('adminResetNewPassword');
   const pw2 = document.getElementById('adminResetConfirmPassword');
-  if (pw1) pw1.value = '';
-  if (pw2) pw2.value = '';
+  if (pw1) {
+    pw1.value = '';
+    pw1.disabled = false;
+    pw1.removeAttribute('disabled');
+    pw1.type = 'password';
+  }
+  if (pw2) {
+    pw2.value = '';
+    pw2.disabled = false;
+    pw2.removeAttribute('disabled');
+    pw2.type = 'password';
+  }
 
   const modal = document.getElementById('modalResetPassword');
-  if (modal) modal.classList.add('open');
+  if (modal) {
+    modal.classList.add('open');
+    modal.querySelectorAll('.login-toggle-pwd').forEach(btn => {
+      btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
+      btn.title = 'Tampilkan Password';
+    });
+  }
 }
 
 function closeModalResetPassword() {
@@ -10660,9 +10706,9 @@ function openUserSettingsModal() {
   const curInp = document.getElementById('inp_currentPassword');
   const newInp = document.getElementById('inp_newPassword');
   const cnfInp = document.getElementById('inp_confirmNewPassword');
-  if (curInp) { curInp.value = ''; curInp.type = 'password'; }
-  if (newInp) { newInp.value = ''; newInp.type = 'password'; }
-  if (cnfInp) { cnfInp.value = ''; cnfInp.type = 'password'; }
+  if (curInp) { curInp.value = ''; curInp.type = 'password'; curInp.disabled = false; curInp.removeAttribute('disabled'); }
+  if (newInp) { newInp.value = ''; newInp.type = 'password'; newInp.disabled = false; newInp.removeAttribute('disabled'); }
+  if (cnfInp) { cnfInp.value = ''; cnfInp.type = 'password'; cnfInp.disabled = false; cnfInp.removeAttribute('disabled'); }
 
   // Reset toggle buttons to default eye icon
   modal.querySelectorAll('.login-toggle-pwd').forEach(btn => {

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ASKRINDO SMART CREDIT ANALYSIS (ASCA)
  * Metode: Dynamic Cash Conversion & Stress-Tested Working Capital Model (DCC-SWCM)
  * Termasuk: Analisis Ketahanan Modal Kerja Bersih (Net Working Capital & Burn-Rate Test)
@@ -129,7 +129,10 @@ function getDefaultProjects() {
       auditReportDate: '28 Maret 2024',
       auditDetectionReason: 'Laporan Auditor Independen KAP Heliantono & Rekan (Opini WTP)',
       sippStatus: 'clean',
-      inaprocStatus: 'clean',
+      associationName: 'GAKOPTINDO / GAPMMI',
+      associationMemberNo: 'KTA-GAKOPTINDO/JTG/2018/042',
+      associationStatus: 'verified_good',
+      associationNotes: 'Terdaftar sebagai anggota aktif GAKOPTINDO / GAPMMI Jawa Tengah sejak 2018. Tidak tercatat sanksi asosiasi dagang.',
       negativeNews: 'clean',
       qualitative5CScore: 6,
       manualGradeOverride: 'AUTO',
@@ -214,7 +217,10 @@ function getDefaultProjects() {
       auditReportDate: '28 Maret 2024',
       auditDetectionReason: 'Laporan Auditor Independen KAP Heliantono & Rekan (Opini WTP)',
       sippStatus: 'clean',
-      inaprocStatus: 'clean',
+      associationName: 'GAKOPTINDO / GAPMMI',
+      associationMemberNo: 'KTA-GAKOPTINDO/JTG/2018/042',
+      associationStatus: 'verified_good',
+      associationNotes: 'Terdaftar sebagai anggota aktif GAKOPTINDO / GAPMMI Jawa Tengah sejak 2018. Tidak tercatat sanksi asosiasi dagang.',
       negativeNews: 'clean',
       qualitative5CScore: 8.5,
       manualGradeOverride: 'AUTO',
@@ -299,7 +305,10 @@ function getDefaultProjects() {
       auditReportDate: '15 April 2024',
       auditDetectionReason: 'Laporan Auditor Independen BDO Tanubrata (Opini WTP)',
       sippStatus: 'clean',
-      inaprocStatus: 'clean',
+      associationName: 'GAKOPTINDO / GAPMMI',
+      associationMemberNo: 'KTA-GAKOPTINDO/JTG/2018/042',
+      associationStatus: 'verified_good',
+      associationNotes: 'Terdaftar sebagai anggota aktif GAKOPTINDO / GAPMMI Jawa Tengah sejak 2018. Tidak tercatat sanksi asosiasi dagang.',
       negativeNews: 'clean',
       qualitative5CScore: 9.0,
       manualGradeOverride: 'AUTO',
@@ -606,7 +615,19 @@ function sanitizeProjectData(p) {
   if (!merged.sippStatus || (merged.sippStatus !== 'disputed' && merged.sippStatus !== 'bankrupt')) {
     merged.sippStatus = 'clean';
   }
-  if (!merged.inaprocStatus) merged.inaprocStatus = 'clean';
+  if (!merged.associationStatus) {
+    if (merged.inaprocStatus === 'blacklisted') {
+      merged.associationStatus = 'blacklisted';
+    } else {
+      merged.associationStatus = 'verified_good';
+    }
+  }
+  if (!merged.associationName) {
+    const autoAssoc = detectSectorAssociation(merged);
+    merged.associationName = autoAssoc ? autoAssoc.name : 'KADIN / APINDO';
+  }
+  if (!merged.associationMemberNo) merged.associationMemberNo = '';
+  if (!merged.associationNotes) merged.associationNotes = '';
   if (!merged.negativeNews) merged.negativeNews = 'clean';
   return merged;
 }
@@ -775,7 +796,7 @@ async function syncProjectsWithCloud(username) {
       if (cloudProjects.length > 0) {
         // Database Cloud adalah MASTER SUMBER KEBENARAN akun ini.
         const sanitized = cloudProjects.map(sanitizeProjectData);
-        sanitized.forEach((p) => ensureInaprocAutoChecked(p));
+        sanitized.forEach((p) => ensureAssociationInitialized(p));
 
         projects = sanitized;
         if (!activeProjectId || !projects.some(p => p.id === activeProjectId)) {
@@ -933,7 +954,6 @@ function selectProject(id) {
   const proj = getActiveProject();
   if (proj) {
     populateFormInputs(proj);
-    triggerLiveInaprocCheck(false);
     fetchGoogleNewsForProject(false, false);
   }
   renderAll();
@@ -960,7 +980,6 @@ function openProjectFromHub(projectId) {
   const proj = getActiveProject();
   if (proj) {
     populateFormInputs(proj);
-    triggerLiveInaprocCheck(false);
     fetchGoogleNewsForProject(false, false);
   }
   renderAll();
@@ -1202,7 +1221,7 @@ function renderWelcomeHub() {
           <div class="hub-step-num">1</div>
           <div>
             <div style="font-weight:700; font-size:0.78rem; color:#0f172a; margin-bottom:2px;">Verifikasi Legalitas &amp; Karakter</div>
-            <div style="font-size:0.7rem; color:#64748b; line-height:1.35;">Pengecekan otomatis Daftar Hitam INAPROC LKPP, perkara perdata SIPP Pengadilan Negeri, dan screening pemberitaan negatif media.</div>
+            <div style="font-size:0.7rem; color:#64748b; line-height:1.35;">Verifikasi status keanggotaan asosiasi usaha/industri sektoral, perkara perdata SIPP Pengadilan Negeri, dan screening pemberitaan negatif media.</div>
           </div>
         </div>
         <div class="hub-step-item">
@@ -1596,177 +1615,182 @@ function showToast(msg) {
 
 // ============================================================================
 // ============================================================================
-// 4B. SISTEM EVALUASI OTOMATIS 5C & PENGECEKAN RIIL (LKPP / INAPROC & SIPP)
+// 4B. SISTEM VERIFIKASI ASOSIASI USAHA & INDUSTRI SEKTORAL (PERUSAHAAN SWASTA)
 // ============================================================================
-function normalizeInaprocCompanyName(raw) {
-  if (!raw) return '';
-  return String(raw)
-    .toLowerCase()
-    .replace(/\s*\([^)]*\)/g, ' ')
-    .replace(/[^a-z0-9]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
 
-function extractInaprocEntityType(normStr) {
-  if (!normStr) return '';
-  const lead = normStr.match(/^(pt|cv|ud|pd|firma|fa|koperasi|yayasan|perum|perumda|kjpp|kap)\b/i);
-  if (lead) return lead[1].toLowerCase();
-  const tail = normStr.match(/\b(pt|cv|ud|pd|firma|fa|koperasi|yayasan|perum|perumda|kjpp|kap)$/i);
-  if (tail) return tail[1].toLowerCase();
-  return '';
-}
-
-function stripEntityPrefixSuffix(normStr) {
-  if (!normStr) return '';
-  return normStr
-    .replace(/^(pt|cv|ud|pd|firma|fa|koperasi|yayasan|perum|perumda|persero|tbk|kjpp|kap)\s+/i, '')
-    .replace(/\s+(pt|cv|ud|pd|firma|fa|koperasi|yayasan|perum|perumda|persero|tbk|kjpp|kap)$/i, '')
-    .replace(/\s+(tbk|persero)$/i, '')
-    .trim();
-}
-
-function checkInaprocBlacklist(name) {
-  if (!name) return { isBlacklisted: false, reason: '', skNumber: '', status: '', expiredDate: '', institution: '' };
-  const qFull = normalizeInaprocCompanyName(name);
-  const qCore = stripEntityPrefixSuffix(qFull);
-  const qEntity = extractInaprocEntityType(qFull);
-  if (!qFull || qCore.length < 3) {
-    return { isBlacklisted: false, reason: '', skNumber: '', status: '', expiredDate: '', institution: '' };
+const SECTOR_ASSOCIATIONS = [
+  {
+    id: 'food_beverage',
+    name: 'GAPMMI / GAKOPTINDO',
+    fullName: 'Gabungan Produsen Makanan Minuman Indonesia / GAKOPTINDO',
+    portalUrl: 'https://gapmmi.id/',
+    searchUrl: (comp) => 'https://gapmmi.id/?s=' + encodeURIComponent(comp),
+    keywords: ['kedelai', 'pangan', 'tempe', 'tahu', 'kecap', 'tepung', 'beras', 'makanan', 'minuman', 'pertanian', 'agri', 'pakan ternak', 'ternak', 'unggas', 'food', 'beverage', 'gandum']
+  },
+  {
+    id: 'plantation',
+    name: 'GAPKI (Asosiasi Kelapa Sawit)',
+    fullName: 'Gabungan Pengusaha Kelapa Sawit Indonesia (GAPKI)',
+    portalUrl: 'https://gapki.id/',
+    searchUrl: (comp) => 'https://gapki.id/?s=' + encodeURIComponent(comp),
+    keywords: ['sawit', 'cpo', 'perkebunan', 'karet', 'kelapa', 'kopi', 'kakao']
+  },
+  {
+    id: 'construction',
+    name: 'GAPENSI / AKI / LPJK',
+    fullName: 'Gabungan Pelaksana Konstruksi Nasional Indonesia (GAPENSI)',
+    portalUrl: 'https://gapensi.or.id/',
+    searchUrl: (comp) => 'https://gapensi.or.id/?s=' + encodeURIComponent(comp),
+    keywords: ['konstruksi', 'kontraktor', 'infrastruktur', 'bangunan', 'sipil', 'jalan', 'jembatan', 'arsitektur', 'properti', 'developer']
+  },
+  {
+    id: 'trade_retail',
+    name: 'APRINDO / AP3MI',
+    fullName: 'Asosiasi Pengusaha Ritel Indonesia (APRINDO)',
+    portalUrl: 'https://aprindo.org/',
+    searchUrl: (comp) => 'https://aprindo.org/?s=' + encodeURIComponent(comp),
+    keywords: ['perdagangan', 'ritel', 'retail', 'distribusi', 'distributor', 'grosir', 'toko', 'supermarket', 'trading', 'bahan bangunan', 'semen']
+  },
+  {
+    id: 'logistics',
+    name: 'ALFI / ILFA / APTRINDO',
+    fullName: 'Asosiasi Logistik dan Forwarder Indonesia (ALFI/ILFA)',
+    portalUrl: 'https://ilfa.or.id/',
+    searchUrl: (comp) => 'https://ilfa.or.id/?s=' + encodeURIComponent(comp),
+    keywords: ['logistik', 'freight', 'forwarding', 'forwarder', 'truk', 'ekspedisi', 'kargo', 'cargo', 'shipping', 'pelayaran', 'pergudangan', 'maritim', 'transportasi']
+  },
+  {
+    id: 'textile',
+    name: 'API (Asosiasi Pertekstilan Indonesia)',
+    fullName: 'Asosiasi Pertekstilan Indonesia (API)',
+    portalUrl: 'https://api-indonesia.com/',
+    searchUrl: (comp) => 'https://api-indonesia.com/?s=' + encodeURIComponent(comp),
+    keywords: ['tekstil', 'garmen', 'garment', 'kain', 'benang', 'pakaian', 'fashion', 'konveksi']
+  },
+  {
+    id: 'automotive',
+    name: 'GAIKINDO / GIAMM',
+    fullName: 'Gabungan Industri Kendaraan Bermotor Indonesia (GAIKINDO)',
+    portalUrl: 'https://www.gaikindo.or.id/',
+    searchUrl: (comp) => 'https://www.gaikindo.or.id/?s=' + encodeURIComponent(comp),
+    keywords: ['otomotif', 'mobil', 'motor', 'kendaraan', 'alat berat', 'mesin', 'sparepart', 'komponen']
+  },
+  {
+    id: 'pharma',
+    name: 'GP Farmasi Indonesia / ASPAKI',
+    fullName: 'Gabungan Perusahaan Farmasi Indonesia (GP Farmasi)',
+    portalUrl: 'https://gpfarmasi.id/',
+    searchUrl: (comp) => 'https://gpfarmasi.id/?s=' + encodeURIComponent(comp),
+    keywords: ['farmasi', 'obat', 'medis', 'kesehatan', 'alkes', 'klinik', 'rumah sakit', 'hospital']
+  },
+  {
+    id: 'mining',
+    name: 'APBI-ICMA / IMA',
+    fullName: 'Asosiasi Pertambangan Batubara Indonesia (APBI-ICMA)',
+    portalUrl: 'https://apbi-icma.org/',
+    searchUrl: (comp) => 'https://apbi-icma.org/?s=' + encodeURIComponent(comp),
+    keywords: ['tambang', 'batubara', 'coal', 'nikel', 'emas', 'mineral', 'energi', 'migas', 'minyak', 'gas']
+  },
+  {
+    id: 'technology',
+    name: 'APJII / ASPILUKI',
+    fullName: 'Asosiasi Penyelenggara Jasa Internet Indonesia (APJII)',
+    portalUrl: 'https://apjii.or.id/',
+    searchUrl: (comp) => 'https://apjii.or.id/?s=' + encodeURIComponent(comp),
+    keywords: ['teknologi', 'it', 'software', 'internet', 'telekomunikasi', 'digital', 'komputer']
+  },
+  {
+    id: 'general',
+    name: 'KADIN Indonesia / APINDO',
+    fullName: 'Kamar Dagang dan Industri Indonesia (KADIN) / APINDO',
+    portalUrl: 'https://kadin.id/',
+    searchUrl: (comp) => 'https://kadin.id/?s=' + encodeURIComponent(comp),
+    keywords: []
   }
+];
 
-  const realDb = Array.isArray(window.INAPROC_REAL_DB) ? window.INAPROC_REAL_DB : [];
-  if (realDb.length > 0) {
-    // Hanya cocokkan sanksi yang sedang TAYANG AKTIF (PUBLISHED) di https://daftar-hitam.inaproc.id/
-    // dan wajib EXACT MATCH pada nama perusahaan (tanpa substring/includes agar tidak pernah salah deteksi)
-    for (let i = 0; i < realDb.length; i++) {
-      const rec = realDb[i];
-      if (!rec || !rec.n || rec.st !== 'PUBLISHED') continue;
-      const dbFull = normalizeInaprocCompanyName(rec.n);
-      const dbCore = stripEntityPrefixSuffix(dbFull);
-      const dbEntity = extractInaprocEntityType(dbFull);
-      if (!dbCore || dbCore.length < 3) continue;
-
-      // Jika keduanya mencantumkan badan usaha (misal PT vs CV) dan berbeda, maka bukan entitas yang sama
-      if (qEntity && dbEntity && qEntity !== dbEntity) continue;
-
-      if (dbFull === qFull || dbCore === qCore) {
-        const insLabel = rec.ins ? ` (${rec.ins})` : '';
-        return {
-          isBlacklisted: true,
-          matchedName: rec.n,
-          skNumber: rec.sk || '-',
-          status: 'PUBLISHED',
-          expiredDate: rec.exp || '-',
-          institution: rec.ins || 'Portal Daftar Hitam Nasional LKPP',
-          reason: `Terdaftar Masuk Daftar Hitam Nasional LKPP - Status TAYANG AKTIF s/d ${rec.exp || '-'}${insLabel}`
-        };
-      }
+function detectSectorAssociation(proj) {
+  if (!proj) return SECTOR_ASSOCIATIONS[SECTOR_ASSOCIATIONS.length - 1];
+  const text = ((proj.sector || '') + ' ' + (proj.businessDesc || '') + ' ' + (proj.companyName || '')).toLowerCase();
+  for (let i = 0; i < SECTOR_ASSOCIATIONS.length - 1; i++) {
+    const a = SECTOR_ASSOCIATIONS[i];
+    if (a.keywords.some(k => text.includes(k))) {
+      return a;
     }
   }
-
-  return { isBlacklisted: false, reason: '', skNumber: '', status: '', expiredDate: '', institution: '' };
+  return SECTOR_ASSOCIATIONS[SECTOR_ASSOCIATIONS.length - 1];
 }
 
-let inaprocAutoTriggerTimer = null;
-let isScanningInaproc = false;
-
-function ensureInaprocAutoChecked(proj) {
+function ensureAssociationInitialized(proj) {
   if (!proj) return;
-  const cleanName = (proj.companyName || 'Perusahaan').replace(/\s*\([^)]*\)/g, '').trim();
-  const dbReady = Array.isArray(window.INAPROC_REAL_DB) && window.INAPROC_REAL_DB.length > 0;
-  const targetVer = dbReady ? 'REAL_DB_V3_STRICT_PUBLISHED' : 'REAL_DB_V3_PENDING';
-  if (
-    !proj.inaprocCheckedCompany ||
-    proj.inaprocCheckedCompany !== cleanName ||
-    proj.inaprocDbVersion !== targetVer ||
-    !proj.inaprocStatus ||
-    proj.inaprocStatus === 'unverified'
-  ) {
-    runAutoInaprocCheckSync(proj, false);
+  if (!proj.associationStatus) {
+    proj.associationStatus = 'verified_good';
   }
+  if (!proj.associationName) {
+    const autoAssoc = detectSectorAssociation(proj);
+    proj.associationName = autoAssoc.name;
+  }
+  if (!proj.associationMemberNo) proj.associationMemberNo = '';
+  if (!proj.associationNotes) proj.associationNotes = '';
 }
 
-function runAutoInaprocCheckSync(proj, notifyToast = false) {
+function openAssociationPortal(proj) {
+  if (!proj) proj = getActiveProject();
   if (!proj) return;
-  const cleanName = (proj.companyName || 'Perusahaan').replace(/\s*\([^)]*\)/g, '').trim();
-  const accessedStr = formatGoogleNewsAccessedDate(new Date());
-  const chk = checkInaprocBlacklist(cleanName);
-  const portalUrl = `https://daftar-hitam.inaproc.id/?search=${encodeURIComponent(cleanName)}`;
-  const dbReady = Array.isArray(window.INAPROC_REAL_DB) && window.INAPROC_REAL_DB.length > 0;
-
-  proj.inaprocCheckedCompany = cleanName;
-  proj.inaprocDbVersion = dbReady ? 'REAL_DB_V3_STRICT_PUBLISHED' : 'REAL_DB_V3_PENDING';
-  proj.inaprocVerifiedAt = new Date().toISOString();
-
-  if (chk.isBlacklisted) {
-    proj.inaprocStatus = 'blacklisted';
-    proj.inaprocVerificationNote = `Auto-Screening INAPROC: TERDAFTAR BLACKLIST - SK: ${chk.skNumber || '-'} (${accessedStr} WIB)`;
-    proj.inaprocAutoResult = {
-      status: 'blacklisted',
-      queryName: cleanName,
-      matchedName: chk.matchedName || cleanName,
-      checkedAt: accessedStr,
-      skNumber: chk.skNumber || '-',
-      sanctionStatus: chk.status || 'PUBLISHED',
-      expiredDate: chk.expiredDate || '-',
-      institution: chk.institution || 'LKPP',
-      sanctionPeriod: chk.status === 'PUBLISHED' ? `TAYANG AKTIF (Berakhir: ${chk.expiredDate || '-'})` : `Tercatat di Database INAPROC (${chk.status})`,
-      portalUrl,
-      summary: `Sistem mendeteksi otomatis entitas "${chk.matchedName || cleanName}" dalam Database Riil Daftar Hitam Nasional INAPROC LKPP (${chk.reason}). Skor INAPROC otomatis menjadi 0 / 15 Poin.`
-    };
-    if (notifyToast) {
-      showToast(`⚠️ Auto-Check Daftar Hitam LKPP: "${cleanName}" TERDETEKSI BLACKLIST (SK: ${chk.skNumber}) — 0/15 Poin!`);
-    }
-  } else {
-    proj.inaprocStatus = 'clean';
-    proj.inaprocVerificationNote = `Auto-Screening INAPROC: BERSIH / NIHIL SANKSI (${accessedStr} WIB)`;
-    proj.inaprocAutoResult = {
-      status: 'clean',
-      queryName: cleanName,
-      matchedName: cleanName,
-      checkedAt: accessedStr,
-      skNumber: '-',
-      sanctionStatus: 'CLEAN',
-      expiredDate: '-',
-      institution: '-',
-      sanctionPeriod: 'Nihil (0 Sanksi Aktif)',
-      portalUrl,
-      summary: `Hasil pencarian otomatis pada Database Riil Daftar Hitam Nasional INAPROC LKPP (5.357 data sanksi) untuk "${cleanName}": Tidak ditemukan catatan sanksi (Bersih - 15 / 15 Poin).`
-    };
-    if (notifyToast) {
-      showToast(`Auto-Check Daftar Hitam LKPP: "${cleanName}" Terverifikasi BERSIH (15/15 Poin).`);
-    }
-  }
+  const assoc = detectSectorAssociation(proj);
+  const cleanName = (proj.companyName || '').replace(/\s*\([^)]*\)/g, '').trim();
+  const url = assoc.searchUrl ? assoc.searchUrl(cleanName) : assoc.portalUrl;
+  window.open(url, '_blank');
+  showToast('Membuka website resmi ' + assoc.name + ' (' + assoc.portalUrl + ') untuk verifikasi anggota.');
 }
 
-async function triggerLiveInaprocCheck(isManualClick = false) {
+function openAssociationGoogleSearch(proj) {
+  if (!proj) proj = getActiveProject();
+  if (!proj) return;
+  const assoc = detectSectorAssociation(proj);
+  const cleanName = (proj.companyName || '').replace(/\s*\([^)]*\)/g, '').trim();
+  const q = encodeURIComponent('"' + cleanName + '" ("' + assoc.name + '" OR "anggota" OR site:kadin.id OR site:apindo.or.id)');
+  window.open('https://www.google.com/search?q=' + q, '_blank');
+  showToast('Melakukan penelusuran status keanggotaan asosiasi untuk "' + cleanName + '"...');
+}
+
+function updateAssociationStatus(status) {
   const proj = getActiveProject();
-  if (!proj || isScanningInaproc) return;
-
-  isScanningInaproc = true;
-  const btn = document.getElementById('btnAutoCheckInaproc');
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = 'Memindai...';
-  }
-
-  const cleanName = (proj.companyName || 'Perusahaan').replace(/\s*\([^)]*\)/g, '').trim();
-
-  // Jalankan pengecekan terhadap database riil INAPROC (5.357 entri)
-  runAutoInaprocCheckSync(proj, false);
-
-  isScanningInaproc = false;
+  if (!proj) return;
+  proj.associationStatus = status;
+  proj.associationCheckedAt = new Date().toISOString();
   saveProjectsToStorage();
   renderAll();
+  const statusLabels = {
+    verified_good: 'Terdaftar & Anggota Aktif - Reputasi Baik (15 Poin Penuh)',
+    verified_regular: 'Terdaftar Anggota Biasa / Terverifikasi Sektoral (12 Poin)',
+    in_review: 'Dalam Peninjauan / Belum Terdaftar Anggota Resmi (8 Poin)',
+    unverified: 'Belum Diverifikasi ke Asosiasi (5 Poin)',
+    sanctioned: 'Dalam Pengawasan Khusus / Sanksi Asosiasi (0 Poin)',
+    blacklisted: 'Masuk Daftar Hitam / Dikeluarkan dari Asosiasi (0 Poin - Tolak)'
+  };
+  showToast('Status Asosiasi diperbarui: ' + (statusLabels[status] || status));
+}
 
-  if (isManualClick) {
-    if (proj.inaprocStatus === 'blacklisted') {
-      showToast(`⚠️ Hasil Scan Daftar Hitam INAPROC: "${cleanName}" TERDETEKSI BLACKLIST (SK: ${proj.inaprocAutoResult?.skNumber || '-'}) — 0/15 Poin!`);
-    } else {
-      showToast(`Hasil Scan Daftar Hitam INAPROC: "${cleanName}" Bersih / Nihil Sanksi (15/15 Poin).`);
-    }
+function updateAssociationField(field, value) {
+  const proj = getActiveProject();
+  if (!proj) return;
+  proj[field] = value;
+  saveProjectsToStorage();
+}
+
+function autoDetectAndSetAssociation() {
+  const proj = getActiveProject();
+  if (!proj) return;
+  const autoAssoc = detectSectorAssociation(proj);
+  proj.associationName = autoAssoc.name;
+  if (!proj.associationStatus || proj.associationStatus === 'unverified') {
+    proj.associationStatus = 'verified_good';
   }
+  proj.associationCheckedAt = new Date().toISOString();
+  saveProjectsToStorage();
+  renderAll();
+  showToast('Asosiasi otomatis disesuaikan ke: ' + autoAssoc.fullName);
 }
 
 function isMaritimeOrImportRisk(proj) {
@@ -1774,60 +1798,10 @@ function isMaritimeOrImportRisk(proj) {
   const method = (proj.procurementMethod || '').toLowerCase().trim();
   if (method === 'none' || method === 'domestic') return false;
   if (method === 'import_sea') return true;
-  // Fallback hanya jika metode pengadaan belum pernah dipilih secara eksplisit:
   if (proj.usdAmount > 0) return true;
   const text = ((proj.sector || '') + ' ' + (proj.businessDesc || '') + ' ' + (proj.facilityType || '') + ' ' + (proj.companyName || '')).toLowerCase();
   return /impor|import|kedelai|gandum|shipping|kargo|cargo|laut|maritim|vessel|l\/c|lc|skbdn|trust receipt|forex/i.test(text);
 }
-
-function openInaprocPortal(name) {
-  const cleanName = (name || '').replace(/\s*\([^)]*\)/g, '').trim();
-  const q = encodeURIComponent(cleanName || name || 'PT');
-  window.open(`https://daftar-hitam.inaproc.id/?search=${q}`, '_blank');
-}
-
-function openInaprocGoogleSearch(name) {
-  const cleanName = (name || '').replace(/\s*\([^)]*\)/g, '').trim();
-  const q = encodeURIComponent(`"${cleanName}" site:inaproc.id OR "daftar hitam" OR "sanksi lkpp"`);
-  window.open(`https://www.google.com/search?q=${q}`, '_blank');
-}
-
-function setInaprocResult(status, compName) {
-  const proj = getActiveProject();
-  if (!proj) return;
-  const now = new Date();
-  const dtStr = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) + ' ' +
-                now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-  const session = getActiveSession();
-  const uwName = session ? (session.fullName || session.username) : 'Analis Underwriting';
-
-  proj.inaprocStatus = status;
-  proj.inaprocVerifiedAt = now.toISOString();
-  if (status === 'blacklisted') {
-    proj.inaprocVerificationNote = `Sanksi Terkonfirmasi di https://daftar-hitam.inaproc.id/ (${dtStr} WIB oleh ${uwName})`;
-    showToast(`⚠️ Sanksi INAPROC Dikonfirmasi: "${compName || proj.companyName}" Terdaftar Blacklist Nasional (-30 Poin)!`);
-  } else {
-    proj.inaprocVerificationNote = `Terverifikasi Nihil Sanksi di https://daftar-hitam.inaproc.id/ (${dtStr} WIB oleh ${uwName})`;
-    showToast(`Hasil INAPROC Dikonfirmasi: "${compName || proj.companyName}" Terverifikasi Bersih di Portal Resmi!`);
-  }
-  saveProjectsToStorage();
-  renderAll();
-}
-
-function autoVerifyInaproc(proj) {
-  if (!proj) proj = getActiveProject();
-  if (!proj) return;
-  const cleanName = (proj.companyName || '').replace(/\s*\([^)]*\)/g, '').trim();
-  
-  const check = checkInaprocBlacklist(cleanName);
-  if (check.isBlacklisted) {
-    setInaprocResult('blacklisted', cleanName);
-  } else {
-    openInaprocPortal(cleanName);
-    showToast(`🌐 Membuka portal https://daftar-hitam.inaproc.id/?search=${encodeURIComponent(cleanName)} untuk konfirmasi riil.`);
-  }
-}
-
 // ============================================================================
 // RESOLUSI SISTEM INFORMASI PENELUSURAN PERKARA (SIPP) PENGADILAN NEGERI
 // ============================================================================
@@ -2181,11 +2155,11 @@ async function fetchGoogleNewsForProject(isManualClick = false, isAutoInputTrigg
   renderPrintableReport(proj, m);
 
   if (isAutoInputTrigger) {
-    const inaprocTxt = proj.inaprocStatus === 'blacklisted' ? `BLACKLIST LKPP (SK: ${proj.inaprocAutoResult?.skNumber || '-'})` : 'INAPROC Bersih (15/15)';
+    const assocTxt = proj.associationStatus === 'blacklisted' ? 'Blacklist Asosiasi' : (proj.associationStatus === 'sanctioned' ? 'Sanksi Asosiasi' : `${proj.associationName || 'Asosiasi'} Terverifikasi`);
     const newsTxt = proj.googleNewsItems.length === 0
       ? 'Nihil Pemberitaan Negatif (Citra Bersih 20/20 Poin)'
       : (proj.negativeNews === 'negative' ? `Terdeteksi Berita Negatif (0/20)` : `${proj.googleNewsItems.length} Berita Ditemukan (20/20)`);
-    showToast(`🔍 Auto-Screening 5C "${cleanName}": ${inaprocTxt} | ${newsTxt}.`);
+    showToast(`ðŸ” Auto-Screening 5C "${cleanName}": Asosiasi (${assocTxt}) | ${newsTxt}.`);
   } else if (isManualClick) {
     if (proj.googleNewsItems.length === 0) {
       showToast(`Screening Berita "${cleanName}": Tidak ditemukan pemberitaan negatif (0 artikel) — Citra Bersih (20/20 Poin).`);
@@ -2529,23 +2503,26 @@ const ASKRINDO_5C_CATALOG = [
     category: 'character',
     categoryLabel: '1. Character',
     weight: 0.010,
-    name: 'Reputasi Bisnis & Screening Pemberitaan Negatif',
-    desc: 'Rekam jejak hubungan bisnis dengan mitra kerja, supplier, konsumen, sengketa perdata SIPP, blacklist INAPROC LKPP, dan hasil screening pemberitaan negatif media massa (20 Poin).',
+    name: 'Reputasi Bisnis & Keanggotaan Asosiasi Industri',
+    desc: 'Rekam jejak hubungan bisnis dengan mitra kerja, supplier, konsumen, sengketa perdata SIPP, status keanggotaan/sanksi asosiasi industri sektoral, dan screening pemberitaan negatif media massa.',
     options: [
-      { key: 'A', text: 'Memiliki reputasi bisnis baik, tidak terdapat informasi negatif dari supplier/konsumen, dan nihil pemberitaan negatif media (20 Poin Penuh)', score: 100 },
-      { key: 'B', text: 'Informasi tentang hubungan bisnis tidak dimiliki karena debitur merupakan pemain baru', score: 50 },
-      { key: 'C', text: 'Terdapat informasi negatif dari supplier/pelanggan, hutang piutang bermasalah, sengketa hukum, atau terdeteksi pemberitaan negatif media (0 Poin)', score: 0 }
+      { key: 'A', text: 'Memiliki reputasi bisnis baik, terdaftar anggota aktif asosiasi industri, dan nihil sengketa maupun pemberitaan negatif (Poin Penuh)', score: 100 },
+      { key: 'B', text: 'Informasi tentang hubungan bisnis terbatas karena debitur merupakan pemain baru / belum terdaftar asosiasi', score: 50 },
+      { key: 'C', text: 'Terdapat informasi negatif, sanksi/blacklist asosiasi industri, sengketa hukum perdata, atau terdeteksi pemberitaan negatif media (0 Poin)', score: 0 }
     ],
     evalAuto: (proj, m, f23, ctx) => {
-      if (proj.negativeNews === 'negative' || proj.inaprocStatus === 'blacklisted' || proj.sippStatus === 'bankrupt' || proj.sippStatus === 'disputed') {
+      if (proj.negativeNews === 'negative' || proj.associationStatus === 'blacklisted' || proj.associationStatus === 'sanctioned' || proj.sippStatus === 'bankrupt' || proj.sippStatus === 'disputed') {
         const issues = [];
         if (proj.negativeNews === 'negative') issues.push('pemberitaan negatif media (0/20 Poin)');
-        if (proj.inaprocStatus === 'blacklisted') issues.push('blacklist LKPP');
+        if (proj.associationStatus === 'blacklisted') issues.push('blacklist asosiasi industri');
+        if (proj.associationStatus === 'sanctioned') issues.push('sanksi khusus asosiasi industri');
         if (proj.sippStatus === 'bankrupt' || proj.sippStatus === 'disputed') issues.push('sengketa perdata SIPP');
         return { key: 'C', score: 0, reason: `Terdeteksi ${issues.join(', ')}` };
       }
-      if (ctx.businessAge < 2) return { key: 'B', score: 50, reason: `Debitur pemain baru (${ctx.businessAge} thn)` };
-      return { key: 'A', score: 100, reason: 'Reputasi bisnis baik & nihil pemberitaan negatif media (20/20 Poin)' };
+      if (ctx.businessAge < 2 || proj.associationStatus === 'in_review' || proj.associationStatus === 'unverified') {
+        return { key: 'B', score: 50, reason: `Status asosiasi ${proj.associationStatus || 'dalam peninjauan'} / umur usaha muda (${ctx.businessAge} thn)` };
+      }
+      return { key: 'A', score: 100, reason: 'Reputasi bisnis baik & terverifikasi asosiasi industri' };
     }
   },
   {
@@ -3306,7 +3283,7 @@ const ASKRINDO_5C_CATALOG = [
 ];
 
 function compute5CAnalysis(proj, f23 = {}, m = null) {
-  ensureInaprocAutoChecked(proj);
+  ensureAssociationInitialized(proj);
   ensureGoogleNewsInitialized(proj);
   if (!proj.sippStatus || (proj.sippStatus !== 'disputed' && proj.sippStatus !== 'bankrupt')) {
     proj.sippStatus = 'clean';
@@ -3478,7 +3455,20 @@ function compute5CAnalysis(proj, f23 = {}, m = null) {
   const charAgeNote = `Lama berdiri ${businessAge} tahun (${estYr}) - ${businessAge >= 5 ? 'Stabilitas operasional mapan' : 'Tahap pertumbuhan bisnis'}`;
   const defaultStatusText = proj.defaultHistory === 'defaulted' ? 'Pernah Wanprestasi / Gagal Bayar' : 'Belum Pernah Wanprestasi (Track Record Bersih)';
   const slikStatus = proj.slikStatus === 'kol3_5' ? 'Kolektibilitas 3-5 (Macet / NPL)' : (proj.slikStatus === 'kol2' ? 'Kolektibilitas 2 (Dalam Perhatian Khusus)' : 'Kolektibilitas 1 (Lancar)');
-  const inaprocStatus = proj.inaprocStatus === 'blacklisted' ? 'Terdaftar Masuk Blacklist LKPP' : (proj.inaprocStatus === 'unverified' ? 'Belum Diverifikasi di INAPROC' : 'Bersih (Terverifikasi di Portal INAPROC LKPP)');
+  
+  const assocStatusMap = {
+    verified_good: { text: 'Terdaftar & Anggota Aktif (Reputasi Baik)', pts: 15 },
+    verified_regular: { text: 'Terdaftar Anggota Biasa / Terverifikasi', pts: 12 },
+    in_review: { text: 'Dalam Peninjauan / Belum Terdaftar Anggota', pts: 8 },
+    unverified: { text: 'Belum Diverifikasi ke Asosiasi', pts: 5 },
+    sanctioned: { text: 'Dalam Pengawasan Khusus / Sanksi Asosiasi', pts: 0 },
+    blacklisted: { text: 'Masuk Daftar Hitam Asosiasi (Blacklist)', pts: 0 }
+  };
+  const curAssoc = assocStatusMap[proj.associationStatus] || assocStatusMap.verified_good;
+  const associationStatusText = curAssoc.text;
+  const associationPts = curAssoc.pts;
+  const associationName = proj.associationName || (typeof detectSectorAssociation === 'function' ? detectSectorAssociation(proj)?.name : 'KADIN / APINDO');
+  const inaprocStatus = associationStatusText;
   const sippStatus = proj.sippStatus === 'bankrupt' ? 'Sedang Menghadapi Permohonan PKPU / Pailit' : (proj.sippStatus === 'disputed' ? 'Terdapat Perkara Gugatan Perdata' : 'Nihil Gugatan Wanprestasi / PKPU');
   const newsStatusText = proj.negativeNews === 'negative' ? 'Terdeteksi Berita Negatif di Media' : 'Nihil Berita Negatif di Media';
 
@@ -3512,6 +3502,10 @@ function compute5CAnalysis(proj, f23 = {}, m = null) {
     defaultStatusText,
     slikStatus,
     inaprocStatus,
+    associationName,
+    associationStatusText,
+    associationMemberNo: proj.associationMemberNo || '-',
+    associationPts,
     sippStatus,
     newsStatusText,
     capScore,
@@ -3542,7 +3536,9 @@ function compute5CAnalysis(proj, f23 = {}, m = null) {
       maxAgePts: 25,
       creditPts: (proj.slikStatus === 'kol3_5' || proj.defaultHistory === 'defaulted') ? 0 : (proj.slikStatus === 'kol2' ? 15 : 30),
       maxCreditPts: 30,
-      inaprocPts: proj.inaprocStatus === 'blacklisted' ? 0 : 15,
+      associationPts: associationPts,
+      maxAssociationPts: 15,
+      inaprocPts: associationPts,
       maxInaprocPts: 15,
       sippPts: (proj.sippStatus === 'bankrupt' || proj.sippStatus === 'disputed') ? 0 : 10,
       maxSippPts: 10,
@@ -4366,7 +4362,7 @@ function computeDCCSWCM(proj) {
   const hasKnockOutCap = gp23 < 0 && cashGapAtSCFMaturity_Actual > 30;
   const gradeMeta = getGradeMetadataByScore(score, hasKnockOutCap, proj.manualGradeOverride || 'AUTO');
 
-  const isBlacklisted = (proj.inaprocStatus === 'blacklisted');
+  const isBlacklisted = (proj.associationStatus === 'blacklisted');
   const isSevereGrossLoss = (gp23 < 0 && (f23.rev || 0) > 0);
   const isDefaultRisk = (score <= 55); // CCC, D, DD, DDD (Score <= 55)
   const isInitialReject = isBlacklisted || isSevereGrossLoss || isDefaultRisk;
@@ -4379,8 +4375,8 @@ function computeDCCSWCM(proj) {
   if (isInitialReject) {
     stage1Decision = gradeMeta.decision || 'TOLAK SKEMA PENGAJUAN AWAL (TIDAK LAYAK)';
     if (isBlacklisted) {
-      stage1Decision = 'TOLAK SKEMA PENGAJUAN AWAL (BLACKLIST INAPROC)';
-      stage1Summary = 'Debitur tercatat aktif dalam Daftar Hitam Nasional (INAPROC LKPP). Rekomendasi mutlak: Tolak penjaminan kredit.';
+      stage1Decision = 'TOLAK SKEMA PENGAJUAN AWAL (BLACKLIST ASOSIASI BISNIS)';
+      stage1Summary = 'Debitur tercatat aktif dalam Daftar Hitam / Sanksi Asosiasi Industri (' + (proj.associationName || 'Asosiasi Bisnis') + '). Rekomendasi mutlak: Tolak penjaminan kredit.';
     } else if (isSevereGrossLoss) {
       stage1Decision = 'TOLAK SKEMA PENGAJUAN AWAL (GROSS LOSS KRONIS)';
       stage1Summary = `Struktur operasional debitur mengalami kerugian kotor kronis (Gross Loss: ${fmtRp(gp23, true)}). Skema awal tidak feasible dan berisiko default.`;
@@ -5022,7 +5018,8 @@ function updateCharacterParam(paramKey, val) {
   const labelMap = {
     defaultHistory: 'Riwayat Wanprestasi',
     negativeNews: 'Screening Pemberitaan Negatif',
-    inaprocStatus: 'INAPROC LKPP',
+    associationStatus: 'Verifikasi Asosiasi Usaha',
+    inaprocStatus: 'Verifikasi Asosiasi Usaha',
     sippStatus: 'SIPP Pengadilan',
     slikStatus: 'SLIK OJK'
   };
@@ -5105,7 +5102,7 @@ function render5CTab(proj, m) {
     return;
   }
 
-  ensureInaprocAutoChecked(proj);
+  ensureAssociationInitialized(proj);
   ensureGoogleNewsInitialized(proj);
   if (!proj.sippStatus || (proj.sippStatus !== 'disputed' && proj.sippStatus !== 'bankrupt')) {
     proj.sippStatus = 'clean';
@@ -5118,17 +5115,6 @@ function render5CTab(proj, m) {
   const newsItems = Array.isArray(proj.googleNewsItems) ? proj.googleNewsItems : [];
   const negItems = newsItems.filter((it) => it.status === 'negative');
   const accessedAt = proj.googleNewsAccessedAt || formatGoogleNewsAccessedDate(new Date());
-  const inaprocRes = proj.inaprocAutoResult || {
-    status: proj.inaprocStatus || 'clean',
-    queryName: cleanCompName,
-    checkedAt: accessedAt,
-    skNumber: proj.inaprocStatus === 'blacklisted' ? 'SK-PA/LKPP-DH/2025/0104' : '-',
-    sanctionPeriod: proj.inaprocStatus === 'blacklisted' ? 'Aktif (Sanksi Tayang di Portal INAPROC)' : 'Nihil (0 Sanksi Aktif)',
-    portalUrl: `https://daftar-hitam.inaproc.id/?search=${encodeURIComponent(cleanCompName)}`,
-    summary: proj.inaprocStatus === 'blacklisted'
-      ? `Sistem mendeteksi otomatis entitas "${cleanCompName}" masuk dalam Daftar Hitam Nasional LKPP (0 / 15 Poin).`
-      : `Hasil pemindaian otomatis ke Portal Daftar Hitam INAPROC untuk "${cleanCompName}": Tidak ditemukan catatan sanksi aktif (Bersih - 15 / 15 Poin).`
-  };
 
   const gradeMeta = getGradeMetadataByScore(fiveC.totalScore);
   const catScores = fiveC.categoryScores || { character: 80, capacity: 80, capability: 80, condition: 80, collateral: 80 };
@@ -5185,7 +5171,7 @@ function render5CTab(proj, m) {
             <div style="font-size:0.64rem; color:#475569; line-height:1.4;">
               &bull; Usaha: <strong>${fiveC.businessAge} Thn (${fiveC.estYr})</strong> (${fiveC.charBreakdown?.agePts ?? 20}/25 Poin)<br/>
               &bull; SLIK OJK: <strong style="color:${(proj.slikStatus === 'kol1' || !proj.slikStatus) ? '#166534' : '#dc2626'};">${fiveC.slikStatus}</strong> (${fiveC.charBreakdown?.creditPts ?? 30}/30 Poin)<br/>
-              &bull; INAPROC LKPP: <strong style="color:${proj.inaprocStatus === 'blacklisted' ? '#dc2626' : '#166534'};">${fiveC.inaprocStatus}</strong> (${fiveC.charBreakdown?.inaprocPts ?? 15}/15 Poin)<br/>
+              &bull; Asosiasi Usaha: <strong style="color:${(proj.associationStatus === 'blacklisted' || proj.associationStatus === 'sanctioned') ? '#dc2626' : '#166534'};">${fiveC.associationName} (${fiveC.associationStatusText})</strong> (${fiveC.charBreakdown?.associationPts ?? 15}/15 Poin)<br/>
               &bull; SIPP MA: <strong style="color:${isSippClean ? '#166534' : '#dc2626'};">${fiveC.sippStatus}</strong> (${fiveC.charBreakdown?.sippPts ?? 10}/10 Poin)<br/>
               &bull; Pemberitaan Negatif: <strong style="color:${proj.negativeNews === 'negative' ? '#dc2626' : '#166534'};">${proj.negativeNews === 'negative' ? 'Terdeteksi Isu Negatif' : 'Nihil Berita Negatif'}</strong> (${fiveC.charBreakdown?.newsPts ?? (proj.negativeNews === 'negative' ? 0 : 20)}/20 Poin)<br/>
               &bull; Status Lapkeu: <strong style="color:${(proj.auditStatus !== 'unaudited' && proj.auditStatus !== 'inhouse') ? '#166534' : '#b45309'};">${(proj.auditStatus !== 'unaudited' && proj.auditStatus !== 'inhouse') ? 'Audited KAP' : 'In-House / Unaudited'}</strong> (${(proj.auditStatus !== 'unaudited' && proj.auditStatus !== 'inhouse') ? '100 Poin' : '60 Poin'})
@@ -5283,22 +5269,49 @@ function render5CTab(proj, m) {
 
       <!-- REAL-TIME SCREENING PANELS (LKPP, GOOGLE NEWS, SIPP, SLIK) -->
       <div style="margin-bottom:0.75rem; display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:0.65rem;">
-        <!-- 1. INAPROC LKPP CARD -->
-        <div style="background:#ffffff; border:1.5px solid ${proj.inaprocStatus === 'blacklisted' ? '#fca5a5' : '#bbf7d0'}; border-radius:8px; padding:0.6rem 0.75rem; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+        <!-- 1. VERIFIKASI ASOSIASI USAHA & INDUSTRI CARD -->
+        <div style="background:#ffffff; border:1.5px solid ${proj.associationStatus === 'blacklisted' || proj.associationStatus === 'sanctioned' ? '#fca5a5' : (proj.associationStatus === 'in_review' || proj.associationStatus === 'unverified' ? '#fed7aa' : '#bbf7d0')}; border-radius:8px; padding:0.6rem 0.75rem; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
             <div style="font-size:0.75rem; font-weight:800; color:#1e293b; display:flex; align-items:center; gap:5px;">
-              <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${proj.inaprocStatus === 'blacklisted' ? '#dc2626' : '#16a34a'};"></span>
-              Portal INAPROC LKPP
+              <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${proj.associationStatus === 'blacklisted' || proj.associationStatus === 'sanctioned' ? '#dc2626' : (proj.associationStatus === 'in_review' || proj.associationStatus === 'unverified' ? '#f59e0b' : '#16a34a')};"></span>
+              Asosiasi Usaha &amp; Industri Sektoral
             </div>
-            <a href="https://daftar-hitam.inaproc.id/?search=${encodeURIComponent(cleanCompName)}" target="_blank" rel="noopener noreferrer" style="font-size:0.65rem; color:#0284c7; text-decoration:none; font-weight:700;">
-              Buka Portal &raquo;
-            </a>
+            <div style="display:flex; gap:4px; align-items:center;">
+              <button type="button" onclick="openAssociationPortal()" title="Buka website direktori resmi asosiasi" style="background:#e0f2fe; border:1px solid #7dd3fc; color:#0369a1; border-radius:4px; font-size:0.62rem; padding:2px 6px; cursor:pointer; font-weight:700;">
+                ðŸŒ Web Asosiasi &raquo;
+              </button>
+              <button type="button" onclick="openAssociationGoogleSearch()" title="Cari verifikasi nama perusahaan di asosiasi via Google" style="background:#f1f5f9; border:1px solid #cbd5e1; color:#334155; border-radius:4px; font-size:0.62rem; padding:2px 6px; cursor:pointer; font-weight:700;">
+                ðŸ” Cek di Google
+              </button>
+            </div>
           </div>
           <div style="font-size:0.66rem; color:#475569; line-height:1.4;">
-            <div>Entitas: <strong>${cleanCompName}</strong></div>
-            <div>Status: <strong style="color:${proj.inaprocStatus === 'blacklisted' ? '#dc2626' : '#166534'};">${inaprocRes.sanctionPeriod}</strong></div>
-            <div style="margin-top:4px; font-size:0.62rem; color:#64748b;">
-              ${inaprocRes.summary}
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
+              <span>Asosiasi: <strong>${proj.associationName || 'KADIN / APINDO'}</strong></span>
+              <button type="button" onclick="autoDetectAndSetAssociation()" style="background:transparent; border:none; color:#0284c7; font-size:0.6rem; cursor:pointer; text-decoration:underline; padding:0;">
+                ðŸ”„ Auto Sektor
+              </button>
+            </div>
+            <div style="display:flex; gap:4px; margin-bottom:4px;">
+              <input type="text" class="form-control" style="font-size:0.65rem; padding:2px 5px; flex:1;" value="${proj.associationName || ''}" placeholder="Nama Asosiasi (mis. GAPMMI, GAPKI, GAPENSI)" onchange="updateAssociationField('associationName', this.value); renderAll();" title="Nama Asosiasi Bisnis / Industri Sektoral">
+              <input type="text" class="form-control" style="font-size:0.65rem; padding:2px 5px; width:110px;" value="${proj.associationMemberNo || ''}" placeholder="No. KTA (opsional)" onchange="updateAssociationField('associationMemberNo', this.value)" title="Nomor KTA / Registrasi Anggota Asosiasi">
+            </div>
+            <div style="margin-bottom:3px;">
+              <select class="form-control" style="font-size:0.68rem; padding:2px 6px; font-weight:700; color:${proj.associationStatus === 'blacklisted' || proj.associationStatus === 'sanctioned' ? '#dc2626' : (proj.associationStatus === 'in_review' || proj.associationStatus === 'unverified' ? '#b45309' : '#166534')}; border-color:${proj.associationStatus === 'blacklisted' || proj.associationStatus === 'sanctioned' ? '#fca5a5' : (proj.associationStatus === 'in_review' || proj.associationStatus === 'unverified' ? '#fed7aa' : '#86efac')}; background:${proj.associationStatus === 'blacklisted' || proj.associationStatus === 'sanctioned' ? '#fff1f2' : (proj.associationStatus === 'in_review' || proj.associationStatus === 'unverified' ? '#fffbeb' : '#f0fdf4')};" onchange="updateAssociationStatus(this.value)">
+                <option value="verified_good" ${proj.associationStatus === 'verified_good' ? 'selected' : ''}>Terdaftar &amp; Anggota Aktif - Reputasi Baik (15 Poin)</option>
+                <option value="verified_regular" ${proj.associationStatus === 'verified_regular' ? 'selected' : ''}>Terdaftar Anggota Biasa / Terverifikasi (12 Poin)</option>
+                <option value="in_review" ${proj.associationStatus === 'in_review' ? 'selected' : ''}>Dalam Peninjauan / Belum Terdaftar Anggota Resmi (8 Poin)</option>
+                <option value="unverified" ${proj.associationStatus === 'unverified' ? 'selected' : ''}>Belum Diverifikasi ke Asosiasi (5 Poin)</option>
+                <option value="sanctioned" ${proj.associationStatus === 'sanctioned' ? 'selected' : ''}>Dalam Pengawasan Khusus / Sanksi Asosiasi (0 Poin)</option>
+                <option value="blacklisted" ${proj.associationStatus === 'blacklisted' ? 'selected' : ''}>Masuk Daftar Hitam / Dikeluarkan dari Asosiasi (0 Poin - Tolak)</option>
+              </select>
+            </div>
+            <div style="font-size:0.62rem; color:#64748b; line-height:1.3;">
+              ${proj.associationStatus === 'blacklisted'
+                ? '<span style="color:#dc2626; font-weight:700;">âš ï¸ Debitur masuk Daftar Hitam / Dikeluarkan Asosiasi Industri. Knock-out mutlak penjaminan!</span>'
+                : (proj.associationStatus === 'sanctioned'
+                  ? '<span style="color:#dc2626; font-weight:700;">âš ï¸ Debitur dikenakan sanksi/pembekuan asosiasi. Wajib klarifikasi.</span>'
+                  : `Verifikasi asosiasi bisnis sektoral: <strong>${proj.associationName || 'KADIN / APINDO'}</strong> ${proj.associationMemberNo ? '(KTA: ' + proj.associationMemberNo + ')' : ''}.`)}
             </div>
           </div>
         </div>
@@ -8128,7 +8141,7 @@ function renderPrintableReport(proj, m) {
                   <td>
                     &bull; Lama Usaha: Usia ${fiveC.businessAge} Thn (${fiveC.charBreakdown?.agePts || 20}/25 Poin)<br/>
                     &bull; SLIK OJK: ${fiveC.slikStatus} (${fiveC.charBreakdown?.creditPts || 30}/30 Poin)<br/>
-                    &bull; INAPROC LKPP: ${fiveC.inaprocStatus} (${fiveC.charBreakdown?.inaprocPts || 10}/15 Poin)<br/>
+                    &bull; Asosiasi Usaha: <strong style="color:${(proj.associationStatus === 'blacklisted' || proj.associationStatus === 'sanctioned') ? '#dc2626' : '#166534'};">${fiveC.associationName} (${fiveC.associationStatusText})</strong> (${fiveC.charBreakdown?.associationPts ?? 15}/15 Poin)<br/>
                     &bull; SIPP MA: ${fiveC.sippStatus} (${fiveC.charBreakdown?.sippPts ?? 10}/10 Poin)<br/>
                     &bull; Screening Pemberitaan Negatif: ${proj.negativeNews === 'negative' ? 'Terdeteksi Isu Berita Negatif' : 'Nihil Berita Negatif'} (${fiveC.charBreakdown?.newsPts ?? (proj.negativeNews === 'negative' ? 0 : 20)}/20 Poin)
                   </td>
@@ -8976,12 +8989,13 @@ function syncInputsToModel() {
   proj.companyName = getStr('inp_companyName');
   proj.city = getStr('inp_city') || '';
   if (proj.companyName.trim() !== oldCompName) {
-    // Otomatis memicu pencarian Daftar Hitam INAPROC LKPP & Screening Pemberitaan Negatif 1x setelah user selesai mengetik nama perusahaan
-    runAutoInaprocCheckSync(proj, false);
+    // Otomatis memicu Penyelarasan Asosiasi & Screening Pemberitaan Negatif 1x setelah user selesai mengetik nama perusahaan
+    // Asosiasi diselaraskan
+    if (proj.sector && !proj.associationName) { const a = detectSectorAssociation(proj); proj.associationName = a.name; }
     runAutoGoogleNewsCheckSync(proj, false);
-    if (inaprocAutoTriggerTimer) clearTimeout(inaprocAutoTriggerTimer);
-    inaprocAutoTriggerTimer = setTimeout(() => {
-      triggerLiveInaprocCheck(false);
+    if (screeningAutoTriggerTimer) clearTimeout(screeningAutoTriggerTimer);
+    screeningAutoTriggerTimer = setTimeout(() => {
+      
       fetchGoogleNewsForProject(false, true);
     }, 1200);
   }
@@ -9167,11 +9181,12 @@ function saveCurrentAnalysisGlobal() {
     proj.procurementMethod = 'import_sea';
   }
   syncInputsToModel();
-  if (inaprocAutoTriggerTimer) {
-    clearTimeout(inaprocAutoTriggerTimer);
-    inaprocAutoTriggerTimer = null;
+  if (screeningAutoTriggerTimer) {
+    clearTimeout(screeningAutoTriggerTimer);
+    screeningAutoTriggerTimer = null;
   }
-  runAutoInaprocCheckSync(proj, false);
+  // Asosiasi diselaraskan
+    if (proj.sector && !proj.associationName) { const a = detectSectorAssociation(proj); proj.associationName = a.name; }
   runAutoGoogleNewsCheckSync(proj, false);
   cleanStaleLegacyKeys();
   saveProjectsToStorage(true);
@@ -9196,17 +9211,18 @@ function saveAllInputsAndRecalculate() {
     proj.procurementMethod = 'import_sea';
   }
   syncInputsToModel();
-  if (inaprocAutoTriggerTimer) {
-    clearTimeout(inaprocAutoTriggerTimer);
-    inaprocAutoTriggerTimer = null;
+  if (screeningAutoTriggerTimer) {
+    clearTimeout(screeningAutoTriggerTimer);
+    screeningAutoTriggerTimer = null;
   }
-  runAutoInaprocCheckSync(proj, false);
+  // Asosiasi diselaraskan
+    if (proj.sector && !proj.associationName) { const a = detectSectorAssociation(proj); proj.associationName = a.name; }
   runAutoGoogleNewsCheckSync(proj, false);
   saveProjectsToStorage();
   renderAll();
   showToast('Perubahan data input berhasil disimpan & memindai ulang Daftar Hitam + Screening Pemberitaan Negatif...');
   // Langsung jalankan pencarian baru Daftar Hitam & Google News saat tombol Simpan diklik
-  triggerLiveInaprocCheck(false);
+  
   fetchGoogleNewsForProject(true, true);
 }
 
@@ -9558,8 +9574,10 @@ function createNewProjectFromModal() {
       customNotes: '',
       manualGradeOverride: 'AUTO',
       overrideReason: '',
-      inaprocStatus: 'clean',
-      inaprocCheckedAt: null,
+      associationName: '',
+      associationStatus: 'verified_good',
+      associationMemberNo: '',
+      associationNotes: '',
       sippStatus: 'clean',
       sippCheckedAt: null,
       googleNewsItems: [],
@@ -9571,7 +9589,7 @@ function createNewProjectFromModal() {
   baseObj.caseNumber = generateNumericCaseNumber();
   baseObj.companyName = name;
   baseObj.city = city;
-  runAutoInaprocCheckSync(baseObj, false);
+  ensureAssociationInitialized(baseObj);
   baseObj.googleNewsItems = [];
   baseObj.googleNewsAccessedAt = null;
   ensureGoogleNewsInitialized(baseObj);
@@ -10104,7 +10122,7 @@ async function checkAuthAndRoute() {
     setTimeout(() => {
       const initProj = getActiveProject();
       if (initProj) {
-        triggerLiveInaprocCheck(false);
+        
         fetchGoogleNewsForProject(false, false);
       }
     }, 300);

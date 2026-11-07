@@ -434,7 +434,7 @@ Menyajikan pembobotan matematis transparan dari prinsip analisa kredit 5C Askrin
 ### Tabel 9. Pembobotan Aspek 5C DCC-SWCM
 | Pilar 5C | Bobot | Parameter Evaluasi Utama |
 |:---|:---:|:---|
-| **Character (Watak)** | 15% | Riwayat kolektibilitas BI Checking / SLIK OJK, integritas manajemen, blacklist INAPROC. |
+| **Character (Watak)** | 15% | Riwayat kolektibilitas BI Checking / SLIK OJK, integritas manajemen, keanggotaan &amp; reputasi asosiasi usaha/industri sektoral, legalitas SIPP, serta screening pemberitaan media. |
 | **Capacity (Kapasitas)** | 30% | Siklus DCC, rasio DSCR, pertumbuhan omzet, perputaran piutang & persediaan. |
 | **Capital (Permodalan)** | 25% | Modal Kerja Bersih (NWC), Debt-to-Equity Ratio (DER), profitabilitas (GPM & NPM). |
 | **Collateral (Agunan)** | 15% | Nilai taksasi agunan *fixed assets*, pengikatan hak tanggungan, agunan likuid (*Cash/Deposito*). |

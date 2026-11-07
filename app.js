@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ASKRINDO SMART CREDIT ANALYSIS (ASCA)
  * Metode: Dynamic Cash Conversion & Stress-Tested Working Capital Model (DCC-SWCM)
  * Termasuk: Analisis Ketahanan Modal Kerja Bersih (Net Working Capital & Burn-Rate Test)
@@ -2159,7 +2159,7 @@ async function fetchGoogleNewsForProject(isManualClick = false, isAutoInputTrigg
     const newsTxt = proj.googleNewsItems.length === 0
       ? 'Nihil Pemberitaan Negatif (Citra Bersih 20/20 Poin)'
       : (proj.negativeNews === 'negative' ? `Terdeteksi Berita Negatif (0/20)` : `${proj.googleNewsItems.length} Berita Ditemukan (20/20)`);
-    showToast(`ðŸ” Auto-Screening 5C "${cleanName}": Asosiasi (${assocTxt}) | ${newsTxt}.`);
+    showToast(`Auto-Screening 5C "${cleanName}": Asosiasi (${assocTxt}) | ${newsTxt}.`);
   } else if (isManualClick) {
     if (proj.googleNewsItems.length === 0) {
       showToast(`Screening Berita "${cleanName}": Tidak ditemukan pemberitaan negatif (0 artikel) — Citra Bersih (20/20 Poin).`);
@@ -5277,19 +5277,19 @@ function render5CTab(proj, m) {
               Asosiasi Usaha &amp; Industri Sektoral
             </div>
             <div style="display:flex; gap:4px; align-items:center;">
-              <button type="button" onclick="openAssociationPortal()" title="Buka website direktori resmi asosiasi" style="background:#e0f2fe; border:1px solid #7dd3fc; color:#0369a1; border-radius:4px; font-size:0.62rem; padding:2px 6px; cursor:pointer; font-weight:700;">
-                ðŸŒ Web Asosiasi &raquo;
+              <button type="button" onclick="openAssociationPortal()" title="Buka website direktori resmi asosiasi" style="display:inline-flex; align-items:center; gap:4px; background:#e0f2fe; border:1px solid #7dd3fc; color:#0369a1; border-radius:4px; font-size:0.62rem; padding:2px 7px; cursor:pointer; font-weight:700;">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> <span>Web Asosiasi &raquo;</span>
               </button>
-              <button type="button" onclick="openAssociationGoogleSearch()" title="Cari verifikasi nama perusahaan di asosiasi via Google" style="background:#f1f5f9; border:1px solid #cbd5e1; color:#334155; border-radius:4px; font-size:0.62rem; padding:2px 6px; cursor:pointer; font-weight:700;">
-                ðŸ” Cek di Google
+              <button type="button" onclick="openAssociationGoogleSearch()" title="Cari verifikasi nama perusahaan di asosiasi via Google" style="display:inline-flex; align-items:center; gap:4px; background:#f1f5f9; border:1px solid #cbd5e1; color:#334155; border-radius:4px; font-size:0.62rem; padding:2px 7px; cursor:pointer; font-weight:700;">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> <span>Cek di Google</span>
               </button>
             </div>
           </div>
           <div style="font-size:0.66rem; color:#475569; line-height:1.4;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
               <span>Asosiasi: <strong>${proj.associationName || 'KADIN / APINDO'}</strong></span>
-              <button type="button" onclick="autoDetectAndSetAssociation()" style="background:transparent; border:none; color:#0284c7; font-size:0.6rem; cursor:pointer; text-decoration:underline; padding:0;">
-                ðŸ”„ Auto Sektor
+              <button type="button" onclick="autoDetectAndSetAssociation()" style="display:inline-flex; align-items:center; gap:3px; background:transparent; border:none; color:#0284c7; font-size:0.6rem; cursor:pointer; text-decoration:underline; padding:0;" title="Deteksi asosiasi otomatis berdasarkan sektor usaha">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> <span>Auto Sektor</span>
               </button>
             </div>
             <div style="display:flex; gap:4px; margin-bottom:4px;">
@@ -5308,9 +5308,9 @@ function render5CTab(proj, m) {
             </div>
             <div style="font-size:0.62rem; color:#64748b; line-height:1.3;">
               ${proj.associationStatus === 'blacklisted'
-                ? '<span style="color:#dc2626; font-weight:700;">âš ï¸ Debitur masuk Daftar Hitam / Dikeluarkan Asosiasi Industri. Knock-out mutlak penjaminan!</span>'
+                ? '<span style="display:inline-flex; align-items:center; gap:4px; color:#dc2626; font-weight:700;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Debitur masuk Daftar Hitam / Dikeluarkan Asosiasi Industri. Knock-out mutlak penjaminan!</span>'
                 : (proj.associationStatus === 'sanctioned'
-                  ? '<span style="color:#dc2626; font-weight:700;">âš ï¸ Debitur dikenakan sanksi/pembekuan asosiasi. Wajib klarifikasi.</span>'
+                  ? '<span style="display:inline-flex; align-items:center; gap:4px; color:#dc2626; font-weight:700;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Debitur dikenakan sanksi/pembekuan asosiasi. Wajib klarifikasi.</span>'
                   : `Verifikasi asosiasi bisnis sektoral: <strong>${proj.associationName || 'KADIN / APINDO'}</strong> ${proj.associationMemberNo ? '(KTA: ' + proj.associationMemberNo + ')' : ''}.`)}
             </div>
           </div>

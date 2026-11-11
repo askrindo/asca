@@ -11853,7 +11853,7 @@ Petakan secara presisi ke dalam struktur JSON berikut:
     "rev": 0.00, "cogs": 0.00, "opex": 0.00, "otherInc": 0.00, "otherExp": 0.00, "intExp": 0.00, "tax": 0.00, "div": 0.00
   }
 }
-Balas HANYA format JSON valid tanpa tanda kutip markdown (```json) atau teks pengantar apapun.`;
+Balas HANYA format JSON valid tanpa tanda kutip markdown (\`\`\`json) atau teks pengantar apapun.`;
 
     parts.push({
       text: promptText
@@ -12113,10 +12113,10 @@ function renderAiFinReviewTable(data) {
         </div>
         <div style="display:flex; gap:0.5rem; align-items:center;">
           <span id="previewBalanceBadge1" style="font-size:0.70rem; padding:3px 8px; border-radius:999px; font-weight:700; ${isBal1 ? 'background:#dcfce7; color:#15803d; border:1px solid #86efac;' : 'background:#fee2e2; color:#991b1b; border:1px solid #fca5a5;'}">
-            Th ${y1}: ${isBal1 ? '\u2713 Neraca Balance' : `Selisih ${fmtRp(diff1)}`}
+            Th ${y1}: ${isBal1 ? '\u2713 Neraca Balance' : ('Selisih ' + fmtRp(diff1))}
           </span>
           <span id="previewBalanceBadge2" style="font-size:0.70rem; padding:3px 8px; border-radius:999px; font-weight:700; ${isBal2 ? 'background:#dcfce7; color:#15803d; border:1px solid #86efac;' : 'background:#fee2e2; color:#991b1b; border:1px solid #fca5a5;'}">
-            Th ${y2}: ${isBal2 ? '\u2713 Neraca Balance' : `Selisih ${fmtRp(diff2)}`}
+            Th ${y2}: ${isBal2 ? '\u2713 Neraca Balance' : ('Selisih ' + fmtRp(diff2))}
           </span>
         </div>
       </div>
@@ -12309,13 +12309,13 @@ function recalculateAiReviewBalances() {
     badge1.style.background = isBal1 ? '#dcfce7' : '#fee2e2';
     badge1.style.color = isBal1 ? '#15803d' : '#991b1b';
     badge1.style.borderColor = isBal1 ? '#86efac' : '#fca5a5';
-    badge1.textContent = `Th ${y1}: ${isBal1 ? '\u2713 Neraca Balance' : `Selisih ${fmtRp(diff1)}`}`;
+    badge1.textContent = 'Th ' + y1 + ': ' + (isBal1 ? '\u2713 Neraca Balance' : ('Selisih ' + fmtRp(diff1)));
   }
   if (badge2) {
     badge2.style.background = isBal2 ? '#dcfce7' : '#fee2e2';
     badge2.style.color = isBal2 ? '#15803d' : '#991b1b';
     badge2.style.borderColor = isBal2 ? '#86efac' : '#fca5a5';
-    badge2.textContent = `Th ${y2}: ${isBal2 ? '\u2713 Neraca Balance' : `Selisih ${fmtRp(diff2)}`}`;
+    badge2.textContent = 'Th ' + y2 + ': ' + (isBal2 ? '\u2713 Neraca Balance' : ('Selisih ' + fmtRp(diff2)));
   }
 }
 
@@ -12370,7 +12370,7 @@ function handleAiReviewAuditStatusChange(val) {
     reasonEl.textContent = currentExtractedFinData.audit_detection_reason;
   }
   if (linkEl) {
-          \uD83D\uDD17 Auto-Link 5C: Skor ${isExtAudited ? '100 (Audited)' : '60 (Unaudited)'}
+    linkEl.textContent = `\uD83D\uDD17 Auto-Link 5C: Skor ${isAudited ? '100 (Audited)' : '60 (Unaudited)'}`;
   }
 }
 

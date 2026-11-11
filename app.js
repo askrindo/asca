@@ -1463,27 +1463,96 @@ function renderBanner(proj, m) {
 // ============================================================================
 // 4. FORMATTING HELPERS
 // ============================================================================
-function formatNumberWithDots(val) {
+function formatNumberWithDots(val, forceDecimals = true) {
   if (val === null || val === undefined || val === '') return '';
-  const s = String(val).trim();
-  if (!s) return '';
-  const isNeg = typeof val === 'number' ? val < 0 : s.startsWith('-');
-  const digits = s.replace(/\D/g, '');
-  if (!digits) return isNeg ? '-' : '';
-  const cleanDigits = digits.replace(/^0+(?=\d)/, '');
-  const withDots = cleanDigits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-  return isNeg ? `-${withDots}` : withDots;
+  const num = typeof val === 'number' ? val : parseFormattedNumber(val);
+  if (isNaN(num)) return '';
+  const isNeg = num < 0;
+  const absNum = Math.abs(num);
+
+  if (forceDecimals) {
+    const fixed = absNum.toFixed(2);
+    const parts = fixed.split('.');
+    const intPart = parts[0];
+    const decPart = parts[1];
+    const withDots = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    const formatted = `${withDots},${decPart}`;
+    return isNeg ? `-${formatted}` : formatted;
+  } else {
+    const hasDec = Math.abs(absNum - Math.round(absNum)) > 0.0001;
+    if (hasDec) {
+      const fixed = absNum.toFixed(2);
+      const parts = fixed.split('.');
+      const withDots = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      return (isNeg ? '-' : '') + `${withDots},${parts[1]}`;
+    } else {
+      const intPart = Math.round(absNum).toString();
+      const withDots = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      return (isNeg ? '-' : '') + withDots;
+    }
+  }
 }
 
 function parseFormattedNumber(val) {
   if (val === null || val === undefined) return 0;
   if (typeof val === 'number') return isNaN(val) ? 0 : val;
-  const s = String(val).trim();
+  let s = String(val).trim();
   if (!s) return 0;
   const isNeg = s.startsWith('-') || (s.startsWith('(') && s.endsWith(')'));
-  const digits = s.replace(/\D/g, '');
-  if (!digits) return 0;
-  const num = parseFloat(digits) || 0;
+  s = s.replace(/^[-+(]|[-+)]$/g, '').replace(/^[Rr][Pp]\.?\s*/, '').trim();
+
+  const lastDot = s.lastIndexOf('.');
+  const lastComma = s.lastIndexOf(',');
+  let cleanNumStr = '';
+
+  if (lastDot !== -1 && lastComma !== -1) {
+    // Membedakan format Indo (1.234.567,89) vs US/English (1,234,567.89)
+    if (lastComma > lastDot) {
+      // Format Indonesia: Titik = ribuan, Koma = desimal
+      cleanNumStr = s.replace(/\./g, '').replace(',', '.');
+    } else {
+      // Format Inggris: Koma = ribuan, Titik = desimal
+      cleanNumStr = s.replace(/,/g, '');
+    }
+  } else if (lastComma !== -1) {
+    // Hanya ada koma
+    const commaCount = (s.match(/,/g) || []).length;
+    if (commaCount === 1) {
+      const parts = s.split(',');
+      if (parts[1].length <= 2) {
+        // Tepat 1 atau 2 digit desimal di belakang koma (contoh: 1250,50 atau 1250,5)
+        cleanNumStr = parts[0].replace(/\D/g, '') + '.' + parts[1];
+      } else if (parts[1].length === 3 && parts[0].length <= 3) {
+        // Pemisah ribuan tanpa desimal (contoh: 125,000)
+        cleanNumStr = s.replace(/,/g, '');
+      } else {
+        cleanNumStr = parts[0].replace(/\D/g, '') + '.' + parts[1];
+      }
+    } else {
+      // Lebih dari 1 koma -> ribuan
+      cleanNumStr = s.replace(/,/g, '');
+    }
+  } else if (lastDot !== -1) {
+    // Hanya ada titik
+    const dotCount = (s.match(/\./g) || []).length;
+    if (dotCount === 1) {
+      const parts = s.split('.');
+      if (parts[1].length === 3 && parts[0].length >= 1) {
+        // 3 digit di belakang titik (contoh: 1.000 atau 250.000) -> ribuan Indonesia
+        cleanNumStr = s.replace(/\./g, '');
+      } else {
+        // Desimal standar (contoh: 1234.50 atau 12.5)
+        cleanNumStr = parts[0].replace(/\D/g, '') + '.' + parts[1];
+      }
+    } else {
+      // Lebih dari 1 titik -> ribuan Indonesia (contoh: 1.250.000)
+      cleanNumStr = s.replace(/\./g, '');
+    }
+  } else {
+    cleanNumStr = s.replace(/\D/g, '');
+  }
+
+  const num = parseFloat(cleanNumStr) || 0;
   return isNeg ? -num : num;
 }
 
@@ -1492,28 +1561,42 @@ function handleDotInput(inputEl) {
   const cursor = inputEl.selectionStart;
   const raw = inputEl.value;
   const isNeg = raw.trim().startsWith('-');
-  const digitsOnly = raw.replace(/\D/g, '');
+  const clean = raw.replace(/[^\d.,]/g, '');
 
-  if (!digitsOnly) {
+  let parts = clean.split(',');
+  if (parts.length > 2) {
+    parts = [parts[0], parts.slice(1).join('')];
+  }
+
+  let intStr = parts[0].replace(/\D/g, '');
+  let decStr = parts.length > 1 ? parts[1].replace(/\D/g, '').slice(0, 2) : null;
+
+  if (!intStr && decStr === null) {
     inputEl.value = isNeg ? '-' : '';
     return;
   }
 
-  // Count how many digits existed before the cursor in original raw text
-  const digitsBeforeCursor = raw.slice(0, cursor).replace(/\D/g, '').length;
+  const cleanInt = intStr.replace(/^0+(?=\d)/, '');
+  const withDots = (cleanInt || (decStr !== null ? '0' : '')).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
-  const cleanDigits = digitsOnly.replace(/^0+(?=\d)/, '');
-  const formatted = (isNeg ? '-' : '') + cleanDigits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  let formatted = (isNeg ? '-' : '') + withDots;
+  if (decStr !== null) {
+    formatted += ',' + decStr;
+  }
+
+  // Jaga posisi kursor agar tidak melompat
+  const rawBeforeCursor = raw.slice(0, cursor);
+  const charsBefore = rawBeforeCursor.replace(/[^\d,]/g, '').length;
+
   inputEl.value = formatted;
 
-  // Reposition cursor to remain after the exact same number of digits
   let newCursor = formatted.length;
-  let digitCount = 0;
+  let count = 0;
   for (let i = 0; i < formatted.length; i++) {
-    if (/\d/.test(formatted[i])) {
-      digitCount++;
+    if (/[\d,]/.test(formatted[i])) {
+      count++;
     }
-    if (digitCount === digitsBeforeCursor) {
+    if (count === charsBefore) {
       newCursor = i + 1;
       break;
     }
@@ -1524,12 +1607,17 @@ function handleDotInput(inputEl) {
 
 function handleDotBlur(inputEl) {
   if (!inputEl) return;
-  const num = parseFormattedNumber(inputEl.value);
-  inputEl.value = inputEl.value.trim() === '' ? '' : formatNumberWithDots(num);
+  const val = inputEl.value.trim();
+  if (val === '' || val === '-') {
+    inputEl.value = '';
+    return;
+  }
+  const num = parseFormattedNumber(val);
+  inputEl.value = formatNumberWithDots(num, true);
 }
 
 function fmtRp(val, compact = false) {
-  if (val === null || val === undefined || isNaN(val)) return 'Rp 0';
+  if (val === null || val === undefined || isNaN(val)) return 'Rp 0,00';
   const neg = val < 0;
   const abs = Math.abs(val);
   if (compact) {
@@ -1537,7 +1625,7 @@ function fmtRp(val, compact = false) {
     if (abs >= 1e9) return `${neg ? '(' : ''}Rp ${(abs / 1e9).toFixed(2)} M${neg ? ')' : ''}`;
     if (abs >= 1e6) return `${neg ? '(' : ''}Rp ${(abs / 1e6).toFixed(1)} Jt${neg ? ')' : ''}`;
   }
-  const formatted = Math.round(abs).toLocaleString('id-ID');
+  const formatted = formatNumberWithDots(abs, true);
   return neg ? `(Rp ${formatted})` : `Rp ${formatted}`;
 }
 
@@ -8803,9 +8891,9 @@ function updateFinancialStatementTableComputed(proj, m) {
   const setCalc = (id, val, highlightNeg = true) => {
     const el = document.getElementById(id);
     if (!el) return;
-    const rounded = Math.round(val || 0);
-    el.textContent = formatNumberWithDots(rounded) || '0';
-    if (highlightNeg && rounded < 0) {
+    const num = Number(val || 0);
+    el.textContent = formatNumberWithDots(num, true) || '0,00';
+    if (highlightNeg && num < 0) {
       el.style.color = '#dc2626';
     } else if (id.includes('ta') || id.includes('tlEq') || id.includes('eat2')) {
       el.style.color = '#1e3a8a';
@@ -11669,121 +11757,53 @@ Dokumen terlampir dapat terdiri dari beberapa berkas terpisah (misal: berkas Ner
 Analisis seluruh berkas yang dilampirkan secara komprehensif untuk mengekstrak 2 tahun buku terakhir.
 Prioritaskan pencocokan pada periode tahun ${targetYr1} dan ${targetYr2}. Jika tidak tertera persis, gunakan 2 tahun buku terbaru yang tercantum di dokumen.
 
-ATURAN EKSTRAKSI PENTING:
-1. Seluruh nilai nominal harus dalam angka bulat murni mata uang Rupiah (integer atau float, hilangkan simbol "Rp", koma/titik ribuan). Contoh: 21352397620.
-2. Perhatikan satuan penyajian! Jika dokumen mencantumkan "dalam jutaan Rupiah" atau "in millions", kalikan seluruh angka dengan 1.000.000. Jika "dalam ribuan", kalikan dengan 1.000.
-3. Pos yang bernilai kurung (minus/rugi) seperti Laba Bersih yang Rugi atau Akumulasi Rugi harus bertanda negatif (-).
+ATURAN KRUSIAL PEMBACAAN ANGKA, KOMA, & DESIMAL (WAJIB SANGAT TELITI!):
+1. PEMBACAAN DESIMAL DAN KOMA:
+   - Dokumen Laporan Keuangan Indonesia umumnya menggunakan: TITIK (.) sebagai pemisah ribuan dan KOMA (,) sebagai pemisah DESIMAL (sen / 2 angka di belakang koma). Contoh: "Rp 15.420.350,75" atau "2.500.000,00".
+   - SANGAT PENTING: JANGAN PERNAH membaca koma desimal (seperti ",00", ",50", ",75") sebagai digit ribuan!
+     Contoh kesalahan fatal: Angka "1.500.000,00" JANGAN SAMPAI dibaca menjadi "150.000.000" (seratus lima puluh juta)! Angka tersebut adalah "1500000.00" (satu juta lima ratus ribu).
+   - Jika dokumen menggunakan format standar internasional/Inggris (koma sebagai ribuan dan titik sebagai desimal, contoh "15,420,350.75"), sesuaikan interpretasi secara benar.
+   - Ekstrak seluruh nominal hingga presisi 2 ANGKA DI BELAKANG KOMA (format number/float JSON menggunakan tanda titik sebagai desimal, contoh: 21352397620.50 atau 5000000.00).
+   - Hilangkan simbol "Rp", spasi, dan tanda pemisah ribuan saat memasukkan angka ke JSON.
+2. SATUAN PENYAJIAN (SCALE):
+   - Periksa header tabel: jika tertera "Dalam Rupiah" / "In IDR", gunakan angka aslinya.
+   - Jika tertera "Dalam Ribuan Rupiah" / "In Thousands IDR", kalikan angka dengan 1.000 (contoh: 1.250,50 menjadi 1250500.00).
+   - Jika tertera "Dalam Jutaan Rupiah" / "In Millions IDR", kalikan angka dengan 1.000.000 (contoh: 12,75 menjadi 12750000.00).
+   - Jika tertera "Dalam Miliar Rupiah", kalikan dengan 1.000.000.000.
+3. POS BERARAH MINUS / RUGI:
+   - Pos dalam tanda kurung "(...)" atau bertanda minus "-", seperti Laba Bersih yang Rugi atau Akumulasi Rugi, WAJIB bernilai negatif (-).
 
-ATURAN KRUSIAL KESEIMBANGAN NERACA & PEMETAAN SALDO LABA (WAJIB BALANCE!):
-- Di sistem ASCA, Total Ekuitas dihitung dengan rumus:
-  Total Ekuitas = capital + otherCap + retEarn + re
-  Dan Neraca HARUS Seimbang: Total Aktiva = Total Liabilitas + Total Ekuitas.
-- "re": Wajib diisi LABA (RUGI) BERSIH TAHUN BERJALAN (Net Income / EAT dari Laporan Laba Rugi). Jika perusahaan rugi, beri tanda minus (-).
-- "retEarn": Wajib diisi SALDO LABA DITAHAN PERIODE LALU / AWAL (Retained Earnings Beginning of Period).
-- PENTING (JANGAN DOUBLE COUNTING!):
-  Di lembar Neraca (Laporan Posisi Keuangan), akun "Saldo Laba" atau "Saldo Laba (Akumulasi Rugi)" umumnya merupakan SALDO AKHIR (yang sudah mengakumulasikan laba tahun berjalan).
-  Maka untuk menghindari terhitung 2x (double counting yang membuat Neraca tidak seimbang):
-  * "re" = Laba Bersih Tahun Berjalan dari Laporan Laba Rugi.
-  * "retEarn" = (Total Saldo Laba Akhir di Neraca) dikurangi ("re").
-  * Jika di Neraca sudah disajikan 2 baris terpisah ("Saldo Laba Tahun Lalu" dan "Laba Tahun Berjalan"), petakan masing-masing ke "retEarn" dan "re".
-  * Jika hanya ada 1 akun Saldo Laba di Neraca dan Laporan Laba Rugi nihil/tidak ada, masukkan seluruh Saldo Laba ke "re" dan isi "retEarn": 0.
-- ASET TETAP & DEPRESIASI:
-  * Jika nilai Aset Tetap ("fa") di Neraca sudah disajikan Nilai Buku Bersih (Net Book Value), maka isi "depr": 0.
-  * Hanya isi "depr" jika Aset Tetap disajikan Nilai Perolehan Bruto.
-- VALIDASI KESEIMBANGAN:
-  * Total Aktiva (cash + otherCa + ar + inv + otherAr + prepaid + fa - depr + invest + taxAsset) HARUS PERSIS SAMA dengan Total Liabilitas & Ekuitas (ap + stDebt + otherAp + accrued + ltDebt + capital + otherCap + retEarn + re).
-
-Petakan secara presisi ke dalam struktur JSON berikut:
-
-{
-  "company_name": "Nama PT / Debitur di dokumen (jika tertera)",
-  "year1": ${targetYr1},
-  "year2": ${targetYr2},
-  "audit_status": "audited atau unaudited",
-  "auditor_kap_name": "Nama Kantor Akuntan Publik (contoh: KAP Heliantono & Rekan, atau -)",
-  "auditor_opinion": "Wajar Tanpa Pengecualian (WTP) / Wajar Dengan Pengecualian (WDP) / Tidak Wajar / Disclaimer / -",
-  "audit_report_date": "Tanggal laporan auditor (contoh: 28 Maret 2024 atau -)",
-  "audit_detection_reason": "Ringkasan bukti pembacaan audit di dokumen",
-  "data_year1": {
-    "cash": 0,
-    "otherCa": 0,
-    "ar": 0,
-    "inv": 0,
-    "otherAr": 0,
-    "prepaid": 0,
-    "fa": 0,
-    "depr": 0,
-    "invest": 0,
-    "taxAsset": 0,
-    "ap": 0,
-    "stDebt": 0,
-    "otherAp": 0,
-    "accrued": 0,
-    "ltDebt": 0,
-    "capital": 0,
-    "otherCap": 0,
-    "retEarn": 0,
-    "re": 0,
-    "rev": 0,
-    "cogs": 0,
-    "opex": 0,
-    "otherInc": 0,
-    "otherExp": 0,
-    "intExp": 0,
-    "tax": 0,
-    "div": 0
-  },
-  "data_year2": {
-    "cash": 0,
-    "otherCa": 0,
-    "ar": 0,
-    "inv": 0,
-    "otherAr": 0,
-    "prepaid": 0,
-    "fa": 0,
-    "depr": 0,
-    "invest": 0,
-    "taxAsset": 0,
-    "ap": 0,
-    "stDebt": 0,
-    "otherAp": 0,
-    "accrued": 0,
-    "ltDebt": 0,
-    "capital": 0,
-    "otherCap": 0,
-    "retEarn": 0,
-    "re": 0,
-    "rev": 0,
-    "cogs": 0,
-    "opex": 0,
-    "otherInc": 0,
-    "otherExp": 0,
-    "intExp": 0,
-    "tax": 0,
-    "div": 0
-  }
-}
-
-Kamus Pemetaan Akun ASCA:
+KLASIFIKASI STRUKTUR LAPORAN KEUANGAN ASCA:
+Kelompok 1: AKTIVA LANCAR (Current Assets)
 - cash: Kas dan Setara Kas / Bank
 - otherCa: Uang Jaminan / Aset Lancar Lainnya
 - ar: Piutang Usaha / Piutang Dagang (Trade Accounts Receivable)
-- inv: Persediaan (Inventory)
+- inv: Persediaan Barang (Inventory)
 - otherAr: Piutang Lain-lain
 - prepaid: Biaya Dibayar Dimuka / Uang Muka Pajak / Pekerjaan dlm Proses
+
+Kelompok 2: AKTIVA TETAP & AKTIVA TIDAK LANCAR (Fixed & Non-Current Assets)
 - fa: Aset Tetap (Fixed Assets)
-- depr: Akumulasi Penyusutan (jika dipisah, atau 0 jika Aset Tetap sudah Net)
+- depr: Akumulasi Penyusutan (jika dipisah, atau 0 jika Aset Tetap sudah disajikan Nilai Buku Bersih)
 - invest: Investasi Saham / Investasi Jangka Panjang
 - taxAsset: Tagihan Pajak / Aset Pajak Tangguhan / Aset Tidak Lancar Lainnya
+
+Kelompok 3: HUTANG LANCAR / JANGKA PENDEK (Current Liabilities)
 - ap: Utang Usaha / Utang Dagang (Trade Accounts Payable)
 - stDebt: Utang Bank Jangka Pendek
 - otherAp: Utang Lain-lain / Liabilitas Lancar Lainnya / Utang Pajak
 - accrued: Beban Akrual / Biaya YMH Dibayar
-- ltDebt: Utang Bank Jangka Panjang
+
+Kelompok 4: HUTANG JANGKA PANJANG (Long-Term Liabilities)
+- ltDebt: Utang Bank Jangka Panjang / Liabilitas Jangka Panjang
+
+Kelompok 5: MODAL SENDIRI / EKUITAS (Equity)
 - capital: Modal Saham / Modal Disetor
 - otherCap: Tambahan Modal Disetor / Agio Saham / Modal Lainnya
 - retEarn: Saldo Laba Ditahan (Retained Earnings) periode lalu / awal
-- re: Laba (Rugi) Bersih Tahun Berjalan (EAT dari Laba Rugi)
+- re: Laba (Rugi) Bersih Tahun Berjalan (Net Income / EAT dari Laba Rugi)
+
+Kelompok 6: LAPORAN LABA RUGI (Income Statement)
 - rev: Pendapatan Usaha Netto / Penjualan Bersih
 - cogs: Beban Pokok Penjualan / Harga Pokok Produksi (HPP)
 - opex: Beban Operasional / Beban Usaha / Beban Umum & Administrasi
@@ -11793,12 +11813,47 @@ Kamus Pemetaan Akun ASCA:
 - tax: Beban Pajak Penghasilan
 - div: Dividen
 
-ATURAN DETEKSI STATUS AUDIT LAPORAN KEUANGAN:
-- Tentukan "audit_status": "audited" jika dokumen memuat lembar "Laporan Auditor Independen", opini audit KAP, nama Kantor Akuntan Publik, tanda tangan Akuntan Publik (AP), nomor registrasi KAP/AP, atau kop resmi KAP.
-- Tentukan "audit_status": "unaudited" jika dokumen tidak memuat opini auditor independen / berupa kompilasi pembukuan inhouse internal manajemen.
-- Jika "audited", baca nama KAP ("auditor_kap_name"), opini auditor ("auditor_opinion": WTP/WDP/dll), tanggal laporan audit ("audit_report_date"), dan alasan pembacaan ("audit_detection_reason").
+ATURAN KRUSIAL KESEIMBANGAN NERACA & PEMETAAN SALDO LABA (WAJIB BALANCE!):
+- Di sistem ASCA, Total Ekuitas = capital + otherCap + retEarn + re
+- Neraca HARUS Seimbang: Total Aktiva = Total Liabilitas (Hutang Lancar + Hutang Jk. Panjang) + Total Ekuitas.
+- "re": Wajib diisi LABA (RUGI) BERSIH TAHUN BERJALAN (Net Income / EAT dari Laporan Laba Rugi). Jika rugi, beri minus (-).
+- "retEarn": Wajib diisi SALDO LABA DITAHAN PERIODE LALU / AWAL.
+- JANGAN DOUBLE COUNTING: Jika Saldo Laba di Neraca adalah Saldo Akhir, maka "retEarn" = (Total Saldo Laba Akhir) - ("re").
+- ASET TETAP & DEPRESIASI: Jika "fa" sudah disajikan Nilai Buku Bersih (Net Book Value), maka isi "depr": 0.
 
-Balas HANYA format JSON valid tanpa tanda kutip markdown (\`\`\`json) atau teks pengantar apapun.`;
+ATURAN DETEKSI STATUS AUDIT LAPORAN KEUANGAN:
+- Tentukan "audit_status": "audited" jika dokumen memuat lembar "Laporan Auditor Independen", opini audit KAP, nama KAP, tanda tangan AP, nomor registrasi KAP/AP, atau kop resmi KAP.
+- Tentukan "audit_status": "unaudited" jika berupa kompilasi in-house internal manajemen.
+- Jika "audited", baca nama KAP ("auditor_kap_name"), opini auditor ("auditor_opinion"), tanggal laporan audit ("audit_report_date"), dan alasan pembacaan ("audit_detection_reason").
+
+Petakan secara presisi ke dalam struktur JSON berikut:
+{
+  "company_name": "Nama PT / Debitur di dokumen",
+  "year1": ${targetYr1},
+  "year2": ${targetYr2},
+  "audit_status": "audited atau unaudited",
+  "auditor_kap_name": "Nama KAP atau -",
+  "auditor_opinion": "Wajar Tanpa Pengecualian (WTP) / -",
+  "audit_report_date": "Tanggal laporan auditor atau -",
+  "audit_detection_reason": "Ringkasan bukti status audit",
+  "data_year1": {
+    "cash": 0.00, "otherCa": 0.00, "ar": 0.00, "inv": 0.00, "otherAr": 0.00, "prepaid": 0.00,
+    "fa": 0.00, "depr": 0.00, "invest": 0.00, "taxAsset": 0.00,
+    "ap": 0.00, "stDebt": 0.00, "otherAp": 0.00, "accrued": 0.00,
+    "ltDebt": 0.00,
+    "capital": 0.00, "otherCap": 0.00, "retEarn": 0.00, "re": 0.00,
+    "rev": 0.00, "cogs": 0.00, "opex": 0.00, "otherInc": 0.00, "otherExp": 0.00, "intExp": 0.00, "tax": 0.00, "div": 0.00
+  },
+  "data_year2": {
+    "cash": 0.00, "otherCa": 0.00, "ar": 0.00, "inv": 0.00, "otherAr": 0.00, "prepaid": 0.00,
+    "fa": 0.00, "depr": 0.00, "invest": 0.00, "taxAsset": 0.00,
+    "ap": 0.00, "stDebt": 0.00, "otherAp": 0.00, "accrued": 0.00,
+    "ltDebt": 0.00,
+    "capital": 0.00, "otherCap": 0.00, "retEarn": 0.00, "re": 0.00,
+    "rev": 0.00, "cogs": 0.00, "opex": 0.00, "otherInc": 0.00, "otherExp": 0.00, "intExp": 0.00, "tax": 0.00, "div": 0.00
+  }
+}
+Balas HANYA format JSON valid tanpa tanda kutip markdown (```json) atau teks pengantar apapun.`;
 
     parts.push({
       text: promptText
@@ -11887,7 +11942,9 @@ function reconcileExtractedFinancialData(parsed) {
 
     Object.keys(d).forEach((k) => {
       if (typeof d[k] !== 'number' || isNaN(d[k])) {
-        d[k] = parseFloat(d[k]) || 0;
+        d[k] = parseFormattedNumber(d[k]) || 0;
+      } else {
+        d[k] = Math.round(d[k] * 100) / 100;
       }
     });
 
@@ -11900,52 +11957,47 @@ function reconcileExtractedFinancialData(parsed) {
     const tax = d.tax || 0;
     const div = d.div || 0;
     const isHasIncomeStatement = (rev !== 0 || cogs !== 0 || opex !== 0);
-    const computedEat = (rev - cogs - opex + otherInc - otherExp - intExp - tax - div);
+    const computedEat = Math.round((rev - cogs - opex + otherInc - otherExp - intExp - tax - div) * 100) / 100;
 
     const act = (d.cash || 0) + (d.otherCa || 0) + (d.ar || 0) + (d.inv || 0) + (d.otherAr || 0) + (d.prepaid || 0) + (d.fa || 0) - Math.abs(d.depr || 0) + (d.invest || 0) + (d.taxAsset || 0);
     const liab = (d.ap || 0) + (d.stDebt || 0) + (d.otherAp || 0) + (d.accrued || 0) + (d.ltDebt || 0);
     const cap = (d.capital || 0) + (d.otherCap || 0);
     let pass = liab + cap + (d.retEarn || 0) + (d.re || 0);
-    let diff = Math.round(pass - act);
+    let diff = Math.round((pass - act) * 100) / 100;
 
-    if (Math.abs(diff) > 100) {
+    if (Math.abs(diff) > 0.05) {
       // Kasus 1: Double-counting Laba Bersih Tahun Berjalan
-      // Saldo Laba Akhir Neraca masuk ke retEarn, Laba Rugi masuk ke re.
-      // Selisih Passiva - Aktiva persis sebesar re
-      if (d.re !== 0 && Math.abs(diff - d.re) < 1000) {
-        d.retEarn = (d.retEarn || 0) - d.re;
+      if (d.re !== 0 && Math.abs(diff - d.re) < 1) {
+        d.retEarn = Math.round(((d.retEarn || 0) - d.re) * 100) / 100;
       }
       // Kasus 2: Nilai depr (Penyusutan) sudah dipotong dari Aset Tetap di dokumen tapi depr diisi lagi
-      else if (d.depr !== 0 && Math.abs(diff - Math.abs(d.depr)) < 1000) {
+      else if (d.depr !== 0 && Math.abs(diff - Math.abs(d.depr)) < 1) {
         d.depr = 0;
       }
       // Kasus 3: Tanda minus pada Laba Bersih Rugi terlewat (Rugi dibaca Positif)
-      else if (d.re !== 0 && Math.abs(diff - 2 * d.re) < 1000) {
+      else if (d.re !== 0 && Math.abs(diff - 2 * d.re) < 1) {
         d.re = -Math.abs(d.re);
       }
       // Kasus 4: Tanda minus pada Akumulasi Rugi / Defisit terlewat
-      else if (d.retEarn !== 0 && Math.abs(diff - 2 * d.retEarn) < 1000) {
+      else if (d.retEarn !== 0 && Math.abs(diff - 2 * d.retEarn) < 1) {
         d.retEarn = -Math.abs(d.retEarn);
       }
       // Kasus 5: re bernilai 0 dan retEarn menampung total Saldo Laba Neraca, namun di Laba Rugi ada computedEat
       else if (d.re === 0 && d.retEarn !== 0 && isHasIncomeStatement && computedEat !== 0) {
         d.re = computedEat;
-        d.retEarn = d.retEarn - computedEat;
+        d.retEarn = Math.round((d.retEarn - computedEat) * 100) / 100;
       }
       // Kasus 6: Rekonsiliasi Saldo Laba terhadap Total Aktiva
-      // Total Ekuitas target = Total Aktiva - Total Liabilitas
-      // Total Saldo Laba target = Target Ekuitas - Total Modal
-      // retEarn = Total Saldo Laba target - re
       else if (act > 0 && (d.retEarn !== 0 || d.re !== 0)) {
         const targetEquity = act - liab;
         const targetTotalRetEarn = targetEquity - cap;
         if (isHasIncomeStatement && computedEat !== 0) {
           d.re = computedEat;
-          d.retEarn = targetTotalRetEarn - d.re;
+          d.retEarn = Math.round((targetTotalRetEarn - d.re) * 100) / 100;
         } else if (d.re !== 0) {
-          d.retEarn = targetTotalRetEarn - d.re;
+          d.retEarn = Math.round((targetTotalRetEarn - d.re) * 100) / 100;
         } else {
-          d.re = targetTotalRetEarn;
+          d.re = Math.round(targetTotalRetEarn * 100) / 100;
           d.retEarn = 0;
         }
       }
@@ -11967,43 +12019,71 @@ function renderAiFinReviewTable(data) {
   const d1 = data.data_year1 || {};
   const d2 = data.data_year2 || {};
 
-  // Hitung total aset & liabilitas+ekuitas untuk check balance
-  const calcAct1 = (d1.cash||0) + (d1.otherCa||0) + (d1.ar||0) + (d1.inv||0) + (d1.otherAr||0) + (d1.prepaid||0) + (d1.fa||0) - Math.abs(d1.depr||0) + (d1.invest||0) + (d1.taxAsset||0);
-  const calcPass1 = (d1.ap||0) + (d1.stDebt||0) + (d1.otherAp||0) + (d1.accrued||0) + (d1.ltDebt||0) + (d1.capital||0) + (d1.otherCap||0) + (d1.retEarn||0) + (d1.re||0);
+  // Hitung subtotal dan total awal
+  const ca1 = (d1.cash||0) + (d1.otherCa||0) + (d1.ar||0) + (d1.inv||0) + (d1.otherAr||0) + (d1.prepaid||0);
+  const nca1 = (d1.fa||0) - Math.abs(d1.depr||0) + (d1.invest||0) + (d1.taxAsset||0);
+  const ta1 = ca1 + nca1;
+  const cl1 = (d1.ap||0) + (d1.stDebt||0) + (d1.otherAp||0) + (d1.accrued||0);
+  const lt1 = (d1.ltDebt||0);
+  const tl1 = cl1 + lt1;
+  const eq1 = (d1.capital||0) + (d1.otherCap||0) + (d1.retEarn||0) + (d1.re||0);
+  const pass1 = tl1 + eq1;
+  const eat1 = (d1.rev||0) - (d1.cogs||0) - (d1.opex||0) + (d1.otherInc||0) - (d1.otherExp||0) - (d1.intExp||0) - (d1.tax||0) - (d1.div||0);
 
-  const calcAct2 = (d2.cash||0) + (d2.otherCa||0) + (d2.ar||0) + (d2.inv||0) + (d2.otherAr||0) + (d2.prepaid||0) + (d2.fa||0) - Math.abs(d2.depr||0) + (d2.invest||0) + (d2.taxAsset||0);
-  const calcPass2 = (d2.ap||0) + (d2.stDebt||0) + (d2.otherAp||0) + (d2.accrued||0) + (d2.ltDebt||0) + (d2.capital||0) + (d2.otherCap||0) + (d2.retEarn||0) + (d2.re||0);
+  const ca2 = (d2.cash||0) + (d2.otherCa||0) + (d2.ar||0) + (d2.inv||0) + (d2.otherAr||0) + (d2.prepaid||0);
+  const nca2 = (d2.fa||0) - Math.abs(d2.depr||0) + (d2.invest||0) + (d2.taxAsset||0);
+  const ta2 = ca2 + nca2;
+  const cl2 = (d2.ap||0) + (d2.stDebt||0) + (d2.otherAp||0) + (d2.accrued||0);
+  const lt2 = (d2.ltDebt||0);
+  const tl2 = cl2 + lt2;
+  const eq2 = (d2.capital||0) + (d2.otherCap||0) + (d2.retEarn||0) + (d2.re||0);
+  const pass2 = tl2 + eq2;
+  const eat2 = (d2.rev||0) - (d2.cogs||0) - (d2.opex||0) + (d2.otherInc||0) - (d2.otherExp||0) - (d2.intExp||0) - (d2.tax||0) - (d2.div||0);
 
-  const diff1 = Math.abs(calcAct1 - calcPass1);
-  const isBal1 = diff1 < 10000;
-  const diff2 = Math.abs(calcAct2 - calcPass2);
-  const isBal2 = diff2 < 10000;
+  const diff1 = Math.abs(ta1 - pass1);
+  const isBal1 = diff1 < 1.0;
+  const diff2 = Math.abs(ta2 - pass2);
+  const isBal2 = diff2 < 1.0;
 
+  // Struktur Akun Terpisah: Aktiva Lancar, Aktiva Tetap, Hutang Lancar, Hutang Jk. Panjang, Ekuitas, Laba Rugi
   const rows = [
-    { section: 'I. NERACA &mdash; AKTIVA (ASSETS)' },
-    { k: 'cash', label: 'Kas &amp; Bank' },
-    { k: 'ar', label: 'Piutang Usaha (Trade AR)' },
-    { k: 'inv', label: 'Persediaan Barang (Inventory)' },
-    { k: 'otherAr', label: 'Piutang Lain-lain' },
-    { k: 'prepaid', label: 'Biaya / Pajak Dibayar Dimuka' },
-    { k: 'otherCa', label: 'Aset Lancar Lainnya' },
-    { k: 'fa', label: 'Aktiva Tetap (Fixed Assets)' },
-    { k: 'depr', label: 'Akumulasi Penyusutan' },
-    { k: 'invest', label: 'Investasi Saham' },
-    { k: 'taxAsset', label: 'Aset Pajak Tangguhan / Lain-lain' },
-    
-    { section: 'II. NERACA &mdash; PASSIVA (LIABILITIES &amp; EQUITY)' },
-    { k: 'ap', label: 'Hutang Usaha (Trade AP)' },
-    { k: 'stDebt', label: 'Hutang Jk. Pendek (Utang Bank)' },
-    { k: 'otherAp', label: 'Hutang Lancar Lainnya' },
-    { k: 'accrued', label: 'Biaya YMH Dibayar (Accrued)' },
-    { k: 'ltDebt', label: 'Hutang Jk. Panjang (Long Term Debt)' },
-    { k: 'capital', label: 'Modal Saham Disetor (p)' },
-    { k: 'otherCap', label: 'Setoran Modal Lainnya / Agio (q)' },
-    { k: 'retEarn', label: 'Laba (Rugi) Ditahan Periode Lalu (q1)' },
-    { k: 're', label: 'Laba (Rugi) Tahun Berjalan / EAT (q2)' },
+    { section: 'I. AKTIVA LANCAR (CURRENT ASSETS)', type: 'header' },
+    { k: 'cash', label: 'Kas &amp; Bank (Kas dan Setara Kas)', code: 'a' },
+    { k: 'otherCa', label: 'Uang Jaminan / Aset Lancar Lainnya', code: 'a2' },
+    { k: 'ar', label: 'Piutang Usaha (Trade Accounts Receivable)', code: 'b' },
+    { k: 'inv', label: 'Persediaan Barang (Inventory)', code: 'c' },
+    { k: 'otherAr', label: 'Piutang Lain-lain', code: 'd' },
+    { k: 'prepaid', label: 'Biaya / Pajak Dibayar Dimuka', code: 'e' },
+    { subtotal: 'ca', label: 'TOTAL AKTIVA LANCAR', code: 'f', val1: ca1, val2: ca2 },
 
-    { section: 'III. LAPORAN LABA RUGI (INCOME STATEMENT)' },
+    { section: 'II. AKTIVA TETAP &amp; AKTIVA TIDAK LANCAR (NON-CURRENT ASSETS)', type: 'header' },
+    { k: 'fa', label: 'Aktiva Tetap (Fixed Assets)', code: 'h' },
+    { k: 'depr', label: 'Akumulasi Penyusutan', code: 'i' },
+    { k: 'invest', label: 'Investasi Saham / Jk. Panjang', code: 'g' },
+    { k: 'taxAsset', label: 'Aset Pajak Tangguhan / Lain-lain', code: 'j' },
+    { subtotal: 'nca', label: 'TOTAL AKTIVA TETAP &amp; LAINNYA', code: 'k', val1: nca1, val2: nca2 },
+    { total: 'ta', label: 'TOTAL AKTIVA (AKTIVA LANCAR + TETAP)', code: 'l', val1: ta1, val2: ta2, isMajor: true },
+
+    { section: 'III. HUTANG LANCAR / JANGKA PENDEK (CURRENT LIABILITIES)', type: 'header' },
+    { k: 'ap', label: 'Hutang Usaha (Trade Accounts Payable)', code: 'm1' },
+    { k: 'stDebt', label: 'Hutang Jk. Pendek (Utang Bank Jk. Pendek)', code: 'm2' },
+    { k: 'otherAp', label: 'Hutang Lancar Lainnya (Utang Lain-lain)', code: 'm3' },
+    { k: 'accrued', label: 'Biaya YMH Dibayar (Accrued Expenses)', code: 'm4' },
+    { subtotal: 'cl', label: 'TOTAL HUTANG LANCAR', code: 'm', val1: cl1, val2: cl2 },
+
+    { section: 'IV. HUTANG JANGKA PANJANG (LONG-TERM LIABILITIES)', type: 'header' },
+    { k: 'ltDebt', label: 'Hutang Jk. Panjang (Long Term Debt)', code: 'n' },
+    { total: 'tl', label: 'TOTAL HUTANG (HUTANG LANCAR + JK. PANJANG)', code: 'o', val1: tl1, val2: tl2, isMajor: true },
+
+    { section: 'V. MODAL SENDIRI / EKUITAS (EQUITY)', type: 'header' },
+    { k: 'capital', label: 'Modal Saham Disetor', code: 'p' },
+    { k: 'otherCap', label: 'Setoran Modal Lainnya / Agio', code: 'q' },
+    { k: 'retEarn', label: 'Laba (Rugi) Ditahan Periode Lalu', code: 'q1' },
+    { k: 're', label: 'Laba (Rugi) Tahun Berjalan / EAT', code: 'q2' },
+    { subtotal: 'eq', label: 'TOTAL MODAL SENDIRI / EKUITAS', code: 'r', val1: eq1, val2: eq2 },
+    { total: 'pass', label: 'TOTAL PASSIVA (TOTAL HUTANG + EKUITAS)', code: 's', val1: pass1, val2: pass2, isMajor: true },
+
+    { section: 'VI. LAPORAN LABA RUGI (INCOME STATEMENT)', type: 'header' },
     { k: 'rev', label: 'Pendapatan Netto (Penjualan / Sales)' },
     { k: 'cogs', label: 'Harga Pokok Penjualan (HPP)' },
     { k: 'opex', label: 'Beban Operasional / Usaha' },
@@ -12011,7 +12091,8 @@ function renderAiFinReviewTable(data) {
     { k: 'otherExp', label: 'Beban Lain-lain' },
     { k: 'intExp', label: 'Biaya Bunga / Keuangan' },
     { k: 'tax', label: 'Pajak Penghasilan' },
-    { k: 'div', label: 'Dividen' }
+    { k: 'div', label: 'Dividen' },
+    { subtotal: 'eat', label: 'LABA (RUGI) BERSIH TAHUN BERJALAN (EAT)', val1: eat1, val2: eat2, isMajor: true }
   ];
 
   const isExtAudited = (data.audit_status || 'audited').toLowerCase() !== 'unaudited';
@@ -12024,7 +12105,7 @@ function renderAiFinReviewTable(data) {
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
         <div>
           <div style="font-weight:800; font-size:0.85rem; color:#166534; display:flex; align-items:center; gap:6px;">
-            <span>🎉</span> Ekstraksi AI Berhasil Selesai!
+            <span>\uD83C\uDF89</span> Ekstraksi AI Berhasil Selesai!
           </div>
           <div style="font-size:0.72rem; color:#334155; margin-top:2px;">
             Perusahaan Terdeteksi: <strong>${data.company_name || 'Sesuai Dokumen'}</strong> &bull; Periode: <strong>Tahun ${y1} &amp; ${y2}</strong>
@@ -12032,10 +12113,10 @@ function renderAiFinReviewTable(data) {
         </div>
         <div style="display:flex; gap:0.5rem; align-items:center;">
           <span id="previewBalanceBadge1" style="font-size:0.70rem; padding:3px 8px; border-radius:999px; font-weight:700; ${isBal1 ? 'background:#dcfce7; color:#15803d; border:1px solid #86efac;' : 'background:#fee2e2; color:#991b1b; border:1px solid #fca5a5;'}">
-            Th ${y1}: ${isBal1 ? '✓ Neraca Balance' : `Selisih ${fmtRp(diff1, true)}`}
+            Th ${y1}: ${isBal1 ? '\u2713 Neraca Balance' : `Selisih ${fmtRp(diff1)}`}
           </span>
           <span id="previewBalanceBadge2" style="font-size:0.70rem; padding:3px 8px; border-radius:999px; font-weight:700; ${isBal2 ? 'background:#dcfce7; color:#15803d; border:1px solid #86efac;' : 'background:#fee2e2; color:#991b1b; border:1px solid #fca5a5;'}">
-            Th ${y2}: ${isBal2 ? '✓ Neraca Balance' : `Selisih ${fmtRp(diff2, true)}`}
+            Th ${y2}: ${isBal2 ? '\u2713 Neraca Balance' : `Selisih ${fmtRp(diff2)}`}
           </span>
         </div>
       </div>
@@ -12045,7 +12126,7 @@ function renderAiFinReviewTable(data) {
     <div style="background:#f8fafc; border:1px solid #cbd5e1; border-left:4px solid ${isExtAudited ? '#16a34a' : '#d97706'}; border-radius:6px; padding:0.6rem 0.9rem; margin-bottom:0.75rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.6rem;">
       <div style="flex:1; min-width:240px;">
         <div style="font-weight:800; font-size:0.75rem; color:#1e293b; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-          <span>⚡ Status Audit Terdeteksi AI:</span>
+          <span>\u26A1 Status Audit Terdeteksi AI:</span>
           <span id="previewAiAuditBadge" style="padding:2px 8px; border-radius:999px; font-weight:800; font-size:0.70rem; ${isExtAudited ? 'background:#dcfce7; color:#15803d; border:1px solid #86efac;' : 'background:#fef3c7; color:#b45309; border:1px solid #fde68a;'}">
             ${isExtAudited ? `AUDITED (${extKap})` : 'IN-HOUSE / UNAUDITED'}
           </span>
@@ -12060,22 +12141,22 @@ function renderAiFinReviewTable(data) {
         <div style="display:flex; align-items:center; gap:0.35rem; background:#ffffff; padding:3px 8px; border-radius:6px; border:1px solid #cbd5e1;">
           <label for="aiReviewAuditAdjustSelect" style="font-size:0.70rem; font-weight:700; color:#334155; margin:0; white-space:nowrap;">Penyesuaian Jenis:</label>
           <select id="aiReviewAuditAdjustSelect" class="form-control" style="font-size:0.72rem; padding:2px 6px; font-weight:700; width:auto; height:26px; cursor:pointer;" onchange="handleAiReviewAuditStatusChange(this.value)" title="Gunakan jika jenis laporan yang terbaca oleh OCR berbeda">
-            <option value="audited" ${isExtAudited ? 'selected' : ''}>⚡ Audited KAP (100 Poin 5C)</option>
-            <option value="unaudited" ${!isExtAudited ? 'selected' : ''}>📄 In-House / Unaudited (60 Poin 5C)</option>
+            <option value="audited" ${isExtAudited ? 'selected' : ''}>\u26A1 Audited KAP (100 Poin 5C)</option>
+            <option value="unaudited" ${!isExtAudited ? 'selected' : ''}>\uD83D\uDCC4 In-House / Unaudited (60 Poin 5C)</option>
           </select>
         </div>
         <div id="previewAiAudit5CLink" style="font-size:0.68rem; color:#0369a1; background:#e0f2fe; border:1px solid #bae6fd; padding:3px 8px; border-radius:4px; font-weight:700;">
-          🔗 Auto-Link 5C: Skor ${isExtAudited ? '100 (Audited)' : '60 (Unaudited)'}
+          \uD83D\uDD17 Auto-Link 5C: Skor ${isExtAudited ? '100 (Audited)' : '60 (Unaudited)'}
         </div>
       </div>
     </div>
 
     <div style="font-size:0.72rem; color:#64748b; margin-bottom:0.4rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.3rem;">
-      <span>Silakan tinjau dan koreksi angka hasil ekstraksi di bawah jika diperlukan, lalu klik <strong>Terapkan ke Laporan Keuangan</strong>.</span>
-      <span style="font-size:0.68rem; color:#0369a1; font-weight:700;">💡 Total Saldo Laba Neraca = q1 (Periode Lalu) + q2 (Tahun Berjalan)</span>
+      <span>Silakan tinjau dan koreksi angka hasil ekstraksi (format standar: <strong>2 angka di belakang koma</strong>), lalu klik <strong>Terapkan ke Laporan Keuangan</strong>.</span>
+      <span style="font-size:0.68rem; color:#0369a1; font-weight:700;">\uD83D\uDCA1 Subtotal &amp; Keseimbangan Aktiva vs Passiva dihitung dinamis</span>
     </div>
 
-    <div style="max-height:360px; overflow-y:auto; border:1px solid #cbd5e1; border-radius:6px; margin-bottom:1rem; background:#fff;">
+    <div style="max-height:420px; overflow-y:auto; border:1px solid #cbd5e1; border-radius:6px; margin-bottom:1rem; background:#fff;">
       <table class="data-table" style="font-size:0.72rem; width:100%; border-collapse:collapse;">
         <thead>
           <tr style="background:#f1f5f9; position:sticky; top:0; z-index:2; border-bottom:2px solid #cbd5e1;">
@@ -12089,20 +12170,55 @@ function renderAiFinReviewTable(data) {
             if (r.section) {
               return `
                 <tr style="background:#0c345c; color:#fff; font-weight:800; font-size:0.70rem;">
-                  <td colspan="3" style="padding:4px 8px; letter-spacing:0.3px;">${r.section}</td>
+                  <td colspan="3" style="padding:5px 8px; letter-spacing:0.3px;">${r.section}</td>
                 </tr>
               `;
             }
-            const val1 = d1[r.k] || 0;
-            const val2 = d2[r.k] || 0;
+            if (r.subtotal) {
+              return `
+                <tr style="background:#f8fafc; font-weight:800; border-top:1px solid #cbd5e1; border-bottom:1px solid #cbd5e1;">
+                  <td style="padding:4px 8px; color:#0369a1;">
+                    <span style="display:inline-block; width:22px; font-weight:700; color:#64748b;">${r.code || ''}</span>
+                    ${r.label}
+                  </td>
+                  <td style="padding:4px 8px; text-align:right; font-weight:800; color:#0369a1;" id="ai_subtot_${r.subtotal}_1">
+                    ${formatNumberWithDots(r.val1, true)}
+                  </td>
+                  <td style="padding:4px 8px; text-align:right; font-weight:800; color:#0369a1;" id="ai_subtot_${r.subtotal}_2">
+                    ${formatNumberWithDots(r.val2, true)}
+                  </td>
+                </tr>
+              `;
+            }
+            if (r.total) {
+              return `
+                <tr style="background:#e0f2fe; font-weight:900; border-top:2px solid #38bdf8; border-bottom:2px solid #38bdf8;">
+                  <td style="padding:5px 8px; color:#0c4a6e;">
+                    <span style="display:inline-block; width:22px; font-weight:800; color:#0284c7;">${r.code || ''}</span>
+                    ${r.label}
+                  </td>
+                  <td style="padding:5px 8px; text-align:right; font-weight:900; color:#0c4a6e; font-size:0.76rem;" id="ai_subtot_${r.total}_1">
+                    ${formatNumberWithDots(r.val1, true)}
+                  </td>
+                  <td style="padding:5px 8px; text-align:right; font-weight:900; color:#0c4a6e; font-size:0.76rem;" id="ai_subtot_${r.total}_2">
+                    ${formatNumberWithDots(r.val2, true)}
+                  </td>
+                </tr>
+              `;
+            }
+            const val1 = d1[r.k] !== undefined && d1[r.k] !== null ? d1[r.k] : 0;
+            const val2 = d2[r.k] !== undefined && d2[r.k] !== null ? d2[r.k] : 0;
             return `
               <tr style="border-bottom:1px solid #f1f5f9;">
-                <td style="padding:4px 8px; font-weight:600; color:#334155;">${r.label}</td>
-                <td style="padding:3px 6px;">
-                  <input type="text" inputmode="numeric" id="ai_rev_${r.k}_1" class="form-control num-col fmt-dots" value="${formatNumberWithDots(val1)}" oninput="handleDotInput(this); recalculateAiReviewBalances()" onblur="handleDotBlur(this); recalculateAiReviewBalances()" style="font-size:0.74rem; padding:3px 6px;" />
+                <td style="padding:4px 8px; font-weight:600; color:#334155;">
+                  ${r.code ? `<span style="display:inline-block; width:22px; font-weight:700; color:#64748b;">${r.code}</span>` : ''}
+                  ${r.label}
                 </td>
                 <td style="padding:3px 6px;">
-                  <input type="text" inputmode="numeric" id="ai_rev_${r.k}_2" class="form-control num-col fmt-dots" value="${formatNumberWithDots(val2)}" oninput="handleDotInput(this); recalculateAiReviewBalances()" onblur="handleDotBlur(this); recalculateAiReviewBalances()" style="font-size:0.74rem; padding:3px 6px;" />
+                  <input type="text" inputmode="decimal" id="ai_rev_${r.k}_1" class="form-control num-col fmt-dots" value="${formatNumberWithDots(val1, true)}" oninput="handleDotInput(this); recalculateAiReviewBalances()" onblur="handleDotBlur(this); recalculateAiReviewBalances()" style="font-size:0.74rem; padding:3px 6px; text-align:right;" />
+                </td>
+                <td style="padding:3px 6px;">
+                  <input type="text" inputmode="decimal" id="ai_rev_${r.k}_2" class="form-control num-col fmt-dots" value="${formatNumberWithDots(val2, true)}" oninput="handleDotInput(this); recalculateAiReviewBalances()" onblur="handleDotBlur(this); recalculateAiReviewBalances()" style="font-size:0.74rem; padding:3px 6px; text-align:right;" />
                 </td>
               </tr>
             `;
@@ -12117,7 +12233,7 @@ function renderAiFinReviewTable(data) {
           &larr; Pindai Berkas Lain
         </button>
         <button type="button" class="btn btn-outline" onclick="autoBalanceAiReviewRetainedEarnings()" style="font-size:0.75rem; color:#0369a1; border-color:#bae6fd; background:#f0f9ff; font-weight:700;" title="Menyesuaikan Saldo Laba Ditahan (retEarn) agar Neraca seimbang sempurna dengan Aktiva">
-          ⚖ Seimbangkan Saldo Laba Otomatis
+          \u2696 Seimbangkan Saldo Laba Otomatis
         </button>
       </div>
       <div style="display:flex; gap:0.5rem;">
@@ -12125,7 +12241,7 @@ function renderAiFinReviewTable(data) {
           Batal
         </button>
         <button type="button" class="btn btn-primary" onclick="applyExtractedFinDataToForm()" style="font-size:0.78rem; font-weight:700; background:linear-gradient(135deg, #15803d 0%, #16a34a 100%); border:none; box-shadow:0 2px 6px rgba(22,163,74,0.3); padding:6px 16px;">
-          💾 Terapkan ke Form Input Laporan Keuangan
+          \uD83D\uDCBE Terapkan ke Form Input Laporan Keuangan
         </button>
       </div>
     </div>
@@ -12137,15 +12253,54 @@ function recalculateAiReviewBalances() {
   const y1 = currentExtractedFinData?.year1 || 2022;
   const y2 = currentExtractedFinData?.year2 || 2023;
 
-  const act1 = getVal('cash', 1) + getVal('otherCa', 1) + getVal('ar', 1) + getVal('inv', 1) + getVal('otherAr', 1) + getVal('prepaid', 1) + getVal('fa', 1) - Math.abs(getVal('depr', 1)) + getVal('invest', 1) + getVal('taxAsset', 1);
-  const pass1 = getVal('ap', 1) + getVal('stDebt', 1) + getVal('otherAp', 1) + getVal('accrued', 1) + getVal('ltDebt', 1) + getVal('capital', 1) + getVal('otherCap', 1) + getVal('retEarn', 1) + getVal('re', 1);
-  const diff1 = Math.round(act1 - pass1);
-  const isBal1 = Math.abs(diff1) < 10000;
+  // Tahun 1
+  const ca1 = getVal('cash', 1) + getVal('otherCa', 1) + getVal('ar', 1) + getVal('inv', 1) + getVal('otherAr', 1) + getVal('prepaid', 1);
+  const nca1 = getVal('fa', 1) - Math.abs(getVal('depr', 1)) + getVal('invest', 1) + getVal('taxAsset', 1);
+  const ta1 = ca1 + nca1;
+  const cl1 = getVal('ap', 1) + getVal('stDebt', 1) + getVal('otherAp', 1) + getVal('accrued', 1);
+  const lt1 = getVal('ltDebt', 1);
+  const tl1 = cl1 + lt1;
+  const eq1 = getVal('capital', 1) + getVal('otherCap', 1) + getVal('retEarn', 1) + getVal('re', 1);
+  const pass1 = tl1 + eq1;
+  const eat1 = getVal('rev', 1) - getVal('cogs', 1) - getVal('opex', 1) + getVal('otherInc', 1) - getVal('otherExp', 1) - getVal('intExp', 1) - getVal('tax', 1) - getVal('div', 1);
 
-  const act2 = getVal('cash', 2) + getVal('otherCa', 2) + getVal('ar', 2) + getVal('inv', 2) + getVal('otherAr', 2) + getVal('prepaid', 2) + getVal('fa', 2) - Math.abs(getVal('depr', 2)) + getVal('invest', 2) + getVal('taxAsset', 2);
-  const pass2 = getVal('ap', 2) + getVal('stDebt', 2) + getVal('otherAp', 2) + getVal('accrued', 2) + getVal('ltDebt', 2) + getVal('capital', 2) + getVal('otherCap', 2) + getVal('retEarn', 2) + getVal('re', 2);
-  const diff2 = Math.round(act2 - pass2);
-  const isBal2 = Math.abs(diff2) < 10000;
+  // Tahun 2
+  const ca2 = getVal('cash', 2) + getVal('otherCa', 2) + getVal('ar', 2) + getVal('inv', 2) + getVal('otherAr', 2) + getVal('prepaid', 2);
+  const nca2 = getVal('fa', 2) - Math.abs(getVal('depr', 2)) + getVal('invest', 2) + getVal('taxAsset', 2);
+  const ta2 = ca2 + nca2;
+  const cl2 = getVal('ap', 2) + getVal('stDebt', 2) + getVal('otherAp', 2) + getVal('accrued', 2);
+  const lt2 = getVal('ltDebt', 2);
+  const tl2 = cl2 + lt2;
+  const eq2 = getVal('capital', 2) + getVal('otherCap', 2) + getVal('retEarn', 2) + getVal('re', 2);
+  const pass2 = tl2 + eq2;
+  const eat2 = getVal('rev', 2) - getVal('cogs', 2) - getVal('opex', 2) + getVal('otherInc', 2) - getVal('otherExp', 2) - getVal('intExp', 2) - getVal('tax', 2) - getVal('div', 2);
+
+  const updateEl = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = formatNumberWithDots(val, true);
+  };
+
+  updateEl('ai_subtot_ca_1', ca1);
+  updateEl('ai_subtot_ca_2', ca2);
+  updateEl('ai_subtot_nca_1', nca1);
+  updateEl('ai_subtot_nca_2', nca2);
+  updateEl('ai_subtot_ta_1', ta1);
+  updateEl('ai_subtot_ta_2', ta2);
+  updateEl('ai_subtot_cl_1', cl1);
+  updateEl('ai_subtot_cl_2', cl2);
+  updateEl('ai_subtot_tl_1', tl1);
+  updateEl('ai_subtot_tl_2', tl2);
+  updateEl('ai_subtot_eq_1', eq1);
+  updateEl('ai_subtot_eq_2', eq2);
+  updateEl('ai_subtot_pass_1', pass1);
+  updateEl('ai_subtot_pass_2', pass2);
+  updateEl('ai_subtot_eat_1', eat1);
+  updateEl('ai_subtot_eat_2', eat2);
+
+  const diff1 = Math.abs(ta1 - pass1);
+  const isBal1 = diff1 < 1.0;
+  const diff2 = Math.abs(ta2 - pass2);
+  const isBal2 = diff2 < 1.0;
 
   const badge1 = document.getElementById('previewBalanceBadge1');
   const badge2 = document.getElementById('previewBalanceBadge2');
@@ -12154,13 +12309,13 @@ function recalculateAiReviewBalances() {
     badge1.style.background = isBal1 ? '#dcfce7' : '#fee2e2';
     badge1.style.color = isBal1 ? '#15803d' : '#991b1b';
     badge1.style.borderColor = isBal1 ? '#86efac' : '#fca5a5';
-    badge1.textContent = `Th ${y1}: ${isBal1 ? '✓ Neraca Balance' : `Selisih ${fmtRp(Math.abs(diff1), true)}`}`;
+    badge1.textContent = `Th ${y1}: ${isBal1 ? '\u2713 Neraca Balance' : `Selisih ${fmtRp(diff1)}`}`;
   }
   if (badge2) {
     badge2.style.background = isBal2 ? '#dcfce7' : '#fee2e2';
     badge2.style.color = isBal2 ? '#15803d' : '#991b1b';
     badge2.style.borderColor = isBal2 ? '#86efac' : '#fca5a5';
-    badge2.textContent = `Th ${y2}: ${isBal2 ? '✓ Neraca Balance' : `Selisih ${fmtRp(Math.abs(diff2), true)}`}`;
+    badge2.textContent = `Th ${y2}: ${isBal2 ? '\u2713 Neraca Balance' : `Selisih ${fmtRp(diff2)}`}`;
   }
 }
 
@@ -12168,7 +12323,7 @@ function autoBalanceAiReviewRetainedEarnings() {
   const getVal = (k, yr) => parseFormattedNumber(document.getElementById(`ai_rev_${k}_${yr}`)?.value) || 0;
   const setVal = (k, yr, v) => {
     const el = document.getElementById(`ai_rev_${k}_${yr}`);
-    if (el) el.value = formatNumberWithDots(Math.round(v));
+    if (el) el.value = formatNumberWithDots(Math.round(v * 100) / 100, true);
   };
 
   [1, 2].forEach((yr) => {
@@ -12186,7 +12341,7 @@ function autoBalanceAiReviewRetainedEarnings() {
   });
 
   recalculateAiReviewBalances();
-  showToast('✓ Saldo Laba berhasil diseimbangkan otomatis (Aktiva = Passiva)!');
+  showToast('\u2713 Saldo Laba berhasil diseimbangkan otomatis (Aktiva = Passiva)!');
 }
 
 function handleAiReviewAuditStatusChange(val) {
@@ -12215,7 +12370,7 @@ function handleAiReviewAuditStatusChange(val) {
     reasonEl.textContent = currentExtractedFinData.audit_detection_reason;
   }
   if (linkEl) {
-    linkEl.textContent = `🔗 Auto-Link 5C: Skor ${isAudited ? '100 (Audited)' : '60 (Unaudited)'}`;
+          \uD83D\uDD17 Auto-Link 5C: Skor ${isExtAudited ? '100 (Audited)' : '60 (Unaudited)'}
   }
 }
 

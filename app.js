@@ -11817,6 +11817,7 @@ Kelompok 5: MODAL SENDIRI / EKUITAS (Equity)
 Kelompok 6: LAPORAN LABA RUGI (Income Statement)
 - rev: Pendapatan Usaha Netto / Penjualan Bersih
 - cogs: Beban Pokok Penjualan / Harga Pokok Produksi (HPP)
+- CATATAN LABA KOTOR (GROSS PROFIT): Laba Kotor dihitung otomatis oleh formula ASCA: (rev - cogs). Jika dokumen mencantumkan nominal "Laba Kotor" / "Gross Profit", pastikan angka rev dan cogs konsisten sehingga (rev - cogs) menghasilkan Laba Kotor yang sama persis dengan dokumen.
 - opex: Beban Operasional / Beban Usaha / Beban Umum & Administrasi
 - otherInc: Pendapatan Lain-lain
 - otherExp: Beban Lain-lain
@@ -12084,6 +12085,8 @@ function renderAiFinReviewTable(data) {
   const eq2 = (d2.capital||0) + (d2.otherCap||0) + (d2.retEarn||0) + (d2.re||0);
   const pass2 = tl2 + eq2;
   const eat2 = (d2.rev||0) - (d2.cogs||0) - (d2.opex||0) + (d2.otherInc||0) - (d2.otherExp||0) - (d2.intExp||0) - (d2.tax||0) - (d2.div||0);
+  const gp1 = (d1.rev||0) - (d1.cogs||0);
+  const gp2 = (d2.rev||0) - (d2.cogs||0);
 
   const diff1 = Math.abs(ta1 - pass1);
   const isBal1 = diff1 < 1.0;
@@ -12147,15 +12150,16 @@ function renderAiFinReviewTable(data) {
     { total: 'pass', label: 'TOTAL PASSIVA (TOTAL HUTANG + EKUITAS)', code: 's', val1: pass1, val2: pass2, isMajor: true },
 
     { section: 'VI. LAPORAN LABA RUGI (INCOME STATEMENT)', type: 'header' },
-    { k: 'rev', label: 'Pendapatan Netto (Penjualan / Sales)' },
-    { k: 'cogs', label: 'Harga Pokok Penjualan (HPP)' },
-    { k: 'opex', label: 'Beban Operasional / Usaha' },
-    { k: 'otherInc', label: 'Pendapatan Lain-lain' },
-    { k: 'otherExp', label: 'Beban Lain-lain' },
-    { k: 'intExp', label: 'Biaya Bunga / Keuangan' },
-    { k: 'tax', label: 'Pajak Penghasilan' },
-    { k: 'div', label: 'Dividen' },
-    { subtotal: 'eat', label: 'LABA (RUGI) BERSIH TAHUN BERJALAN (EAT)', val1: eat1, val2: eat2, isMajor: true }
+    { k: 'rev', label: 'Pendapatan Netto (Penjualan / Sales)', code: 't' },
+    { k: 'cogs', label: 'Harga Pokok Penjualan (HPP)', code: 'u' },
+    { subtotal: 'gp', label: 'Laba Kotor (Gross Profit)', code: 'w', val1: gp1, val2: gp2 },
+    { k: 'opex', label: 'Beban Usaha (Biaya Operasional Adm &amp; Umum)', code: 'v' },
+    { k: 'otherInc', label: 'Pendapatan Lain-lain', code: 'x1' },
+    { k: 'otherExp', label: 'Beban Lain-lain', code: 'x2' },
+    { k: 'intExp', label: 'Biaya Bunga / Keuangan', code: 'x' },
+    { k: 'tax', label: 'Pajak Penghasilan', code: 'y' },
+    { k: 'div', label: 'Dividen', code: 'y2' },
+    { subtotal: 'eat', label: 'LABA (RUGI) BERSIH TAHUN BERJALAN (EAT)', code: 'q2', val1: eat1, val2: eat2, isMajor: true }
   ];
 
   const isExtAudited = (data.audit_status || 'audited').toLowerCase() !== 'unaudited';
@@ -12244,16 +12248,21 @@ function renderAiFinReviewTable(data) {
               `;
             }
             if (r.subtotal) {
+              const isGp = r.subtotal === 'gp';
+              const bg = isGp ? '#f0fdf4' : '#f8fafc';
+              const border = isGp ? 'border-top:1.5px solid #86efac; border-bottom:1.5px solid #86efac;' : 'border-top:1px solid #cbd5e1; border-bottom:1px solid #cbd5e1;';
+              const color = isGp ? '#166534' : '#0369a1';
               return `
-                <tr style="background:#f8fafc; font-weight:800; border-top:1px solid #cbd5e1; border-bottom:1px solid #cbd5e1;">
-                  <td style="padding:4px 8px; color:#0369a1;">
+                <tr style="background:${bg}; font-weight:800; ${border}">
+                  <td style="padding:4px 8px; color:${color};">
                     <span style="display:inline-block; width:22px; font-weight:700; color:#64748b;">${r.code || ''}</span>
                     ${r.label}
+                    ${isGp ? '<span style="font-size:0.62rem; background:#dcfce7; color:#15803d; border:1px solid #86efac; padding:1px 6px; border-radius:999px; margin-left:6px; font-weight:700;">(Perhitungan Otomatis: Penjualan - HPP)</span>' : ''}
                   </td>
-                  <td style="padding:4px 8px; text-align:right; font-weight:800; color:#0369a1;" id="ai_subtot_${r.subtotal}_1">
+                  <td style="padding:4px 8px; text-align:right; font-weight:800; color:${color};" id="ai_subtot_${r.subtotal}_1">
                     ${formatNumberWithDots(r.val1, true)}
                   </td>
-                  <td style="padding:4px 8px; text-align:right; font-weight:800; color:#0369a1;" id="ai_subtot_${r.subtotal}_2">
+                  <td style="padding:4px 8px; text-align:right; font-weight:800; color:${color};" id="ai_subtot_${r.subtotal}_2">
                     ${formatNumberWithDots(r.val2, true)}
                   </td>
                 </tr>
@@ -12340,7 +12349,8 @@ function recalculateAiReviewBalances() {
   const tl1 = cl1 + lt1;
   const eq1 = getVal('capital', 1) + getVal('otherCap', 1) + getVal('retEarn', 1) + getVal('re', 1);
   const pass1 = tl1 + eq1;
-  const eat1 = getVal('rev', 1) - getVal('cogs', 1) - getVal('opex', 1) + getVal('otherInc', 1) - getVal('otherExp', 1) - getVal('intExp', 1) - getVal('tax', 1) - getVal('div', 1);
+  const gp1 = getVal('rev', 1) - getVal('cogs', 1);
+  const eat1 = gp1 - getVal('opex', 1) + getVal('otherInc', 1) - getVal('otherExp', 1) - getVal('intExp', 1) - getVal('tax', 1) - getVal('div', 1);
 
   // Tahun 2
   const ca2 = getVal('cash', 2) + getVal('otherCa', 2) + getVal('ar', 2) + getVal('inv', 2) + getVal('otherAr', 2) + getVal('prepaid', 2);
@@ -12351,7 +12361,8 @@ function recalculateAiReviewBalances() {
   const tl2 = cl2 + lt2;
   const eq2 = getVal('capital', 2) + getVal('otherCap', 2) + getVal('retEarn', 2) + getVal('re', 2);
   const pass2 = tl2 + eq2;
-  const eat2 = getVal('rev', 2) - getVal('cogs', 2) - getVal('opex', 2) + getVal('otherInc', 2) - getVal('otherExp', 2) - getVal('intExp', 2) - getVal('tax', 2) - getVal('div', 2);
+  const gp2 = getVal('rev', 2) - getVal('cogs', 2);
+  const eat2 = gp2 - getVal('opex', 2) + getVal('otherInc', 2) - getVal('otherExp', 2) - getVal('intExp', 2) - getVal('tax', 2) - getVal('div', 2);
 
   const updateEl = (id, val) => {
     const el = document.getElementById(id);
@@ -12372,6 +12383,8 @@ function recalculateAiReviewBalances() {
   updateEl('ai_subtot_eq_2', eq2);
   updateEl('ai_subtot_pass_1', pass1);
   updateEl('ai_subtot_pass_2', pass2);
+  updateEl('ai_subtot_gp_1', gp1);
+  updateEl('ai_subtot_gp_2', gp2);
   updateEl('ai_subtot_eat_1', eat1);
   updateEl('ai_subtot_eat_2', eat2);
 

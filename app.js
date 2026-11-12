@@ -11773,9 +11773,20 @@ ATURAN KRUSIAL PEMBACAAN ANGKA, KOMA, & DESIMAL (WAJIB SANGAT TELITI!):
 3. POS BERARAH MINUS / RUGI:
    - Pos dalam tanda kurung "(...)" atau bertanda minus "-", seperti Laba Bersih yang Rugi atau Akumulasi Rugi, WAJIB bernilai negatif (-).
 
+4. ATURAN KHUSUS KAS & BANK (PENJUMLAHAN OTOMATIS JIKA TERPISAH):
+   - Sistem ASCA memiliki SATU baris/kolom tunggal untuk aktiva kas likuid, yaitu "cash" (Kas & Bank / Kas dan Setara Kas).
+   - Apabila di dokumen Laporan Keuangan pos "Kas" (Kas di Tangan / Kas Kecil / Petty Cash) dan "Bank" (Kas di Bank / Rekening Bank / Giro / Deposito) disajikan SECARA TERPISAH:
+     * Baik berupa baris terpisah (misalnya baris "Kas" dan baris "Bank" terpisah di bawah Aktiva Lancar)
+     * Maupun berupa kolom terpisah atau rincian rekening beberapa bank (BCA, Mandiri, BNI, dll.)
+     -> SISTEM WAJIB MENJUMLAHKAN Kas dan seluruh Bank tersebut: (Kas + Bank).
+     -> Masukkan hasil total penjumlahannya ke dalam field "cash" untuk masing-masing tahun buku.
+     -> JANGAN SEKALI-KALI hanya memasukkan salah satu (misalnya hanya kas saja atau bank saja), keduanya WAJIB dijumlahkan menjadi nominal gabungan pada "cash".
+     -> Tuliskan teks rincian penjumlahannya pada field "cash_breakdown" (contoh: "Kas Rp 15.000.000 + Bank Rp 85.000.000 = Total Rp 100.000.000") dan rincian angka pada "kas_detail": {"kas": 15000000.00, "bank": 85000000.00}.
+   - Jika dokumen sudah menyajikan gabungan ("Kas dan Setara Kas" atau "Kas dan Bank"), gunakan nominal gabungan tersebut, "cash_breakdown": "Disajikan Gabungan di Dokumen", dan "kas_detail": null.
+
 KLASIFIKASI STRUKTUR LAPORAN KEUANGAN ASCA:
 Kelompok 1: AKTIVA LANCAR (Current Assets)
-- cash: Kas dan Setara Kas / Bank
+- cash: Kas dan Setara Kas / Bank (WAJIB otomatis jumlahkan seluruh Kas + Bank jika di dokumen disajikan terpisah baris/kolomnya!)
 - otherCa: Uang Jaminan / Aset Lancar Lainnya
 - ar: Piutang Usaha / Piutang Dagang (Trade Accounts Receivable)
 - inv: Persediaan Barang (Inventory)
@@ -11837,7 +11848,8 @@ Petakan secara presisi ke dalam struktur JSON berikut:
   "audit_report_date": "Tanggal laporan auditor atau -",
   "audit_detection_reason": "Ringkasan bukti status audit",
   "data_year1": {
-    "cash": 0.00, "otherCa": 0.00, "ar": 0.00, "inv": 0.00, "otherAr": 0.00, "prepaid": 0.00,
+    "cash": 0.00, "cash_breakdown": "Rincian jika Kas & Bank terpisah atau Disajikan Gabungan", "kas_detail": {"kas": 0.00, "bank": 0.00},
+    "otherCa": 0.00, "ar": 0.00, "inv": 0.00, "otherAr": 0.00, "prepaid": 0.00,
     "fa": 0.00, "depr": 0.00, "invest": 0.00, "taxAsset": 0.00,
     "ap": 0.00, "stDebt": 0.00, "otherAp": 0.00, "accrued": 0.00,
     "ltDebt": 0.00,
@@ -11845,7 +11857,8 @@ Petakan secara presisi ke dalam struktur JSON berikut:
     "rev": 0.00, "cogs": 0.00, "opex": 0.00, "otherInc": 0.00, "otherExp": 0.00, "intExp": 0.00, "tax": 0.00, "div": 0.00
   },
   "data_year2": {
-    "cash": 0.00, "otherCa": 0.00, "ar": 0.00, "inv": 0.00, "otherAr": 0.00, "prepaid": 0.00,
+    "cash": 0.00, "cash_breakdown": "Rincian jika Kas & Bank terpisah atau Disajikan Gabungan", "kas_detail": {"kas": 0.00, "bank": 0.00},
+    "otherCa": 0.00, "ar": 0.00, "inv": 0.00, "otherAr": 0.00, "prepaid": 0.00,
     "fa": 0.00, "depr": 0.00, "invest": 0.00, "taxAsset": 0.00,
     "ap": 0.00, "stDebt": 0.00, "otherAp": 0.00, "accrued": 0.00,
     "ltDebt": 0.00,
@@ -11940,7 +11953,39 @@ function reconcileExtractedFinancialData(parsed) {
     const d = parsed[yearKey];
     if (!d) return;
 
+    // 1. Penggabungan Otomatis Kas & Bank jika terpisah di dokumen
+    let kasVal = 0;
+    let bankVal = 0;
+    let hasSepDetail = false;
+
+    if (d.kas_detail && typeof d.kas_detail === 'object') {
+      kasVal = typeof d.kas_detail.kas === 'number' ? d.kas_detail.kas : (parseFormattedNumber(d.kas_detail.kas) || 0);
+      bankVal = typeof d.kas_detail.bank === 'number' ? d.kas_detail.bank : (parseFormattedNumber(d.kas_detail.bank) || 0);
+      if (kasVal > 0 || bankVal > 0) hasSepDetail = true;
+    }
+
+    if (!hasSepDetail) {
+      const sepKas = d.kas !== undefined ? (typeof d.kas === 'number' ? d.kas : parseFormattedNumber(d.kas)) : (d.cash_on_hand !== undefined ? parseFormattedNumber(d.cash_on_hand) : 0);
+      const sepBank = d.bank !== undefined ? (typeof d.bank === 'number' ? d.bank : parseFormattedNumber(d.bank)) : (d.cash_in_bank !== undefined ? parseFormattedNumber(d.cash_in_bank) : 0);
+      if (sepKas > 0 || sepBank > 0) {
+        kasVal = sepKas || 0;
+        bankVal = sepBank || 0;
+        hasSepDetail = true;
+      }
+    }
+
+    if (hasSepDetail && (kasVal > 0 || bankVal > 0)) {
+      const combinedCash = Math.round((kasVal + bankVal) * 100) / 100;
+      if (!d.cash || Math.abs(d.cash - kasVal) < 0.01 || Math.abs(d.cash - bankVal) < 0.01) {
+        d.cash = combinedCash;
+      }
+      if (!d.cash_breakdown || d.cash_breakdown.includes('Disajikan Gabungan')) {
+        d.cash_breakdown = 'Kas: Rp ' + formatNumberWithDots(kasVal) + ' + Bank: Rp ' + formatNumberWithDots(bankVal) + ' = Rp ' + formatNumberWithDots(d.cash);
+      }
+    }
+
     Object.keys(d).forEach((k) => {
+      if (k === 'cash_breakdown' || k === 'kas_detail') return;
       if (typeof d[k] !== 'number' || isNaN(d[k])) {
         d[k] = parseFormattedNumber(d[k]) || 0;
       } else {
@@ -12045,10 +12090,28 @@ function renderAiFinReviewTable(data) {
   const diff2 = Math.abs(ta2 - pass2);
   const isBal2 = diff2 < 1.0;
 
+  const safeEscape = (str) => String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  const bd1 = (d1.cash_breakdown || '').trim();
+  const bd2 = (d2.cash_breakdown || '').trim();
+  const isSep1 = bd1 && !bd1.toLowerCase().includes('gabungan');
+  const isSep2 = bd2 && !bd2.toLowerCase().includes('gabungan');
+  const hasSeparateKasBank = isSep1 || isSep2;
+  const kasBankTooltip = [
+    isSep1 ? ('Th ' + y1 + ': ' + bd1) : '',
+    isSep2 ? ('Th ' + y2 + ': ' + bd2) : ''
+  ].filter(Boolean).join(' | ');
+
   // Struktur Akun Terpisah: Aktiva Lancar, Aktiva Tetap, Hutang Lancar, Hutang Jk. Panjang, Ekuitas, Laba Rugi
   const rows = [
     { section: 'I. AKTIVA LANCAR (CURRENT ASSETS)', type: 'header' },
-    { k: 'cash', label: 'Kas &amp; Bank (Kas dan Setara Kas)', code: 'a' },
+    { 
+      k: 'cash', 
+      label: 'Kas &amp; Bank (Kas dan Setara Kas)', 
+      code: 'a',
+      badge: hasSeparateKasBank ? 'Auto-Sum Kas + Bank' : null,
+      tooltip: kasBankTooltip || 'Jumlah gabungan Kas fisik dan simpanan Bank'
+    },
     { k: 'otherCa', label: 'Uang Jaminan / Aset Lancar Lainnya', code: 'a2' },
     { k: 'ar', label: 'Piutang Usaha (Trade Accounts Receivable)', code: 'b' },
     { k: 'inv', label: 'Persediaan Barang (Inventory)', code: 'c' },
@@ -12155,6 +12218,12 @@ function renderAiFinReviewTable(data) {
       <span>Silakan tinjau dan koreksi angka hasil ekstraksi (format standar: <strong>2 angka di belakang koma</strong>), lalu klik <strong>Terapkan ke Laporan Keuangan</strong>.</span>
       <span style="font-size:0.68rem; color:#0369a1; font-weight:700;">\uD83D\uDCA1 Subtotal &amp; Keseimbangan Aktiva vs Passiva dihitung dinamis</span>
     </div>
+    ${hasSeparateKasBank ? `
+      <div style="font-size:0.70rem; color:#065f46; background:#ecfdf5; border:1px solid #a7f3d0; padding:6px 10px; border-radius:6px; margin-bottom:0.55rem; display:flex; align-items:center; gap:8px;">
+        <span style="font-size:0.95rem;">\u2705</span>
+        <div><strong>Deteksi Pos Kas &amp; Bank Terpisah:</strong> Akun Kas dan Bank pada dokumen terdeteksi dalam kolom/baris terpisah dan telah dijumlahkan otomatis ke kolom <strong>Kas &amp; Bank</strong> (<span style="color:#047857; font-weight:700;">${safeEscape(kasBankTooltip)}</span>).</div>
+      </div>
+    ` : ''}
 
     <div style="max-height:420px; overflow-y:auto; border:1px solid #cbd5e1; border-radius:6px; margin-bottom:1rem; background:#fff;">
       <table class="data-table" style="font-size:0.72rem; width:100%; border-collapse:collapse;">
@@ -12208,11 +12277,20 @@ function renderAiFinReviewTable(data) {
             }
             const val1 = d1[r.k] !== undefined && d1[r.k] !== null ? d1[r.k] : 0;
             const val2 = d2[r.k] !== undefined && d2[r.k] !== null ? d2[r.k] : 0;
+            const badgeHtml = r.badge ? `
+              <span style="display:inline-block; margin-left:6px; font-size:0.62rem; font-weight:800; background:#ecfdf5; color:#047857; border:1px solid #a7f3d0; padding:1px 6px; border-radius:999px;" title="${safeEscape(r.tooltip || '')}">
+                \u2713 ${r.badge}
+              </span>
+              <div style="font-size:0.64rem; color:#059669; font-weight:600; margin-top:2px;">
+                ${safeEscape(r.tooltip || '')}
+              </div>
+            ` : '';
             return `
               <tr style="border-bottom:1px solid #f1f5f9;">
                 <td style="padding:4px 8px; font-weight:600; color:#334155;">
                   ${r.code ? `<span style="display:inline-block; width:22px; font-weight:700; color:#64748b;">${r.code}</span>` : ''}
                   ${r.label}
+                  ${badgeHtml}
                 </td>
                 <td style="padding:3px 6px;">
                   <input type="text" inputmode="decimal" id="ai_rev_${r.k}_1" class="form-control num-col fmt-dots" value="${formatNumberWithDots(val1, true)}" oninput="handleDotInput(this); recalculateAiReviewBalances()" onblur="handleDotBlur(this); recalculateAiReviewBalances()" style="font-size:0.74rem; padding:3px 6px; text-align:right;" />
@@ -12465,7 +12543,12 @@ function applyExtractedFinDataToForm() {
   // Pastikan Bagian D terbuka agar data ekstraksi langsung terlihat
   toggleInputSection('secD', true);
 
-  showToast(`🎉 Laporan Keuangan Th ${y1} & ${y2} (${isExtAudited ? 'Audited KAP' : 'In-House'}) berhasil diekstrak dan terhubung ke 5C!`);
+  const bd1 = (currentExtractedFinData?.data_year1?.cash_breakdown || '').trim();
+  const bd2 = (currentExtractedFinData?.data_year2?.cash_breakdown || '').trim();
+  const isSep = (bd1 && !bd1.toLowerCase().includes('gabungan')) || (bd2 && !bd2.toLowerCase().includes('gabungan'));
+  const extraMsg = isSep ? ' (Termasuk penggabungan otomatis Kas + Bank)' : '';
+
+  showToast(`🎉 Laporan Keuangan Th ${y1} & ${y2} (${isExtAudited ? 'Audited KAP' : 'In-House'}) berhasil diekstrak dan terhubung ke 5C!${extraMsg}`);
 }
 
 // ============================================================================

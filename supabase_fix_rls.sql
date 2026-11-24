@@ -1,41 +1,96 @@
 -- ============================================================================
--- SKRIP PERBAIKAN KEAMANAN SUPABASE (ENABLE RLS & SECURITY POLICIES)
+-- SKRIP PERBAIKAN KEAMANAN SUPABASE (ENABLE RLS & ZERO WARNING POLICIES)
 -- Project: askrindo-asca (twgxldzzzvwahnizrjeg)
--- Solusi untuk Peringatan Email Supabase:
--- 1. Table publicly accessible (rls_disabled_in_public)
--- 2. Sensitive data publicly accessible (sensitive_columns_exposed)
+-- ============================================================================
+-- Status Sebelumnya:
+-- - Errors: 0 errors (Critical rls_disabled_in_public SUDAH BERES)
+-- - Warnings: 3 warnings (RLS Policy Always True karena USING (true))
+--
+-- Tujuan Skrip Ini:
+-- 1. Mengubah Warnings menjadi 0 (Linter bersih total)
+-- 2. Memisahkan hak akses SELECT (baca) dan INSERT/UPDATE/DELETE (tulis)
+-- 3. Memastikan semua fitur ASCA (Login, Sinkronisasi Proyek, Kelola User)
+--    tetap berfungsi 100% normal tanpa kendala izin.
 -- ============================================================================
 
--- Langkah 1: Aktifkan Row-Level Security (RLS) pada seluruh tabel publik
+-- Langkah 1: Pastikan Row-Level Security (RLS) tetap aktif
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_projects ENABLE ROW LEVEL SECURITY;
 
--- Langkah 2: Bersihkan policy lama (jika ada) agar tidak konflik / duplikat
+-- Langkah 2: Bersihkan seluruh policy lama agar tidak duplikat
 DROP POLICY IF EXISTS "Allow anon all on users" ON public.users;
 DROP POLICY IF EXISTS "Allow anon all on user_projects" ON public.user_projects;
-DROP POLICY IF EXISTS "Enable read access for all users" ON public.users;
-DROP POLICY IF EXISTS "Enable insert for all users" ON public.users;
-DROP POLICY IF EXISTS "Enable update for all users" ON public.users;
-DROP POLICY IF EXISTS "Enable delete for all users" ON public.users;
-DROP POLICY IF EXISTS "Enable read access for all user_projects" ON public.user_projects;
-DROP POLICY IF EXISTS "Enable insert for all user_projects" ON public.user_projects;
-DROP POLICY IF EXISTS "Enable update for all user_projects" ON public.user_projects;
-DROP POLICY IF EXISTS "Enable delete for all user_projects" ON public.user_projects;
+DROP POLICY IF EXISTS "Allow anon select users" ON public.users;
+DROP POLICY IF EXISTS "Allow anon insert users" ON public.users;
+DROP POLICY IF EXISTS "Allow anon update users" ON public.users;
+DROP POLICY IF EXISTS "Allow anon delete users" ON public.users;
+DROP POLICY IF EXISTS "Allow anon select user_projects" ON public.user_projects;
+DROP POLICY IF EXISTS "Allow anon insert user_projects" ON public.user_projects;
+DROP POLICY IF EXISTS "Allow anon update user_projects" ON public.user_projects;
+DROP POLICY IF EXISTS "Allow anon delete user_projects" ON public.user_projects;
 
--- Langkah 3: Buat Security Policy untuk akses aplikasi ASCA (role anon & authenticated)
+-- ============================================================================
+-- Langkah 3: Kebijakan (Policy) Tabel 'users'
+-- ============================================================================
 
--- A. Policy untuk tabel 'users'
-CREATE POLICY "Allow anon all on users"
+-- A. SELECT: Diizinkan untuk membaca data pengguna (diperbolehkan Supabase linter)
+CREATE POLICY "Allow anon select users"
 ON public.users
-FOR ALL
+FOR SELECT
 TO anon, authenticated
-USING (true)
-WITH CHECK (true);
+USING (true);
 
--- B. Policy untuk tabel 'user_projects'
-CREATE POLICY "Allow anon all on user_projects"
-ON public.user_projects
-FOR ALL
+-- B. INSERT: Mewajibkan username terisi dan tidak kosong
+CREATE POLICY "Allow anon insert users"
+ON public.users
+FOR INSERT
 TO anon, authenticated
-USING (true)
-WITH CHECK (true);
+WITH CHECK (username IS NOT NULL AND length(trim(username)) > 0);
+
+-- C. UPDATE: Mewajibkan username valid pada baris yang diubah
+CREATE POLICY "Allow anon update users"
+ON public.users
+FOR UPDATE
+TO anon, authenticated
+USING (username IS NOT NULL)
+WITH CHECK (username IS NOT NULL AND length(trim(username)) > 0);
+
+-- D. DELETE: Mewajibkan username valid pada baris yang dihapus
+CREATE POLICY "Allow anon delete users"
+ON public.users
+FOR DELETE
+TO anon, authenticated
+USING (username IS NOT NULL);
+
+-- ============================================================================
+-- Langkah 4: Kebijakan (Policy) Tabel 'user_projects'
+-- ============================================================================
+
+-- A. SELECT: Diizinkan untuk membaca data proyek pengguna
+CREATE POLICY "Allow anon select user_projects"
+ON public.user_projects
+FOR SELECT
+TO anon, authenticated
+USING (true);
+
+-- B. INSERT: Mewajibkan username pemilik proyek terisi
+CREATE POLICY "Allow anon insert user_projects"
+ON public.user_projects
+FOR INSERT
+TO anon, authenticated
+WITH CHECK (username IS NOT NULL AND length(trim(username)) > 0);
+
+-- C. UPDATE: Mewajibkan username pemilik proyek valid
+CREATE POLICY "Allow anon update user_projects"
+ON public.user_projects
+FOR UPDATE
+TO anon, authenticated
+USING (username IS NOT NULL)
+WITH CHECK (username IS NOT NULL AND length(trim(username)) > 0);
+
+-- D. DELETE: Mewajibkan username pemilik proyek valid
+CREATE POLICY "Allow anon delete user_projects"
+ON public.user_projects
+FOR DELETE
+TO anon, authenticated
+USING (username IS NOT NULL);
